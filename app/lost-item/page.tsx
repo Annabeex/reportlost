@@ -10,6 +10,7 @@ export default function LostItemPage() {
         Ce site vous aide à déclarer la perte d’un objet et à augmenter vos chances de le retrouver
         en contactant les services municipaux, les groupes communautaires ou en bénéficiant d’une aide à la recherche.
       </p>
+
       <ReportForm />
     </main>
   );
