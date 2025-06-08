@@ -1,7 +1,7 @@
 // === app/cities/[city]/page.tsx ===
 import { createClient } from '@supabase/supabase-js';
 import ReportForm from '../../../components/ReportForm';
-import '@/app/globals.css';
+import '../../../app/globals.css';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,14 +13,23 @@ interface Props {
 }
 
 export default async function Page({ params }: Props) {
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
-  const { data } = await supabase
+  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ').toLowerCase();
+
+  const { data, error } = await supabase
     .from('us_cities')
     .select('*')
     .ilike('city', cityName);
 
+  console.log('Supabase result:', data);
+  console.log('Supabase error:', error);
+
   const cityData = data?.[0];
   const displayName = cityData?.city || 'this city';
+
+  // Provide helpful fallback in case of error or no match
+  const suggestions = !cityData && data?.length > 0
+    ? data.map((c) => c.city).join(', ')
+    : null;
 
   return (
     <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -33,9 +42,16 @@ export default async function Page({ params }: Props) {
 
         <div className="bg-white p-6 rounded-b-xl shadow space-y-8">
           <p className="text-gray-700">
-            If you lost an item in {displayName}, don’t panic. Every day, phones, wallets, bags, and keys are found and returned.
-            This page helps you report a lost item and find helpful local resources.
+            If you lost an item in {displayName}, don’t panic. Every day, phones, wallets, bags, and keys are
+            found and returned. This page helps you report a lost item and find helpful local resources.
           </p>
+
+          {!cityData && suggestions && (
+            <div className="bg-yellow-100 text-yellow-800 p-4 rounded">
+              <p className="font-medium">Did you mean one of these?</p>
+              <p>{suggestions}</p>
+            </div>
+          )}
 
           <section>
             <h2 className="text-xl font-semibold text-blue-800 mb-2">
@@ -50,25 +66,8 @@ export default async function Page({ params }: Props) {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">
-              How to report a lost item in {displayName}
-            </h2>
-            <p className="text-gray-700 mb-4">
-              Start by filling out the form below. We’ll follow up with helpful leads if any match is found.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <ReportForm defaultCity={cityData?.city} />
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">
-              Tips to increase your chances
-            </h2>
-            <p className="text-gray-700">
-              Include all the details: color, brand, serial number, size, and any unique markings. Mention exactly
-              where and when you lost it. Don’t forget to leave a valid contact email.
-            </p>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Report your item below</h2>
+            <ReportForm defaultCity={displayName} />
           </section>
         </div>
       </div>
