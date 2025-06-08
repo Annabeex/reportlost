@@ -1,6 +1,7 @@
+// === app/cities/[city]/page.tsx ===
 import { createClient } from '@supabase/supabase-js';
 import ReportForm from '../../../components/ReportForm';
-
+import '@/app/globals.css';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,11 +20,58 @@ export default async function Page({ params }: Props) {
     .ilike('city', cityName);
 
   const cityData = data?.[0];
+  const displayName = cityData?.city || 'this city';
 
   return (
-    <main className="p-6 max-w-3xl mx-auto">
-      <h1>Lost and Found in {cityData?.city || 'City'}</h1>
-      <ReportForm defaultCity={cityData?.city} />
+    <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <header className="bg-blue-900 text-white py-6 px-4 rounded-t-xl shadow">
+          <h1 className="text-3xl font-bold text-center">
+            Lost and Found in {displayName}
+          </h1>
+        </header>
+
+        <div className="bg-white p-6 rounded-b-xl shadow space-y-8">
+          <p className="text-gray-700">
+            If you lost an item in {displayName}, don’t panic. Every day, phones, wallets, bags, and keys are found and returned.
+            This page helps you report a lost item and find helpful local resources.
+          </p>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">
+              Where do people usually lose items?
+            </h2>
+            <ul className="list-disc pl-6 text-gray-700 space-y-1">
+              <li>Metro and bus lines</li>
+              <li>Airports</li>
+              <li>Shopping malls and libraries</li>
+              <li>Events and entertainment venues</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">
+              How to report a lost item in {displayName}
+            </h2>
+            <p className="text-gray-700 mb-4">
+              Start by filling out the form below. We’ll follow up with helpful leads if any match is found.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <ReportForm defaultCity={cityData?.city} />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">
+              Tips to increase your chances
+            </h2>
+            <p className="text-gray-700">
+              Include all the details: color, brand, serial number, size, and any unique markings. Mention exactly
+              where and when you lost it. Don’t forget to leave a valid contact email.
+            </p>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }
