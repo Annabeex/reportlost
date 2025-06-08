@@ -14,19 +14,25 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const cityName = decodeURIComponent(params.city).replace(/-/g, ' ').toLowerCase();
+  console.log('Querying Supabase for:', cityName);
 
-  const { data, error } = await supabase
-    .from('us_cities')
-    .select('*')
-    .ilike('city', cityName);
+ const { data, error } = await supabase
+  .from('us_cities')
+  .select('*')
+  .ilike('city', `%${cityName}%`);
 
-  console.log('Supabase result:', data);
-  console.log('Supabase error:', error);
+console.log('Supabase result:', data);
+
+if (error) {
+  console.error('Supabase query error:', error.message || error);
+} else {
+  console.log('Supabase query succeeded');
+}
 
   const cityData = data?.[0];
   const displayName = cityData?.city || 'this city';
 
-  const suggestions = !cityData && data?.length > 0
+  const suggestions = !cityData && Array.isArray(data) && data.length > 0
     ? data.map((c) => c.city).join(', ')
     : null;
 
