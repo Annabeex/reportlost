@@ -26,7 +26,6 @@ export default async function Page({ params }: Props) {
   const cityData = data?.[0];
   const displayName = cityData?.city || 'this city';
 
-  // Provide helpful fallback in case of error or no match
   const suggestions = !cityData && data?.length > 0
     ? data.map((c) => c.city).join(', ')
     : null;
