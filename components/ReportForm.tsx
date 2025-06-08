@@ -2,6 +2,12 @@
 'use client';
 
 import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Props {
   defaultCity?: string;
@@ -16,19 +22,42 @@ export default function ReportForm({ defaultCity = '' }: Props) {
     email: '',
   });
 
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // TODO: call Supabase or API route
+    setError(null);
+    setSubmitted(false);
+
+    const { error } = await supabase.from('lost_items').insert([formData]);
+
+    if (error) {
+      console.error('Error submitting form:', error);
+      setError('An error occurred. Please try again.');
+    } else {
+      setSubmitted(true);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {submitted && (
+        <div className="bg-green-100 text-green-800 p-4 rounded">
+          Your report was submitted successfully!
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-100 text-red-800 p-4 rounded">
+          {error}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
         <input
