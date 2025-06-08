@@ -35,7 +35,7 @@ export default function ReportForm({ defaultCity = '' }: Props) {
     setError(null);
     setSubmitted(false);
 
-    const { error } = await supabase.from('lost_items').insert([formData]);
+    const { error } = await supabase.from('lost-items').insert([formData]);
 
     if (error) {
       console.error('Error submitting form:', error);
