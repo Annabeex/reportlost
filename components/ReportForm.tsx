@@ -39,9 +39,6 @@ export default function ReportForm({ defaultCity = '' }: Props) {
         .ilike('city', `${formData.city}%`)
         .limit(8);
 
-      console.log('Suggestions data:', data);
-      console.log('Suggestions error:', error);
-
       if (!error && data) {
         setCitySuggestions(data.map((c) => c.city));
       } else {
@@ -123,23 +120,18 @@ export default function ReportForm({ defaultCity = '' }: Props) {
             value={formData.city}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Start typing a city name..."
           />
-          {formData.city.length > 0 && (
+          {formData.city.length > 0 && citySuggestions.length > 0 && (
             <ul className="absolute z-10 bg-white border mt-1 rounded-md shadow max-h-40 overflow-y-auto w-full">
-              {citySuggestions.length > 0 ? (
-                citySuggestions.map((suggestion) => (
-                  <li
-                    key={suggestion}
-                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </li>
-                ))
-              ) : (
-                <li className="px-4 py-2 text-gray-500 italic">No suggestions found</li>
-              )}
+              {citySuggestions.map((suggestion) => (
+                <li
+                  key={suggestion}
+                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion}
+                </li>
+              ))}
             </ul>
           )}
         </div>
