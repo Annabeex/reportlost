@@ -12,9 +12,19 @@ interface Props {
   params: { state: string; city: string };
 }
 
+function toTitleCase(str: string) {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export default async function Page({ params }: Props) {
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
-  const stateName = decodeURIComponent(params.state).replace(/-/g, ' ');
+  const rawCity = decodeURIComponent(params.city).replace(/-/g, ' ');
+  const rawState = decodeURIComponent(params.state).replace(/-/g, ' ');
+  const cityName = toTitleCase(rawCity);
+  const stateName = toTitleCase(rawState);
 
   const { data, error } = await supabase
     .from('us_cities')
@@ -29,7 +39,7 @@ export default async function Page({ params }: Props) {
   }
 
   const cityData = data?.[0];
-  const displayName = cityData?.city || params.city;
+  const displayName = cityData?.city || cityName;
   const county = cityData?.county_name;
   const pop = cityData?.population ? cityData.population.toLocaleString() : undefined;
   const density = cityData?.density;
