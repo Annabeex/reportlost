@@ -26,9 +26,11 @@ export default function ReportForm({ defaultCity = '' }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
 
+  const cityFieldIsEditable = defaultCity === '';
+
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (formData.city.length < 1) {
+      if (!cityFieldIsEditable || formData.city.length < 1) {
         setCitySuggestions([]);
         return;
       }
@@ -47,7 +49,7 @@ export default function ReportForm({ defaultCity = '' }: Props) {
     };
 
     fetchSuggestions();
-  }, [formData.city]);
+  }, [formData.city, cityFieldIsEditable]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -120,8 +122,9 @@ export default function ReportForm({ defaultCity = '' }: Props) {
             value={formData.city}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            readOnly={!cityFieldIsEditable}
           />
-          {formData.city.length > 0 && citySuggestions.length > 0 && (
+          {cityFieldIsEditable && formData.city.length > 0 && citySuggestions.length > 0 && (
             <ul className="absolute z-10 bg-white border mt-1 rounded-md shadow max-h-40 overflow-y-auto w-full">
               {citySuggestions.map((suggestion) => (
                 <li
@@ -171,3 +174,4 @@ export default function ReportForm({ defaultCity = '' }: Props) {
     </form>
   );
 }
+
