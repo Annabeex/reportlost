@@ -1,7 +1,7 @@
 // === components/ReportForm.tsx ===
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -24,10 +24,42 @@ export default function ReportForm({ defaultCity = '' }: Props) {
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (formData.city.length < 1) {
+        setCitySuggestions([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('us_cities')
+        .select('city')
+        .ilike('city', `${formData.city}%`)
+        .limit(8);
+
+      console.log('Suggestions data:', data);
+      console.log('Suggestions error:', error);
+
+      if (!error && data) {
+        setCitySuggestions(data.map((c) => c.city));
+      } else {
+        setCitySuggestions([]);
+      }
+    };
+
+    fetchSuggestions();
+  }, [formData.city]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setFormData((prev) => ({ ...prev, city: suggestion }));
+    setCitySuggestions([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +115,7 @@ export default function ReportForm({ defaultCity = '' }: Props) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
           <input
             type="text"
@@ -91,7 +123,25 @@ export default function ReportForm({ defaultCity = '' }: Props) {
             value={formData.city}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Start typing a city name..."
           />
+          {formData.city.length > 0 && (
+            <ul className="absolute z-10 bg-white border mt-1 rounded-md shadow max-h-40 overflow-y-auto w-full">
+              {citySuggestions.length > 0 ? (
+                citySuggestions.map((suggestion) => (
+                  <li
+                    key={suggestion}
+                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-2 text-gray-500 italic">No suggestions found</li>
+              )}
+            </ul>
+          )}
         </div>
 
         <div>
