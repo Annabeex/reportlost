@@ -31,7 +31,7 @@ export default async function Page({ params }: Props) {
   const cityData = data?.[0];
   const displayName = cityData?.city || params.city;
   const county = cityData?.county_name;
-  const pop = cityData?.population?.toLocaleString();
+  const pop = cityData?.population ? cityData.population.toLocaleString() : undefined;
   const density = cityData?.density;
   const timezone = cityData?.timezone;
   const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
