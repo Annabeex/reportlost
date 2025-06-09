@@ -13,8 +13,8 @@ interface Props {
 }
 
 export default async function Page({ params }: Props) {
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ').toLowerCase();
-  const stateName = decodeURIComponent(params.state).replace(/-/g, ' ').toLowerCase();
+  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
+  const stateName = decodeURIComponent(params.state).replace(/-/g, ' ');
 
   const { data, error } = await supabase
     .from('us_cities')
@@ -37,14 +37,14 @@ export default async function Page({ params }: Props) {
   const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
 
   const seoText = `
-Located in ${county} County, ${displayName}${zip ? ` (ZIP code: ${zip})` : ''} is home to approximately ${pop} residents.
-With a population density of ${density} people per square kilometer, it's no surprise that lost items are a common concern.
+Located in ${county ? `${county} County, ` : ''}${displayName}${zip ? ` (ZIP code: ${zip})` : ''} is home to approximately ${pop ?? 'many'} residents.
+With a population density of ${density ?? 'unknown'} people per square kilometer, it's no surprise that lost items are a common concern.
 Every day, residents misplace phones, wallets, keys, and backpacks — especially in public places like bus stations, parks, and cafés.
 
 This page exists to help the people of ${displayName} report and find lost belongings. Our system is simple and free to use.
 Whether you dropped your glasses in a taxi or left your backpack at the gym, your item might be just a report away from being returned.
 
-${displayName} belongs to the ${timezone} timezone, meaning coordination with local businesses and institutions is efficient when an item is found.
+${displayName} belongs to the ${timezone ?? 'local'} timezone, meaning coordination with local businesses and institutions is efficient when an item is found.
 In addition to your report, our platform may soon include tips from nearby lost-and-found offices and updates from the community.
 
 Help us build a connected and responsive city — start by submitting your lost item report below.
