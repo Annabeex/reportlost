@@ -57,8 +57,13 @@ Whether you dropped your glasses in a taxi or left your backpack at the gym, you
 ${displayName} belongs to the ${timezone ?? 'local'} timezone, meaning coordination with local businesses and institutions is efficient when an item is found.
 In addition to your report, our platform may soon include tips from nearby lost-and-found offices and updates from the community.
 
-Help us build a connected and responsive city — start by submitting your lost item report below.
-`;
+Help us build a connected and responsive city — start by submitting your lost item report below.`;
+
+  const citySlug = params.city.toLowerCase().replace(/\s+/g, '');
+  const stateSlug = params.state.toLowerCase().replace(/\s+/g, '');
+  const cityWebsite = `https://www.${citySlug}.gov`;
+  const transitWebsite = `https://www.transit.${stateSlug}.gov`;
+  const subredditSlug = `https://www.reddit.com/r/${citySlug}/search.json?q=lost%20%7C%20found&restrict_sr=1&sort=new`;
 
   return (
     <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -71,6 +76,16 @@ Help us build a connected and responsive city — start by submitting your lost 
 
         <div className="bg-white p-6 rounded-b-xl shadow space-y-8">
           <p className="text-gray-700 whitespace-pre-line">{seoText}</p>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">
+              Report your lost item
+            </h2>
+            <p className="text-gray-700 mb-4">
+              Please fill out the form below to report a lost object. Include as much detail as possible — location, description, and date — to maximize the chances of recovery.
+            </p>
+            <ReportForm defaultCity={displayName} />
+          </section>
 
           <section>
             <h2 className="text-xl font-semibold text-blue-800 mb-2">
@@ -97,12 +112,22 @@ Help us build a connected and responsive city — start by submitting your lost 
 
           <section>
             <h2 className="text-xl font-semibold text-blue-800 mb-2">
-              Report your lost item
+              Tips & Local Contacts for {displayName}
             </h2>
-            <p className="text-gray-700 mb-4">
-              Please fill out the form below to report a lost object. Include as much detail as possible — location, description, and date — to maximize the chances of recovery.
+            <p className="text-gray-700 mb-2">
+              For help retrieving lost items in {displayName}, consider these local resources:
             </p>
-            <ReportForm defaultCity={displayName} />
+            <ul className="list-disc pl-6 text-gray-700 space-y-1">
+              <li>
+                Visit the official website: <a href={cityWebsite} className="text-blue-700 underline" target="_blank">{cityWebsite}</a>
+              </li>
+              <li>
+                Contact local transit authorities: <a href={transitWebsite} className="text-blue-700 underline" target="_blank">{transitWebsite}</a>
+              </li>
+              <li>
+                Search local Reddit posts: <a href={subredditSlug} className="text-blue-700 underline" target="_blank">r/{citySlug}</a>
+              </li>
+            </ul>
           </section>
         </div>
       </div>
