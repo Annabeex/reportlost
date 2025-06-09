@@ -1,7 +1,8 @@
-// === components/ReportForm.tsx ===
+// ReportLost Multi-Step Form – Étapes 1 à 4 uniquement
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -10,168 +11,129 @@ const supabase = createClient(
 );
 
 interface Props {
-  defaultCity?: string;
+  defaultCity: string;
 }
 
 export default function ReportForm({ defaultCity = '' }: Props) {
+  const [step, setStep] = useState(1);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     category: '',
     description: '',
-    city: defaultCity,
     date: '',
+    timeSlot: '',
+    lostPhone: false,
+    serial: '',
+    ownership: '',
+    identifier: '',
+    other: '',
+    probableLocation: '',
+    transport: '',
+    transportDeparture: '',
+    transportArrival: '',
+    transportTimeStart: '',
+    transportTimeEnd: '',
+    transportNumber: '',
+    cityLocation: '',
+    neighborhood: '',
+    street: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    phone: '',
+    address: '',
+    zip: '',
+    country: '',
+    gdprConsent: false,
+    termsConsent: false
   });
 
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
-
-  const cityFieldIsEditable = defaultCity === '';
-
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!cityFieldIsEditable || formData.city.length < 1) {
-        setCitySuggestions([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('us_cities')
-        .select('city')
-        .ilike('city', `${formData.city}%`)
-        .limit(8);
-
-      if (!error && data) {
-        setCitySuggestions(data.map((c) => c.city));
-      } else {
-        setCitySuggestions([]);
-      }
-    };
-
-    fetchSuggestions();
-  }, [formData.city, cityFieldIsEditable]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (e: React.ChangeEvent<any>) => {
+    const { name, value, type, checked } = e.target;
+    const val = type === 'checkbox' ? checked : value;
+    setFormData(prev => ({ ...prev, [name]: val }));
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setFormData((prev) => ({ ...prev, city: suggestion }));
-    setCitySuggestions([]);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitted(false);
-
-    const { error } = await supabase.from('lost_items').insert([formData]);
-
-    if (error) {
-      console.error('Error submitting form:', error);
-      setError('An error occurred. Please try again.');
-    } else {
-      setSubmitted(true);
-    }
-  };
+  const handleNext = () => setStep(step + 1);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {submitted && (
-        <div className="bg-green-100 text-green-800 p-4 rounded">
-          Your report was submitted successfully!
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 text-red-800 p-4 rounded">
-          {error}
-        </div>
-      )}
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-        <input
-          type="text"
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="e.g. Phone, Wallet, Keys"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows={4}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Include color, brand, unique features..."
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            readOnly={!cityFieldIsEditable}
-          />
-          {cityFieldIsEditable && formData.city.length > 0 && citySuggestions.length > 0 && (
-            <ul className="absolute z-10 bg-white border mt-1 rounded-md shadow max-h-40 overflow-y-auto w-full">
-              {citySuggestions.map((suggestion) => (
-                <li
-                  key={suggestion}
-                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion}
-                </li>
-              ))}
-            </ul>
+    <div className="max-w-xl mx-auto p-4">
+      {step === 1 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">What did you lose and where?</h2>
+          <input name="category" placeholder="e.g. Phone lost in JFK Airport taxi" className="input" onChange={handleChange} />
+          <textarea name="description" placeholder="Additional description" className="input" onChange={handleChange} />
+          <input type="date" name="date" className="input" onChange={handleChange} />
+          <label className="block">Estimated time slot (optional)</label>
+          <select name="timeSlot" onChange={handleChange} className="input">
+            <option value="">—</option>
+            <option>12 AM–6 AM</option>
+            <option>6 AM–12 PM</option>
+            <option>12 PM–6 PM</option>
+            <option>6 PM–12 AM</option>
+          </select>
+          <label>If you lost your cellphone, click yes</label>
+          <input type="checkbox" name="lostPhone" onChange={handleChange} />
+          {formData.lostPhone && (
+            <div className="space-y-2">
+              <input name="serial" placeholder="Serial or ID number (optional)" className="input" onChange={handleChange} />
+              <input name="ownership" placeholder="Proof of ownership (optional)" className="input" onChange={handleChange} />
+              <input name="identifier" placeholder="Identifying element (optional)" className="input" onChange={handleChange} />
+              <input name="other" placeholder="Other details (optional)" className="input" onChange={handleChange} />
+            </div>
           )}
+          <button type="button" onClick={handleNext} className="button">Next</button>
         </div>
+      )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date lost</label>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
+      {step === 2 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Where did you likely lose it?</h2>
+          <input name="probableLocation" placeholder="e.g. On the subway, in hotel lobby…" className="input" onChange={handleChange} />
+          <label>Was it during transportation?</label>
+          <select name="transport" onChange={handleChange} className="input">
+            <option value="">No</option>
+            <option value="train">Train</option>
+            <option value="plane">Plane</option>
+            <option value="bus">Bus</option>
+            <option value="taxi">Taxi</option>
+          </select>
+          {formData.transport && (
+            <div className="space-y-2">
+              <input name="transportDeparture" placeholder="Departure station or airport" className="input" onChange={handleChange} />
+              <input name="transportArrival" placeholder="Arrival station or airport" className="input" onChange={handleChange} />
+              <input name="transportTimeStart" type="time" className="input" onChange={handleChange} />
+              <input name="transportTimeEnd" type="time" className="input" onChange={handleChange} />
+              <input name="transportNumber" placeholder="Flight or train number" className="input" onChange={handleChange} />
+            </div>
+          )}
+          <button type="button" onClick={handleNext} className="button">Next</button>
         </div>
-      </div>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Your email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="you@example.com"
-        />
-      </div>
+      {step === 3 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Your contact info</h2>
+          <input name="firstName" placeholder="First Name" className="input" onChange={handleChange} />
+          <input name="lastName" placeholder="Last Name" className="input" onChange={handleChange} />
+          <input name="email" placeholder="Email" className="input" onChange={handleChange} />
+          <input name="phone" placeholder="Phone Number" className="input" onChange={handleChange} />
+          <input name="address" placeholder="Street Address" className="input" onChange={handleChange} />
+          <input name="zip" placeholder="ZIP Code" className="input" onChange={handleChange} />
+          <input name="country" placeholder="Country" className="input" onChange={handleChange} />
+          <label><input type="checkbox" name="gdprConsent" onChange={handleChange} /> I agree to the data protection policy.</label>
+          <label><input type="checkbox" name="termsConsent" onChange={handleChange} /> I agree to the terms of use.</label>
+          <button type="button" onClick={handleNext} className="button">Next</button>
+        </div>
+      )}
 
-      <div>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Submit
-        </button>
-      </div>
-    </form>
+      {step === 4 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold">Here’s what happens next</h2>
+          <p className="text-gray-700">We analyze your report, contact appropriate services, anonymize and publish your declaration, and follow up for 30 days if needed.</p>
+          <button type="button" onClick={() => router.push('/report/contribution')} className="button">Continue</button>
+        </div>
+      )}
+    </div>
   );
 }
-
