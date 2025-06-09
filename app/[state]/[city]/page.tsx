@@ -19,8 +19,10 @@ export default async function Page({ params }: Props) {
   const { data, error } = await supabase
     .from('us_cities')
     .select('*')
-    .ilike('city', cityName)
-    .ilike('state_name', stateName);
+    .eq('city', cityName)
+    .eq('state_name', stateName)
+    .order('population', { ascending: false })
+    .limit(1);
 
   if (error) {
     console.error('Supabase query error:', error.message || error);
@@ -32,21 +34,21 @@ export default async function Page({ params }: Props) {
   const pop = cityData?.population?.toLocaleString();
   const density = cityData?.density;
   const timezone = cityData?.timezone;
-  const zip = cityData?.zips?.split(',')[0];
+  const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
 
   const seoText = `
-    Located in ${county} County, ${displayName} (ZIP code: ${zip}) is home to approximately ${pop} residents.
-    With a population density of ${density} people per square kilometer, it's no surprise that lost items are a common concern.
-    Every day, residents misplace phones, wallets, keys, and backpacks — especially in public places like bus stations, parks, and cafés.
+Located in ${county} County, ${displayName}${zip ? ` (ZIP code: ${zip})` : ''} is home to approximately ${pop} residents.
+With a population density of ${density} people per square kilometer, it's no surprise that lost items are a common concern.
+Every day, residents misplace phones, wallets, keys, and backpacks — especially in public places like bus stations, parks, and cafés.
 
-    This page exists to help the people of ${displayName} report and find lost belongings. Our system is simple and free to use.
-    Whether you dropped your glasses in a taxi or left your backpack at the gym, your item might be just a report away from being returned.
+This page exists to help the people of ${displayName} report and find lost belongings. Our system is simple and free to use.
+Whether you dropped your glasses in a taxi or left your backpack at the gym, your item might be just a report away from being returned.
 
-    ${displayName} belongs to the ${timezone} timezone, meaning coordination with local businesses and institutions is efficient when an item is found.
-    In addition to your report, our platform may soon include tips from nearby lost-and-found offices and updates from the community.
+${displayName} belongs to the ${timezone} timezone, meaning coordination with local businesses and institutions is efficient when an item is found.
+In addition to your report, our platform may soon include tips from nearby lost-and-found offices and updates from the community.
 
-    Help us build a connected and responsive city — start by submitting your lost item report below.
-  `;
+Help us build a connected and responsive city — start by submitting your lost item report below.
+`;
 
   return (
     <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
