@@ -45,7 +45,7 @@ export default async function Page({ params }: Props) {
   const pop = cityData?.population ? cityData.population.toLocaleString() : undefined;
   const density = cityData?.density;
   const timezone = cityData?.timezone;
-  const zip = cityData?.zips?.match(/\b\d{5}\b/)?[0];
+  const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
 
   const seoText = `
 Located in ${county ? `${county} County, ` : ''}${displayName}${zip ? ` (ZIP code: ${zip})` : ''} is home to approximately ${pop ?? 'many'} residents.
@@ -138,7 +138,7 @@ Help us build a connected and responsive city — start by submitting your lost 
                 Latest Reddit Mentions in r/{citySlug}
               </h2>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                {redditPosts.map(post => (
+                {redditPosts.map((post: any) => (
                   <li key={post.id}>
                     <a href={post.url} target="_blank" className="text-blue-700 underline">
                       {post.title}
@@ -153,4 +153,3 @@ Help us build a connected and responsive city — start by submitting your lost 
     </main>
   );
 }
-
