@@ -1,5 +1,8 @@
 'use client';
 
+import React from 'react'; // (optionnel si déjà globalement inclus)
+
+// LIGNE VIDE CI-DESSOUS NÉCESSAIRE
 interface Props {
   formData: any;
   onChange: (e: React.ChangeEvent<any>) => void;
@@ -9,12 +12,6 @@ interface Props {
 
 export default function ReportFormStep2({ formData, onChange, onNext, onBack }: Props) {
   return (
-    <div>
-      {/* Formulaire ici */}
-    </div>
-  );
-}
-
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Step 3: Your contact details</h2>
 
