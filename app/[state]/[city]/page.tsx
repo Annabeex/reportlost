@@ -59,8 +59,17 @@ export default async function Page({ params }: Props) {
 
         <div className="bg-white p-6 rounded-b-xl shadow space-y-8">
           <p className="text-gray-700 whitespace-pre-line">
-            Located in {county ? `${county} County, ` : ''}{displayName}{zip ? ` (ZIP code: ${zip})` : ''} is home to approximately {pop ?? 'many'} residents.
-            With a population density of {density ?? 'unknown'} people per square kilometer, it's no surprise that lost items are a common concern...
+            {county ? `${displayName} is located in ${county} County` : `${displayName}`} {zip ? `(ZIP code: ${zip})` : ''}. It has a population of approximately {pop ?? 'many'} residents
+            and a density of {density ?? 'unknown'} people per square kilometer.
+            Operating in the {timezone ?? 'local'} timezone, it's no surprise that lost items are a common concern in such a busy area.
+          </p>
+
+          <p className="text-gray-700 whitespace-pre-line">
+            If you've lost something in {displayName}, you're not alone. From parks to public transport, our platform helps recover lost items
+            with the help of local communities. Try checking local groups like {' '}
+            <a className="text-blue-600 underline" href={`https://www.facebook.com/search/top?q=lost%20and%20found%20${displayName}`} target="_blank">
+              Facebook Lost & Found - {displayName}
+            </a>{' '} or see discussions on Reddit for {displayName}.
           </p>
 
           <section>
@@ -71,7 +80,7 @@ export default async function Page({ params }: Props) {
             <ReportForm defaultCity={displayName} />
           </section>
 
-          {/* Les autres sections : objets perdus fréquents, lieux courants, contacts utiles, Reddit... */}
+          {/* Autres sections à venir : objets perdus fréquents, lieux courants, contacts utiles, Reddit */}
         </div>
       </div>
     </main>
