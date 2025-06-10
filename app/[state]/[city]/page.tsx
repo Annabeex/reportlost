@@ -48,6 +48,19 @@ export default async function Page({ params }: Props) {
   const subredditName = citySlug;
   const redditPosts = await getRedditPosts(subredditName);
 
+  const googlePlacesSearch = [
+    'airport',
+    'train station',
+    'bus station',
+    'public library',
+    'shopping mall',
+    'university',
+    'hospital',
+    'city hall',
+    'zoo',
+    'museum'
+  ];
+
   return (
     <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -80,7 +93,34 @@ export default async function Page({ params }: Props) {
             <ReportForm defaultCity={displayName} />
           </section>
 
-          {/* Autres sections à venir : objets perdus fréquents, lieux courants, contacts utiles, Reddit */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Local Suggestions</h2>
+            <ul className="list-disc list-inside text-gray-700 space-y-1">
+              <li>Check with the nearest <a href={`https://www.google.com/maps/search/police+station+near+${displayName}`} target="_blank" className="text-blue-600 underline">police station</a></li>
+              <li>Visit local <a href={`https://www.google.com/maps/search/library+${displayName}`} target="_blank" className="text-blue-600 underline">libraries</a> and <a href={`https://www.google.com/maps/search/community+center+${displayName}`} target="_blank" className="text-blue-600 underline">community centers</a></li>
+              <li>Ask around at popular locations like parks, malls, or transit hubs</li>
+              <li>Review your steps using <a href="https://www.google.com/maps/timeline" target="_blank" className="text-blue-600 underline">Google Maps Timeline</a></li>
+              <li>File a report on local city portals like <a href={cityWebsite} target="_blank" className="text-blue-600 underline">{cityWebsite}</a></li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Frequent Places Where Items Are Lost</h2>
+            <ul className="list-disc list-inside text-gray-700 space-y-1">
+              {googlePlacesSearch.map(place => (
+                <li key={place}>
+                  <a
+                    href={`https://www.google.com/maps/search/${encodeURIComponent(place)}+near+${encodeURIComponent(displayName)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    {place.charAt(0).toUpperCase() + place.slice(1)} near {displayName}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </div>
     </main>
