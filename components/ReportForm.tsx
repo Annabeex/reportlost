@@ -1,4 +1,7 @@
 // ReportForm.tsx
+
+'use client';
+
 import { useState } from 'react';
 import ReportFormStep1 from './ReportFormStep1';
 import ReportFormStep2 from './ReportFormStep2';
@@ -86,7 +89,6 @@ export default function ReportForm({ defaultCity }: { defaultCity: string }) {
         <ReportContribution
           contribution={formData.contribution}
           onChange={handleChange}
-          onSubmit={() => alert('TODO: Stripe integration')}
           onBack={handleBack}
         />
       )}
