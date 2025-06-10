@@ -1,14 +1,11 @@
-'use client';
-
+// ReportForm.tsx
 import { useState } from 'react';
+import ReportFormStep1 from './ReportFormStep1';
+import ReportFormStep2 from './ReportFormStep2';
 import WhatHappensNext from './WhatHappensNext';
 import ReportContribution from './ReportContribution';
 
-interface Props {
-  defaultCity?: string;
-}
-
-export default function ReportForm({ defaultCity = '' }: Props) {
+export default function ReportForm({ defaultCity }: { defaultCity: string }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     city: defaultCity,
@@ -17,7 +14,30 @@ export default function ReportForm({ defaultCity = '' }: Props) {
     date: '',
     timeSlot: '',
     isCellphone: false,
-    contribution: 30,
+    phoneColor: '',
+    phoneMaterial: '',
+    phoneBrand: '',
+    phoneModel: '',
+    phoneSerial: '',
+    phoneProof: '',
+    phoneMark: '',
+    phoneOther: '',
+    lossCity: '',
+    lossNeighborhood: '',
+    lossStreet: '',
+    transport: false,
+    departurePlace: '',
+    arrivalPlace: '',
+    departureTime: '',
+    arrivalTime: '',
+    travelNumber: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    consent: false,
+    contribution: 30
   });
 
   const handleChange = (
@@ -35,60 +55,34 @@ export default function ReportForm({ defaultCity = '' }: Props) {
   const handleBack = () => setStep((s) => s - 1);
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className={step === 3 ? 'w-full min-h-screen p-8' : 'max-w-2xl mx-auto p-6'}>
       {step === 1 && (
-        <div>
-          <h2 className="text-xl font-bold">What did you lose in {defaultCity}?</h2>
-          <input
-            name="item"
-            placeholder="e.g. Phone lost in JFK taxi"
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          />
-          <textarea
-            name="description"
-            placeholder="Additional description"
-            onChange={handleChange}
-            className="w-full border p-2 rounded mt-2"
-          />
-          <input
-            name="date"
-            type="date"
-            onChange={handleChange}
-            className="w-full border p-2 rounded mt-2"
-          />
-          <label className="block text-sm mt-4">Estimated time slot (optional)</label>
-          <select
-            name="timeSlot"
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          >
-            <option value="">--</option>
-            <option value="12 AM–6 AM">12 AM–6 AM</option>
-            <option value="6 AM–10 AM">6 AM–10 AM</option>
-            <option value="10 AM–2 PM">10 AM–2 PM</option>
-            <option value="2 PM–6 PM">2 PM–6 PM</option>
-            <option value="6 PM–10 PM">6 PM–10 PM</option>
-            <option value="10 PM–12 AM">10 PM–12 AM</option>
-          </select>
-          <label className="flex items-center gap-2 mt-4">
-            <input type="checkbox" name="isCellphone" onChange={handleChange} />
-            If you lost your cellphone, click yes
-          </label>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded mt-4"
-            onClick={handleNext}
-          >
-            Next
-          </button>
-        </div>
+        <ReportFormStep1
+          formData={formData}
+          onChange={handleChange}
+          onNext={handleNext}
+        />
       )}
 
       {step === 2 && (
-        <WhatHappensNext onNext={handleNext} onBack={handleBack} />
+        <ReportFormStep2
+          formData={formData}
+          onChange={handleChange}
+          onNext={handleNext}
+          onBack={handleBack}
+        />
       )}
 
       {step === 3 && (
+        <WhatHappensNext
+          formData={formData}
+          onNext={handleNext}
+          onBack={handleBack}
+          fullScreen
+        />
+      )}
+
+      {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
           onChange={handleChange}
