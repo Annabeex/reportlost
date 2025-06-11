@@ -27,8 +27,6 @@ export default function ReportPage() {
       </p>
       <ReportContribution
         contribution={contribution}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
         onBack={handleBack}
       />
     </main>
