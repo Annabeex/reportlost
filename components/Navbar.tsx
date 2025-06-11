@@ -7,7 +7,13 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
       <Link href="/">
         <div className="flex items-center space-x-2">
-          <Image src="/logo.svg" alt="ReportLost Logo" width={36} height={36} />
+          <Image
+  src="/images/logo-reportlost.png"
+  alt="ReportLost Logo"
+  width={160}
+  height={40}
+  priority
+/>
           <span className="text-xl font-bold text-gray-900">ReportLost</span>
         </div>
       </Link>
