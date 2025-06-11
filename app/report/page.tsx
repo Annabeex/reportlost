@@ -25,10 +25,11 @@ export default function ReportPage() {
       <p className="mb-6">
         You choose how much to support our work. Your contribution helps us process your report and share it effectively.
       </p>
-      <ReportContribution
-        contribution={contribution}
-        onBack={handleBack}
-      />
+     <ReportContribution
+  contribution={contribution}
+  onChange={handleChange} 
+  onBack={handleBack}
+/>
     </main>
   );
 }
