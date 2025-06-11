@@ -19,8 +19,8 @@ function Navbar() {
   return (
     <nav className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
       <Link href="/">
-        <div className="flex items-center space-x-3">
-          <Image src="/reportlost-logo.png" alt="ReportLost.org Logo" width={200} height={40} priority />
+        <div className="flex items-center space-x-2">
+          <Image src="/images/logo-reportlost.png" alt="ReportLost Logo" width={160} height={40} priority />
         </div>
       </Link>
       <div className="space-x-4 text-sm text-gray-700">
@@ -69,7 +69,7 @@ function Footer() {
           </ul>
         </div>
       </div>
-      <div className="text-center text-xs mt-6">© {new Date().getFullYear()} ReportLost.org. All rights reserved.</div>
+      <div className="text-center text-xs mt-6">© {new Date().getFullYear()} ReportLost. All rights reserved.</div>
     </footer>
   );
 }
