@@ -1,7 +1,10 @@
+'use client';
+
 import { createClient } from '@supabase/supabase-js';
 import ReportForm from '../../../components/ReportForm';
 import '../../../app/globals.css';
 import { getRedditPosts } from '@/lib/getRedditPosts';
+import Image from 'next/image';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,9 +47,7 @@ export default async function Page({ params }: Props) {
   const citySlug = params.city.toLowerCase().replace(/\s+/g, '');
   const stateSlug = params.state.toLowerCase().replace(/\s+/g, '');
   const cityWebsite = `https://www.${citySlug}.gov`;
-  const transitWebsite = `https://www.transit.${stateSlug}.gov`;
-  const subredditName = citySlug;
-  const redditPosts = await getRedditPosts(subredditName);
+  const redditPosts = await getRedditPosts(citySlug);
 
   const googlePlacesSearch = [
     'airport',
@@ -62,51 +63,43 @@ export default async function Page({ params }: Props) {
   ];
 
   return (
-    <main className="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="bg-blue-900 text-white py-6 px-4 rounded-t-xl shadow">
-          <h1 className="text-3xl font-bold text-center">
-            Lost and Found in {displayName}, {stateName}
-          </h1>
-        </header>
+    <main className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow px-6 py-8 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">Lost & Found in {displayName}, {stateName}</h1>
+        <p className="text-gray-600 mt-2">Helping residents and visitors recover lost items.</p>
+      </header>
 
-        <div className="bg-white p-6 rounded-b-xl shadow space-y-8">
-          <p className="text-gray-700 whitespace-pre-line">
-            {county ? `${displayName} is located in ${county} County` : `${displayName}`} {zip ? `(ZIP code: ${zip})` : ''}. It has a population of approximately {pop ?? 'many'} residents
-            and a density of {density ?? 'unknown'} people per square kilometer.
-            Operating in the {timezone ?? 'local'} timezone, it's no surprise that lost items are a common concern in such a busy area.
-          </p>
-
-          <p className="text-gray-700 whitespace-pre-line">
-            If you've lost something in {displayName}, you're not alone. From parks to public transport, our platform helps recover lost items
-            with the help of local communities. Try checking local groups like {' '}
-            <a className="text-blue-600 underline" href={`https://www.facebook.com/search/top?q=lost%20and%20found%20${displayName}`} target="_blank">
-              Facebook Lost & Found - {displayName}
-            </a>{' '} or see discussions on Reddit for {displayName}.
-          </p>
-
-          <section>
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Report your lost item</h2>
-            <p className="text-gray-700 mb-4">
-              Please fill out the form below to report a lost object. Include as much detail as possible — location, description, and date — to maximize the chances of recovery.
+      <section className="px-4 py-10 max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
+        <div>
+          <Image src="/images/usa-map-gray.svg" alt="Map" width={600} height={400} className="rounded-lg shadow" />
+          <div className="mt-6 bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">City Information</h2>
+            <p className="text-gray-700 whitespace-pre-line">
+              {displayName} is located in {county || 'its county'}, ZIP code {zip || 'N/A'}. It has approximately {pop || 'many'} residents and a density of {density || 'unknown'} people/km². The city operates in the {timezone || 'local'} timezone.
             </p>
+          </div>
+        </div>
+
+        <div>
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Report a Lost Item</h2>
+            <p className="text-gray-700 mb-4">Fill out the form below to report a lost object in {displayName}. Include as many details as possible.</p>
             <ReportForm defaultCity={displayName} />
-          </section>
+          </div>
 
-          <section>
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Local Suggestions</h2>
-            <ul className="list-disc list-inside text-gray-700 space-y-1">
-              <li>Check with the nearest <a href={`https://www.google.com/maps/search/police+station+near+${displayName}`} target="_blank" className="text-blue-600 underline">police station</a></li>
-              <li>Visit local <a href={`https://www.google.com/maps/search/library+${displayName}`} target="_blank" className="text-blue-600 underline">libraries</a> and <a href={`https://www.google.com/maps/search/community+center+${displayName}`} target="_blank" className="text-blue-600 underline">community centers</a></li>
-              <li>Ask around at popular locations like parks, malls, or transit hubs</li>
-              <li>Review your steps using <a href="https://www.google.com/maps/timeline" target="_blank" className="text-blue-600 underline">Google Maps Timeline</a></li>
-              <li>File a report on local city portals like <a href={cityWebsite} target="_blank" className="text-blue-600 underline">{cityWebsite}</a></li>
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Where to Check Locally</h2>
+            <ul className="list-disc list-inside text-gray-700 space-y-2">
+              <li>Nearest <a href={`https://www.google.com/maps/search/police+station+near+${displayName}`} target="_blank" className="text-blue-600 underline">police station</a></li>
+              <li><a href={`https://www.facebook.com/search/top?q=lost%20and%20found%20${displayName}`} target="_blank" className="text-blue-600 underline">Facebook Lost & Found - {displayName}</a></li>
+              <li><a href={cityWebsite} target="_blank" className="text-blue-600 underline">Local city portal</a></li>
+              <li>Use <a href="https://www.google.com/maps/timeline" target="_blank" className="text-blue-600 underline">Google Maps Timeline</a> to retrace your steps</li>
             </ul>
-          </section>
+          </div>
 
-          <section>
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Frequent Places Where Items Are Lost</h2>
-            <ul className="list-disc list-inside text-gray-700 space-y-1">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-blue-800 mb-2">Frequent Lost Item Locations</h2>
+            <ul className="list-disc list-inside text-gray-700 space-y-2">
               {googlePlacesSearch.map(place => (
                 <li key={place}>
                   <a
@@ -120,9 +113,9 @@ export default async function Page({ params }: Props) {
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
