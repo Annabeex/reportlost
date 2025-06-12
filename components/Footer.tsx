@@ -37,7 +37,9 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="text-center text-xs mt-6">© {new Date().getFullYear()} ReportLost. All rights reserved.</div>
+      <div className="flex items-center justify-center h-16 text-xs text-gray-500">
+  © {new Date().getFullYear()} ReportLost. All rights reserved.
+</div>
     </footer>
   );
 }
