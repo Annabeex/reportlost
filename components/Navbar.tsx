@@ -1,5 +1,4 @@
 'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -11,8 +10,8 @@ export default function Navbar() {
           <Image
             src="/images/logo-reportlost.png"
             alt="ReportLost Logo"
-            width={160}
-            height={40}
+            width={180} // ← augmenté ici
+            height={48}
             priority
           />
         </div>

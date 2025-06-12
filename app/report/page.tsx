@@ -1,35 +1,73 @@
 'use client';
 
 import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+import ReportFormStep2 from '../../components/ReportFormStep2';
 import ReportContribution from '../../components/ReportContribution';
+import CheckoutForm from '../../components/CheckoutForm';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function ReportPage() {
-  const [contribution, setContribution] = useState(30);
+  const [step, setStep] = useState(1);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(e.target.value);
-    setContribution(value);
+  const [formData, setFormData] = useState({
+    lossCity: '',
+    lossNeighborhood: '',
+    lossStreet: '',
+    transport: false,
+    departurePlace: '',
+    arrivalPlace: '',
+    departureTime: '',
+    arrivalTime: '',
+    travelNumber: '',
+    contribution: 30,
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: finalValue,
+    }));
   };
 
-  const handleSubmit = () => {
-    alert(`Proceeding with contribution of $${contribution}`);
-  };
-
-  const handleBack = () => {
-    alert('Going back to previous step');
-  };
+  const handleNext = () => setStep((s) => s + 1);
+  const handleBack = () => setStep((s) => s - 1);
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">Support Our Work</h1>
-      <p className="mb-6">
-        You choose how much to support our work. Your contribution helps us process your report and share it effectively.
-      </p>
-     <ReportContribution
-  contribution={contribution}
-  onChange={handleChange} 
-  onBack={handleBack}
-/>
+    <main className="w-full min-h-screen px-6 py-12">
+      {step === 1 && (
+        <ReportFormStep2
+          formData={formData}
+          onChange={handleChange}
+          onNext={handleNext}
+          onBack={handleBack}
+        />
+      )}
+
+      {step === 2 && (
+        <ReportContribution
+          contribution={formData.contribution}
+          onChange={handleChange}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
+      )}
+
+      {step === 3 && (
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
+          <Elements stripe={stripePromise}>
+            <CheckoutForm amount={formData.contribution} />
+          </Elements>
+        </div>
+      )}
     </main>
   );
 }

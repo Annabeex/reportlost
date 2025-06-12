@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import {
+  CardElement,
+  useStripe,
+  useElements,
+  CardElementComponent,
+} from '@stripe/react-stripe-js';
 
 interface Props {
   amount: number;
@@ -13,7 +18,7 @@ export default function CheckoutForm({ amount }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
@@ -31,15 +36,24 @@ export default function CheckoutForm({ amount }: Props) {
     });
 
     const { clientSecret, error } = await res.json();
-    if (error) {
-      setMessage(error);
+
+    if (error || !clientSecret) {
+      setMessage(error || 'Failed to get client secret.');
+      setLoading(false);
+      return;
+    }
+
+    const cardElement = elements.getElement(CardElement);
+
+    if (!cardElement) {
+      setMessage('Card element not found.');
       setLoading(false);
       return;
     }
 
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
-        card: elements.getElement(CardElement)!,
+        card: cardElement,
       },
     });
 
@@ -68,7 +82,9 @@ export default function CheckoutForm({ amount }: Props) {
       </button>
 
       {message && (
-        <p className="text-sm text-center mt-4 text-gray-800 bg-gray-100 p-2 rounded">{message}</p>
+        <p className="text-sm text-center mt-4 text-gray-800 bg-gray-100 p-2 rounded">
+          {message}
+        </p>
       )}
     </form>
   );
