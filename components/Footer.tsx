@@ -10,24 +10,22 @@ export default function Footer() {
           <h4 className="font-semibold mb-2">Company</h4>
           <ul className="space-y-1">
             <li><Link href="/about">About us</Link></li>
-            <li><Link href="/team">Our team</Link></li>
-            <li><Link href="/careers">Careers</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Support</h4>
           <ul className="space-y-1">
             <li><Link href="/help">Help center</Link></li>
-            <li><Link href="/faq">FAQ</Link></li>
             <li><Link href="/contact">Contact us</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Legal</h4>
           <ul className="space-y-1">
-            <li><Link href="/terms">Terms of use</Link></li>
-            <li><Link href="/privacy">Privacy policy</Link></li>
-            <li><Link href="/cookies">Cookie policy</Link></li>
+            <li><Link href="/legal">Legal Notice</Link></li>
+            <li><Link href="/terms">Terms of Use</Link></li>
+            <li><Link href="/privacy">Privacy Policy</Link></li>
+            <li><Link href="/cookies">Cookie Policy</Link></li>
           </ul>
         </div>
         <div>

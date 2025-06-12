@@ -4,17 +4,15 @@ import Link from 'next/link';
 
 export default function Navbar() {
   return (
-    <nav className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
-      <Link href="/">
-        <div className="flex items-center">
-          <Image
-            src="/images/logo-reportlost.png"
-            alt="ReportLost Logo"
-            width={180} // ← augmenté ici
-            height={48}
-            priority
-          />
-        </div>
+    <nav className="bg-white border-b border-gray-200 px-4 py-1 flex items-center justify-between shadow-sm h-16">
+      <Link href="/" className="flex items-center">
+        <Image
+          src="/images/logo-reportlost.png"
+          alt="ReportLost Logo"
+          width={180}
+          height={48}
+          priority
+        />
       </Link>
       <div className="space-x-4 text-sm text-gray-700">
         <Link href="/report">Report</Link>

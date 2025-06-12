@@ -7,9 +7,10 @@ import { Briefcase, ShieldCheck, Globe2 } from 'lucide-react';
 export default function HomePage() {
   return (
     <>
-      <section className="bg-white w-full px-8 pt-8 pb-4 mx-auto">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-10">
-          <div className="w-full md:w-1/2 order-1">
+      {/* Section avec carte à gauche et contenu centré à droite */}
+      <section className="bg-white w-full px-8 pt-8 pb-0">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-10 items-center md:items-stretch">
+          <div className="w-full md:w-1/2 flex items-center justify-center">
             <Image
               src="/images/usa-map-gray.svg"
               alt="United States Map"
@@ -19,27 +20,34 @@ export default function HomePage() {
               priority
             />
           </div>
-          <div className="w-full md:w-1/2 text-center md:text-left order-2">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
-              Lost and Found Services in the United States
-            </h1>
-            <p className="text-gray-700 mb-6 text-sm md:text-base">
-              Report and recover lost items from various cities and states across the United States of America.
-            </p>
-            <Link
-              href="/reportform"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold"
-            >
-              Report a Lost item
-            </Link>
+          <div className="w-full md:w-1/2 flex items-center justify-center">
+            <div className="text-center md:text-left">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
+                Lost and Found Services in the United States
+              </h1>
+              <p className="text-gray-700 mb-6 text-sm md:text-base">
+                Report and recover lost items from various cities and states across the United States of America.
+              </p>
+              <Link
+                href="/reportform"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold"
+              >
+                Report a Lost item
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-gray-50 w-full min-h-screen px-8 py-12 mx-auto">
+      {/* Section de contenu SEO + illustration */}
+      <section className="bg-gray-50 w-full px-8 py-12">
         <div className="max-w-4xl mx-auto prose prose-sm md:prose-base">
-          <h1 className="text-gray-900">Welcome to ReportLost.org – The Lost & Found Service for the United States</h1>
-          <p><strong>ReportLost.org</strong> is your dedicated online platform for reporting, finding, and recovering lost items anywhere in the United States.</p>
+          <h1 className="text-gray-900">
+            Welcome to ReportLost.org – The Lost & Found Service for the United States
+          </h1>
+          <p>
+            <strong>ReportLost.org</strong> is your dedicated online platform for reporting, finding, and recovering lost items anywhere in the United States.
+          </p>
 
           <Image src="/images/lost-and-found-illustration.png" alt="Illustration of lost items" width={800} height={400} />
 
@@ -70,18 +78,26 @@ export default function HomePage() {
           </ul>
 
           <h2>Where It Works</h2>
-          <p>Our service is currently available across the entire United States, including major hubs like New York, Los Angeles, Chicago, Houston, and smaller cities and towns.</p>
+          <p>
+            Our service is currently available across the entire United States, including major hubs like New York, Los Angeles, Chicago, Houston, and smaller cities and towns.
+          </p>
 
           <h2>Security and Transparency</h2>
-          <p>All personal data is encrypted and treated with the highest level of confidentiality. You remain in control of what is shared and where. Our team is trained to protect your privacy and only communicate with verified channels.</p>
+          <p>
+            All personal data is encrypted and treated with the highest level of confidentiality. You remain in control of what is shared and where. Our team is trained to protect your privacy and only communicate with verified channels.
+          </p>
           <Image src="/images/security-icon.png" alt="Security and data protection" width={600} height={300} />
 
           <h2>How to Start</h2>
-          <p>Click on “Report” in the navigation bar above, fill in the form, and leave the rest to us. It takes less than 5 minutes to submit a declaration.</p>
+          <p>
+            Click on “Report” in the navigation bar above, fill in the form, and leave the rest to us. It takes less than 5 minutes to submit a declaration.
+          </p>
           <p><strong>Need help?</strong> Visit our <Link href="/help">Help Center</Link> or <Link href="/contact">Contact Us</Link>.</p>
 
           <h2>Join a Community That Cares</h2>
-          <p>More than just a lost and found, ReportLost.org is a network of real people, real support, and real results.</p>
+          <p>
+            More than just a lost and found, ReportLost.org is a network of real people, real support, and real results.
+          </p>
         </div>
       </section>
     </>
