@@ -1,0 +1,11 @@
+.state {
+  fill: #ccc;
+  stroke: #fff;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 0.2s ease;
+}
+
+.state:hover {
+  fill: #3b82f6; /* bleu survol */
+}

@@ -6,17 +6,79 @@ interface Props {
   formData: any;
   onChange: (e: React.ChangeEvent<any>) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
+export default function ReportFormStep1({ formData, onChange, onNext, onBack }: Props) {
   const [showPhoneDetails, setShowPhoneDetails] = useState(formData.isCellphone);
-  const [showTransportFields, setShowTransportFields] = useState(formData.transport === true);
+  const [showLocationStep, setShowLocationStep] = useState(false);
+  const [showTransportFields, setShowTransportFields] = useState(formData.transport);
 
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e);
     setShowPhoneDetails(e.target.name === 'isCellphone' && e.target.checked);
-    setShowTransportFields(e.target.name === 'transport' && e.target.checked);
+    if (e.target.name === 'transport') {
+      setShowTransportFields(e.target.checked);
+    }
   };
+
+  if (showLocationStep) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold">Step 2: Where did the loss probably happen?</h2>
+
+        <div>
+          <label className="block font-medium">City</label>
+          <input name="lossCity" onChange={onChange} value={formData.lossCity || ''} className="w-full border p-2 rounded" />
+        </div>
+
+        <div>
+          <label className="block font-medium">Neighborhood (optional)</label>
+          <input name="lossNeighborhood" onChange={onChange} value={formData.lossNeighborhood || ''} className="w-full border p-2 rounded" />
+        </div>
+
+        <div>
+          <label className="block font-medium">Street (optional)</label>
+          <input name="lossStreet" onChange={onChange} value={formData.lossStreet || ''} className="w-full border p-2 rounded" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input type="checkbox" name="transport" onChange={handleCheckbox} checked={formData.transport} />
+          <label>Was it during a transport (train, plane, bus, taxi)?</label>
+        </div>
+
+        {showTransportFields && (
+          <div className="grid grid-cols-1 gap-4 border p-4 rounded bg-gray-50">
+            <div>
+              <label className="block font-medium">Place of departure</label>
+              <input name="departurePlace" onChange={onChange} value={formData.departurePlace || ''} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block font-medium">Place of arrival</label>
+              <input name="arrivalPlace" onChange={onChange} value={formData.arrivalPlace || ''} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block font-medium">Departure time</label>
+              <input name="departureTime" type="time" onChange={onChange} value={formData.departureTime || ''} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block font-medium">Arrival time</label>
+              <input name="arrivalTime" type="time" onChange={onChange} value={formData.arrivalTime || ''} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block font-medium">Flight or Train number</label>
+              <input name="travelNumber" onChange={onChange} value={formData.travelNumber || ''} className="w-full border p-2 rounded" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-between pt-6">
+          <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300" onClick={() => setShowLocationStep(false)}>Back</button>
+          <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700" onClick={onNext}>Next</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,58 +182,14 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
         </div>
       )}
 
-      <hr className="my-6" />
-
-      <h2 className="text-xl font-bold">Step 2: Where did the loss probably happen?</h2>
-
-      <div>
-        <label className="block font-medium">City</label>
-        <input name="lossCity" onChange={onChange} value={formData.lossCity || ''} className="w-full border p-2 rounded" />
+      <div className="flex justify-end pt-6">
+        <button
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+          onClick={() => setShowLocationStep(true)}
+        >
+          Continue
+        </button>
       </div>
-
-      <div>
-        <label className="block font-medium">Neighborhood (optional)</label>
-        <input name="lossNeighborhood" onChange={onChange} value={formData.lossNeighborhood || ''} className="w-full border p-2 rounded" />
-      </div>
-
-      <div>
-        <label className="block font-medium">Street (optional)</label>
-        <input name="lossStreet" onChange={onChange} value={formData.lossStreet || ''} className="w-full border p-2 rounded" />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input type="checkbox" name="transport" onChange={handleCheckbox} checked={formData.transport} />
-        <label>Was it during a transport (train, plane, bus, taxi)?</label>
-      </div>
-
-      {showTransportFields && (
-        <div className="grid grid-cols-1 gap-4 border p-4 rounded bg-gray-50">
-          <div>
-            <label className="block font-medium">Place of departure</label>
-            <input name="departurePlace" onChange={onChange} value={formData.departurePlace || ''} className="w-full border p-2 rounded" />
-          </div>
-          <div>
-            <label className="block font-medium">Place of arrival</label>
-            <input name="arrivalPlace" onChange={onChange} value={formData.arrivalPlace || ''} className="w-full border p-2 rounded" />
-          </div>
-          <div>
-            <label className="block font-medium">Departure time</label>
-            <input name="departureTime" type="time" onChange={onChange} value={formData.departureTime || ''} className="w-full border p-2 rounded" />
-          </div>
-          <div>
-            <label className="block font-medium">Arrival time</label>
-            <input name="arrivalTime" type="time" onChange={onChange} value={formData.arrivalTime || ''} className="w-full border p-2 rounded" />
-          </div>
-          <div>
-            <label className="block font-medium">Flight or Train number</label>
-            <input name="travelNumber" onChange={onChange} value={formData.travelNumber || ''} className="w-full border p-2 rounded" />
-          </div>
-        </div>
-      )}
-
-      <button className="bg-blue-600 text-white px-4 py-2 rounded mt-6" onClick={onNext}>
-        Next
-      </button>
     </div>
   );
 }
