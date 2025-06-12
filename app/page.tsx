@@ -1,15 +1,11 @@
 'use client';
 
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
   return (
     <>
-      <Navbar />
-
       <section className="bg-white w-full px-8 pt-12 pb-8 mx-auto">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-10">
           <div className="w-full md:w-1/2">
@@ -79,8 +75,6 @@ export default function HomePage() {
           <p>More than just a lost and found, ReportLost.org is a network of real people, real support, and real results. We believe that every item lost deserves a chance to be found. Together, let’s reduce loss and increase peace of mind, one report at a time.</p>
         </div>
       </section>
-
-      <Footer />
     </>
   );
 }
