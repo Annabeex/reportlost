@@ -3,8 +3,9 @@
 import { createClient } from '@supabase/supabase-js';
 import ReportForm from '../../../components/ReportForm';
 import '../../../app/globals.css';
-import { getRedditPosts } from '@/lib/getRedditPosts';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Search, MapPin, ShieldCheck, Clock, Send, Info, FileText } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,7 +30,7 @@ export default async function Page({ params }: Props) {
   const cityName = toTitleCase(rawCity);
   const stateName = toTitleCase(rawState);
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('us_cities')
     .select('*')
     .eq('city', cityName)
@@ -44,78 +45,71 @@ export default async function Page({ params }: Props) {
   const density = cityData?.density;
   const timezone = cityData?.timezone;
   const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
-  const citySlug = params.city.toLowerCase().replace(/\s+/g, '');
-  const stateSlug = params.state.toLowerCase().replace(/\s+/g, '');
-  const cityWebsite = `https://www.${citySlug}.gov`;
-  const redditPosts = await getRedditPosts(citySlug);
-
-  const googlePlacesSearch = [
-    'airport',
-    'train station',
-    'bus station',
-    'public library',
-    'shopping mall',
-    'university',
-    'hospital',
-    'city hall',
-    'zoo',
-    'museum'
-  ];
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow px-6 py-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Lost & Found in {displayName}, {stateName}</h1>
-        <p className="text-gray-600 mt-2">Helping residents and visitors recover lost items.</p>
-      </header>
+    <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto space-y-12">
+        <section className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Lost & Found in {displayName}, {stateName}</h1>
+          <p className="text-gray-600 mt-2 max-w-xl mx-auto">
+            {displayName} is located in {county || 'its county'}. ZIP code: {zip || 'N/A'}. It has approximately {pop || 'many'} residents and a density of {density || 'unknown'} people/km². The city operates in the {timezone || 'local'} timezone.
+          </p>
+        </section>
 
-      <section className="px-4 py-10 max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
-        <div>
-          <Image src="/images/usa-map-gray.svg" alt="Map" width={600} height={400} className="rounded-lg shadow" />
-          <div className="mt-6 bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">City Information</h2>
-            <p className="text-gray-700 whitespace-pre-line">
-              {displayName} is located in {county || 'its county'}, ZIP code {zip || 'N/A'}. It has approximately {pop || 'many'} residents and a density of {density || 'unknown'} people/km². The city operates in the {timezone || 'local'} timezone.
-            </p>
-          </div>
-        </div>
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
+          <p className="text-gray-700 mb-6">Fill out the form below with as many details as possible to increase your chances of recovering the lost item.</p>
+          <ReportForm defaultCity={displayName} />
+        </section>
 
-        <div>
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Report a Lost Item</h2>
-            <p className="text-gray-700 mb-4">Fill out the form below to report a lost object in {displayName}. Include as many details as possible.</p>
-            <ReportForm defaultCity={displayName} />
-          </div>
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><Search size={20} />Common Places to Lose Items</h2>
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
+            <li>Public transportation stations</li>
+            <li>Parks and recreational areas</li>
+            <li>Shopping centers and malls</li>
+            <li>Universities, libraries, and museums</li>
+            <li>Airports and large venues</li>
+          </ul>
+        </section>
 
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Where to Check Locally</h2>
-            <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li>Nearest <a href={`https://www.google.com/maps/search/police+station+near+${displayName}`} target="_blank" className="text-blue-600 underline">police station</a></li>
-              <li><a href={`https://www.facebook.com/search/top?q=lost%20and%20found%20${displayName}`} target="_blank" className="text-blue-600 underline">Facebook Lost & Found - {displayName}</a></li>
-              <li><a href={cityWebsite} target="_blank" className="text-blue-600 underline">Local city portal</a></li>
-              <li>Use <a href="https://www.google.com/maps/timeline" target="_blank" className="text-blue-600 underline">Google Maps Timeline</a> to retrace your steps</li>
-            </ul>
-          </div>
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><MapPin size={20} />Where to Look First</h2>
+          <ul className="text-gray-700 space-y-2">
+            <li>Check nearby police stations, community centers, or local lost & found offices.</li>
+            <li>Use <a href="https://www.google.com/maps/timeline" className="text-blue-600 underline" target="_blank">Google Maps Timeline</a> to retrace your steps.</li>
+            <li>Search Facebook groups like <a href={`https://www.facebook.com/search/top?q=lost%20and%20found%20${displayName}`} className="text-blue-600 underline" target="_blank">Lost & Found {displayName}</a>.</li>
+          </ul>
+        </section>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-blue-800 mb-2">Frequent Lost Item Locations</h2>
-            <ul className="list-disc list-inside text-gray-700 space-y-2">
-              {googlePlacesSearch.map(place => (
-                <li key={place}>
-                  <a
-                    href={`https://www.google.com/maps/search/${encodeURIComponent(place)}+near+${encodeURIComponent(displayName)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    {place.charAt(0).toUpperCase() + place.slice(1)} near {displayName}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><ShieldCheck size={20} />How We Help</h2>
+          <p className="text-gray-700">We consolidate your information and contact the right people for you, including transport companies, local authorities, and community networks. Our team follows up to ensure your report gets noticed.</p>
+        </section>
+
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><Clock size={20} />Why Act Quickly?</h2>
+          <p className="text-gray-700">Many lost items are only kept for a few days in official services before being donated or discarded. Time is of the essence – don’t wait to file your report!</p>
+        </section>
+
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><Send size={20} />Broadcast Your Report</h2>
+          <p className="text-gray-700">We publish your report anonymously (unless otherwise requested) and share it across social networks and local groups to increase its visibility and reach.</p>
+        </section>
+
+        <section className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4 flex items-center gap-2"><Info size={20} />Need Help?</h2>
+          <p className="text-gray-700">Visit our <Link href="/help" className="text-blue-600 underline">Help Center</Link> or <Link href="/contact" className="text-blue-600 underline">Contact Us</Link> if you need assistance or have questions about the process.</p>
+        </section>
+
+        <section className="text-center">
+          <Link href="/reportform">
+            <button className="mt-6 bg-blue-700 text-white px-6 py-3 rounded-lg hover:bg-blue-800 font-semibold">
+              Report a Lost Item Now
+            </button>
+          </Link>
+        </section>
+      </div>
     </main>
   );
 }
