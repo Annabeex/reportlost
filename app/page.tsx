@@ -9,7 +9,17 @@ export default function HomePage() {
     <>
       <section className="bg-white w-full px-8 pt-8 pb-4 mx-auto">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start gap-10">
-          <div className="w-full md:w-1/2 text-center md:text-left order-2 md:order-1">
+          <div className="w-full md:w-1/2 order-1">
+            <Image
+              src="/images/usa-map-gray.svg"
+              alt="United States Map"
+              width={680}
+              height={400}
+              className="mx-auto"
+              priority
+            />
+          </div>
+          <div className="w-full md:w-1/2 text-center md:text-left order-2">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
               Lost and Found Services in the United States
             </h1>
@@ -22,16 +32,6 @@ export default function HomePage() {
             >
               Report a Lost item
             </Link>
-          </div>
-          <div className="w-full md:w-1/2 order-1 md:order-2">
-            <Image
-              src="/images/usa-map-gray.svg"
-              alt="United States Map"
-              width={680}
-              height={400}
-              className="mx-auto"
-              priority
-            />
           </div>
         </div>
       </section>
