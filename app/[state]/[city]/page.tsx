@@ -49,7 +49,7 @@ function generateCityText(cityData: any): string {
     if (section.names.length) {
       const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
       text += `Parmi les ${synonym} à ne pas manquer :\n\n`;
-      section.names.slice(0, 5).forEach(name => {
+      section.names.slice(0, 5).forEach((name: string) => {
         text += `- ${name}\n`;
       });
       text += `\n`;
