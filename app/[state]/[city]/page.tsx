@@ -24,6 +24,45 @@ function toTitleCase(str: string) {
     .join(' ');
 }
 
+function generateCityText(cityData: any): string {
+  const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
+  const zip = zips?.match(/\b\d{5}\b/)?.[0];
+  const pop = population ? population.toLocaleString() : 'many';
+  const dens = density ? `${density} people/km²` : 'unknown density';
+
+  const getNames = (match: string[]) =>
+    hotspots?.filter((h: any) => match.some(keyword => h.name.toLowerCase().includes(keyword)))?.map((h: any) => h.name) || [];
+
+  const sections = [
+    { title: 'espaces verts', synonyms: ['espaces verts', 'parcs publics', 'jardins'], names: getNames(['park']) },
+    { title: 'lieux touristiques', synonyms: ['attractions', 'sites emblématiques', 'lieux touristiques'], names: getNames(['tour', 'attraction', 'landmark']) },
+    { title: 'marchés et centres commerciaux', synonyms: ['centres commerciaux', 'marchés ouverts', 'galeries commerçantes'], names: getNames(['mall', 'market']) },
+    { title: 'gares et stations', synonyms: ['gares principales', 'stations de transport', 'arrêts majeurs'], names: getNames(['station']) },
+    { title: 'monuments', synonyms: ['lieux historiques', 'monuments', 'places patrimoniales'], names: getNames(['memorial', 'historic', 'theatre']) },
+    { title: 'zones naturelles', synonyms: ['réserves naturelles', 'zones protégées', 'espaces naturels'], names: getNames(['nature', 'reserve']) },
+    { title: 'aéroports civils', synonyms: ['aéroport régional', 'terminal aérien', 'plateforme aéroportuaire'], names: getNames(['airport']) }
+  ];
+
+  let text = `### Où sont fréquemment retrouvés les objets perdus à ${city} ?\n\nVous avez égaré un objet à ${city} ? Cette ville de ${state_name} offre plusieurs lieux emblématiques où les objets sont souvent retrouvés.\n\n`;
+
+  sections.forEach(section => {
+    if (section.names.length) {
+      const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
+      text += `Parmi les ${synonym} à ne pas manquer :\n\n`;
+      section.names.slice(0, 5).forEach(name => {
+        text += `- ${name}\n`;
+      });
+      text += `\n`;
+    }
+  });
+
+  text += `---\n\n### Informations utiles sur ${city}\n${city} est située dans le comté de ${county_name || 'son comté'}. Elle compte environ ${pop} habitants et affiche une densité de ${dens}. Fuseau horaire : ${timezone || 'local'} — Code postal principal : ${zip || 'inconnu'}.\n\n`;
+
+  text += `---\n\n### Objets fréquemment égarés\n- Smartphones et appareils électroniques\n- Portefeuilles et cartes bancaires\n- Clés (maison, voiture, bureau)\n- Lunettes (solaires et de vue)\n- Vêtements et accessoires\n`;
+
+  return text;
+}
+
 export default async function Page({ params }: Props) {
   const rawCity = decodeURIComponent(params.city).replace(/-/g, ' ');
   const rawState = decodeURIComponent(params.state).replace(/-/g, ' ');
@@ -40,20 +79,16 @@ export default async function Page({ params }: Props) {
 
   const cityData = data?.[0];
   const displayName = cityData?.city || cityName;
-  const county = cityData?.county_name;
-  const pop = cityData?.population ? cityData.population.toLocaleString() : undefined;
-  const density = cityData?.density;
-  const timezone = cityData?.timezone;
-  const zip = cityData?.zips?.match(/\b\d{5}\b/)?.[0];
+  const articleText = cityData ? generateCityText(cityData) : '';
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-12">
-         <section className="text-center">
+        <section className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">Lost & Found in {displayName}, {stateName}</h1>
-          <p className="text-gray-600 mt-2 max-w-xl mx-auto">
-            {displayName} is located in {county || 'its county'}. ZIP code: {zip || 'N/A'}. It has approximately {pop || 'many'} residents and a density of {density || 'unknown'} people/km². The city operates in the {timezone || 'local'} timezone.
-          </p>
+          <div className="text-gray-600 mt-2 max-w-3xl mx-auto whitespace-pre-line text-left prose prose-sm sm:prose-base">
+            {articleText}
+          </div>
         </section>
 
         <section className="bg-white p-6 rounded-lg shadow">
@@ -61,7 +96,7 @@ export default async function Page({ params }: Props) {
           <p className="text-gray-700 mb-6">Fill out the form below with as many details as possible to increase your chances of recovering the lost item.</p>
           <ReportForm defaultCity={displayName} />
         </section>
-        
+
         <section className="flex flex-col md:flex-row items-center gap-10">
           <div className="w-full md:w-1/2">
             <Image
@@ -76,57 +111,25 @@ export default async function Page({ params }: Props) {
             <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-snug">
               Que faire si vous avez perdu un objet à <span className="text-blue-700">{displayName}</span> ?
             </h2>
-
             <div className="space-y-6">
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Identifiez le lieu exact</h3>
                 <p className="text-gray-600">
-                  Déterminez précisément où vous avez perdu votre objet : rue, transport en commun,
-                  commerce, restaurant ou parc. Cette information est cruciale pour cibler vos recherches.
+                  Déterminez précisément où vous avez perdu votre objet : rue, transport en commun, commerce, restaurant ou parc. Cette information est cruciale pour cibler vos recherches.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Agissez rapidement</h3>
                 <p className="text-gray-600">
-                  Les premières 24 heures sont déterminantes. Contactez immédiatement les établissements
-                  visités et les services concernés pour signaler votre perte.
+                  Les premières 24 heures sont déterminantes. Contactez immédiatement les établissements visités et les services concernés pour signaler votre perte.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Documentez la perte</h3>
                 <p className="text-gray-600">
-                  Rassemblez toutes les informations pertinentes : description détaillée, photos, numéro
-                  de série et circonstances de la disparition.
+                  Rassemblez toutes les informations pertinentes : description détaillée, photos, numéro de série et circonstances de la disparition.
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Objets fréquemment retrouvés et lieux stratégiques à {displayName}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-4">Top 5 des objets égarés</h3>
-              <ol className="list-decimal list-inside text-gray-600 space-y-1">
-                <li>Smartphones et appareils électroniques</li>
-                <li>Portefeuilles et cartes bancaires</li>
-                <li>Clés (maison, voiture, bureau)</li>
-                <li>Lunettes (solaires et de vue)</li>
-                <li>Vêtements et accessoires</li>
-              </ol>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-4">Points chauds à {displayName}</h3>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
-                <li>Gare centrale et arrêts de bus principaux</li>
-                <li>Centre commercial Downtown Plaza</li>
-                <li>Parc municipal et aires de loisirs</li>
-                <li>Quartier des restaurants et bars</li>
-                <li>Campus universitaire et bibliothèques</li>
-              </ul>
             </div>
           </div>
         </section>
