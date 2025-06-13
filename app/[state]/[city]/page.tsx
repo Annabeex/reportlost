@@ -22,7 +22,7 @@ function toTitleCase(str: string) {
     .join(' ');
 }
 
-function generateSeoText(cityData: any): string {
+function generateCitySeoText(cityData: any): string {
   const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
   const zip = zips?.match(/\b\d{5}\b/)?.[0];
   const pop = population ? population.toLocaleString() : 'many';
@@ -30,9 +30,10 @@ function generateSeoText(cityData: any): string {
 
   const getNames = (match: string[]) =>
     Array.isArray(hotspots)
-      ? hotspots
-          .filter((h: any) => typeof h.name === 'string' && match.some(keyword => h.name.toLowerCase().includes(keyword)))
-          .map((h: any) => h.name)
+      ? hotspots.filter((h: any) =>
+          typeof h.name === 'string' &&
+          match.some(keyword => h.name.toLowerCase().includes(keyword))
+        ).map((h: any) => h.name).slice(0, 5)
       : [];
 
   const sections = [
@@ -42,28 +43,28 @@ function generateSeoText(cityData: any): string {
       names: getNames(['park'])
     },
     {
-      key: 'attractions',
-      synonyms: ['attractions', 'landmarks', 'popular sites'],
-      names: getNames(['tour', 'attraction', 'landmark'])
+      key: 'tourism',
+      synonyms: ['tourist sites', 'landmarks', 'notable attractions'],
+      names: getNames(['tourism', 'attraction', 'landmark'])
     },
     {
       key: 'stations',
-      synonyms: ['stations', 'transport hubs', 'main stops'],
+      synonyms: ['stations', 'transit hubs', 'commuter points'],
       names: getNames(['station'])
     },
     {
       key: 'markets',
-      synonyms: ['markets', 'shopping malls', 'retail centers'],
+      synonyms: ['shopping centers', 'marketplaces', 'retail spots'],
       names: getNames(['mall', 'market'])
     },
     {
       key: 'monuments',
-      synonyms: ['memorials', 'historic sites', 'theaters'],
+      synonyms: ['historic places', 'memorials', 'heritage sites'],
       names: getNames(['memorial', 'historic', 'theatre'])
     },
     {
       key: 'airports',
-      synonyms: ['airport', 'air terminal', 'regional airport'],
+      synonyms: ['civil airports', 'regional airports', 'air terminals'],
       names: getNames(['airport'])
     }
   ];
@@ -76,7 +77,7 @@ Lost something in ${city}? This city in ${state_name} features several emblemati
     if (section.names.length) {
       const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
       text += `Among the most visited ${synonym}, you’ll find:\n\n`;
-      section.names.slice(0, 5).forEach((name: string) => {
+      section.names.forEach((name: string) => {
         text += `- ${name}\n`;
       });
       text += `\nThese areas are frequently visited and regularly cleaned, which increases the chances of finding your lost belongings.\n\n`;
@@ -112,13 +113,13 @@ export default async function Page({ params }: Props) {
 
   const cityData = data?.[0];
   const displayName = cityData?.city || cityName;
-  const articleText = cityData ? generateSeoText(cityData) : '';
+  const articleText = cityData ? generateCitySeoText(cityData) : '';
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-12">
         <section className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Lost & Found in {displayName}, {stateName}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Lost &amp; Found in {displayName}, {stateName}</h1>
           <div className="text-gray-600 mt-2 max-w-3xl mx-auto whitespace-pre-line text-left prose prose-sm sm:prose-base">
             {articleText}
           </div>
