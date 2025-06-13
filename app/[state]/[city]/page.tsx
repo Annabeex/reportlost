@@ -4,8 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 import ReportForm from '../../../components/ReportForm';
 import '../../../app/globals.css';
 import Image from 'next/image';
-import Link from 'next/link';
-import { Search, MapPin, ShieldCheck, Clock, Send, Info } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,44 +22,76 @@ function toTitleCase(str: string) {
     .join(' ');
 }
 
-function generateCityText(cityData: any): string {
+function generateSeoText(cityData: any): string {
   const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
   const zip = zips?.match(/\b\d{5}\b/)?.[0];
   const pop = population ? population.toLocaleString() : 'many';
   const dens = density ? `${density} people/km²` : 'unknown density';
 
- const getNames = (match: string[]) =>
-  Array.isArray(hotspots)
-    ? hotspots.filter((h: any) => match.some(keyword => h.name?.toLowerCase()?.includes(keyword))).map((h: any) => h.name)
-    : [];
-
+  const getNames = (match: string[]) =>
+    Array.isArray(hotspots)
+      ? hotspots
+          .filter((h: any) => typeof h.name === 'string' && match.some(keyword => h.name.toLowerCase().includes(keyword)))
+          .map((h: any) => h.name)
+      : [];
 
   const sections = [
-    { title: 'espaces verts', synonyms: ['espaces verts', 'parcs publics', 'jardins'], names: getNames(['park']) },
-    { title: 'lieux touristiques', synonyms: ['attractions', 'sites emblématiques', 'lieux touristiques'], names: getNames(['tour', 'attraction', 'landmark']) },
-    { title: 'marchés et centres commerciaux', synonyms: ['centres commerciaux', 'marchés ouverts', 'galeries commerçantes'], names: getNames(['mall', 'market']) },
-    { title: 'gares et stations', synonyms: ['gares principales', 'stations de transport', 'arrêts majeurs'], names: getNames(['station']) },
-    { title: 'monuments', synonyms: ['lieux historiques', 'monuments', 'places patrimoniales'], names: getNames(['memorial', 'historic', 'theatre']) },
-    { title: 'zones naturelles', synonyms: ['réserves naturelles', 'zones protégées', 'espaces naturels'], names: getNames(['nature', 'reserve']) },
-    { title: 'aéroports civils', synonyms: ['aéroport régional', 'terminal aérien', 'plateforme aéroportuaire'], names: getNames(['airport']) }
+    {
+      key: 'parks',
+      synonyms: ['green spaces', 'public parks', 'recreational areas'],
+      names: getNames(['park'])
+    },
+    {
+      key: 'attractions',
+      synonyms: ['attractions', 'landmarks', 'popular sites'],
+      names: getNames(['tour', 'attraction', 'landmark'])
+    },
+    {
+      key: 'stations',
+      synonyms: ['stations', 'transport hubs', 'main stops'],
+      names: getNames(['station'])
+    },
+    {
+      key: 'markets',
+      synonyms: ['markets', 'shopping malls', 'retail centers'],
+      names: getNames(['mall', 'market'])
+    },
+    {
+      key: 'monuments',
+      synonyms: ['memorials', 'historic sites', 'theaters'],
+      names: getNames(['memorial', 'historic', 'theatre'])
+    },
+    {
+      key: 'airports',
+      synonyms: ['airport', 'air terminal', 'regional airport'],
+      names: getNames(['airport'])
+    }
   ];
 
-  let text = `### Où sont fréquemment retrouvés les objets perdus à ${city} ?\n\nVous avez égaré un objet à ${city} ? Cette ville de ${state_name} offre plusieurs lieux emblématiques où les objets sont souvent retrouvés.\n\n`;
+  let text = `## Where are lost items frequently found in ${city}?
+
+Lost something in ${city}? This city in ${state_name} features several emblematic places where lost items are often recovered.\n\n`;
 
   sections.forEach(section => {
     if (section.names.length) {
       const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
-      text += `Parmi les ${synonym} à ne pas manquer :\n\n`;
+      text += `Among the most visited ${synonym}, you’ll find:\n\n`;
       section.names.slice(0, 5).forEach((name: string) => {
         text += `- ${name}\n`;
       });
-      text += `\n`;
+      text += `\nThese areas are frequently visited and regularly cleaned, which increases the chances of finding your lost belongings.\n\n`;
     }
   });
 
-  text += `---\n\n### Informations utiles sur ${city}\n${city} est située dans le comté de ${county_name || 'son comté'}. Elle compte environ ${pop} habitants et affiche une densité de ${dens}. Fuseau horaire : ${timezone || 'local'} — Code postal principal : ${zip || 'inconnu'}.\n\n`;
+  text += `---\n\n## Useful info about ${city}
+${city} is located in ${county_name || 'its county'}, ${state_name}. It has approximately ${pop} inhabitants and a population density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\n`;
 
-  text += `---\n\n### Objets fréquemment égarés\n- Smartphones et appareils électroniques\n- Portefeuilles et cartes bancaires\n- Clés (maison, voiture, bureau)\n- Lunettes (solaires et de vue)\n- Vêtements et accessoires\n`;
+  text += `---\n\n## Most commonly lost items
+- Phones and electronics
+- Wallets and credit cards
+- Keys (house, car, office)
+- Glasses (sun and prescription)
+- Clothing and accessories\n`;
 
   return text;
 }
@@ -82,7 +112,7 @@ export default async function Page({ params }: Props) {
 
   const cityData = data?.[0];
   const displayName = cityData?.city || cityName;
-  const articleText = cityData ? generateCityText(cityData) : '';
+  const articleText = cityData ? generateSeoText(cityData) : '';
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -104,7 +134,7 @@ export default async function Page({ params }: Props) {
           <div className="w-full md:w-1/2">
             <Image
               src="/images/lost-woman-phone.jpg"
-              alt="Femme cherchant un objet perdu"
+              alt="Woman looking for a lost item"
               width={600}
               height={400}
               className="rounded-lg shadow-md"
@@ -112,25 +142,25 @@ export default async function Page({ params }: Props) {
           </div>
           <div className="w-full md:w-1/2 space-y-6">
             <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-snug">
-              Que faire si vous avez perdu un objet à <span className="text-blue-700">{displayName}</span> ?
+              What to do if you lost something in <span className="text-blue-700">{displayName}</span>?
             </h2>
             <div className="space-y-6">
               <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Identifiez le lieu exact</h3>
+                <h3 className="text-xl font-semibold text-gray-800">Identify the exact location</h3>
                 <p className="text-gray-600">
-                  Déterminez précisément où vous avez perdu votre objet : rue, transport en commun, commerce, restaurant ou parc. Cette information est cruciale pour cibler vos recherches.
+                  Determine exactly where you lost the item: street, public transport, store, restaurant or park. This information is crucial to target your search.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Agissez rapidement</h3>
+                <h3 className="text-xl font-semibold text-gray-800">Act quickly</h3>
                 <p className="text-gray-600">
-                  Les premières 24 heures sont déterminantes. Contactez immédiatement les établissements visités et les services concernés pour signaler votre perte.
+                  The first 24 hours are critical. Immediately contact visited locations and relevant services to report your loss.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Documentez la perte</h3>
+                <h3 className="text-xl font-semibold text-gray-800">Document your loss</h3>
                 <p className="text-gray-600">
-                  Rassemblez toutes les informations pertinentes : description détaillée, photos, numéro de série et circonstances de la disparition.
+                  Gather all relevant details: description, photos, serial number and the context of the disappearance.
                 </p>
               </div>
             </div>
