@@ -30,8 +30,11 @@ function generateCityText(cityData: any): string {
   const pop = population ? population.toLocaleString() : 'many';
   const dens = density ? `${density} people/km²` : 'unknown density';
 
-  const getNames = (match: string[]) =>
-    hotspots?.filter((h: any) => match.some(keyword => h.name.toLowerCase().includes(keyword)))?.map((h: any) => h.name) || [];
+ const getNames = (match: string[]) =>
+  Array.isArray(hotspots)
+    ? hotspots.filter((h: any) => match.some(keyword => h.name?.toLowerCase()?.includes(keyword))).map((h: any) => h.name)
+    : [];
+
 
   const sections = [
     { title: 'espaces verts', synonyms: ['espaces verts', 'parcs publics', 'jardins'], names: getNames(['park']) },
