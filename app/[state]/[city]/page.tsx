@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic';
 import { exampleReports } from '@/lib/lostitems';
 
 const CityMap = dynamic(() => import('@/components/Map'), { ssr: false });
+const ClientReportForm = dynamic(() => import('@/components/ClientReportForm'), { ssr: false });
+
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -204,8 +206,7 @@ export default async function Page({ params }: { params: { state: string; city: 
           <p className="text-gray-700 mb-6">
             Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
           </p>
-         {/* <ReportForm defaultCity={displayName} /> */}
-
+          <ClientReportForm defaultCity={displayName} />
         </section>
 
         {reports.length > 0 && (
