@@ -3,6 +3,11 @@ import ReportForm from '@/components/ReportForm';
 import '../../../app/globals.css';
 import Image from 'next/image';
 import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
+import dynamic from 'next/dynamic';
+import { exampleReports } from '@/lib/lostitems';
+
+
+const CityMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +24,80 @@ function toTitleCase(str: string) {
 
 function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function generateCitySeoText(cityData: any): string {
+  const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
+  const zip = zips?.match(/\b\d{5}\b/)?.[0];
+  const pop = population ? population.toLocaleString() : 'many';
+  const dens = density ? `${density} people/km²` : 'unknown density';
+  const today = formatDate(new Date());
+
+  const getNames = (match: string[]) =>
+    Array.isArray(hotspots)
+      ? hotspots.filter((h: any) =>
+          typeof h.name === 'string' &&
+          match.some(keyword => h.name.toLowerCase().includes(keyword))
+        ).map((h: any) => h.name).slice(0, 5)
+      : [];
+
+  const sections = [
+    {
+      key: 'parks',
+      synonyms: ['green spaces', 'public parks', 'recreational areas'],
+      names: getNames(['park'])
+    },
+    {
+      key: 'tourism',
+      synonyms: ['tourist attractions', 'landmarks', 'points of interest'],
+      names: getNames(['tourism', 'attraction', 'landmark'])
+    },
+    {
+      key: 'stations',
+      synonyms: ['stations', 'transit hubs', 'commuter points'],
+      names: getNames(['station'])
+    },
+    {
+      key: 'markets',
+      synonyms: ['shopping centers', 'marketplaces', 'retail zones'],
+      names: getNames(['mall', 'market'])
+    },
+    {
+      key: 'monuments',
+      synonyms: ['historic places', 'memorials', 'heritage sites'],
+      names: getNames(['memorial', 'historic', 'theatre'])
+    },
+    {
+      key: 'airports',
+      synonyms: ['airports', 'regional terminals', 'air travel hubs'],
+      names: getNames(['airport'])
+    }
+  ];
+
+  let text = `### Where are lost items commonly found in ${city}?
+
+Lost something important in ${city}, ${state_name}? Don't worry — you're not alone. Every week, lost items like phones, wallets or backpacks are recovered in this city thanks to the vigilance of locals and public services.
+
+`;
+
+  sections.forEach(section => {
+    if (section.names.length) {
+      const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
+      text += `Among the most visited ${synonym}:\n\n`;
+      section.names.forEach((name: string) => {
+        text += `- ${name}\n`;
+      });
+      text += `\nThese places are busy and regularly cleaned, improving the chances of recovering lost items.\n\n`;
+    }
+  });
+
+  text += `---\n\n### Who to contact in case of loss?\n\nIf you’ve lost something in ${city}, start by contacting:\n\n- Local police department\n- Public transportation Lost & Found\n- Airports or stations if applicable\n- The last venue you visited (restaurant, mall, park, etc.)\n\nReacting quickly increases your recovery chances significantly.\n\n`;
+
+  text += `---\n\n### Local info: ${city}, ${state_name}\n\n${city} is located in ${county_name || 'its county'}, ${state_name}, with a population of approximately ${pop} and a density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\nPage updated on ${today}.\n\n`;
+
+  text += `---\n\n### Most commonly lost items\n- Phones and electronics\n- Wallets and credit cards\n- Keys (house, car, office)\n- Glasses (sun and prescription)\n- Clothing and accessories\n`;
+
+  return text;
 }
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
@@ -74,10 +153,11 @@ export default async function Page({ params }: { params: { state: string; city: 
   const markerLat = police?.lat || cityData?.latitude;
   const markerLon = police?.lon || cityData?.longitude;
   const policeName = police?.tags?.name || '';
-  const bbox = `${markerLon - 0.05},${markerLat - 0.03},${markerLon + 0.05},${markerLat + 0.03}`;
-  const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${markerLat},${markerLon}`;
 
-  const articleText = cityData?.seo_text || '';
+ const articleText = cityData ? generateCitySeoText(cityData) : '';
+ const reports = cityData ? exampleReports(cityData) : [];
+
+
   const today = formatDate(new Date());
 
   return (
@@ -94,23 +174,15 @@ export default async function Page({ params }: { params: { state: string; city: 
         </section>
 
         {/* SECTION 1 - MAP + TEXT */}
-        <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-center">
+        <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/2 w-full h-80">
-            <iframe
-              title="map"
-              className="rounded-lg shadow-md w-full h-full"
-              loading="lazy"
-              allowFullScreen
-              src={policeMarkerUrl}
-            ></iframe>
+            <CityMap lat={markerLat} lon={markerLon} name={policeName} />
             {policeName && (
               <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
             )}
           </div>
-          <div className="md:w-1/2 w-full">
-            <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-              <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
-            </section>
+          <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
+            <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
           </div>
         </section>
 
@@ -123,25 +195,35 @@ export default async function Page({ params }: { params: { state: string; city: 
           <ReportForm defaultCity={displayName} />
         </section>
 
+        {reports.length > 0 && (
+  <section className="bg-gray-100 p-6 rounded-lg shadow space-y-2">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">🔍 Recently reported lost items in {displayName}</h2>
+    <ul className="text-gray-700 list-none space-y-2">
+      {reports.map((report, index) => (
+        <li key={index}>{report}</li>
+      ))}
+    </ul>
+  </section>
+)}
+
+
         {/* SECTION 3 - IMAGE + TEXTE */}
         {cityImage && (
-          <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-center">
+          <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
             <div className="md:w-1/2 w-full relative rounded-lg overflow-hidden">
               <Image
                 src={cityImage}
                 alt={cityImageAlt}
                 width={600}
                 height={400}
-                className="w-full h-auto rounded-lg shadow-md object-cover opacity-80"
+                className="w-full h-[250px] rounded-lg shadow-md object-cover"
               />
               {cityImageCredit && (
                 <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
               )}
             </div>
-            <div className="md:w-1/2 w-full">
-              <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-                <div className="whitespace-pre-line">{articleText.split('---')[0]}</div>
-              </section>
+            <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
+              <div className="whitespace-pre-line">{articleText.split('---')[0]}</div>
             </div>
           </section>
         )}
