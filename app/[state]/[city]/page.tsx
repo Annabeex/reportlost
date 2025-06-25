@@ -150,10 +150,10 @@ export default async function Page({ params }: Props) {
         .eq('id', cityData.id);
     }
     if (image.photographer && image.source_url) {
-      cityImageCredit = `Photo by ${image.photographer} on Pexels`;
+      cityImageCredit = `Photo by ${image.photographer}`;
     }
   } else if (cityData?.photographer && cityData?.image_source_url) {
-    cityImageCredit = `Photo by ${cityData.photographer} on Pexels`;
+    cityImageCredit = `Photo by ${cityData.photographer}`;
   }
 
   // Get police station from Overpass API
@@ -164,9 +164,13 @@ export default async function Page({ params }: Props) {
   const markerLat = police?.lat || cityData?.latitude;
   const markerLon = police?.lon || cityData?.longitude;
   const policeName = police?.tags?.name || '';
-  const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik&marker=${markerLat},${markerLon}`;
+  const bbox = `${markerLon - 0.05},${markerLat - 0.03},${markerLon + 0.05},${markerLat + 0.03}`;
+const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${markerLat},${markerLon}`;
+
 
   const articleText = cityData ? generateCitySeoText(cityData) : '';
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -179,9 +183,40 @@ export default async function Page({ params }: Props) {
             Discover how to recover your lost item in {displayName} — from local hotspots to practical advice.
           </p>
         </section>
+        
+        {/* SECTION 1 - MAP + TEXT */}
+        <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-center">
+          <div className="md:w-1/2 w-full h-80">
+            <iframe
+              title="map"
+              className="rounded-lg shadow-md w-full h-full"
+              loading="lazy"
+              allowFullScreen
+              src={policeMarkerUrl}
+            ></iframe>
+            {policeName && (
+              <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
+            )}
+          </div>
+          <div className="md:w-1/2 w-full">
+            <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
+              <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
+            </section>
+          </div>
+        </section>
 
+        {/* SECTION 2 - FORMULAIRE */}
+        <section className="bg-blue-50 p-6 rounded-lg shadow">
+          <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
+          <p className="text-gray-700 mb-6">
+            Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
+          </p>
+          <ReportForm defaultCity={displayName} />
+        </section>
+
+        {/* SECTION 3 - IMAGE + TEXTE */}
         {cityImage && (
-          <div className="flex flex-col md:flex-row gap-6">
+          <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-center">
             <div className="md:w-1/2 w-full relative rounded-lg overflow-hidden">
               <Image
                 src={cityImage}
@@ -199,39 +234,12 @@ export default async function Page({ params }: Props) {
                 <div className="whitespace-pre-line">{articleText.split('---')[0]}</div>
               </section>
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="md:w-1/2 w-full">
-            <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-              <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
-            </section>
-          </div>
-          <div className="md:w-1/2 w-full h-80">
-            <iframe
-              title="map"
-              className="rounded-lg shadow-md w-full h-full"
-              loading="lazy"
-              allowFullScreen
-              src={policeMarkerUrl}
-            ></iframe>
-            {policeName && (
-              <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
-            )}
-          </div>
-        </div>
-
+        {/* SECTION 4 - TEXTE FINAL */}
         <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
           <div className="whitespace-pre-line">{articleText.split('---').slice(2).join('---')}</div>
-        </section>
-
-        <section className="bg-blue-50 p-6 rounded-lg shadow">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
-          <p className="text-gray-700 mb-6">
-            Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
-          </p>
-          <ReportForm defaultCity={displayName} />
         </section>
       </div>
     </main>
