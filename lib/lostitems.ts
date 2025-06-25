@@ -1,28 +1,24 @@
-// lostitems.ts
-
-type Hotspot = { name: string };
-
-interface CityData {
-  city: string;
-  state_name: string;
-  parks?: Hotspot[];
-  stations?: Hotspot[];
-  airports?: Hotspot[];
-  tourism_sites?: Hotspot[];
-  malls?: Hotspot[];
-}
-
-export function exampleReports(cityData: CityData): string[] {
+export function exampleReports(cityData: any) {
   const {
     city,
     state_name,
-    parks = [],
-    stations = [],
-    airports = [],
-    tourism_sites = [],
-    malls = []
+    parks,
+    stations,
+    airports,
+    tourism_sites,
+    malls
   } = cityData;
 
+  // Fonction de parsing sécurisée pour JSON ou tableau déjà parsé
+  const safeParse = (json: any) => {
+    try {
+      return Array.isArray(json) ? json : JSON.parse(json);
+    } catch {
+      return [];
+    }
+  };
+
+  // Liste de 20 objets avec variantes/synonymes
   const lostItems = [
     ['Black leather purse', 'Brown handbag', 'Small shoulder bag'],
     ['iPhone 13', 'Samsung Galaxy S22', 'Android phone'],
@@ -42,10 +38,18 @@ export function exampleReports(cityData: CityData): string[] {
     ['Scarf and gloves', 'Wool hat', 'Beanie'],
     ['Shopping bag', 'Paper bag with clothes', 'Gift bag'],
     ['Umbrella', 'Compact umbrella', 'Transparent umbrella'],
-    ['Toy dinosaur', 'Plush rabbit', 'Action figure']
+    ['Toy dinosaur', 'Plush rabbit', 'Action figure'],
+    ['Lunch box', 'Thermos', 'Bento box']
   ];
 
-  const allPlaces = [...parks, ...stations, ...airports, ...tourism_sites, ...malls]
+  // Fusionne tous les lieux existants (filtrés)
+  const allPlaces = [
+    ...safeParse(parks),
+    ...safeParse(stations),
+    ...safeParse(airports),
+    ...safeParse(tourism_sites),
+    ...safeParse(malls)
+  ]
     .filter(place => place && place.name)
     .map(place => place.name);
 
