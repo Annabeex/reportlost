@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import ReportForm from '@/components/ReportForm';
 import '../../../app/globals.css';
 import Image from 'next/image';
 import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
@@ -8,7 +7,6 @@ import { exampleReports } from '@/lib/lostitems';
 
 const CityMap = dynamic(() => import('@/components/Map'), { ssr: false });
 const ClientReportForm = dynamic(() => import('@/components/ClientReportForm'), { ssr: false });
-
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -172,8 +170,20 @@ export default async function Page({ params }: { params: { state: string; city: 
     console.error('Error fetching police data from Overpass:', err);
   }
 
-  const articleText = cityData ? generateCitySeoText(cityData) : '';
-  const reports = cityData ? exampleReports(cityData) : [];
+  let articleText = '';
+try {
+  articleText = cityData ? generateCitySeoText(cityData) : '';
+} catch (err) {
+  console.error('Error generating city SEO text:', err);
+}
+
+let reports: string[] = [];
+try {
+  reports = cityData ? exampleReports(cityData) : [];
+} catch (err) {
+  console.error('Error generating example reports:', err);
+}
+
   const today = formatDate(new Date());
 
   return (
