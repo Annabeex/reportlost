@@ -6,7 +6,6 @@ import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
 import dynamic from 'next/dynamic';
 import { exampleReports } from '@/lib/lostitems';
 
-
 const CityMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
 const supabase = createClient(
@@ -83,7 +82,8 @@ Lost something important in ${city}, ${state_name}? Don't worry — you're not a
   sections.forEach(section => {
     if (section.names.length) {
       const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
-      text += `Among the most visited ${synonym}:\n\n`;
+      text += `Among the most visited ${synonym}:
+\n`;
       section.names.forEach((name: string) => {
         text += `- ${name}\n`;
       });
@@ -106,15 +106,20 @@ export default async function Page({ params }: { params: { state: string; city: 
   const cityName = toTitleCase(rawCity);
   const stateName = toTitleCase(rawState);
 
-  const { data } = await supabase
-    .from('us_cities')
-    .select('*')
-    .eq('city', cityName)
-    .eq('state_name', stateName)
-    .order('population', { ascending: false })
-    .limit(1);
+  let cityData = null;
+  try {
+    const { data } = await supabase
+      .from('us_cities')
+      .select('*')
+      .eq('city', cityName)
+      .eq('state_name', stateName)
+      .order('population', { ascending: false })
+      .limit(1);
+    cityData = data?.[0] || null;
+  } catch (err) {
+    console.error('Error fetching city data:', err);
+  }
 
-  const cityData = data?.[0];
   const displayName = cityData?.city || cityName;
 
   let cityImage = cityData?.image_url || null;
@@ -122,42 +127,51 @@ export default async function Page({ params }: { params: { state: string; city: 
   let cityImageCredit = '';
 
   if (!cityImage) {
-    const image = await fetchCityImageFromPexels(cityName, stateName);
+    try {
+      const image = await fetchCityImageFromPexels(cityName, stateName);
+      cityImage = image.url;
+      cityImageAlt = image.alt;
 
-    cityImage = image.url;
-    cityImageAlt = image.alt;
+      if (cityImage && cityData?.id) {
+        await supabase
+          .from('us_cities')
+          .update({
+            image_url: cityImage,
+            image_alt: cityImageAlt,
+            photographer: image.photographer,
+            image_source_url: image.source_url
+          })
+          .eq('id', cityData.id);
+      }
 
-    if (cityImage && cityData?.id) {
-      await supabase
-        .from('us_cities')
-        .update({
-          image_url: cityImage,
-          image_alt: cityImageAlt,
-          photographer: image.photographer,
-          image_source_url: image.source_url
-        })
-        .eq('id', cityData.id);
-    }
-
-    if (image.photographer && image.source_url) {
-      cityImageCredit = `Photo by ${image.photographer}`;
+      if (image.photographer && image.source_url) {
+        cityImageCredit = `Photo by ${image.photographer}`;
+      }
+    } catch (err) {
+      console.error('Error fetching image from Pexels:', err);
     }
   } else if (cityData?.photographer && cityData?.image_source_url) {
     cityImageCredit = `Photo by ${cityData.photographer}`;
   }
 
-  const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${cityData.latitude},${cityData.longitude});out;`;
-  const overpassRes = await fetch(overpassUrl);
-  const overpassData = await overpassRes.json();
-  const police = overpassData?.elements?.[0];
-  const markerLat = police?.lat || cityData?.latitude;
-  const markerLon = police?.lon || cityData?.longitude;
-  const policeName = police?.tags?.name || '';
+  let markerLat = cityData?.latitude;
+  let markerLon = cityData?.longitude;
+  let policeName = '';
 
- const articleText = cityData ? generateCitySeoText(cityData) : '';
- const reports = cityData ? exampleReports(cityData) : [];
+  try {
+    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${markerLat},${markerLon});out;`;
+    const overpassRes = await fetch(overpassUrl);
+    const overpassData = await overpassRes.json();
+    const police = overpassData?.elements?.[0];
+    markerLat = police?.lat || markerLat;
+    markerLon = police?.lon || markerLon;
+    policeName = police?.tags?.name || '';
+  } catch (err) {
+    console.error('Error fetching police data from Overpass:', err);
+  }
 
-
+  const articleText = cityData ? generateCitySeoText(cityData) : '';
+  const reports = cityData ? exampleReports(cityData) : [];
   const today = formatDate(new Date());
 
   return (
@@ -173,7 +187,6 @@ export default async function Page({ params }: { params: { state: string; city: 
           </p>
         </section>
 
-        {/* SECTION 1 - MAP + TEXT */}
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/2 w-full h-80">
             <CityMap lat={markerLat} lon={markerLon} name={policeName} />
@@ -186,7 +199,6 @@ export default async function Page({ params }: { params: { state: string; city: 
           </div>
         </section>
 
-        {/* SECTION 2 - FORMULAIRE */}
         <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
           <p className="text-gray-700 mb-6">
@@ -196,18 +208,16 @@ export default async function Page({ params }: { params: { state: string; city: 
         </section>
 
         {reports.length > 0 && (
-  <section className="bg-gray-100 p-6 rounded-lg shadow space-y-2">
-    <h2 className="text-xl font-semibold text-gray-800 mb-4">🔍 Recently reported lost items in {displayName}</h2>
-    <ul className="text-gray-700 list-none space-y-2">
-      {reports.map((report, index) => (
-        <li key={index}>{report}</li>
-      ))}
-    </ul>
-  </section>
-)}
+          <section className="bg-gray-100 p-6 rounded-lg shadow space-y-2">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">🔍 Recently reported lost items in {displayName}</h2>
+            <ul className="text-gray-700 list-none space-y-2">
+              {reports.map((report, index) => (
+                <li key={index}>{report}</li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-
-        {/* SECTION 3 - IMAGE + TEXTE */}
         {cityImage && (
           <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
             <div className="md:w-1/2 w-full relative rounded-lg overflow-hidden">
@@ -228,7 +238,6 @@ export default async function Page({ params }: { params: { state: string; city: 
           </section>
         )}
 
-        {/* SECTION 4 - TEXTE FINAL */}
         <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
           <div className="whitespace-pre-line">{articleText.split('---').slice(2).join('---')}</div>
         </section>
