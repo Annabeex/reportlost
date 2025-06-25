@@ -152,6 +152,8 @@ export default async function Page({ params }: Props) {
     if (image.photographer && image.source_url) {
       cityImageCredit = `Photo by ${image.photographer} on Pexels`;
     }
+  } else if (cityData?.photographer && cityData?.image_source_url) {
+    cityImageCredit = `Photo by ${cityData.photographer} on Pexels`;
   }
 
   const articleText = cityData ? generateCitySeoText(cityData) : '';
@@ -161,7 +163,7 @@ export default async function Page({ params }: Props) {
       <div className="max-w-6xl mx-auto space-y-16">
         <section className="text-center bg-gradient-to-r from-blue-50 to-white py-12 px-4 rounded-xl shadow-md">
           <h1 className="text-4xl font-bold text-gray-900">
-            Lost &amp; Found in {displayName}, {stateName}
+            Lost &amp; Found in {displayName}
           </h1>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
             Discover how to recover your lost item in {displayName} — from local hotspots to practical advice.
@@ -169,21 +171,26 @@ export default async function Page({ params }: Props) {
         </section>
 
         {cityImage && (
-          <figure className="rounded-lg overflow-hidden shadow-md">
-            <Image
-              src={cityImage}
-              alt={cityImageAlt}
-              width={800}
-              height={500}
-              className="w-full object-cover"
-            />
-            <figcaption className="text-sm text-gray-500 mt-2 text-center">{cityImageAlt}{cityImageCredit && ` — ${cityImageCredit}`}</figcaption>
-          </figure>
+          <div className="flex flex-col md:flex-row items-start gap-6">
+            <div className="md:w-1/2 w-full">
+              <Image
+                src={cityImage}
+                alt={cityImageAlt}
+                width={600}
+                height={400}
+                className="w-full h-auto rounded-lg shadow-md object-cover"
+              />
+              {cityImageCredit && (
+                <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
+              )}
+            </div>
+            <div className="md:w-1/2 w-full">
+              <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
+                <div className="whitespace-pre-line">{articleText}</div>
+              </section>
+            </div>
+          </div>
         )}
-
-        <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-          <div className="whitespace-pre-line">{articleText}</div>
-        </section>
 
         <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
