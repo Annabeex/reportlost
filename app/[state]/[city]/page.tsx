@@ -204,7 +204,8 @@ export default async function Page({ params }: { params: { state: string; city: 
           <p className="text-gray-700 mb-6">
             Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
           </p>
-          <ReportForm defaultCity={displayName} />
+         {/* <ReportForm defaultCity={displayName} /> */}
+
         </section>
 
         {reports.length > 0 && (
