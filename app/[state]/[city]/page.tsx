@@ -156,6 +156,16 @@ export default async function Page({ params }: Props) {
     cityImageCredit = `Photo by ${cityData.photographer} on Pexels`;
   }
 
+  // Get police station from Overpass API
+  const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${cityData.latitude},${cityData.longitude});out;`;
+  const overpassRes = await fetch(overpassUrl);
+  const overpassData = await overpassRes.json();
+  const police = overpassData?.elements?.[0];
+  const markerLat = police?.lat || cityData?.latitude;
+  const markerLon = police?.lon || cityData?.longitude;
+  const policeName = police?.tags?.name || '';
+  const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik&marker=${markerLat},${markerLon}`;
+
   const articleText = cityData ? generateCitySeoText(cityData) : '';
 
   return (
@@ -171,14 +181,14 @@ export default async function Page({ params }: Props) {
         </section>
 
         {cityImage && (
-          <div className="flex flex-col md:flex-row items-start gap-6">
-            <div className="md:w-1/2 w-full">
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="md:w-1/2 w-full relative rounded-lg overflow-hidden">
               <Image
                 src={cityImage}
                 alt={cityImageAlt}
                 width={600}
                 height={400}
-                className="w-full h-auto rounded-lg shadow-md object-cover"
+                className="w-full h-auto rounded-lg shadow-md object-cover opacity-80"
               />
               {cityImageCredit && (
                 <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
@@ -186,11 +196,35 @@ export default async function Page({ params }: Props) {
             </div>
             <div className="md:w-1/2 w-full">
               <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-                <div className="whitespace-pre-line">{articleText}</div>
+                <div className="whitespace-pre-line">{articleText.split('---')[0]}</div>
               </section>
             </div>
           </div>
         )}
+
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <div className="md:w-1/2 w-full">
+            <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
+              <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
+            </section>
+          </div>
+          <div className="md:w-1/2 w-full h-80">
+            <iframe
+              title="map"
+              className="rounded-lg shadow-md w-full h-full"
+              loading="lazy"
+              allowFullScreen
+              src={policeMarkerUrl}
+            ></iframe>
+            {policeName && (
+              <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
+            )}
+          </div>
+        </div>
+
+        <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
+          <div className="whitespace-pre-line">{articleText.split('---').slice(2).join('---')}</div>
+        </section>
 
         <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
@@ -198,43 +232,6 @@ export default async function Page({ params }: Props) {
             Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
           </p>
           <ReportForm defaultCity={displayName} />
-        </section>
-
-        <section className="flex flex-col md:flex-row items-center gap-10">
-          <div className="w-full md:w-1/2">
-            <Image
-              src="/images/lost-woman-phone.jpg"
-              alt="Woman looking for a lost item"
-              width={600}
-              height={400}
-              className="rounded-lg shadow-md"
-            />
-          </div>
-          <div className="w-full md:w-1/2 space-y-6">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-snug">
-              What to do if you lost something in <span className="text-blue-700">{displayName}</span>?
-            </h2>
-            <div className="space-y-6">
-              <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Identify the exact location</h3>
-                <p className="text-gray-600">
-                  Determine where the loss happened: public transit, a shop, park or event. This helps refine your search.
-                </p>
-              </div>
-              <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Act quickly</h3>
-                <p className="text-gray-600">
-                  The first 24 hours matter most. Reach out to venues and authorities without delay.
-                </p>
-              </div>
-              <div className="border-l-4 border-red-100 pl-4">
-                <h3 className="text-xl font-semibold text-gray-800">Document your loss</h3>
-                <p className="text-gray-600">
-                  Write down key details: description, photos, serial number, context.
-                </p>
-              </div>
-            </div>
-          </div>
         </section>
       </div>
     </main>
