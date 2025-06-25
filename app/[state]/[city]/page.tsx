@@ -1,18 +1,13 @@
-'use client';
-
 import { createClient } from '@supabase/supabase-js';
-import ReportForm from '../../../components/ReportForm';
+import ReportForm from '@/components/ReportForm';
 import '../../../app/globals.css';
 import Image from 'next/image';
+import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-interface Props {
-  params: { state: string; city: string };
-}
 
 function toTitleCase(str: string) {
   return str
@@ -26,99 +21,7 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-async function fetchCityImageFromPexels(city: string, state: string): Promise<{ url: string | null; alt: string; photographer: string | null; source_url: string | null }> {
-  const query = `${city} ${state} skyline`;
-  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
-    headers: {
-      Authorization: process.env.PEXELS_API_KEY!
-    }
-  });
-
-  const data = await res.json();
-  const photo = data.photos?.[0];
-  return {
-    url: photo?.src?.large || null,
-    alt: photo?.alt || `Skyline of ${city}, ${state} – aerial view`,
-    photographer: photo?.photographer || null,
-    source_url: photo?.url || null
-  };
-}
-
-function generateCitySeoText(cityData: any): string {
-  const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
-  const zip = zips?.match(/\b\d{5}\b/)?.[0];
-  const pop = population ? population.toLocaleString() : 'many';
-  const dens = density ? `${density} people/km²` : 'unknown density';
-  const today = formatDate(new Date());
-
-  const getNames = (match: string[]) =>
-    Array.isArray(hotspots)
-      ? hotspots.filter((h: any) =>
-          typeof h.name === 'string' &&
-          match.some(keyword => h.name.toLowerCase().includes(keyword))
-        ).map((h: any) => h.name).slice(0, 5)
-      : [];
-
-  const sections = [
-    {
-      key: 'parks',
-      synonyms: ['green spaces', 'public parks', 'recreational areas'],
-      names: getNames(['park'])
-    },
-    {
-      key: 'tourism',
-      synonyms: ['tourist attractions', 'landmarks', 'points of interest'],
-      names: getNames(['tourism', 'attraction', 'landmark'])
-    },
-    {
-      key: 'stations',
-      synonyms: ['stations', 'transit hubs', 'commuter points'],
-      names: getNames(['station'])
-    },
-    {
-      key: 'markets',
-      synonyms: ['shopping centers', 'marketplaces', 'retail zones'],
-      names: getNames(['mall', 'market'])
-    },
-    {
-      key: 'monuments',
-      synonyms: ['historic places', 'memorials', 'heritage sites'],
-      names: getNames(['memorial', 'historic', 'theatre'])
-    },
-    {
-      key: 'airports',
-      synonyms: ['airports', 'regional terminals', 'air travel hubs'],
-      names: getNames(['airport'])
-    }
-  ];
-
-  let text = `### Where are lost items commonly found in ${city}?
-
-Lost something important in ${city}, ${state_name}? Don't worry — you're not alone. Every week, lost items like phones, wallets or backpacks are recovered in this city thanks to the vigilance of locals and public services.
-
-`;
-
-  sections.forEach(section => {
-    if (section.names.length) {
-      const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
-      text += `Among the most visited ${synonym}:
-
-`;
-      section.names.forEach((name: string) => {
-        text += `- ${name}\n`;
-      });
-      text += `\nThese places are busy and regularly cleaned, improving the chances of recovering lost items.\n\n`;
-    }
-  });
-
-  text += `---\n\n### Who to contact in case of loss?\n\nIf you’ve lost something in ${city}, start by contacting:\n\n- Local police department\n- Public transportation Lost & Found\n- Airports or stations if applicable\n- The last venue you visited (restaurant, mall, park, etc.)\n\nReacting quickly increases your recovery chances significantly.\n\n---\n\n### Local info: ${city}, ${state_name}\n\n${city} is located in ${county_name || 'its county'}, ${state_name}, with a population of approximately ${pop} and a density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\nPage updated on ${today}.\n\n`;
-
-  text += `---\n\n### Most commonly lost items\n- Phones and electronics\n- Wallets and credit cards\n- Keys (house, car, office)\n- Glasses (sun and prescription)\n- Clothing and accessories\n`;
-
-  return text;
-}
-
-export default async function Page({ params }: Props) {
+export default async function Page({ params }: { params: { state: string; city: string } }) {
   const rawCity = decodeURIComponent(params.city).replace(/-/g, ' ');
   const rawState = decodeURIComponent(params.state).replace(/-/g, ' ');
   const cityName = toTitleCase(rawCity);
@@ -141,14 +44,22 @@ export default async function Page({ params }: Props) {
 
   if (!cityImage) {
     const image = await fetchCityImageFromPexels(cityName, stateName);
+
     cityImage = image.url;
     cityImageAlt = image.alt;
+
     if (cityImage && cityData?.id) {
       await supabase
         .from('us_cities')
-        .update({ image_url: cityImage, image_alt: cityImageAlt, photographer: image.photographer, image_source_url: image.source_url })
+        .update({
+          image_url: cityImage,
+          image_alt: cityImageAlt,
+          photographer: image.photographer,
+          image_source_url: image.source_url
+        })
         .eq('id', cityData.id);
     }
+
     if (image.photographer && image.source_url) {
       cityImageCredit = `Photo by ${image.photographer}`;
     }
@@ -156,7 +67,6 @@ export default async function Page({ params }: Props) {
     cityImageCredit = `Photo by ${cityData.photographer}`;
   }
 
-  // Get police station from Overpass API
   const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${cityData.latitude},${cityData.longitude});out;`;
   const overpassRes = await fetch(overpassUrl);
   const overpassData = await overpassRes.json();
@@ -165,12 +75,10 @@ export default async function Page({ params }: Props) {
   const markerLon = police?.lon || cityData?.longitude;
   const policeName = police?.tags?.name || '';
   const bbox = `${markerLon - 0.05},${markerLat - 0.03},${markerLon + 0.05},${markerLat + 0.03}`;
-const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${markerLat},${markerLon}`;
+  const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${markerLat},${markerLon}`;
 
-
-  const articleText = cityData ? generateCitySeoText(cityData) : '';
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
+  const articleText = cityData?.seo_text || '';
+  const today = formatDate(new Date());
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -179,11 +87,12 @@ const policeMarkerUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${
           <h1 className="text-4xl font-bold text-gray-900">
             Lost &amp; Found in {displayName}
           </h1>
+          <p className="mt-2 text-sm text-gray-500">{today}</p>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover how to recover your lost item in {displayName} — from local hotspots to practical advice.
+            Discover how to recover your lost item — from local hotspots to practical advice.
           </p>
         </section>
-        
+
         {/* SECTION 1 - MAP + TEXT */}
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-center">
           <div className="md:w-1/2 w-full h-80">
