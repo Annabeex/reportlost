@@ -22,11 +22,34 @@ function toTitleCase(str: string) {
     .join(' ');
 }
 
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+async function fetchCityImageFromPexels(city: string, state: string): Promise<{ url: string | null; alt: string; photographer: string | null; source_url: string | null }> {
+  const query = `${city} ${state} skyline`;
+  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
+    headers: {
+      Authorization: process.env.PEXELS_API_KEY!
+    }
+  });
+
+  const data = await res.json();
+  const photo = data.photos?.[0];
+  return {
+    url: photo?.src?.large || null,
+    alt: photo?.alt || `Skyline of ${city}, ${state} – aerial view`,
+    photographer: photo?.photographer || null,
+    source_url: photo?.url || null
+  };
+}
+
 function generateCitySeoText(cityData: any): string {
   const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
   const zip = zips?.match(/\b\d{5}\b/)?.[0];
   const pop = population ? population.toLocaleString() : 'many';
   const dens = density ? `${density} people/km²` : 'unknown density';
+  const today = formatDate(new Date());
 
   const getNames = (match: string[]) =>
     Array.isArray(hotspots)
@@ -44,7 +67,7 @@ function generateCitySeoText(cityData: any): string {
     },
     {
       key: 'tourism',
-      synonyms: ['tourist sites', 'landmarks', 'notable attractions'],
+      synonyms: ['tourist attractions', 'landmarks', 'points of interest'],
       names: getNames(['tourism', 'attraction', 'landmark'])
     },
     {
@@ -54,7 +77,7 @@ function generateCitySeoText(cityData: any): string {
     },
     {
       key: 'markets',
-      synonyms: ['shopping centers', 'marketplaces', 'retail spots'],
+      synonyms: ['shopping centers', 'marketplaces', 'retail zones'],
       names: getNames(['mall', 'market'])
     },
     {
@@ -64,35 +87,33 @@ function generateCitySeoText(cityData: any): string {
     },
     {
       key: 'airports',
-      synonyms: ['civil airports', 'regional airports', 'air terminals'],
+      synonyms: ['airports', 'regional terminals', 'air travel hubs'],
       names: getNames(['airport'])
     }
   ];
 
-  let text = `## Where are lost items frequently found in ${city}?
+  let text = `### Where are lost items commonly found in ${city}?
 
-Lost something in ${city}? This city in ${state_name} features several emblematic places where lost items are often recovered.\n\n`;
+Lost something important in ${city}, ${state_name}? Don't worry — you're not alone. Every week, lost items like phones, wallets or backpacks are recovered in this city thanks to the vigilance of locals and public services.
+
+`;
 
   sections.forEach(section => {
     if (section.names.length) {
       const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
-      text += `Among the most visited ${synonym}, you’ll find:\n\n`;
+      text += `Among the most visited ${synonym}:
+
+`;
       section.names.forEach((name: string) => {
         text += `- ${name}\n`;
       });
-      text += `\nThese areas are frequently visited and regularly cleaned, which increases the chances of finding your lost belongings.\n\n`;
+      text += `\nThese places are busy and regularly cleaned, improving the chances of recovering lost items.\n\n`;
     }
   });
 
-  text += `---\n\n## Useful info about ${city}
-${city} is located in ${county_name || 'its county'}, ${state_name}. It has approximately ${pop} inhabitants and a population density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\n`;
+  text += `---\n\n### Who to contact in case of loss?\n\nIf you’ve lost something in ${city}, start by contacting:\n\n- Local police department\n- Public transportation Lost & Found\n- Airports or stations if applicable\n- The last venue you visited (restaurant, mall, park, etc.)\n\nReacting quickly increases your recovery chances significantly.\n\n---\n\n### Local info: ${city}, ${state_name}\n\n${city} is located in ${county_name || 'its county'}, ${state_name}, with a population of approximately ${pop} and a density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\nPage updated on ${today}.\n\n`;
 
-  text += `---\n\n## Most commonly lost items
-- Phones and electronics
-- Wallets and credit cards
-- Keys (house, car, office)
-- Glasses (sun and prescription)
-- Clothing and accessories\n`;
+  text += `---\n\n### Most commonly lost items\n- Phones and electronics\n- Wallets and credit cards\n- Keys (house, car, office)\n- Glasses (sun and prescription)\n- Clothing and accessories\n`;
 
   return text;
 }
@@ -113,21 +134,62 @@ export default async function Page({ params }: Props) {
 
   const cityData = data?.[0];
   const displayName = cityData?.city || cityName;
+
+  let cityImage = cityData?.image_url || null;
+  let cityImageAlt = cityData?.image_alt || `View of ${displayName}, ${stateName}`;
+  let cityImageCredit = '';
+
+  if (!cityImage) {
+    const image = await fetchCityImageFromPexels(cityName, stateName);
+    cityImage = image.url;
+    cityImageAlt = image.alt;
+    if (cityImage && cityData?.id) {
+      await supabase
+        .from('us_cities')
+        .update({ image_url: cityImage, image_alt: cityImageAlt, photographer: image.photographer, image_source_url: image.source_url })
+        .eq('id', cityData.id);
+    }
+    if (image.photographer && image.source_url) {
+      cityImageCredit = `Photo by ${image.photographer} on Pexels`;
+    }
+  }
+
   const articleText = cityData ? generateCitySeoText(cityData) : '';
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <section className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Lost &amp; Found in {displayName}, {stateName}</h1>
-          <div className="text-gray-600 mt-2 max-w-3xl mx-auto whitespace-pre-line text-left prose prose-sm sm:prose-base">
-            {articleText}
-          </div>
+      <div className="max-w-6xl mx-auto space-y-16">
+        <section className="text-center bg-gradient-to-r from-blue-50 to-white py-12 px-4 rounded-xl shadow-md">
+          <h1 className="text-4xl font-bold text-gray-900">
+            Lost &amp; Found in {displayName}, {stateName}
+          </h1>
+          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            Discover how to recover your lost item in {displayName} — from local hotspots to practical advice.
+          </p>
         </section>
 
-        <section className="bg-white p-6 rounded-lg shadow">
+        {cityImage && (
+          <figure className="rounded-lg overflow-hidden shadow-md">
+            <Image
+              src={cityImage}
+              alt={cityImageAlt}
+              width={800}
+              height={500}
+              className="w-full object-cover"
+            />
+            <figcaption className="text-sm text-gray-500 mt-2 text-center">{cityImageAlt}{cityImageCredit && ` — ${cityImageCredit}`}</figcaption>
+          </figure>
+        )}
+
+        <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
+          <div className="whitespace-pre-line">{articleText}</div>
+        </section>
+
+        <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
-          <p className="text-gray-700 mb-6">Fill out the form below with as many details as possible to increase your chances of recovering the lost item.</p>
+          <p className="text-gray-700 mb-6">
+            Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
+          </p>
           <ReportForm defaultCity={displayName} />
         </section>
 
@@ -149,19 +211,19 @@ export default async function Page({ params }: Props) {
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Identify the exact location</h3>
                 <p className="text-gray-600">
-                  Determine exactly where you lost the item: street, public transport, store, restaurant or park. This information is crucial to target your search.
+                  Determine where the loss happened: public transit, a shop, park or event. This helps refine your search.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Act quickly</h3>
                 <p className="text-gray-600">
-                  The first 24 hours are critical. Immediately contact visited locations and relevant services to report your loss.
+                  The first 24 hours matter most. Reach out to venues and authorities without delay.
                 </p>
               </div>
               <div className="border-l-4 border-red-100 pl-4">
                 <h3 className="text-xl font-semibold text-gray-800">Document your loss</h3>
                 <p className="text-gray-600">
-                  Gather all relevant details: description, photos, serial number and the context of the disappearance.
+                  Write down key details: description, photos, serial number, context.
                 </p>
               </div>
             </div>
