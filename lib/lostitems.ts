@@ -12,6 +12,7 @@ export function exampleReports(cityData: any) {
   // Fonction de parsing sécurisée pour JSON ou tableau déjà parsé
   const safeParse = (json: any) => {
     try {
+      if (!json) return [];
       return Array.isArray(json) ? json : JSON.parse(json);
     } catch {
       return [];
@@ -44,11 +45,11 @@ export function exampleReports(cityData: any) {
 
   // Fusionne tous les lieux existants (filtrés)
   const allPlaces = [
-    ...safeParse(parks),
-    ...safeParse(stations),
-    ...safeParse(airports),
-    ...safeParse(tourism_sites),
-    ...safeParse(malls)
+    ...safeParse(parks || []),
+    ...safeParse(stations || []),
+    ...safeParse(airports || []),
+    ...safeParse(tourism_sites || []),
+    ...safeParse(malls || [])
   ]
     .filter(place => place && place.name)
     .map(place => place.name);
@@ -75,3 +76,4 @@ export function exampleReports(cityData: any) {
 
   return output;
 }
+
