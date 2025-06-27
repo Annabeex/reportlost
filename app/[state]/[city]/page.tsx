@@ -121,9 +121,8 @@ export default async function Page({ params }: { params: { state: string; city: 
   }
 
   if (cityData) {
-  console.log("🔍 cityData:", JSON.stringify(cityData, null, 2));
-}
-
+    console.log("🔍 cityData:", JSON.stringify(cityData, null, 2));
+  }
 
   const displayName = cityData?.city || cityName;
 
@@ -176,20 +175,18 @@ export default async function Page({ params }: { params: { state: string; city: 
   }
 
   let articleText = '';
-try {
-  articleText = cityData ? generateCitySeoText(cityData) : '';
-} catch (err) {
-  console.error('Error generating city SEO text:', err);
-}
+  try {
+    articleText = cityData ? generateCitySeoText(cityData) : '';
+  } catch (err) {
+    console.error('Error generating city SEO text:', err);
+  }
 
-console.log("✅ Reached before exampleReports");
-
-let reports: string[] = [];
-try {
-  reports = cityData ? exampleReports(cityData) : [];
-} catch (err) {
-  console.error('Error generating example reports:', err);
-}
+  let reports: string[] = [];
+  try {
+    reports = cityData ? exampleReports(cityData) : [];
+  } catch (err) {
+    console.error('Error generating example reports:', err);
+  }
 
   const today = formatDate(new Date());
 
@@ -208,7 +205,11 @@ try {
 
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/2 w-full h-80">
-            <CityMap lat={markerLat} lon={markerLon} name={policeName} />
+            {markerLat && markerLon ? (
+              <CityMap lat={markerLat} lon={markerLon} name={policeName} />
+            ) : (
+              <p className="text-gray-500">Map not available for this location.</p>
+            )}
             {policeName && (
               <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
             )}
