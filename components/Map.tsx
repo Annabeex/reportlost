@@ -44,6 +44,11 @@ export const metadata = ({ params }: { params: { state: string; city: string } }
 };
 
 export default function CityMap({ lat, lon, name }: { lat: number; lon: number; name?: string }) {
+  if (!lat || !lon) {
+    console.warn('Invalid coordinates passed to CityMap:', { lat, lon });
+    return null;
+  }
+
   return (
     <MapContainer
       center={[lat, lon]}
