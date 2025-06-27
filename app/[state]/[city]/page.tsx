@@ -120,6 +120,11 @@ export default async function Page({ params }: { params: { state: string; city: 
     console.error('Error fetching city data:', err);
   }
 
+  if (cityData) {
+  console.log("🔍 cityData:", JSON.stringify(cityData, null, 2));
+}
+
+
   const displayName = cityData?.city || cityName;
 
   let cityImage = cityData?.image_url || null;
@@ -176,6 +181,8 @@ try {
 } catch (err) {
   console.error('Error generating city SEO text:', err);
 }
+
+console.log("✅ Reached before exampleReports");
 
 let reports: string[] = [];
 try {
