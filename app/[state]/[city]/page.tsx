@@ -162,8 +162,8 @@ export default async function Page({ params }: { params: { state: string; city: 
     cityImageCredit = `Photo by ${cityData.photographer}`;
   }
 
-  let markerLat = cityData?.latitude;
-  let markerLon = cityData?.longitude;
+  let markerLat = cityData?.lat;
+  let markerLon = cityData?.lng;
   let policeName = '';
 
   try {
