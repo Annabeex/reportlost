@@ -207,16 +207,10 @@ export default async function Page({ params }: { params: { state: string; city: 
         </section>
 
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
-          <div className="md:w-1/2 w-full h-80">
-            {markerLat && markerLon ? (
-              <CityMap lat={markerLat} lon={markerLon} name={policeName} />
-            ) : (
-              <p className="text-gray-500">Map not available for this location.</p>
-            )}
-            {policeName && (
-              <p className="text-sm text-center text-gray-600 mt-2">Closest police station: {policeName}</p>
-            )}
-          </div>
+          <div className="md:w-1/2 w-full h-80 bg-yellow-100 flex items-center justify-center text-black">
+  <p>Lat: {markerLat?.toString() || 'undefined'}, Lon: {markerLon?.toString() || 'undefined'}</p>
+</div>
+
           <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
             <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
           </div>
