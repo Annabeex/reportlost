@@ -91,8 +91,6 @@ Lost something important in ${city}, ${state_name}? Don't worry — you're not a
     }
   });
 
-  text += `---\n\n### Who to contact in case of loss?\n\nIf you’ve lost something in ${city}, start by contacting:\n\n- Local police department\n- Public transportation Lost & Found\n- Airports or stations if applicable\n- The last venue you visited (restaurant, mall, park, etc.)\n\nReacting quickly increases your recovery chances significantly.\n\n`;
-
   text += `---\n\n### Local info: ${city}, ${state_name}\n\n${city} is located in ${county_name || 'its county'}, ${state_name}, with a population of approximately ${pop} and a density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\nPage updated on ${today}.\n\n`;
 
   text += `---\n\n### Most commonly lost items\n- Phones and electronics\n- Wallets and credit cards\n- Keys (house, car, office)\n- Glasses (sun and prescription)\n- Clothing and accessories\n`;
@@ -106,8 +104,6 @@ export default async function Page({ params }: { params: { state: string; city: 
   const cityName = toTitleCase(rawCity);
   const stateName = toTitleCase(rawState);
 
-  console.log('🔠 Looking for:', cityName, stateName);
-
   let cityData = null;
   try {
     const { data } = await supabase
@@ -118,13 +114,11 @@ export default async function Page({ params }: { params: { state: string; city: 
       .order('population', { ascending: false })
       .limit(1);
     cityData = data?.[0] || null;
-    console.log('📦 cityData raw:', cityData);
   } catch (err) {
     console.error('Error fetching city data:', err);
   }
 
   if (!cityData) {
-    console.warn(`❌ No city found for ${cityName}, ${stateName}`);
     return <div className="text-red-600 p-4">Aucune donnée trouvée pour {cityName}, {stateName}</div>;
   }
 
@@ -165,34 +159,23 @@ export default async function Page({ params }: { params: { state: string; city: 
   let markerLat = cityData?.lat;
   let markerLon = cityData?.lng;
   let policeName = '';
+  let policeTags = {};
 
   try {
-    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${markerLat},${markerLon});out;`;
+    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${markerLat},${markerLon});out tags center;`;
     const overpassRes = await fetch(overpassUrl);
     const overpassData = await overpassRes.json();
     const police = overpassData?.elements?.[0];
     markerLat = police?.lat || markerLat;
     markerLon = police?.lon || markerLon;
     policeName = police?.tags?.name || '';
-    console.log('📍 markerLat:', markerLat, 'markerLon:', markerLon);
+    policeTags = police?.tags || {};
   } catch (err) {
     console.error('Error fetching police data from Overpass:', err);
   }
 
-  let articleText = '';
-  try {
-    articleText = cityData ? generateCitySeoText(cityData) : '';
-  } catch (err) {
-    console.error('Error generating city SEO text:', err);
-  }
-
-  let reports: string[] = [];
-  try {
-    reports = cityData ? exampleReports(cityData) : [];
-  } catch (err) {
-    console.error('Error generating example reports:', err);
-  }
-
+  let articleText = cityData ? generateCitySeoText(cityData) : '';
+  let reports: string[] = cityData ? exampleReports(cityData) : [];
   const today = formatDate(new Date());
 
   return (
@@ -208,21 +191,20 @@ export default async function Page({ params }: { params: { state: string; city: 
           </p>
         </section>
 
-  <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
-  <div className="md:w-1/2 w-full h-[300px]">
-    <CityMap lat={markerLat} lon={markerLon} name={policeName} />
-  </div>
+        <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
+          <div className="md:w-1/2 w-full h-[300px]">
+            <CityMap lat={markerLat} lon={markerLon} name={policeName} tags={policeTags} />
+          </div>
 
-  <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
-    <h2 className="text-xl font-semibold text-gray-800 mb-2">📍 Location Map</h2>
-    <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
-  </div>
-</section>
-
-
-
-
-    
+          <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">🔍 Recently reported lost items in {displayName}</h2>
+            <ul className="text-gray-700 list-disc list-inside space-y-1">
+              {reports.map((report, index) => (
+                <li key={index}>{report}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
         <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
@@ -231,17 +213,6 @@ export default async function Page({ params }: { params: { state: string; city: 
           </p>
           <ClientReportForm defaultCity={displayName} />
         </section>
-
-        {reports.length > 0 && (
-          <section className="bg-gray-100 p-6 rounded-lg shadow space-y-2">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">🔍 Recently reported lost items in {displayName}</h2>
-            <ul className="text-gray-700 list-none space-y-2">
-              {reports.map((report, index) => (
-                <li key={index}>{report}</li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         {cityImage && (
           <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
@@ -264,7 +235,7 @@ export default async function Page({ params }: { params: { state: string; city: 
         )}
 
         <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-          <div className="whitespace-pre-line">{articleText.split('---').slice(2).join('---')}</div>
+          <div className="whitespace-pre-line">{articleText.split('---').slice(1).join('---')}</div>
         </section>
       </div>
     </main>

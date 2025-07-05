@@ -19,11 +19,14 @@ export default function CityMap({
   lat,
   lon,
   name,
+  tags,
 }: {
   lat: number;
   lon: number;
   name?: string;
+  tags?: Record<string, string>;
 }) {
+
   useEffect(() => {
     console.log('📍 Map loaded with:', { lat, lon, name });
   }, [lat, lon, name]);
@@ -37,10 +40,11 @@ export default function CityMap({
       scrollWheelZoom={true}
       style={{ height: '100%', width: '100%' }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <TileLayer
+  attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+/>
+
       <Marker position={[lat, lon]}>
         <Popup>{name || 'Police station'}</Popup>
       </Marker>
