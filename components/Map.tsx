@@ -34,7 +34,7 @@ export default function CityMap({
     <MapContainer
       center={[lat, lon]}
       zoom={13}
-      scrollWheelZoom={false}
+      scrollWheelZoom={true}
       style={{ height: '100%', width: '100%' }}
     >
       <TileLayer
