@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 @tailwind typography;
+@import 'leaflet/dist/leaflet.css';
 
 
 /* Global font and background */
