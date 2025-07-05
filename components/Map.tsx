@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { useEffect } from 'react';
 
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -44,8 +45,12 @@ export const metadata = ({ params }: { params: { state: string; city: string } }
 };
 
 export default function CityMap({ lat, lon, name }: { lat: number; lon: number; name?: string }) {
+  useEffect(() => {
+    console.log('🗺️ CityMap mounted with:', { lat, lon, name });
+  }, [lat, lon, name]);
+
   if (!lat || !lon) {
-    console.warn('Invalid coordinates passed to CityMap:', { lat, lon });
+    console.warn('❌ Invalid coordinates passed to CityMap:', { lat, lon });
     return null;
   }
 
