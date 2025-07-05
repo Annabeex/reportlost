@@ -105,7 +105,7 @@ export default async function Page({ params }: { params: { state: string; city: 
   const rawState = decodeURIComponent(params.state).replace(/-/g, ' ');
   const cityName = toTitleCase(rawCity);
   const stateName = toTitleCase(rawState);
-  
+
   console.log('🔠 Looking for:', cityName, stateName);
 
   let cityData = null;
@@ -118,13 +118,14 @@ export default async function Page({ params }: { params: { state: string; city: 
       .order('population', { ascending: false })
       .limit(1);
     cityData = data?.[0] || null;
+    console.log('📦 cityData raw:', cityData);
   } catch (err) {
     console.error('Error fetching city data:', err);
   }
 
   if (!cityData) {
-    console.warn(`❌ No city found for ${cityName}, ${stateName}`); // Étape 2
-    return <div className="text-red-600 p-4">Aucune donnée trouvée pour {cityName}, {stateName}</div>; // Étape 3
+    console.warn(`❌ No city found for ${cityName}, ${stateName}`);
+    return <div className="text-red-600 p-4">Aucune donnée trouvée pour {cityName}, {stateName}</div>;
   }
 
   const displayName = cityData?.city || cityName;
@@ -173,6 +174,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     markerLat = police?.lat || markerLat;
     markerLon = police?.lon || markerLon;
     policeName = police?.tags?.name || '';
+    console.log('📍 markerLat:', markerLat, 'markerLon:', markerLon);
   } catch (err) {
     console.error('Error fetching police data from Overpass:', err);
   }
@@ -208,8 +210,8 @@ export default async function Page({ params }: { params: { state: string; city: 
 
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/2 w-full h-80 bg-yellow-100 flex items-center justify-center text-black">
-  <p>Lat: {markerLat?.toString() || 'undefined'}, Lon: {markerLon?.toString() || 'undefined'}</p>
-</div>
+            <p>Lat: {markerLat?.toString() || 'undefined'}, Lon: {markerLon?.toString() || 'undefined'}</p>
+          </div>
 
           <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
             <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
