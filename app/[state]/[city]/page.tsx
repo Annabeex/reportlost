@@ -209,14 +209,18 @@ export default async function Page({ params }: { params: { state: string; city: 
         </section>
 
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
-          <div className="md:w-1/2 w-full h-80 bg-yellow-100 flex items-center justify-center text-black">
-            <p>Lat: {markerLat?.toString() || 'undefined'}, Lon: {markerLon?.toString() || 'undefined'}</p>
-          </div>
+  
+
+  <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
+    <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
+  </div>
+</section>
+
 
           <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
             <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
           </div>
-        </section>
+    
 
         <section className="bg-blue-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item</h2>
