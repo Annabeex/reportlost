@@ -208,12 +208,17 @@ export default async function Page({ params }: { params: { state: string; city: 
           </p>
         </section>
 
-       <section className="bg-white p-6 rounded-lg shadow">
-  <h2 className="text-2xl font-semibold text-gray-800 mb-4">📍 Location Map</h2>
-  <div className="w-full h-[400px] relative rounded overflow-hidden">
-    <CityMap lat={markerLat} lon={markerLon} name={policeName || displayName} />
+  <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
+  <div className="md:w-1/2 w-full h-[300px]">
+    <CityMap lat={markerLat} lon={markerLon} name={policeName} />
+  </div>
+
+  <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
+    <h2 className="text-xl font-semibold text-gray-800 mb-2">📍 Location Map</h2>
+    <div className="whitespace-pre-line">{articleText.split('---')[1]}</div>
   </div>
 </section>
+
 
 
 
