@@ -41,36 +41,12 @@ function generateCitySeoText(cityData: any): string {
       : [];
 
   const sections = [
-    {
-      key: 'parks',
-      synonyms: ['green spaces', 'public parks', 'recreational areas'],
-      names: getNames(['park'])
-    },
-    {
-      key: 'tourism',
-      synonyms: ['tourist attractions', 'landmarks', 'points of interest'],
-      names: getNames(['tourism', 'attraction', 'landmark'])
-    },
-    {
-      key: 'stations',
-      synonyms: ['stations', 'transit hubs', 'commuter points'],
-      names: getNames(['station'])
-    },
-    {
-      key: 'markets',
-      synonyms: ['shopping centers', 'marketplaces', 'retail zones'],
-      names: getNames(['mall', 'market'])
-    },
-    {
-      key: 'monuments',
-      synonyms: ['historic places', 'memorials', 'heritage sites'],
-      names: getNames(['memorial', 'historic', 'theatre'])
-    },
-    {
-      key: 'airports',
-      synonyms: ['airports', 'regional terminals', 'air travel hubs'],
-      names: getNames(['airport'])
-    }
+    { key: 'parks', synonyms: ['green spaces', 'public parks', 'recreational areas'], names: getNames(['park']) },
+    { key: 'tourism', synonyms: ['tourist attractions', 'landmarks', 'points of interest'], names: getNames(['tourism', 'attraction', 'landmark']) },
+    { key: 'stations', synonyms: ['stations', 'transit hubs', 'commuter points'], names: getNames(['station']) },
+    { key: 'markets', synonyms: ['shopping centers', 'marketplaces', 'retail zones'], names: getNames(['mall', 'market']) },
+    { key: 'monuments', synonyms: ['historic places', 'memorials', 'heritage sites'], names: getNames(['memorial', 'historic', 'theatre']) },
+    { key: 'airports', synonyms: ['airports', 'regional terminals', 'air travel hubs'], names: getNames(['airport']) }
   ];
 
   let text = `### Where are lost items commonly found in ${city}?
@@ -158,18 +134,17 @@ export default async function Page({ params }: { params: { state: string; city: 
 
   let markerLat = cityData?.lat;
   let markerLon = cityData?.lng;
-  let policeName = '';
-  let policeTags = {};
+  let policeStations = [];
 
   try {
     const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${markerLat},${markerLon});out tags center;`;
     const overpassRes = await fetch(overpassUrl);
     const overpassData = await overpassRes.json();
-    const police = overpassData?.elements?.[0];
-    markerLat = police?.lat || markerLat;
-    markerLon = police?.lon || markerLon;
-    policeName = police?.tags?.name || '';
-    policeTags = police?.tags || {};
+    policeStations = overpassData?.elements || [];
+    if (policeStations[0]) {
+      markerLat = policeStations[0].lat || markerLat;
+      markerLon = policeStations[0].lon || markerLon;
+    }
   } catch (err) {
     console.error('Error fetching police data from Overpass:', err);
   }
@@ -193,7 +168,7 @@ export default async function Page({ params }: { params: { state: string; city: 
 
         <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
           <div className="md:w-1/2 w-full h-[300px]">
-            <CityMap lat={markerLat} lon={markerLon} name={policeName} tags={policeTags} />
+            <CityMap stations={policeStations} />
           </div>
 
           <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
