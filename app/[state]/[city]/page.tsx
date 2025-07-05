@@ -105,6 +105,8 @@ export default async function Page({ params }: { params: { state: string; city: 
   const rawState = decodeURIComponent(params.state).replace(/-/g, ' ');
   const cityName = toTitleCase(rawCity);
   const stateName = toTitleCase(rawState);
+  
+  console.log('🔠 Looking for:', cityName, stateName);
 
   let cityData = null;
   try {
@@ -120,8 +122,9 @@ export default async function Page({ params }: { params: { state: string; city: 
     console.error('Error fetching city data:', err);
   }
 
-  if (cityData) {
-    console.log("🔍 cityData:", JSON.stringify(cityData, null, 2));
+  if (!cityData) {
+    console.warn(`❌ No city found for ${cityName}, ${stateName}`); // Étape 2
+    return <div className="text-red-600 p-4">Aucune donnée trouvée pour {cityName}, {stateName}</div>; // Étape 3
   }
 
   const displayName = cityData?.city || cityName;
