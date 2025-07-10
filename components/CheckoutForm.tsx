@@ -1,70 +1,73 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   CardElement,
   useStripe,
   useElements,
-  CardElementComponent,
-} from '@stripe/react-stripe-js';
+} from '@stripe/react-stripe-js'
 
 interface Props {
-  amount: number;
+  amount: number
+  onSuccess?: () => void
 }
 
-export default function CheckoutForm({ amount }: Props) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+export default function CheckoutForm({ amount, onSuccess }: Props) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
 
     if (!stripe || !elements) {
-      setMessage('Stripe has not loaded yet.');
-      setLoading(false);
-      return;
+      setMessage('Stripe has not loaded yet.')
+      setLoading(false)
+      return
     }
 
     const res = await fetch('/api/create-payment-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount }),
-    });
+    })
 
-    const { clientSecret, error } = await res.json();
+    const { clientSecret, error } = await res.json()
 
     if (error || !clientSecret) {
-      setMessage(error || 'Failed to get client secret.');
-      setLoading(false);
-      return;
+      setMessage(error || 'Failed to get client secret.')
+      setLoading(false)
+      return
     }
 
-    const cardElement = elements.getElement(CardElement);
+    const cardElement = elements.getElement(CardElement)
 
     if (!cardElement) {
-      setMessage('Card element not found.');
-      setLoading(false);
-      return;
+      setMessage('Card element not found.')
+      setLoading(false)
+      return
     }
 
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
         card: cardElement,
       },
-    });
+    })
 
     if (result.error) {
-      setMessage(result.error.message || 'Payment failed.');
+      setMessage(result.error.message || 'Payment failed.')
     } else if (result.paymentIntent?.status === 'succeeded') {
-      setMessage('✅ Payment successful. Your report has been submitted.');
+      setMessage('✅ Payment successful. Your report has been submitted.')
+
+      // ✅ Appelle la fonction onSuccess si elle est définie
+      onSuccess?.()
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -87,5 +90,5 @@ export default function CheckoutForm({ amount }: Props) {
         </p>
       )}
     </form>
-  );
+  )
 }

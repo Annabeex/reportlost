@@ -1,88 +1,165 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import CheckoutForm from './CheckoutForm';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+import { useState, useEffect } from 'react'
+import { Info, Search, Zap } from 'lucide-react'
 
 interface Props {
-  contribution: number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBack: () => void;
-  onNext?: () => void; // facultatif pour compatibilité
+  contribution: number
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onBack: () => void
+  onNext: () => void
 }
 
-export default function ReportContribution({ contribution, onChange, onBack, onNext }: Props) {
-  const [proceedToPayment, setProceedToPayment] = useState(false);
+const levels = [
+  {
+    id: 1,
+    title: 'Level 1: Standard Search',
+    icon: Info,
+    description:
+      'Basic listing with indexing. Recommended for common items with low value.',
+    icons: ['🔍', '📄', '🌐', '📤', '📬', '📌'],
+  },
+  {
+    id: 2,
+    title: 'Level 2: Extended Search',
+    icon: Search,
+    description:
+      'Advanced search and distribution to targeted networks. Good for moderately important items.',
+    icons: ['🔍', '🧭', '🗂️', '🖼️', '🧾', '📡', '📢', '🌐', '📧', '📱'],
+  },
+  {
+    id: 3,
+    title: 'Level 3: Maximum Search',
+    icon: Zap,
+    description:
+      'Personalized follow-up, priority visibility, and extended alerts. Ideal for sentimental, financial, or professional losses.',
+    icons: [
+      '🔍', '📡', '📣', '📷', '📱', '📦', '🧭', '🌍', '🗄️', '📂', '🖼️', '📢',
+      '🔗', '🧠', '🧑‍💻', '📈', '🔁', '📬', '🧷',
+    ],
+  },
+]
 
-  if (proceedToPayment && !onNext) {
-    // mode standalone : affichage du paiement directement
-    return (
-      <section className="bg-gray-50 w-full min-h-screen px-8 py-12 mx-auto">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Payment</h2>
-          <Elements stripe={stripePromise}>
-            <CheckoutForm amount={contribution} />
-          </Elements>
-        </div>
-      </section>
-    );
+export default function ReportContribution({
+  contribution,
+  onChange,
+  onBack,
+  onNext,
+}: Props) {
+  const [levelIndex, setLevelIndex] = useState(1)
+
+  useEffect(() => {
+    // Prépositionner sur 15 $ si rien de sélectionné
+    if (!contribution) {
+      onChange({ target: { name: 'contribution', value: 15 } } as any)
+    }
+  }, [])
+
+  const selectedLevel = levels[levelIndex]
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value)
+    onChange({ target: { name: 'contribution', value } } as any)
   }
 
   return (
-    <section className="bg-gray-50 w-full min-h-screen px-8 py-12 mx-auto">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">Support Our Work</h2>
-        <p className="text-gray-700">
-          You choose how much to support our work. Your contribution helps us process your report, contact relevant services, and share it effectively.
+    <section className="bg-white w-full min-h-screen px-6 py-12">
+      <div className="max-w-3xl mx-auto space-y-8">
+        <h2 className="text-3xl font-bold text-center text-gray-900">
+          Support the follow-up of your report
+        </h2>
+
+        <p className="text-center text-gray-700 text-base leading-relaxed">
+          Your contribution allows our team to manually review your report, contact relevant services, and optimize visibility for the first 30 days.
+          <br />
+          <span className="block mt-2">
+            After that period, your report stays published in our database and you will receive an <strong>automatic alert</strong> if a match is found later.
+          </span>
         </p>
-        <div className="flex items-center space-x-4">
+
+        <div className="bg-white p-6 rounded-md shadow-md space-y-4 border border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-800">
+            Choose your level of search
+          </h3>
+
           <input
             type="range"
-            name="contribution"
             min="0"
-            max="300"
-            value={contribution}
-            onChange={onChange}
-            className="w-full"
+            max="2"
+            value={levelIndex}
+            onChange={(e) => setLevelIndex(Number(e.target.value))}
+            className="w-full accent-green-600"
           />
-          <span className="text-lg font-medium">${contribution}</span>
+
+          <div className="mt-4 border rounded-lg bg-green-50 p-4 shadow-inner">
+            <div className="flex items-center gap-2 mb-2">
+              <selectedLevel.icon className="text-green-600" />
+              <h4 className="text-lg font-semibold text-green-800">
+                {selectedLevel.title}
+              </h4>
+            </div>
+            <p className="text-gray-700 text-sm mb-2">{selectedLevel.description}</p>
+
+            <div className="flex flex-wrap gap-2 text-xl">
+              {selectedLevel.icons.map((icon, i) => (
+                <span key={i}>{icon}</span>
+              ))}
+            </div>
+
+            <p className="text-gray-700 text-sm mt-3 italic">
+              You can define your contribution below.
+            </p>
+          </div>
+        </div>
+
+        <div className="pt-6">
+          <label htmlFor="contributionSlider" className="block text-sm font-medium text-gray-700 mb-1">
+            Adjust your contribution amount
+          </label>
+          <input
+            type="range"
+            id="contributionSlider"
+            name="contribution"
+            min={5}
+            max={300}
+            step={1}
+            value={contribution}
+            onChange={handleSliderChange}
+            className="w-full accent-blue-600"
+          />
+          <p className="text-center text-gray-700 mt-2">
+            Selected amount: <strong>${contribution}</strong>
+          </p>
         </div>
 
         {Number(contribution) < 12 && (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 text-sm text-gray-700 space-y-2 rounded-md">
-            <p>💡 The amount of remuneration you have currently selected is lower than the minimum amount set up on the platform to ensure a minimum income for our platform team members.</p>
-            <p>It's useful to know that the amount you have currently selected is not the final remuneration that Daryl will receive: it is necessary to deduct all taxes and charges, fees of our payment partner, hosting fees of the platform, software and plugin fees...</p>
-            <p>The diffusion of your report to one or more services, the search for correlation(s) in lost and found databases, your report being published and broadcasted on our platform and on social networks, the transmissions by e-mail and/or telephone requires full time work for our team.</p>
-            <p>🌐 Our platform welcomes more than 1000 visitors every day and our goal is to help you as much as possible in your process following the loss of an item.</p>
-            <p>✔️ Thanks to your retribution, we can devote time and energy on a daily basis to manage and disseminate the many reports we receive each day, a BIG Thank you!</p>
-            <p>A financial retribution allows us to thank a member of the team for the time and energy devoted to the diffusion and the research of your lost item(s).</p>
+          <div className="mt-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 text-sm rounded-md shadow-sm space-y-2">
+            <p>⚠️ The contribution you've selected is quite low.</p>
+            <p>
+              Processing, researching and following up lost item reports requires real human time and infrastructure.
+            </p>
+            <p>
+              We encourage you to consider increasing your support if you wish to benefit from the most complete search effort.
+            </p>
+            <p className="italic">Thank you for helping us help you 💛</p>
           </div>
         )}
 
         <div className="flex justify-between pt-6">
           <button
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
             onClick={onBack}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
           >
             Back
           </button>
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            onClick={() => {
-              if (onNext) {
-                onNext();
-              } else {
-                setProceedToPayment(true); // fallback
-              }
-            }}
+            onClick={onNext}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
           >
             Proceed to Payment
           </button>
         </div>
       </div>
     </section>
-  );
+  )
 }
