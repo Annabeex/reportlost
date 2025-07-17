@@ -6,8 +6,6 @@ import ReactMarkdown from 'react-markdown';
 const termsContent = `
 ## Terms of Use – ReportLost.org
 
-_Last updated: [DATE]_
-
 Welcome to ReportLost.org. By accessing or using our platform, you agree to comply with the following terms:
 
 ### 1. Scope of Use
