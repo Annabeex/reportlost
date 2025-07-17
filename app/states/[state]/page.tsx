@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getPopularCitiesByState } from '@/lib/getPopularCitiesByState';
-import { stateNameFromSlug } from '@/lib/stateNameFromSlug';
+import { stateNameFromSlug } from '@/lib/utils'; // ✅ version qui accepte les slugs comme "new-york"
 import { getSlugFromCity } from '@/lib/getSlugFromCity';
 import { generateStaticParams } from './generateStaticParams';
 import MaintenanceNotice from '@/components/MaintenanceNotice';
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props) {
-  const stateSlug = params.state.toUpperCase();
+  const stateSlug = params.state.toLowerCase(); // ✅ garder en slug
   const stateName = stateNameFromSlug(stateSlug);
 
   if (!stateName) {
@@ -33,11 +33,13 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function StatePage({ params }: Props) {
-  const stateAbbr = params.state?.toUpperCase();
-  if (!stateAbbr) return notFound();
+  const stateSlug = params.state?.toLowerCase(); // ✅ on reste en slug
+  if (!stateSlug) return notFound();
 
-  const stateName = stateNameFromSlug(stateAbbr);
+  const stateName = stateNameFromSlug(stateSlug);
   if (!stateName) return notFound();
+
+  const stateAbbr = stateSlug.toUpperCase(); // ⚠️ si tes fonctions comme getPopularCitiesByState attendent un abbr (ex: "NY")
 
   const cities = await getPopularCitiesByState(stateAbbr);
 
