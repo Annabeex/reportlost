@@ -11,6 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -32,12 +33,11 @@
   },
   "include": [
     "next-env.d.ts",
+    "declarations.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     "scripts/**/*.ts"
-  
-
   ],
   "exclude": [
     "node_modules"
