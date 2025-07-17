@@ -17,8 +17,9 @@ export default function ImageUpload({ formData, setFormData }: Props) {
     if (!file) return
 
     const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `object_photos/${fileName}`
+    const safeName = file.name.replace(/\s+/g, '_')
+    const fileName = `lost-${Date.now()}-${safeName}`
+    const filePath = `object_photo/${fileName}`
 
     setUploading(true)
 
