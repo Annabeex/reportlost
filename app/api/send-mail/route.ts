@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   const body = await req.json();
   const { type, data } = body;
 
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ success: true });
     } catch (error: any) {
+      console.error('❌ Email send error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
   }
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error('❌ Admin email send error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
