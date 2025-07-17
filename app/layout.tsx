@@ -1,7 +1,8 @@
-import './globals.css';
-import { Inter } from 'next/font/google';
-import Navbar from '../components/Navbar'; 
-import Footer from '../components/Footer'; 
+import './globals.css'
+import { Inter } from 'next/font/google'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+import Script from 'next/script'
 
 // ✅ METADATA GÉNÉRALE — utile si une page n’en définit pas une spécifique
 export const metadata = {
@@ -23,18 +24,37 @@ export const metadata = {
   alternates: {
     canonical: '/',
   },
-};
+}
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Google Analytics */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-JGM5658XGE"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-JGM5658XGE');
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} bg-gray-100`}>
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>
-  );
+  )
 }
