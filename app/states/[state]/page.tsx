@@ -5,8 +5,9 @@ import { getPopularCitiesByState } from '@/lib/getPopularCitiesByState';
 import { stateNameFromSlug } from '@/lib/stateNameFromSlug';
 import { getSlugFromCity } from '@/lib/getSlugFromCity';
 import { generateStaticParams } from './generateStaticParams';
-export { generateStaticParams };
+import MaintenanceNotice from '@/components/MaintenanceNotice';
 
+export { generateStaticParams };
 
 type Props = {
   params: {
@@ -31,9 +32,8 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-
 export default async function StatePage({ params }: Props) {
-  const stateAbbr = params.state?.toUpperCase(); // correction ici
+  const stateAbbr = params.state?.toUpperCase();
   if (!stateAbbr) return notFound();
 
   const stateName = stateNameFromSlug(stateAbbr);
@@ -74,6 +74,12 @@ export default async function StatePage({ params }: Props) {
           </Link>
         ))}
       </div>
+
+      {cities.length === 0 && (
+        <MaintenanceNotice
+          message={`We're still working on listing lost & found services for all cities in ${stateName}. Please check back soon!`}
+        />
+      )}
     </div>
   );
 }

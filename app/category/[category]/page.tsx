@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import phrasesRaw from '@/lib/category-phrases.json'
-import { categoryContent } from '@/lib/category-content'
+import phrasesRaw from '@/lib/category-phrases.json';
+import { categoryContent } from '@/lib/category-content';
+import MaintenanceNotice from '@/components/MaintenanceNotice';
 
 const phrases: Record<string, string[]> = phrasesRaw;
 
@@ -43,6 +44,12 @@ export default function CategoryPage({ params }: { params: { category: string } 
 
       <div className="bg-white shadow rounded-lg p-6 text-gray-600 text-center">
         Reports related to "{category}" will appear here soon.
+      </div>
+
+      <div className="mt-10">
+        <MaintenanceNotice
+          message={`We're currently working on this category. Reports for "${category}" will be listed here shortly.`}
+        />
       </div>
     </section>
   );

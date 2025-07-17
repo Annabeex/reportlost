@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 const privacyContent = `
 ## Privacy Policy – ReportLost.org
 
-_Last updated: [DATE]_
+_Last updated: 2025_
 
 ### 1. Data We Collect
 We collect only the information strictly necessary to process and share your lost item report:
