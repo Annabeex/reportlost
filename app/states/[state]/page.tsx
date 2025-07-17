@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { getPopularCitiesByState } from '@/lib/getPopularCitiesByState';
 import { stateNameFromSlug } from '@/lib/stateNameFromSlug';
 import { getSlugFromCity } from '@/lib/getSlugFromCity';
+import { generateStaticParams } from './generateStaticParams';
+export { generateStaticParams };
+
 
 type Props = {
   params: {

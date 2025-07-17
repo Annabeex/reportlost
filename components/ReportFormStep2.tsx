@@ -1,15 +1,15 @@
 'use client';
 console.log('✅ STEP2 - version à utiliser pour les deux formulaires');
 
-import { useRef, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useRef, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Props {
-  formData: any
-  onChange: (e: React.ChangeEvent<any>) => void
-  onNext: () => void
-  onBack: () => void
-  setFormData: (data: any) => void
+  formData: any;
+  onChange: (e: React.ChangeEvent<any>) => void;
+  onNext: () => void;
+  onBack: () => void;
+  setFormData: (data: any) => void;
 }
 
 export default function ReportFormStep2({
@@ -19,106 +19,107 @@ export default function ReportFormStep2({
   onBack,
   setFormData
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [hasSigned, setHasSigned] = useState(!!formData.signature)
-  const [confirm1, setConfirm1] = useState(false)
-  const [confirm2, setConfirm2] = useState(false)
-  const [confirm3, setConfirm3] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '')
-  const [uploading, setUploading] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSigned, setHasSigned] = useState(!!formData.signature);
+  const [confirm1, setConfirm1] = useState(false);
+  const [confirm2, setConfirm2] = useState(false);
+  const [confirm3, setConfirm3] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '');
+  const [uploading, setUploading] = useState(false);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true)
-    const ctx = canvasRef.current?.getContext('2d')
-    ctx?.beginPath()
-    ctx?.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-  }
+    setIsDrawing(true);
+    const ctx = canvasRef.current?.getContext('2d');
+    ctx?.beginPath();
+    ctx?.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    const ctx = canvasRef.current?.getContext('2d')
-    ctx?.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-    ctx?.stroke()
-  }
+    if (!isDrawing) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    ctx?.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    ctx?.stroke();
+  };
 
   const stopDrawing = () => {
-    setIsDrawing(false)
-    const canvas = canvasRef.current
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
     if (canvas) {
-      const dataUrl = canvas.toDataURL()
-      setFormData((prev: any) => ({ ...prev, signature: dataUrl }))
-      setHasSigned(true)
+      const dataUrl = canvas.toDataURL();
+      setFormData((prev: any) => ({ ...prev, signature: dataUrl }));
+      setHasSigned(true);
     }
-  }
+  };
 
   const clearSignature = () => {
-    const canvas = canvasRef.current
+    const canvas = canvasRef.current;
     if (canvas) {
-      const ctx = canvas.getContext('2d')
-      ctx?.clearRect(0, 0, canvas.width, canvas.height)
-      setFormData((prev: any) => ({ ...prev, signature: '' }))
-      setHasSigned(false)
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      setFormData((prev: any) => ({ ...prev, signature: '' }));
+      setHasSigned(false);
     }
-  }
+  };
 
-const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0]
-  if (!file) return
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  try {
-    setUploading(true)
+    try {
+      setUploading(true);
+      const filename = `object_photo/lost-${Date.now()}-${file.name}`;
 
-    const filename = `object_photo/lost-${Date.now()}-${file.name}`
+      const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
+        upsert: true
+      });
 
-    const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
-      upsert: true
-    })
+      if (uploadResponse.error) throw uploadResponse.error;
 
-    if (uploadResponse.error) throw uploadResponse.error
+      const publicUrlResponse = await supabase.storage.from('images').getPublicUrl(filename);
+      const publicUrl = publicUrlResponse?.data?.publicUrl;
+      if (!publicUrl) throw new Error('No public URL returned.');
 
-    const publicUrlResponse = await supabase.storage.from('images').getPublicUrl(filename)
+      setFormData((prev: any) => ({ ...prev, object_photo: publicUrl }));
+      setPreviewUrl(publicUrl);
+    } catch (err) {
+      alert('Error uploading image. Please try again.');
+      console.error('Image upload error:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
-    const publicUrl = publicUrlResponse?.data?.publicUrl
-    if (!publicUrl) throw new Error('No public URL returned.')
-
-    setFormData((prev: any) => ({ ...prev, object_photo: publicUrl }))
-    setPreviewUrl(publicUrl)
-  } catch (err) {
-    alert('Error uploading image. Please try again.')
-    console.error('Image upload error:', err)
-  } finally {
-    setUploading(false)
-  }
-}
-
+  const resetImage = () => {
+    setFormData((prev: any) => ({ ...prev, object_photo: '' }));
+    setPreviewUrl('');
+  };
 
   const handleContinue = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
-  alert('Please fill in all required fields.');
-  return;
-}
+    if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
+      alert('Please fill in all required fields.');
+      return;
+    }
 
-if (!emailRegex.test(formData.email.trim())) {
-  alert('Please enter a valid email address.');
-  return;
-}
-
+    if (!emailRegex.test(formData.email.trim())) {
+      alert('Please enter a valid email address.');
+      return;
+    }
 
     if (!confirm1 || !confirm2 || !confirm3) {
-      alert('Please check all confirmation boxes.')
-      return
+      alert('Please check all confirmation boxes.');
+      return;
     }
 
     if (!hasSigned) {
-      alert('Please provide your signature.')
-      return
+      alert('Please provide your signature.');
+      return;
     }
 
-    onNext()
-  }
+    onNext();
+  };
 
   return (
     <div className="space-y-4">
@@ -150,11 +151,23 @@ if (!emailRegex.test(formData.email.trim())) {
         <label className="block font-medium">
           Add a photo of the lost item <span className="text-green-600">(optional)</span>
         </label>
-        <input type="file" accept="image/*" onChange={handleFileChange} className="w-full" />
+
+        {!previewUrl && (
+          <input type="file" accept="image/*" onChange={handleFileChange} className="w-full" />
+        )}
+
         {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
+
         {previewUrl && (
-          <div className="mt-2">
+          <div className="mt-2 space-y-2">
             <img src={previewUrl} alt="Preview" className="max-h-48 rounded border" />
+            <button
+              type="button"
+              onClick={resetImage}
+              className="text-sm text-red-600 underline"
+            >
+              Change image
+            </button>
           </div>
         )}
       </div>
@@ -175,9 +188,9 @@ if (!emailRegex.test(formData.email.trim())) {
               type="checkbox"
               checked={[confirm1, confirm2, confirm3][i]}
               onChange={(e) => {
-                if (i === 0) setConfirm1(e.target.checked)
-                if (i === 1) setConfirm2(e.target.checked)
-                if (i === 2) setConfirm3(e.target.checked)
+                if (i === 0) setConfirm1(e.target.checked);
+                if (i === 1) setConfirm2(e.target.checked);
+                if (i === 2) setConfirm3(e.target.checked);
               }}
             />
             <p className="text-sm text-gray-700">{text}</p>
@@ -222,5 +235,5 @@ if (!emailRegex.test(formData.email.trim())) {
         </button>
       </div>
     </div>
-  )
+  );
 }
