@@ -68,7 +68,6 @@ We reserve the right to modify these Terms at any time. Continued use of the sit
 For any legal questions:
 
 **ReportLost.org**  
-123 Example Street, San Francisco, CA 94110  
 Email: support@reportlost.org
 `;
 

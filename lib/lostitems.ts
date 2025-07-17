@@ -71,7 +71,7 @@ export function exampleReports(cityData: any) {
       day: 'numeric'
     });
 
-    output.push(`📍 ${item} lost near ${place}, ${formattedDate}.`);
+    output.push(` ${item} lost near ${place}, ${formattedDate}.`);
   }
 
   return output;

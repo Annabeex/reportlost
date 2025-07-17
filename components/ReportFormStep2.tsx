@@ -1,4 +1,5 @@
-'use client'
+'use client';
+console.log('✅ STEP2 - version à utiliser pour les deux formulaires');
 
 import { useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -24,7 +25,7 @@ export default function ReportFormStep2({
   const [confirm1, setConfirm1] = useState(false)
   const [confirm2, setConfirm2] = useState(false)
   const [confirm3, setConfirm3] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState(formData.photo || '')
+  const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '')
   const [uploading, setUploading] = useState(false)
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -61,38 +62,50 @@ export default function ReportFormStep2({
     }
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
 
-    try {
-      setUploading(true)
-      const filename = `photo-${Date.now()}-${file.name}`
-      const { data, error } = await supabase.storage.from('images').upload(filename, file)
+  try {
+    setUploading(true)
 
-      if (error) throw error
+    const filename = `object_photo/lost-${Date.now()}-${file.name}`
 
-      const { data: urlData } = await supabase.storage
-        .from('images')
-        .getPublicUrl(filename)
+    const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
+      upsert: true
+    })
 
-      if (!urlData?.publicUrl) throw new Error('No public URL returned.')
+    if (uploadResponse.error) throw uploadResponse.error
 
-      setFormData((prev: any) => ({ ...prev, photo: urlData.publicUrl }))
-      setPreviewUrl(urlData.publicUrl)
-    } catch (err) {
-      alert('Error uploading image. Please try again.')
-      console.error(err)
-    } finally {
-      setUploading(false)
-    }
+    const publicUrlResponse = await supabase.storage.from('images').getPublicUrl(filename)
+
+    const publicUrl = publicUrlResponse?.data?.publicUrl
+    if (!publicUrl) throw new Error('No public URL returned.')
+
+    setFormData((prev: any) => ({ ...prev, object_photo: publicUrl }))
+    setPreviewUrl(publicUrl)
+  } catch (err) {
+    alert('Error uploading image. Please try again.')
+    console.error('Image upload error:', err)
+  } finally {
+    setUploading(false)
   }
+}
+
 
   const handleContinue = () => {
-    if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
-      alert('Please fill in all required fields.')
-      return
-    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
+  alert('Please fill in all required fields.');
+  return;
+}
+
+if (!emailRegex.test(formData.email.trim())) {
+  alert('Please enter a valid email address.');
+  return;
+}
+
 
     if (!confirm1 || !confirm2 || !confirm3) {
       alert('Please check all confirmation boxes.')
@@ -108,64 +121,30 @@ export default function ReportFormStep2({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h2 className="text-xl font-bold">Step 3: Your contact details</h2>
 
-      <div>
-        <label className="block font-medium">First name</label>
-        <input
-          name="first_name"
-          onChange={onChange}
-          value={formData.first_name || ''}
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div>
-        <label className="block font-medium">Last name</label>
-        <input
-          name="last_name"
-          onChange={onChange}
-          value={formData.last_name || ''}
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div>
-        <label className="block font-medium">Email address</label>
-        <input
-          type="email"
-          name="email"
-          onChange={onChange}
-          value={formData.email || ''}
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div>
-        <label className="block font-medium">
-          Phone number <span className="text-green-600">(optional)</span>
-        </label>
-        <input
-          type="tel"
-          name="phone"
-          onChange={onChange}
-          value={formData.phone || ''}
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div>
-        <label className="block font-medium">
-          Postal address <span className="text-green-600">(optional)</span>
-        </label>
-        <input
-          name="address"
-          onChange={onChange}
-          value={formData.address || ''}
-          className="w-full border p-2 rounded"
-        />
-      </div>
+      {[
+        { label: 'First name', name: 'first_name' },
+        { label: 'Last name', name: 'last_name' },
+        { label: 'Email address', name: 'email', type: 'email' },
+        { label: 'Phone number (optional)', name: 'phone', type: 'tel', optional: true },
+        { label: 'Postal address (optional)', name: 'address', optional: true }
+      ].map(({ label, name, type = 'text', optional }) => (
+        <div key={name}>
+          <label className="block font-medium">
+            {label}
+            {optional && <span className="text-green-600"> (optional)</span>}
+          </label>
+          <input
+            name={name}
+            type={type}
+            onChange={onChange}
+            value={formData[name] || ''}
+            className="w-full border px-3 py-1.5 rounded"
+          />
+        </div>
+      ))}
 
       <div>
         <label className="block font-medium">
@@ -180,34 +159,35 @@ export default function ReportFormStep2({
         )}
       </div>
 
-      <div className="space-y-4 pt-4">
+      <div className="space-y-3 pt-4">
         <h3 className="text-lg font-semibold">Final confirmation</h3>
 
-        <div className="border border-gray-300 bg-gray-50 p-4 rounded-md flex items-start space-x-3">
-          <input type="checkbox" checked={confirm1} onChange={(e) => setConfirm1(e.target.checked)} />
-          <p className="text-sm text-gray-700">
-            By checking this box and by adding my signature, I accept that the personal information collected via this form will be recorded so that I can be contacted again if my item(s) is / are found. I agree that my report will be published on the reportlost.org platform and on the social networks Facebook & Twitter. The data is kept for a maximum of 36 months and then automatically deleted. You can access the data that concerns you, rectify it, request its erasure or exercise your right to limit the processing of your data. You can withdraw your consent to the processing of your data at any time. You can also object to the processing or exercise your right to the portability of your data. To exercise these rights or for any questions about the processing of your data in this system, please contact our data protection team through the contact page.
-          </p>
-        </div>
-
-        <div className="border border-gray-300 bg-gray-50 p-4 rounded-md flex items-start space-x-3">
-          <input type="checkbox" checked={confirm2} onChange={(e) => setConfirm2(e.target.checked)} />
-          <p className="text-sm text-gray-700">
-            I confirm that I have read and understood the Terms of Use of the platform reportlost.org. I accept the conditions under which my report will be processed and possibly shared with third parties involved in lost and found processes (such as public services, transportation companies, or local institutions). I understand that submitting this form does not guarantee recovery of the item and that the service is provided on a best-effort basis.
-          </p>
-        </div>
-
-        <div className="border border-gray-300 bg-gray-50 p-4 rounded-md flex items-start space-x-3">
-          <input type="checkbox" checked={confirm3} onChange={(e) => setConfirm3(e.target.checked)} />
-          <p className="text-sm text-gray-700">
-            I confirm that I am the person who lost the item or that I am authorized to submit this report on behalf of the owner.
-          </p>
-        </div>
+        {[
+          'By checking this box and by adding my signature, I accept that the personal information collected via this form will be recorded so that I can be contacted again if my item(s) is / are found. I agree that my report will be published on the reportlost.org platform and on the social networks Facebook & Twitter. The data is kept for a maximum of 36 months and then automatically deleted...',
+          'I confirm that I have read and understood the Terms of Use...',
+          'I confirm that I am the person who lost the item or that I am authorized to submit this report...'
+        ].map((text, i) => (
+          <div
+            key={i}
+            className="border border-gray-300 bg-gray-50 px-3 py-2.5 rounded-md flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              checked={[confirm1, confirm2, confirm3][i]}
+              onChange={(e) => {
+                if (i === 0) setConfirm1(e.target.checked)
+                if (i === 1) setConfirm2(e.target.checked)
+                if (i === 2) setConfirm3(e.target.checked)
+              }}
+            />
+            <p className="text-sm text-gray-700">{text}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="space-y-2 pt-6">
+      <div className="space-y-2 pt-4">
         <h4 className="text-md font-medium text-gray-800">Signature</h4>
-        <div className="border border-gray-300 rounded p-4 bg-white">
+        <div className="border border-gray-300 rounded px-4 py-3 bg-white">
           <canvas
             ref={canvasRef}
             width={600}
@@ -227,7 +207,7 @@ export default function ReportFormStep2({
         </div>
       </div>
 
-      <div className="flex justify-between pt-6">
+      <div className="flex justify-between pt-4">
         <button
           className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
           onClick={onBack}

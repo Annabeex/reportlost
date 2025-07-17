@@ -4,7 +4,6 @@ import Image from 'next/image'
 import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels'
 import dynamic from 'next/dynamic'
 import { exampleReports } from '@/lib/lostitems'
-import ReportFormPage from '@/app/reportform/page' // ✅ on importe l'onglet combiné ici
 
 const CityMap = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -177,15 +176,7 @@ export default async function Page({ params }: { params: { state: string; city: 
           </div>
         </section>
 
-        <section className="bg-blue-50 p-6 rounded-lg shadow">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item or upload a found one</h2>
-          <p className="text-gray-700 mb-6">
-            Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
-          </p>
-
-          {/* ✅ Formulaire combiné avec onglets */}
-          <ReportFormPage defaultCity={displayName} />
-        </section>
+     
 
         {cityImage && (
           <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">

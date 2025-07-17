@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+
 import {
   Mail,
   ShieldCheck,
@@ -30,23 +31,25 @@ export default function WhatHappensNext({ formData, onNext, onBack, fullScreen }
 
         {/* Explanation steps */}
         <div className="space-y-4 text-sm text-gray-700">
-          {[
-            { icon: FolderCheck, title: 'Your report is reviewed', desc: "Our team carefully reads and verifies the details you've provided." },
-            { icon: Search, title: 'Search efforts begin', desc: 'We compare your report to public and private lost & found databases.' },
-            { icon: Send, title: 'Targeted transmission', desc: 'If relevant, we forward your report to institutions like transit, hotels, or authorities.' },
-            { icon: Mail, title: 'Anonymous publication', desc: 'Your report is posted without personal data. A special email address is created for replies.' },
-            { icon: Share2, title: 'Optimized visibility', desc: 'We ensure your report can be indexed on Google and shared on relevant networks.' },
-            { icon: UserCheck, title: 'Ongoing support', desc: 'For the next 30 days, our team remains available to update or close your report.' },
-            { icon: ShieldCheck, title: 'Data protection', desc: 'Your data is encrypted and processed according to strict privacy standards.' },
-          ].map(({ icon: Icon, title, desc }, i) => (
-            <div key={i} className="flex items-start gap-4 bg-white p-4 rounded-lg shadow-sm">
-              <Icon className="text-blue-600 w-6 h-6 mt-1" />
-              <div>
-                <p className="font-semibold text-gray-800">{title}</p>
-                <p className="text-gray-600">{desc}</p>
-              </div>
-            </div>
-          ))}
+         {[
+  { svg: '🗂️', title: 'Your report is reviewed', desc: "Our team carefully reads and verifies the details you've provided." },
+  { svg: '🔍', title: 'Search efforts begin', desc: 'We compare your report to public and private lost & found databases.' },
+  { svg: '📤', title: 'Targeted transmission', desc: 'If relevant, we forward your report to institutions like transit, hotels, or authorities.' },
+  { svg: '📧', title: 'Anonymous publication', desc: 'Your report is posted without personal data. A special email address is created for replies.' },
+  { svg: '📣', title: 'Optimized visibility', desc: 'We ensure your report can be indexed on Google and shared on relevant networks.' },
+  { svg: '🧑‍💻', title: 'Ongoing support', desc: 'For the next 30 days, our team remains available to update or close your report.' },
+  { svg: '🔒', title: 'Data protection', desc: 'Your data is encrypted and processed according to strict privacy standards.' },
+].map(({ svg, title, desc }, i) => (
+  <div key={i} className="flex items-start gap-4 bg-white p-4 rounded-lg shadow-sm">
+    <div className="text-2xl mt-1">{svg}</div>
+    <div>
+      <p className="font-semibold text-gray-800">{title}</p>
+      <p className="text-gray-600">{desc}</p>
+    </div>
+  </div>
+))}
+
+
         </div>
 
         <hr className="my-12" />
@@ -108,7 +111,10 @@ export default function WhatHappensNext({ formData, onNext, onBack, fullScreen }
             Back
           </button>
           <button
-            onClick={onNext}
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              onNext()
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded"
           >
             Continue

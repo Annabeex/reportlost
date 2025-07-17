@@ -66,7 +66,6 @@ We may update this policy from time to time. The latest version will always be a
 If you have any questions about this Privacy Policy, please contact us:
 
 **ReportLost.org**  
-123 Example Street, San Francisco, CA 94110  
 Email: support@reportlost.org
 `;
 
