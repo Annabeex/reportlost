@@ -11,14 +11,12 @@ const MIN_CITY_CHARS = 1
 const AutoCompleteCitySelectWithMinChar = (props: any) => {
   const [inputValue, setInputValue] = useState('')
   return (
-    <>
-      <AutoCompleteCitySelect
-        {...props}
-        inputValue={inputValue}
-        onInputChange={(e: any) => setInputValue(e.target.value)}
-        minQueryLength={MIN_CITY_CHARS}
-      />
-    </>
+    <AutoCompleteCitySelect
+      {...props}
+      inputValue={inputValue}
+      onInputChange={(e: any) => setInputValue(e.target.value)}
+      minQueryLength={MIN_CITY_CHARS}
+    />
   )
 }
 
@@ -33,11 +31,16 @@ type VisionItem = {
   ocr_text?: string
 }
 
+type LocationOption = {
+  label: string
+  value: string | number
+}
+
 export default function FoundItemDashboard() {
   const [items, setItems] = useState<VisionItem[]>([])
   const [photo, setPhoto] = useState<File | null>(null)
   const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
+  const [location, setLocation] = useState<LocationOption | null>(null)
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<string | null>(null)
   const [visionData, setVisionData] = useState<{
@@ -56,35 +59,16 @@ export default function FoundItemDashboard() {
   }, [])
 
   useEffect(() => {
-    const autoAnalyze = async () => {
-      if (photo) {
-        setLoadingVision(true)
-        try {
-          const {
-            imageUrl,
-            labels,
-            logos,
-            objects,
-            ocrText,
-          } = await uploadImageAndAnalyze(photo)
-
+    if (photo) {
+      setLoadingVision(true)
+      uploadImageAndAnalyze(photo)
+        .then(({ imageUrl, labels, logos, objects, ocrText }) => {
           setDescription(labels?.length ? labels.slice(0, 5).join(', ') : 'Objet trouvé')
-          setVisionData({
-            imageUrl,
-            labels,
-            logos,
-            objects,
-            ocrText,
-          })
-        } catch (error) {
-          console.error('Erreur analyse vision :', error)
-        } finally {
-          setLoadingVision(false)
-        }
-      }
+          setVisionData({ imageUrl, labels, logos, objects, ocrText })
+        })
+        .catch((error) => console.error('Erreur analyse vision :', error))
+        .finally(() => setLoadingVision(false))
     }
-
-    autoAnalyze()
   }, [photo])
 
   useEffect(() => {
@@ -93,29 +77,42 @@ export default function FoundItemDashboard() {
 
   const fetchItems = async () => {
     const { data } = await supabase
-      .from('vision_results')
+      .from('found_items')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (data) {
-      setItems(data as VisionItem[])
-    }
+    if (data) setItems(data as VisionItem[])
   }
 
   const handleSubmit = async () => {
     if (!photo || !description || !location || !visionData) return
 
     const { imageUrl, labels, logos, objects, ocrText } = visionData
-
     const { data: userData } = await supabase.auth.getUser()
     const user_id = userData?.user?.id ?? null
 
-    await supabase.from('vision_results').insert([
+    const safeLocation =
+      location && typeof location === 'object' && 'label' in location
+        ? location.label
+        : ''
+
+    console.log('📤 Données à envoyer :', {
+      image_url: imageUrl,
+      text: description || ocrText || '',
+      ocr_text: ocrText || '',
+      upload_location: safeLocation,
+      user_id,
+      labels: labels.join(', '),
+      logos: logos.join(', '),
+      objects: objects.join(', '),
+    })
+
+    await supabase.from('found_items').insert([
       {
         image_url: imageUrl,
         text: description || ocrText || '',
         ocr_text: ocrText || '',
-        upload_location: location,
+        upload_location: safeLocation,
         user_id,
         labels: labels.join(', '),
         logos: logos.join(', '),
@@ -126,11 +123,10 @@ export default function FoundItemDashboard() {
     setPhoto(null)
     setPreview(null)
     setDescription('')
-    setLocation('')
+    setLocation(null)
     setVisionData(null)
     setSuccessMessage('Objet ajouté avec succès !')
     fetchItems()
-
     setTimeout(() => setSuccessMessage(''), 4000)
   }
 
@@ -176,7 +172,11 @@ export default function FoundItemDashboard() {
             onChange={(e) => setDescription(e.target.value)}
             className="border p-2 rounded"
           />
-          <AutoCompleteCitySelectWithMinChar value={location} onChange={setLocation} />
+          <AutoCompleteCitySelectWithMinChar
+            value={location}
+            onChange={(value: LocationOption | null) => setLocation(value)}
+          />
+
           <button
             onClick={handleSubmit}
             className="bg-blue-500 text-white px-4 py-2 rounded w-fit"
@@ -209,10 +209,7 @@ export default function FoundItemDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {filteredItems.map((item) => (
-          <div
-            key={item.id}
-            className="border rounded-xl overflow-hidden shadow bg-white"
-          >
+          <div key={item.id} className="border rounded-xl overflow-hidden shadow bg-white">
             {isClient && (
               <Image
                 src={item.image_url}
