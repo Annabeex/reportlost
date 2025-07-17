@@ -145,6 +145,19 @@ export default function ReportForm({
         return false;
       }
 
+      // Appel de l'API pour envoyer l'e-mail au staff
+      await fetch('/api/send-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'lost',
+          data: {
+            ...payload,
+            date: new Date().toISOString(),
+          },
+        }),
+      });
+
       return true;
     } catch (err) {
       console.error('💥 Unexpected error while saving report:', err);
@@ -179,8 +192,21 @@ export default function ReportForm({
     setStep((s) => s + 1);
   };
 
-  const handleSuccessfulPayment = () => {
+  const handleSuccessfulPayment = async () => {
     alert('✅ Payment successful. Thank you for your contribution!');
+
+    // Envoi d'un e-mail automatique au client
+    await fetch('/api/send-mail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'client-confirmation',
+        data: {
+          first_name: formData.first_name,
+          email: formData.email,
+        },
+      }),
+    });
   };
 
   if (!isClient) return null;
