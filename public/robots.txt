@@ -1,5 +1,10 @@
-# public/robots.txt
 User-agent: *
-Disallow:
+Allow: /
 
-Sitemap: https://www.reportlost.org/sitemap.xml
+# Disallow les pages de back-office, admin ou internes (si jamais)
+Disallow: /login
+Disallow: /dashboard
+Disallow: /api/
+
+# Sitemap principal
+Sitemap: https://reportlost.org/sitemap.xml

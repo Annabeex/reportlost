@@ -62,10 +62,9 @@ All legal disputes shall be resolved in the courts of **San Francisco County, Ca
 
 ### 10. Contact Information
 ReportLost.org is operated by:  
-**[Your Entity Name]**  
-123 Example Street, San Francisco, CA 94110  
+**[Anaïs Bouriaud]**  
+38 Avenue du calais 44730 Saint-Michel-Chef-Chef France 
 Email: support@reportlost.org  
-Phone: +1 (555) 123‑4567
 
 ---
 

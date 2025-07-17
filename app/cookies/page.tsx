@@ -46,10 +46,9 @@ We may update this cookie policy to reflect changes in practices or regulations.
 
 ### 7. Contact
 
-For questions about our cookie use, contact us at:
+For questions about our cookie use, contact us at: 
 
-**ReportLost.org**  
-123 Example Street, San Francisco, CA 94110  
+**ReportLost.org**   
 Email: support@reportlost.org
 `;
 

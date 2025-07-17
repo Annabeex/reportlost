@@ -44,6 +44,37 @@ export default function ImageUpload({ formData, setFormData }: Props) {
 
     setFormData((prev: any) => ({ ...prev, object_photo: publicUrl }))
     setPreviewUrl(publicUrl)
+
+    // Analyse via Google Vision API
+    try {
+      const base64Image = await toBase64(file)
+
+      const response = await fetch('/api/Apivision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Image }),
+      })
+
+      const visionData = await response.json()
+
+      const autoText = [
+        ...(visionData.labels || []),
+        ...(visionData.objects || []),
+        ...(visionData.logos || []),
+        visionData.text || '',
+      ].filter(Boolean).join(', ')
+
+      const note = 'Detected content — please edit if needed and add the location (e.g., street, mall…)'
+
+      setFormData((prev: any) => ({
+        ...prev,
+        object_photo: publicUrl,
+        item: `${autoText}\n\n✏️ ${note}`,
+      }))
+    } catch (err) {
+      console.error('Vision API error:', err)
+    }
+
     setUploading(false)
   }
 
@@ -65,4 +96,16 @@ export default function ImageUpload({ formData, setFormData }: Props) {
       )}
     </div>
   )
+}
+
+function toBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = reject
+  })
 }

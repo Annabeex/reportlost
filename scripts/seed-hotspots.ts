@@ -64,7 +64,7 @@ async function fetchCategory(
 }
 
 // Boucle principale
-async function seed(startId = 7000) {
+async function seed(startId = 37774) {
   const { data: cities, error } = await supabase
     .from('us_cities')
     .select('id, city, state_name, lat, lng')
@@ -117,4 +117,8 @@ async function seed(startId = 7000) {
   await seed(lastProcessedId);
 }
 
-seed();
+// 👉 Pour lancer manuellement depuis la console :
+// seed();
+
+// Exemple : seed(25000); pour reprendre à l'ID 25000
+export { seed };

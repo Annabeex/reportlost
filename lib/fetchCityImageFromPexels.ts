@@ -5,19 +5,18 @@ export default async function fetchCityImageFromPexels(city: string, state: stri
   source_url: string | null;
 }> {
   const query = `${city} ${state} skyline`;
-  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
-    headers: {
-      Authorization: process.env.PEXELS_API_KEY!
-    }
+
+  const res = await fetch(`/api/pexels?query=${encodeURIComponent(query)}`, {
+    cache: 'no-store', // ou { next: { revalidate: 3600 } si nécessaire côté server
   });
 
   if (!res.ok) {
-    console.error(`Pexels API error: ${res.status}`);
+    console.error(`Local API /api/pexels error: ${res.status}`);
     return {
       url: null,
       alt: `View of ${city}, ${state}`,
       photographer: null,
-      source_url: null
+      source_url: null,
     };
   }
 
@@ -28,6 +27,6 @@ export default async function fetchCityImageFromPexels(city: string, state: stri
     url: photo?.src?.medium || null,
     alt: photo?.alt || `Skyline of ${city}, ${state}`,
     photographer: photo?.photographer || null,
-    source_url: photo?.url || null
+    source_url: photo?.url || null,
   };
 }

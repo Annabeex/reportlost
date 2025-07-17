@@ -1,0 +1,278 @@
+'use client';
+
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { uploadImageAndAnalyze } from '@/lib/Apivision';
+import AutoCompleteCitySelect from '@/components/AutoCompleteCitySelect';
+import generateContent from '@/lib/generatecontent';
+
+const MIN_CITY_CHARS = 1;
+
+const AutoCompleteCitySelectWithMinChar = (props: any) => {
+  const [inputValue, setInputValue] = useState('');
+  return (
+    <AutoCompleteCitySelect
+      {...props}
+      inputValue={inputValue}
+      onInputChange={(e: any) => setInputValue(e.target.value)}
+      minQueryLength={MIN_CITY_CHARS}
+    />
+  );
+};
+
+export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: string }) {
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [description, setDescription] = useState('');
+  const [city, setCity] = useState(defaultCity);
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [step, setStep] = useState(1);
+
+  const [visionLabels, setVisionLabels] = useState('');
+  const [visionLogos, setVisionLogos] = useState('');
+  const [visionObjects, setVisionObjects] = useState('');
+  const [visionOcrText, setVisionOcrText] = useState('');
+
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dropoffLocation, setDropoffLocation] = useState('');
+  const [hasItemWithYou, setHasItemWithYou] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [fixedTitle, setFixedTitle] = useState('');
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    setAnalyzing(true);
+    setProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => (prev < 90 ? prev + 10 : prev));
+    }, 300);
+
+    try {
+      const result = await uploadImageAndAnalyze(file);
+      const labels = result.labels?.join(', ') || '';
+      const logos = result.logos?.join(', ') || '';
+      const objects = result.objects?.join(', ') || '';
+      const ocrText = result.ocrText || '';
+
+      setVisionLabels(labels);
+      setVisionLogos(logos);
+      setVisionObjects(objects);
+      setVisionOcrText(ocrText);
+
+      const descriptionText = [labels, ocrText].filter(Boolean).join(' — ');
+      if (descriptionText) {
+        setDescription(
+          `${descriptionText} — Please review and complete if needed. Specify where the item was found (e.g., street name, restaurant, mall...)`
+        );
+      }
+    } catch (err) {
+      console.error('Image analysis failed:', err);
+    } finally {
+      clearInterval(progressInterval);
+      setProgress(100);
+      setTimeout(() => setAnalyzing(false), 500);
+      setUploading(false);
+    }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setPhoto(file);
+    if (file) {
+      await handleImageUpload(file);
+    }
+  };
+
+  const handleNext = () => setStep(2);
+
+  const handleSubmit = async () => {
+    if (!email && !dropoffLocation) {
+      setErrorMsg('Please provide either your email or the drop-off location.');
+      return;
+    }
+    setErrorMsg('');
+    try {
+      let publicImageUrl = '';
+      if (photo) {
+        const filename = `found-${Date.now()}-${photo.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filename, photo);
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = await supabase.storage.from('images').getPublicUrl(filename);
+        if (!urlData?.publicUrl) throw new Error('No public URL returned.');
+
+        publicImageUrl = urlData.publicUrl;
+      }
+
+      const fakeCityData = {
+        city,
+        malls: [],
+        parks: [],
+        tourism_sites: [],
+      };
+
+      const { title } = generateContent(fakeCityData);
+      setFixedTitle(title);
+
+      const { error } = await supabase.from('found_items').insert([
+        {
+          image_url: publicImageUrl,
+          description,
+          city,
+          date,
+          labels: visionLabels,
+          logos: visionLogos,
+          objects: visionObjects,
+          ocr_text: visionOcrText,
+          title,
+          email,
+          phone,
+          dropoff_location: dropoffLocation,
+          has_item_with_you: hasItemWithYou,
+        },
+      ]);
+      if (error) throw error;
+
+      setSuccess(true);
+      setStep(3);
+    } catch (err) {
+      console.error('Error submitting to Supabase:', err);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow space-y-4">
+      {step === 1 && (
+        <>
+          <h2 className="text-xl font-semibold">📦 Found Item Submission</h2>
+
+          <label className="block font-medium">📷 Upload a photo of the found item (Recommended)</label>
+          <input type="file" accept="image/*" onChange={handlePhotoChange} />
+
+          {analyzing && (
+            <>
+              <p className="text-yellow-600 text-sm">🔍 Analyzing the image... please wait before typing.</p>
+              <div className="w-full h-2 bg-gray-200 rounded overflow-hidden">
+                <div
+                  className="h-2 bg-yellow-500 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </>
+          )}
+
+          <label className="block font-medium mt-4">✏️ What did you find and where?</label>
+          <textarea
+            placeholder="Please provide a detailed description"
+            className="w-full border p-2 rounded"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={analyzing}
+          />
+
+          <label className="block font-medium mt-4">🏙️ City where it was found</label>
+          <AutoCompleteCitySelectWithMinChar value={city} onChange={setCity} />
+          <p className="text-sm text-gray-600 mt-1">
+            Please review and complete if needed. Specify where the item was found (e.g., street name, restaurant, mall...).
+          </p>
+
+          <label className="block font-medium mt-4">📅 Date when it was found</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+
+          <button
+            onClick={handleNext}
+            disabled={uploading || !photo || analyzing}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Next
+          </button>
+        </>
+      )}
+
+      {step === 2 && !success && (
+        <>
+          <h2 className="text-xl font-semibold">📩 Contact Information</h2>
+
+          <label className="block font-medium mt-4">📧 Your email address (will only be used if needed)</label>
+          <input
+            type="email"
+            className="w-full border p-2 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className="block font-medium mt-4">📞 Your phone number (optional)</label>
+          <input
+            type="tel"
+            className="w-full border p-2 rounded"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <div className="flex items-start gap-2 mt-4">
+            <input
+              type="checkbox"
+              id="hasItemWithYou"
+              checked={hasItemWithYou}
+              onChange={(e) => setHasItemWithYou(e.target.checked)}
+              className="mt-1"
+            />
+            <label htmlFor="hasItemWithYou" className="text-sm text-gray-800">
+              Do you still have the item or pet with you?
+            </label>
+          </div>
+
+          <label className="block font-medium mt-4">
+            🏢 {hasItemWithYou
+              ? 'If you already dropped it off or plan to bring it somewhere specific, please indicate the location.'
+              : 'Where did you drop the item off?'}
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., police station, store info desk, airport lost & found..."
+            className="w-full border p-2 rounded"
+            value={dropoffLocation}
+            onChange={(e) => setDropoffLocation(e.target.value)}
+          />
+
+          {errorMsg && <p className="text-red-600 text-sm mt-2">{errorMsg}</p>}
+
+          <button
+            onClick={handleSubmit}
+            disabled={uploading || (!email && !dropoffLocation)}
+            className="bg-green-600 text-white px-4 py-2 rounded mt-4"
+          >
+            Submit report
+          </button>
+        </>
+      )}
+
+      {step === 3 && success && (
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-bold text-green-700">🎉 Thank you!</h2>
+          <p>Your report has been successfully submitted.</p>
+          <div className="bg-gray-50 p-4 rounded border text-left">
+            <p><strong>📝 Title:</strong> {fixedTitle}</p>
+            <p><strong>📍 City:</strong> {city}</p>
+            <p><strong>📅 Date:</strong> {date}</p>
+            <p><strong>🧾 Description:</strong> {description}</p>
+            {dropoffLocation && <p><strong>🏢 Dropped off at:</strong> {dropoffLocation}</p>}
+          </div>
+          <p className="text-green-600 font-medium">You're awesome. Your contribution could help someone recover something precious.</p>
+        </div>
+      )}
+    </div>
+  );
+}

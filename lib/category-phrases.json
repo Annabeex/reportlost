@@ -1,0 +1,122 @@
+{
+  "phone": [
+    "Did you lose your phone?",
+    "Lost your smartphone recently?",
+    "Is your iPhone or Android missing?",
+    "Can't find your mobile device?",
+    "Report a missing phone here.",
+    "Someone might have found your lost phone.",
+    "Search for your misplaced cellphone.",
+    "Declare your missing mobile here.",
+    "Have you dropped your phone somewhere?",
+    "Lost a Samsung, iPhone, or other phone?"
+  ],
+  "wallet": [
+    "Did you misplace your wallet?",
+    "Is your card holder lost?",
+    "Report your missing wallet.",
+    "Someone may have found your purse.",
+    "Lost a leather wallet or card pouch?",
+    "Looking for your missing wallet?",
+    "Wallet lost while traveling?",
+    "Submit a report for a lost wallet.",
+    "Don't let your wallet stay lost!",
+    "Declare your wallet as missing now."
+  ],
+  "keys": [
+    "Lost your keys?",
+    "Missing house or car keys?",
+    "Did you drop your keychain?",
+    "Your keys may have been found.",
+    "Can't unlock your car or home?",
+    "Report your lost keys here.",
+    "Tired of searching for your keys?",
+    "Someone may have returned your keys.",
+    "Declare a set of keys as lost.",
+    "Lost key fob, badge or USB key?"
+  ],
+  "backpack": [
+    "Missing your backpack?",
+    "Report a lost school bag or travel pack.",
+    "Lost your rucksack or briefcase?",
+    "Someone may have found your backpack.",
+    "Is your laptop bag missing?",
+    "Declare your lost backpack here.",
+    "Backpack forgotten in public?",
+    "Report a sports or travel bag.",
+    "Find your lost backpack now.",
+    "Dropped your bag while commuting?"
+  ],
+  "laptop": [
+    "Lost your laptop or notebook?",
+    "Missing MacBook or PC?",
+    "Report a lost portable computer.",
+    "Laptop left behind?",
+    "Was your laptop stolen or lost?",
+    "Someone might have picked up your laptop.",
+    "Declare your computer missing here.",
+    "Can't find your Chromebook or Surface?",
+    "Submit a laptop loss report.",
+    "Your laptop might be waiting for you."
+  ],
+  "id-card": [
+    "Lost your ID card?",
+    "Missing driver's license or passport?",
+    "Report a lost identification document.",
+    "Forgot your student or work ID?",
+    "Submit your lost ID now.",
+    "Looking for your official ID card?",
+    "Report lost identity documents.",
+    "Someone may have returned your ID.",
+    "Don't let your ID fall into wrong hands.",
+    "Get help recovering your lost ID."
+  ],
+  "glasses": [
+    "Have you lost your glasses?",
+    "Missing sunglasses or optical frames?",
+    "Declare a pair of glasses as lost.",
+    "Report your lost eyewear.",
+    "Glasses left behind?",
+    "Can't find your reading glasses?",
+    "Looking for Ray-Ban or prescription lenses?",
+    "Eyeglasses reported missing?",
+    "Lost your glasses case and all?",
+    "Someone might have found your eyewear."
+  ],
+  "jewelry": [
+    "Lost your jewelry?",
+    "Declare a missing bracelet, ring, or necklace.",
+    "Was your watch or pendant lost?",
+    "Jewelry misplaced while traveling?",
+    "Looking for a lost diamond or earring?",
+    "Report valuable items lost here.",
+    "Submit a jewelry loss report.",
+    "Your jewel may have been found.",
+    "Don't wait to report lost accessories.",
+    "Someone may have returned your item."
+  ],
+  "clothing": [
+    "Lost a jacket, hoodie, or scarf?",
+    "Did you leave clothing behind?",
+    "Declare missing clothing items.",
+    "Report a lost coat or shirt.",
+    "Dropped a sweater or sweatshirt?",
+    "Misplaced a beanie, pants or gloves?",
+    "Clothes lost in transit?",
+    "Someone may have picked up your garment.",
+    "Declare your lost clothing here.",
+    "Find your favorite piece again."
+  ],
+  "luggage": [
+    "Missing your luggage or suitcase?",
+    "Lost a travel bag or trolley?",
+    "Report a missing carry-on or valise.",
+    "Luggage gone missing at the airport?",
+    "Submit a luggage loss report.",
+    "Looking for a lost hard case?",
+    "Someone may have found your suitcase.",
+    "Don't leave your luggage unclaimed.",
+    "Was your bag lost on the train?",
+    "Declare lost baggage now."
+  ]
+}

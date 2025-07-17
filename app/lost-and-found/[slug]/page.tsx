@@ -1,16 +1,21 @@
+'use client';
+
 import { createClient } from '@supabase/supabase-js';
 import '../../../app/globals.css';
 import Image from 'next/image';
-import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
 import { exampleReports } from '@/lib/lostitems';
-import ReportFormPage from '@/app/reportform/page';
 import { getSlugFromCity } from '@/lib/getSlugFromCity';
 import { getNearbyCities } from '@/lib/getNearbyCities';
-import Link from 'next/link';
-import { Metadata } from 'next';
+import generateContent from '@/lib/generatecontent';
+import ClientReportForm from '@/components/ClientReportForm';
 
-const CityMap = dynamic(() => import('@/components/Map'), { ssr: false });
+const CityMap = dynamic(() => import('@/components/Map').then(mod => mod.default), {
+  ssr: false,
+  loading: () => <div className="text-gray-400">Loading map...</div>,
+});
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,256 +34,161 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-interface CityData {
-  id: number;
-  city: string;
-  city_ascii: string;
-  state_name: string;
-  state_id: string;
-  lat: number;
-  lng: number;
-  image_url: string | null;
-  image_alt: string | null;
-  photographer: string | null;
-  image_source_url: string | null;
-  zips: string;
-  population: number;
-  density: number;
-  timezone: string;
-  hotspots: any[];
-  county_name: string;
-}
-
-function generateCitySeoText(cityData: CityData): string {
-  const { city, state_name, population, density, timezone, zips, hotspots, county_name } = cityData;
-  const zip = zips?.match(/\b\d{5}\b/)?.[0];
-  const pop = population ? population.toLocaleString() : 'many';
-  const dens = density ? `${density} people/km²` : 'unknown density';
-  const today = formatDate(new Date());
-
-  const getNames = (match: string[]) =>
-    Array.isArray(hotspots)
-      ? hotspots
-          .filter((h: any) => typeof h.name === 'string' && match.some(k => h.name.toLowerCase().includes(k)))
-          .map((h: any) => h.name)
-          .slice(0, 5)
-      : [];
-
-  const sections = [
-    { key: 'parks', synonyms: ['green spaces', 'public parks', 'recreational areas'], names: getNames(['park']) },
-    { key: 'tourism', synonyms: ['tourist attractions', 'landmarks', 'points of interest'], names: getNames(['tourism', 'attraction', 'landmark']) },
-    { key: 'stations', synonyms: ['stations', 'transit hubs', 'commuter points'], names: getNames(['station']) },
-    { key: 'markets', synonyms: ['shopping centers', 'marketplaces', 'retail zones'], names: getNames(['mall', 'market']) },
-    { key: 'monuments', synonyms: ['historic places', 'memorials', 'heritage sites'], names: getNames(['memorial', 'historic', 'theatre']) },
-    { key: 'airports', synonyms: ['airports', 'regional terminals', 'air travel hubs'], names: getNames(['airport']) },
-  ];
-
-  let text = `### Where are lost items commonly found in ${city}?
-
-Lost something important in ${city}, ${state_name}? Don't worry — you're not alone. Every week, lost items like phones, wallets or backpacks are recovered in this city thanks to the vigilance of locals and public services.
-
-`;
-
-  sections.forEach(section => {
-    if (section.names.length) {
-      const synonym = section.synonyms[Math.floor(Math.random() * section.synonyms.length)];
-      text += `Among the most visited ${synonym}:
-`;
-      section.names.forEach(name => {
-        text += `- ${name}
-`;
-      });
-      text += `\nThese places are busy and regularly cleaned, improving the chances of recovering lost items.\n\n`;
-    }
-  });
-
-  text += `---\n\n### Local info: ${city}, ${state_name}\n\n${city} is located in ${county_name || 'its county'}, ${state_name}, with a population of approximately ${pop} and a density of ${dens}. The main ZIP code is ${zip || 'unknown'}, and it lies in the ${timezone || 'local'} timezone.\n\nPage updated on ${today}.\n\n`;
-
-  text += `---\n\n### Most commonly lost items\n- Phones and electronics\n- Wallets and credit cards\n- Keys (house, car, office)\n- Glasses (sun and prescription)\n- Clothing and accessories\n`;
-
-  return text;
-}
-
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const slug = decodeURIComponent(params.slug);
-  const zip = slug.split('-').slice(-1)[0];
-  const rawCity = slug.replace(`-${zip}`, '').replace(/-/g, ' ');
-  const cityName = toTitleCase(rawCity);
-
-  const { data } = await supabase
-    .from('us_cities')
-    .select('city_ascii, state_name, zips, state_id')
-    .like('zips', `%${zip}%`)
-    .ilike('city_ascii', cityName)
-    .single();
-
-  if (!data) return {};
-
-  const canonical = `https://reportlost.org/lost-and-found/${getSlugFromCity(data.city_ascii, zip)}`;
-
-  return {
-    title: `Lost & Found in ${data.city_ascii}, ${data.state_name} – ReportLost.org`,
-    description: `Report or find lost items in ${data.city_ascii}. Quick, secure and locally focused.`,
-    alternates: {
-      canonical
-    }
-  };
-}
-
 export default async function Page({ params }: { params: { slug: string } }) {
   const slug = decodeURIComponent(params.slug);
   const zip = slug.split('-').slice(-1)[0];
   const rawCity = slug.replace(`-${zip}`, '').replace(/-/g, ' ');
   const cityName = toTitleCase(rawCity);
 
-  let cityData: CityData | null = null;
-  try {
-    const { data } = await supabase
-      .from('us_cities')
-      .select('*')
-      .ilike('city_ascii', cityName)
-      .like('zips', `%${zip}%`)
-      .single();
-    cityData = data as CityData;
-  } catch (err) {
-    console.error('Error fetching city data:', err);
-  }
+  const { data: cityData } = await supabase
+    .from('us_cities')
+    .select('*')
+    .ilike('city_ascii', cityName)
+    .like('zips', `%${zip}%`)
+    .single();
 
   if (!cityData) {
     return <div className="text-red-600 p-4">No data found for {cityName} (ZIP {zip})</div>;
   }
 
-  const displayName = cityData.city || cityName;
-  const stateName = cityData.state_name || '';
+  ['parks', 'malls', 'tourism_sites'].forEach((field) => {
+    if (typeof cityData[field] === 'string') {
+      try {
+        cityData[field] = JSON.parse(cityData[field]);
+      } catch {
+        cityData[field] = [];
+      }
+    }
+  });
 
-  const slugUrl = getSlugFromCity(cityData.city_ascii, zip);
+  const title = cityData.static_title || `Lost something in ${cityData.city_ascii}?`;
+  const text = cityData.static_content || '';
+  const today = formatDate(new Date());
+  const reports = exampleReports(cityData);
   const nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
 
-  let cityImage = cityData.image_url || null;
-  let cityImageAlt = cityData.image_alt || `View of ${displayName}, ${stateName}`;
+  let cityImage = cityData.image_url;
+  let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
   let cityImageCredit = '';
 
-  if (!cityImage) {
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  if (!cityImage && isDev) {
     try {
-      const image = await fetchCityImageFromPexels(cityName, stateName);
+      const image = await fetchCityImageFromPexels(cityName, cityData.state_name);
       cityImage = image.url;
       cityImageAlt = image.alt;
 
-      if (cityImage && cityData.id) {
-        await supabase
-          .from('us_cities')
-          .update({
-            image_url: image.url,
-            image_alt: image.alt,
-            photographer: image.photographer,
-            image_source_url: image.source_url,
-          })
-          .eq('id', cityData.id);
-      }
+      await supabase
+        .from('us_cities')
+        .update({
+          image_url: image.url,
+          image_alt: image.alt,
+          photographer: image.photographer,
+          image_source_url: image.source_url,
+        })
+        .eq('id', cityData.id);
 
-      if (image.photographer && image.source_url) {
-        cityImageCredit = `Photo by ${image.photographer}`;
-      }
+      cityImageCredit = image.photographer ? `Photo by ${image.photographer}` : '';
     } catch (err) {
-      console.error('Error fetching image from Pexels:', err);
+      console.warn('Could not fetch city image:', err);
     }
-  } else if (cityData.photographer && cityData.image_source_url) {
-    cityImageCredit = `Photo by ${cityData.photographer}`;
   }
 
-  const markerLat = cityData?.lat;
-  const markerLon = cityData?.lng;
   let policeStations = [];
-
   try {
-    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${markerLat},${markerLon});out tags center;`;
-    const overpassRes = await fetch(overpassUrl);
-    const overpassData = await overpassRes.json();
-    policeStations = overpassData?.elements || [];
+    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${cityData.lat},${cityData.lng});out tags center;`;
+    const res = await fetch(overpassUrl, {
+      next: { revalidate: 3600 },
+    });
+    const data = await res.json();
+    policeStations = data.elements;
   } catch (err) {
-    console.error('Error fetching police data from Overpass:', err);
+    console.warn('Police station fetch failed:', err);
   }
 
-  const articleText = cityData ? generateCitySeoText(cityData) : '';
-  const reports: string[] = cityData ? exampleReports(cityData) : [];
-  const today = formatDate(new Date());
+  const enrichedText = `<p>${text
+    .replace(/(\n\n|\n)/g, '\n')
+    .replace(/(?<!\n)\n(?!\n)/g, '\n\n')
+    .replace(/hotels?/gi, '🏨 hotels')
+    .replace(/restaurants?/gi, '🍽️ restaurants')
+    .replace(/malls?/gi, '🛍️ malls')
+    .replace(/parks?/gi, '🌳 parks')
+    .replace(/tourist attractions?/gi, '🧭 tourist attractions')
+    .replace(/museum/gi, '🖼️ museum')
+    .replace(/staff/gi, '👥 staff')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, ' ')}</p>`;
 
   return (
     <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-16">
-        <section className="text-center bg-gradient-to-r from-blue-50 to-white py-12 px-4 rounded-xl shadow-md">
-          <h1 className="text-4xl font-bold text-gray-900">Lost &amp; Found in {displayName}</h1>
-          <p className="mt-2 text-sm text-gray-500">{today}</p>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover how to recover your lost item — from local hotspots to practical advice.
-          </p>
+        <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-xl shadow">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
         </section>
 
-        <section className="bg-gray-100 p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
-          <div className="md:w-1/2 w-full h-[300px]">
-            <CityMap stations={policeStations} />
-          </div>
-
-          <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">🔍 Recently reported lost items in {displayName}</h2>
-            <ul className="text-gray-700 list-none space-y-2 pl-0">
-              {reports.map((report, index) => (
-                <li key={index} className="pl-6 relative flex items-start">
-                  <span className="absolute left-0 top-0">• 📍</span>
-                  <span className="block ml-4 break-words">{report}</span>
+        <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8">
+          <div className="lg:w-1/2 w-full prose text-gray-800">
+            <h2 className="text-xl font-semibold text-blue-900 mb-3">
+              🔍 Recently reported lost items in {cityData.city_ascii} – updated this {today}
+            </h2>
+            <ul className="list-none space-y-2 pl-0">
+              {reports.map((r, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-blue-500">📍</span>
+                  <span>{r}</span>
                 </li>
               ))}
             </ul>
           </div>
+          <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
+            <CityMap stations={policeStations} />
+          </div>
         </section>
 
-        <section className="bg-blue-50 p-6 rounded-lg shadow">
-          <h2 className="text-2xl font-semibold text-blue-800 mb-4">📝 Report your lost item or upload a found one</h2>
-          <p className="text-gray-700 mb-6">
-            Fill out the form below with as many details as possible to increase your chances of recovering the lost item.
-          </p>
-          <ReportFormPage defaultCity={displayName} />
+        <section className="bg-blue-100 py-10 px-6 rounded-xl shadow">
+          <ClientReportForm defaultCity={cityData.city_ascii} />
         </section>
 
-        {cityImage && (
-          <section className="bg-white p-6 rounded-lg shadow flex flex-col md:flex-row gap-6 items-start">
-            <div className="md:w-1/2 w-full relative rounded-lg overflow-hidden">
+        <section className="bg-white p-6 rounded-xl shadow">
+          <div
+            className="text-gray-800 leading-relaxed text-base [&>p]:mb-4"
+            dangerouslySetInnerHTML={{ __html: enrichedText }}
+          />
+        </section>
+
+        {nearbyCities.length > 0 && cityImage && (
+          <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8 items-start">
+            <div className="lg:w-1/2 w-full">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
+              <ul className="list-disc list-inside text-gray-700">
+                {nearbyCities.map((city: any) => {
+                  const zip = city.zips?.match(/\b\d{5}\b/)?.[0];
+                  return (
+                    <li key={city.id}>
+                      <Link
+                        href={`/lost-and-found/${getSlugFromCity(city.city_ascii, zip)}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {city.city_ascii} ({zip})
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="lg:w-1/2 w-full">
               <Image
                 src={cityImage}
                 alt={cityImageAlt}
                 width={600}
                 height={400}
-                className="w-full h-[250px] rounded-lg shadow-md object-cover"
+                className="w-full h-[250px] object-cover rounded-lg shadow"
               />
               {cityImageCredit && (
                 <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
               )}
             </div>
-            <div className="md:w-1/2 w-full prose max-w-none prose-sm sm:prose-base text-gray-700">
-              <div className="whitespace-pre-line">{articleText.split('---')[0]}</div>
-            </div>
-          </section>
-        )}
-
-        <section className="bg-white p-6 rounded-lg shadow prose max-w-none prose-sm sm:prose-base text-gray-700">
-          <div className="whitespace-pre-line">{articleText.split('---').slice(1).join('---')}</div>
-        </section>
-
-        {nearbyCities.length > 0 && (
-          <section className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
-            <ul className="list-disc list-inside text-gray-700">
-              {nearbyCities.map((city: any) => {
-                const cityZip = city.zips?.match(/\b\d{5}\b/)?.[0];
-                return (
-                  <li key={city.id}>
-                    <Link href={`/lost-and-found/${getSlugFromCity(city.city_ascii, cityZip)}`} className="text-blue-600 hover:underline">
-                      {city.city_ascii} ({cityZip})
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
           </section>
         )}
       </div>

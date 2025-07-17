@@ -1,32 +1,34 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import AutoCompleteCitySelect from '@/components/AutoCompleteCitySelect'
+import { useState } from 'react';
+import AutoCompleteCitySelect from '@/components/AutoCompleteCitySelect';
 
 interface Props {
-  formData: any
-  onChange: (e: React.ChangeEvent<any>) => void
-  onNext: () => void
+  formData: any;
+  onChange: (e: React.ChangeEvent<any>) => void;
+  onNext: () => void;
 }
 
 export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
-  const [showPhoneDetails, setShowPhoneDetails] = useState(formData.isCellphone)
-  const [showLocationStep, setShowLocationStep] = useState(false)
-  const [showTransportFields, setShowTransportFields] = useState(formData.transport)
+  const [showPhoneDetails, setShowPhoneDetails] = useState(formData.isCellphone);
+  const [showLocationStep, setShowLocationStep] = useState(false);
+  const [showTransportFields, setShowTransportFields] = useState(formData.transport);
+
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e)
+    onChange(e);
     if (e.target.name === 'isCellphone') {
-      setShowPhoneDetails(e.target.checked)
+      setShowPhoneDetails(e.target.checked);
     }
     if (e.target.name === 'transport') {
-      setShowTransportFields(e.target.checked)
+      setShowTransportFields(e.target.checked);
     }
-  }
+  };
 
   if (showLocationStep) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <h2 className="text-xl font-bold">Step 2: Where did the loss probably happen?</h2>
 
         <div>
@@ -45,7 +47,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             name="loss_neighborhood"
             onChange={onChange}
             value={formData.loss_neighborhood || ''}
-            className="w-full border p-2 rounded"
+            className="w-full border px-3 py-1.5 rounded"
           />
         </div>
 
@@ -55,7 +57,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             name="loss_street"
             onChange={onChange}
             value={formData.loss_street || ''}
-            className="w-full border p-2 rounded"
+            className="w-full border px-3 py-1.5 rounded"
           />
         </div>
 
@@ -77,7 +79,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
                 name="departure_place"
                 onChange={onChange}
                 value={formData.departure_place || ''}
-                className="w-full border p-2 rounded"
+                className="w-full border px-3 py-1.5 rounded"
               />
             </div>
             <div>
@@ -86,7 +88,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
                 name="arrival_place"
                 onChange={onChange}
                 value={formData.arrival_place || ''}
-                className="w-full border p-2 rounded"
+                className="w-full border px-3 py-1.5 rounded"
               />
             </div>
             <div>
@@ -96,7 +98,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
                 name="departure_time"
                 onChange={onChange}
                 value={formData.departure_time || ''}
-                className="w-full border p-2 rounded"
+                className="w-full border px-3 py-1.5 rounded"
               />
             </div>
             <div>
@@ -106,7 +108,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
                 name="arrival_time"
                 onChange={onChange}
                 value={formData.arrival_time || ''}
-                className="w-full border p-2 rounded"
+                className="w-full border px-3 py-1.5 rounded"
               />
             </div>
             <div>
@@ -115,13 +117,13 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
                 name="travel_number"
                 onChange={onChange}
                 value={formData.travel_number || ''}
-                className="w-full border p-2 rounded"
+                className="w-full border px-3 py-1.5 rounded"
               />
             </div>
           </div>
         )}
 
-        <div className="flex justify-between pt-6">
+        <div className="flex justify-between pt-4">
           <button
             className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
             onClick={() => setShowLocationStep(false)}
@@ -136,10 +138,9 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  // STEP 1 — Describe item
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold">Step 1: Describe the lost item</h2>
@@ -151,7 +152,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           placeholder="e.g. Phone lost in JFK Airport taxi"
           onChange={onChange}
           value={formData.title}
-          className="w-full border p-2 rounded"
+          className="w-full border px-3 py-1.5 rounded"
         />
       </div>
 
@@ -162,7 +163,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           placeholder="Color, brand, unique features..."
           onChange={onChange}
           value={formData.description}
-          className="w-full border p-2 rounded"
+          className="w-full border px-3 py-1.5 rounded"
         />
       </div>
 
@@ -171,9 +172,10 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
         <input
           name="date"
           type="date"
+          max={today}
           onChange={onChange}
           value={formData.date}
-          className="w-full border p-2 rounded"
+          className="border px-3 py-1.5 rounded max-w-xs"
         />
       </div>
 
@@ -234,7 +236,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
               name="phoneOther"
               onChange={onChange}
               value={formData.phoneOther || ''}
-              className="w-full border p-2 rounded"
+              className="w-full border px-3 py-1.5 rounded"
             />
           </div>
         </div>
@@ -249,15 +251,15 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
               !formData.description?.trim() ||
               !formData.date?.trim()
             ) {
-              alert('Please fill in all required fields.')
-              return
+              alert('Please fill in all required fields.');
+              return;
             }
-            setShowLocationStep(true)
+            setShowLocationStep(true);
           }}
         >
           Continue
         </button>
       </div>
     </div>
-  )
+  );
 }

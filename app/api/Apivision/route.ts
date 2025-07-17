@@ -12,10 +12,11 @@ export async function POST(req: NextRequest) {
       {
         image: { content: image },
         features: [
-          { type: 'LABEL_DETECTION', maxResults: 10 },
-          { type: 'LOGO_DETECTION', maxResults: 5 },
-          { type: 'OBJECT_LOCALIZATION', maxResults: 10 },
+          { type: 'WEB_DETECTION', maxResults: 3 },
           { type: 'TEXT_DETECTION' },
+          { type: 'LOGO_DETECTION', maxResults: 5 },
+          { type: 'OBJECT_LOCALIZATION', maxResults: 5 },
+          { type: 'LABEL_DETECTION', maxResults: 3 }, // fallback
         ],
       },
     ],
@@ -29,17 +30,18 @@ export async function POST(req: NextRequest) {
     })
 
     const json = await response.json()
+    const annotations = json.responses?.[0]
 
-    if (!response.ok || !json.responses) {
-      throw new Error('Réponse invalide de l’API Google Vision')
-    }
+    if (!annotations) throw new Error('Réponse vide ou invalide')
 
-    const annotations = json.responses[0] || {}
+    // 🧠 Préférence pour webDetection
+    const webLabels = annotations.webDetection?.bestGuessLabels?.map((l: any) => l.label)
+    const fallbackLabels = annotations.labelAnnotations?.map((l: any) => l.description)
 
     return NextResponse.json({
-      labels: (annotations.labelAnnotations || []).map((l: any) => l.description),
-      logos: (annotations.logoAnnotations || []).map((l: any) => l.description),
-      objects: (annotations.localizedObjectAnnotations || []).map((o: any) => o.name),
+      labels: webLabels?.length ? webLabels : fallbackLabels || [],
+      logos: annotations.logoAnnotations?.map((l: any) => l.description) || [],
+      objects: annotations.localizedObjectAnnotations?.map((o: any) => o.name) || [],
       text: annotations.fullTextAnnotation?.text || '',
     })
   } catch (error) {
