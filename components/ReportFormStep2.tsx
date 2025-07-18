@@ -21,7 +21,7 @@ export default function ReportFormStep2({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSigned, setHasSigned] = useState(!!formData.signature);
+  const hasSigned = !!formData.signature;
   const [confirm1, setConfirm1] = useState(false);
   const [confirm2, setConfirm2] = useState(false);
   const [confirm3, setConfirm3] = useState(false);
@@ -48,7 +48,6 @@ export default function ReportFormStep2({
     if (canvas) {
       const dataUrl = canvas.toDataURL();
       setFormData((prev: any) => ({ ...prev, signature: dataUrl }));
-      setHasSigned(true);
     }
   };
 
@@ -58,7 +57,6 @@ export default function ReportFormStep2({
       const ctx = canvas.getContext('2d');
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
       setFormData((prev: any) => ({ ...prev, signature: '' }));
-      setHasSigned(false);
     }
   };
 
