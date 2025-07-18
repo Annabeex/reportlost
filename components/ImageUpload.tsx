@@ -43,7 +43,6 @@ export default function ImageUpload({ formData, setFormData }: Props) {
 
     const publicUrl = publicUrlData.publicUrl
 
-    setFormData((prev: any) => ({ ...prev, object_photo: publicUrl }))
     setPreviewUrl(publicUrl)
 
     // Analyse via Google Vision API

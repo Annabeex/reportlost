@@ -1,7 +1,5 @@
 'use client';
-console.log('✅ STEP2 - version à utiliser pour les deux formulaires');
-
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface Props {
@@ -19,46 +17,11 @@ export default function ReportFormStep2({
   onBack,
   setFormData
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const hasSigned = typeof formData.signature === 'string' && formData.signature.length > 0;
   const [confirm1, setConfirm1] = useState(false);
   const [confirm2, setConfirm2] = useState(false);
   const [confirm3, setConfirm3] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '');
   const [uploading, setUploading] = useState(false);
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
-    const ctx = canvasRef.current?.getContext('2d');
-    ctx?.beginPath();
-    ctx?.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext('2d');
-    ctx?.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    ctx?.stroke();
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const dataUrl = canvas.toDataURL();
-      setFormData((prev: any) => ({ ...prev, signature: dataUrl }));
-    }
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-      setFormData((prev: any) => ({ ...prev, signature: '' }));
-    }
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,21 +75,21 @@ export default function ReportFormStep2({
       return;
     }
 
-    if (!hasSigned) {
-      alert('Please provide your signature.');
-      return;
-    }
+    console.log('📦 formData before clean (no signature):', formData);
 
-    // ✅ Sécurisation : protection contre objets non sérialisables
     try {
-      const safeSignature =
-        typeof formData.signature === 'string' ? formData.signature : '';
-      const cleanFormData = {
-        ...formData,
-        signature: safeSignature
-      };
-      const serialized = JSON.parse(JSON.stringify(cleanFormData));
-      setFormData(serialized);
+      const clean: any = {};
+      for (const key in formData) {
+        if (key === 'signature') continue; // signature supprimée
+        try {
+          JSON.stringify(formData[key]);
+          clean[key] = formData[key];
+        } catch (e) {
+          console.warn(`🧨 Field "${key}" is unserializable and was removed.`);
+        }
+      }
+
+      setFormData(clean);
       onNext();
     } catch (err) {
       console.error('❌ Failed to clean formData:', err);
@@ -189,9 +152,9 @@ export default function ReportFormStep2({
         <h3 className="text-lg font-semibold">Final confirmation</h3>
 
         {[
-          'By checking this box and by adding my signature, I accept that the personal information collected via this form will be recorded so that I can be contacted again if my item(s) is / are found. I agree that my report will be published on the reportlost.org platform and on the social networks Facebook & Twitter. The data is kept for a maximum of 36 months and then automatically deleted...',
-          'I confirm that I have read and understood the Terms of Use...',
-          'I confirm that I am the person who lost the item or that I am authorized to submit this report...'
+          'By submitting this form, I agree to be contacted if my item is found. My report may be published on reportlost.org and social media. Data is stored up to 36 months.',
+          'I confirm that I have read and understood the Terms of Use.',
+          'I confirm that I am the person who lost the item or authorized to report it.'
         ].map((text, i) => (
           <div
             key={i}
@@ -209,28 +172,6 @@ export default function ReportFormStep2({
             <p className="text-sm text-gray-700">{text}</p>
           </div>
         ))}
-      </div>
-
-      <div className="space-y-2 pt-4">
-        <h4 className="text-md font-medium text-gray-800">Signature</h4>
-        <div className="border border-gray-300 rounded px-4 py-3 bg-white">
-          <canvas
-            ref={canvasRef}
-            width={600}
-            height={150}
-            className="w-full border rounded cursor-crosshair bg-white"
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-          />
-          <div className="flex justify-between mt-2">
-            <button onClick={clearSignature} className="text-sm text-blue-600 hover:underline">
-              Clear Signature
-            </button>
-            {hasSigned && <span className="text-green-600 text-sm">✔️ Signature recorded</span>}
-          </div>
-        </div>
       </div>
 
       <div className="flex justify-between pt-4">
