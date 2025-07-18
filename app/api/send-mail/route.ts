@@ -32,35 +32,56 @@ export async function POST(req: Request) {
     }
   }
 
-  const title = data.title || 'No title';
-  const description = data.description || 'No description';
-  const email = data.email || 'No email';
-  const date = new Date(data.date).toLocaleString();
-  const contribution = data.contribution ? `$${data.contribution.toFixed(2)}` : 'No contribution';
-  const location = [data.loss_street, data.loss_neighborhood, data.city].filter(Boolean).join(', ');
+  // Sanitize data before formatting email
+  const {
+    title = 'No title',
+    description = 'No description',
+    email = 'No email',
+    date,
+    contribution,
+    loss_street,
+    loss_neighborhood,
+    city,
+    departure_place,
+    arrival_place,
+    departure_time,
+    arrival_time,
+    travel_number,
+    time_slot,
+    phone_description,
+    first_name,
+    last_name,
+    phone,
+    address,
+    object_photo
+  } = data;
+
+  const formattedDate = new Date(date).toLocaleString();
+  const formattedContribution = contribution ? `$${contribution.toFixed(2)}` : 'No contribution';
+  const location = [loss_street, loss_neighborhood, city].filter(Boolean).join(', ');
   const transport = [
-    data.departure_place && `From ${data.departure_place} at ${data.departure_time}`,
-    data.arrival_place && `to ${data.arrival_place} at ${data.arrival_time}`,
-    data.travel_number && `Travel #${data.travel_number}`,
-    data.time_slot && `Slot: ${data.time_slot}`,
+    departure_place && `From ${departure_place} at ${departure_time}`,
+    arrival_place && `to ${arrival_place} at ${arrival_time}`,
+    travel_number && `Travel #${travel_number}`,
+    time_slot && `Slot: ${time_slot}`,
   ].filter(Boolean).join(', ');
-  const phone = data.phone_description || null;
-  const contact = `${data.first_name || ''} ${data.last_name || ''} - ${data.phone || ''} - ${data.address || ''}`;
+  const contact = `${first_name || ''} ${last_name || ''} - ${phone || ''} - ${address || ''}`;
 
   const subject = type === 'lost'
-    ? `Report-Lost (${date}) ${contribution}`
-    : `Report-Found (${date})`;
+    ? `Report-Lost (${formattedDate}) ${formattedContribution}`
+    : `Report-Found (${formattedDate})`;
 
   const bodyHtml = `
     <h2>${subject}</h2>
-    <p><strong>🗓 Date:</strong> ${date}</p>
+    <p><strong>🗓 Date:</strong> ${formattedDate}</p>
     <p><strong>📦 Object:</strong> ${title}</p>
     <p><strong>📝 Description:</strong> ${description}</p>
     <p><strong>📍 Location:</strong> ${location}</p>
     ${transport ? `<p><strong>🚉 Transport:</strong> ${transport}</p>` : ''}
-    ${phone ? `<p><strong>📱 Phone:</strong> ${phone}</p>` : ''}
+    ${phone_description ? `<p><strong>📱 Phone:</strong> ${phone_description}</p>` : ''}
     <p><strong>👤 Contact:</strong> ${contact}</p>
-    <p><strong>💸 Contribution:</strong> ${contribution}</p>
+    <p><strong>💸 Contribution:</strong> ${formattedContribution}</p>
+    ${object_photo ? `<p><strong>📷 Image:</strong><br/><img src="${object_photo}" alt="Object photo" style="max-width:300px;border-radius:8px;" /></p>` : ''}
   `;
 
   try {
