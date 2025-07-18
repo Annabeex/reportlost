@@ -1,16 +1,25 @@
-// app/api/send-mail/route.ts
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-export async function POST(req: Request) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const body = await req.json();
+export async function POST(req: Request) {
+  let body: any;
+  try {
+    body = await req.json();
+  } catch (error) {
+    console.error('❌ Invalid JSON:', error);
+    return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const { type, data } = body;
+  if (!type || !data) {
+    return NextResponse.json({ success: false, error: 'Missing type or data' }, { status: 400 });
+  }
 
   if (type === 'client-confirmation') {
-    const firstName = data.first_name || 'Customer';
-    const email = data.email;
+    const firstName = sanitize(data.first_name, 'Customer');
+    const email = sanitize(data.email);
 
     const html = `
       <h2>Thank you, ${firstName}!</h2>
@@ -32,7 +41,10 @@ export async function POST(req: Request) {
     }
   }
 
-  // Sanitize data before formatting email
+  // ----------------------------
+  // Admin alert: lost or found
+  // ----------------------------
+
   const {
     title = 'No title',
     description = 'No description',
@@ -56,8 +68,8 @@ export async function POST(req: Request) {
     object_photo
   } = data;
 
-  const formattedDate = new Date(date).toLocaleString();
-  const formattedContribution = contribution ? `$${contribution.toFixed(2)}` : 'No contribution';
+  const formattedDate = date ? new Date(date).toLocaleString() : new Date().toLocaleString();
+  const formattedContribution = contribution ? `$${Number(contribution).toFixed(2)}` : 'No contribution';
   const location = [loss_street, loss_neighborhood, city].filter(Boolean).join(', ');
   const transport = [
     departure_place && `From ${departure_place} at ${departure_time}`,
@@ -65,7 +77,7 @@ export async function POST(req: Request) {
     travel_number && `Travel #${travel_number}`,
     time_slot && `Slot: ${time_slot}`,
   ].filter(Boolean).join(', ');
-  const contact = `${first_name || ''} ${last_name || ''} - ${phone || ''} - ${address || ''}`;
+  const contact = [first_name, last_name, phone, address].filter(Boolean).join(' – ');
 
   const subject = type === 'lost'
     ? `Report-Lost (${formattedDate}) ${formattedContribution}`
@@ -74,14 +86,14 @@ export async function POST(req: Request) {
   const bodyHtml = `
     <h2>${subject}</h2>
     <p><strong>🗓 Date:</strong> ${formattedDate}</p>
-    <p><strong>📦 Object:</strong> ${title}</p>
-    <p><strong>📝 Description:</strong> ${description}</p>
-    <p><strong>📍 Location:</strong> ${location}</p>
-    ${transport ? `<p><strong>🚉 Transport:</strong> ${transport}</p>` : ''}
-    ${phone_description ? `<p><strong>📱 Phone:</strong> ${phone_description}</p>` : ''}
-    <p><strong>👤 Contact:</strong> ${contact}</p>
+    <p><strong>📦 Object:</strong> ${sanitize(title)}</p>
+    <p><strong>📝 Description:</strong> ${sanitize(description)}</p>
+    <p><strong>📍 Location:</strong> ${sanitize(location)}</p>
+    ${transport ? `<p><strong>🚉 Transport:</strong> ${sanitize(transport)}</p>` : ''}
+    ${phone_description ? `<p><strong>📱 Phone:</strong> ${sanitize(phone_description)}</p>` : ''}
+    <p><strong>👤 Contact:</strong> ${sanitize(contact)}</p>
     <p><strong>💸 Contribution:</strong> ${formattedContribution}</p>
-    ${object_photo ? `<p><strong>📷 Image:</strong><br/><img src="${object_photo}" alt="Object photo" style="max-width:300px;border-radius:8px;" /></p>` : ''}
+    ${object_photo ? `<p><strong>📷 Image:</strong><br/><img src="${sanitize(object_photo)}" alt="Object photo" style="max-width:300px;border-radius:8px;" /></p>` : ''}
   `;
 
   try {
@@ -97,4 +109,10 @@ export async function POST(req: Request) {
     console.error('❌ Admin email send error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
+
+// 🔐 Simple sanitization (protection contre les objets/fonctions injectés)
+function sanitize(value: any, fallback: string = '') {
+  if (!value || typeof value !== 'string') return fallback;
+  return value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

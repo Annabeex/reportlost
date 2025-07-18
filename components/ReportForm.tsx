@@ -145,17 +145,20 @@ export default function ReportForm({
         return false;
       }
 
+      // 🧼 Nettoyage de formData AVANT envoi pour éviter les erreurs de type `window.toJSON`
+      const safePayload = JSON.parse(JSON.stringify({
+        type: 'lost',
+        data: {
+          ...payload,
+          date: new Date().toISOString(),
+        },
+      }));
+
       // Appel de l'API pour envoyer l'e-mail au staff
       await fetch('/api/send-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'lost',
-          data: {
-            ...payload,
-            date: new Date().toISOString(),
-          },
-        }),
+        body: JSON.stringify(safePayload),
       });
 
       return true;
@@ -195,17 +198,19 @@ export default function ReportForm({
   const handleSuccessfulPayment = async () => {
     alert('✅ Payment successful. Thank you for your contribution!');
 
-    // Envoi d'un e-mail automatique au client
+    // Nettoyage du formData avant envoi
+    const safeClientData = JSON.parse(JSON.stringify({
+      type: 'client-confirmation',
+      data: {
+        first_name: formData.first_name,
+        email: formData.email,
+      },
+    }));
+
     await fetch('/api/send-mail', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-confirmation',
-        data: {
-          first_name: formData.first_name,
-          email: formData.email,
-        },
-      }),
+      body: JSON.stringify(safeClientData),
     });
   };
 
