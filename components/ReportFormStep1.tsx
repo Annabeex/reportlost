@@ -10,11 +10,11 @@ interface Props {
 }
 
 export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
-  const [showPhoneDetails, setShowPhoneDetails] = useState(formData.isCellphone);
+  const [showPhoneDetails, setShowPhoneDetails] = useState(!!formData.isCellphone);
   const [showLocationStep, setShowLocationStep] = useState(false);
-  const [showTransportFields, setShowTransportFields] = useState(formData.transport);
+  const [showTransportFields, setShowTransportFields] = useState(!!formData.transport);
 
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
 
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e);
@@ -34,7 +34,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
         <div>
           <label className="block font-medium">City</label>
           <AutoCompleteCitySelect
-            value={formData.city}
+            value={formData.city || ''}
             onChange={(value: string) =>
               onChange({ target: { name: 'city', value } } as React.ChangeEvent<HTMLInputElement>)
             }
@@ -66,60 +66,31 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             type="checkbox"
             name="transport"
             onChange={handleCheckbox}
-            checked={formData.transport}
+            checked={!!formData.transport}
           />
           <label>Was it during a transport (train, plane, bus, taxi)?</label>
         </div>
 
         {showTransportFields && (
           <div className="grid grid-cols-1 gap-4 border p-4 rounded bg-gray-50">
-            <div>
-              <label className="block font-medium">Place of departure</label>
-              <input
-                name="departure_place"
-                onChange={onChange}
-                value={formData.departure_place || ''}
-                className="w-full border px-3 py-1.5 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-medium">Place of arrival</label>
-              <input
-                name="arrival_place"
-                onChange={onChange}
-                value={formData.arrival_place || ''}
-                className="w-full border px-3 py-1.5 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-medium">Departure time</label>
-              <input
-                type="time"
-                name="departure_time"
-                onChange={onChange}
-                value={formData.departure_time || ''}
-                className="w-full border px-3 py-1.5 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-medium">Arrival time</label>
-              <input
-                type="time"
-                name="arrival_time"
-                onChange={onChange}
-                value={formData.arrival_time || ''}
-                className="w-full border px-3 py-1.5 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-medium">Flight or Train number</label>
-              <input
-                name="travel_number"
-                onChange={onChange}
-                value={formData.travel_number || ''}
-                className="w-full border px-3 py-1.5 rounded"
-              />
-            </div>
+            {[
+              ['departure_place', 'Place of departure'],
+              ['arrival_place', 'Place of arrival'],
+              ['departure_time', 'Departure time'],
+              ['arrival_time', 'Arrival time'],
+              ['travel_number', 'Flight or Train number']
+            ].map(([name, label]) => (
+              <div key={name}>
+                <label className="block font-medium">{label}</label>
+                <input
+                  name={name}
+                  type={name.includes('time') ? 'time' : 'text'}
+                  onChange={onChange}
+                  value={formData[name] || ''}
+                  className="w-full border px-3 py-1.5 rounded"
+                />
+              </div>
+            ))}
           </div>
         )}
 
@@ -151,7 +122,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           name="title"
           placeholder="e.g. Phone lost in JFK Airport taxi"
           onChange={onChange}
-          value={formData.title}
+          value={formData.title || ''}
           className="w-full border px-3 py-1.5 rounded"
         />
       </div>
@@ -162,7 +133,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           name="description"
           placeholder="Color, brand, unique features..."
           onChange={onChange}
-          value={formData.description}
+          value={formData.description || ''}
           className="w-full border px-3 py-1.5 rounded"
         />
       </div>
@@ -174,7 +145,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           type="date"
           max={today}
           onChange={onChange}
-          value={formData.date}
+          value={formData.date || ''}
           className="border px-3 py-1.5 rounded max-w-xs"
         />
       </div>
@@ -204,7 +175,7 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           type="checkbox"
           name="isCellphone"
           onChange={handleCheckbox}
-          checked={formData.isCellphone}
+          checked={!!formData.isCellphone}
         />
         <label>If you lost your cell phone, click yes</label>
       </div>
@@ -219,26 +190,27 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             { label: 'Identification number / Serial (optional)', name: 'phoneSerial' },
             { label: 'Proof of ownership (if any)', name: 'phoneProof' },
             { label: 'Identifying element (sticker, engraving…)', name: 'phoneMark' },
-          ].map(({ label, name }) => (
+            { label: 'Other details', name: 'phoneOther', textarea: true }
+          ].map(({ label, name, textarea }) => (
             <div key={name}>
               <label className="block font-medium">{label}</label>
-              <input
-                name={name}
-                onChange={onChange}
-                value={formData[name] || ''}
-                className="w-full border p-2 rounded"
-              />
+              {textarea ? (
+                <textarea
+                  name={name}
+                  onChange={onChange}
+                  value={formData[name] || ''}
+                  className="w-full border px-3 py-1.5 rounded"
+                />
+              ) : (
+                <input
+                  name={name}
+                  onChange={onChange}
+                  value={formData[name] || ''}
+                  className="w-full border p-2 rounded"
+                />
+              )}
             </div>
           ))}
-          <div>
-            <label className="block font-medium">Other details</label>
-            <textarea
-              name="phoneOther"
-              onChange={onChange}
-              value={formData.phoneOther || ''}
-              className="w-full border px-3 py-1.5 rounded"
-            />
-          </div>
         </div>
       )}
 
