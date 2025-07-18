@@ -66,8 +66,8 @@ export default function ReportFormStep2({
 
     try {
       setUploading(true);
-const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-const filename = `object_photo/lost-${Date.now()}-${safeName}`;
+      const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+      const filename = `object_photo/lost-${Date.now()}-${safeName}`;
 
       const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
         upsert: true
@@ -117,7 +117,15 @@ const filename = `object_photo/lost-${Date.now()}-${safeName}`;
       return;
     }
 
-    onNext();
+    // ✅ nettoyage du formData pour éviter les erreurs toJSON
+    try {
+      const cleanFormData = JSON.parse(JSON.stringify(formData));
+      setFormData(cleanFormData); // on met à jour avant passage à la suite
+      onNext();
+    } catch (err) {
+      console.error('❌ Failed to clean formData:', err);
+      alert('Internal error – please try again or refresh the page.');
+    }
   };
 
   return (
