@@ -168,14 +168,17 @@ export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: str
             </>
           )}
 
-          <label className="block font-medium mt-4">✏️ What did you find and where?</label>
-          <textarea
-            placeholder="Please provide a detailed description"
-            className="w-full border p-2 rounded"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={analyzing}
-          />
+         <label className="block font-medium mt-4">✏️ What did you find and where?</label>
+<p className="text-sm text-gray-600 mb-1">
+  Please review and complete if needed. Specify where the item was found (e.g., street name, restaurant, mall...).
+</p>
+<textarea
+  placeholder="Please provide a detailed description"
+  className="w-full border p-2 rounded"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  disabled={analyzing}
+/>
 
           <label className="block font-medium mt-4">🏙️ City where it was found</label>
           <AutoCompleteCitySelectWithMinChar value={city} onChange={setCity} />
