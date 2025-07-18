@@ -68,7 +68,8 @@ export default function ReportFormStep2({
 
     try {
       setUploading(true);
-      const filename = `object_photo/lost-${Date.now()}-${file.name}`;
+const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+const filename = `object_photo/lost-${Date.now()}-${safeName}`;
 
       const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
         upsert: true
