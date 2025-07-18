@@ -1,3 +1,5 @@
+// ./ReportForm.tsx
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -48,7 +50,6 @@ export default function ReportForm({
     email: '',
     phone: '',
     address: '',
-    signature: '',
     consent: false,
     contribution: 15,
 
@@ -130,7 +131,6 @@ export default function ReportForm({
         address: formData.address || null,
         contribution: formData.contribution,
         consent: formData.consent,
-        signature: formData.signature || null,
 
         phone_description: phoneDescription,
         object_photo,
@@ -145,7 +145,6 @@ export default function ReportForm({
         return false;
       }
 
-      // 🧼 Nettoyage de formData AVANT envoi pour éviter les erreurs de type `window.toJSON`
       const safePayload = JSON.parse(JSON.stringify({
         type: 'lost',
         data: {
@@ -154,7 +153,6 @@ export default function ReportForm({
         },
       }));
 
-      // Appel de l'API pour envoyer l'e-mail au staff
       await fetch('/api/send-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +180,7 @@ export default function ReportForm({
     }
 
     if (enforceValidation && step === 2) {
-      if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim() || !formData.signature) {
+      if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
         alert('Please complete all required contact details and accept the terms.');
         return;
       }
@@ -198,7 +196,6 @@ export default function ReportForm({
   const handleSuccessfulPayment = async () => {
     alert('✅ Payment successful. Thank you for your contribution!');
 
-    // Nettoyage du formData avant envoi
     const safeClientData = JSON.parse(JSON.stringify({
       type: 'client-confirmation',
       data: {
