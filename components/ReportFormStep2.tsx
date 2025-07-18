@@ -21,7 +21,7 @@ export default function ReportFormStep2({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const hasSigned = !!formData.signature;
+  const hasSigned = typeof formData.signature === 'string' && formData.signature.length > 0;
   const [confirm1, setConfirm1] = useState(false);
   const [confirm2, setConfirm2] = useState(false);
   const [confirm3, setConfirm3] = useState(false);
@@ -117,10 +117,16 @@ export default function ReportFormStep2({
       return;
     }
 
-    // ✅ nettoyage du formData pour éviter les erreurs toJSON
+    // ✅ Sécurisation : protection contre objets non sérialisables
     try {
-      const cleanFormData = JSON.parse(JSON.stringify(formData));
-      setFormData(cleanFormData); // on met à jour avant passage à la suite
+      const safeSignature =
+        typeof formData.signature === 'string' ? formData.signature : '';
+      const cleanFormData = {
+        ...formData,
+        signature: safeSignature
+      };
+      const serialized = JSON.parse(JSON.stringify(cleanFormData));
+      setFormData(serialized);
       onNext();
     } catch (err) {
       console.error('❌ Failed to clean formData:', err);
