@@ -1,5 +1,3 @@
-// ./ReportForm.tsx
-
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -117,13 +115,11 @@ export default function ReportForm({
         time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
         loss_street: formData.loss_street || null,
-
         departure_place: formData.departure_place || null,
         arrival_place: formData.arrival_place || null,
         departure_time: formData.departure_time || null,
         arrival_time: formData.arrival_time || null,
         travel_number: formData.travel_number || null,
-
         email: formData.email,
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -131,49 +127,61 @@ export default function ReportForm({
         address: formData.address || null,
         contribution: formData.contribution,
         consent: formData.consent,
-
         phone_description: phoneDescription,
         object_photo,
       };
 
       const cleanedPayload = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
+      console.log('🗃 Enregistrement Supabase avec payload :', cleanedPayload);
       const { error } = await supabase.from('lost_items').insert([cleanedPayload]);
       if (error) {
         console.error('❌ Supabase insert error:', error);
-        alert('Unexpected error. Please try again later.');
+        alert('Unexpected error while saving your report. Please try again later.');
         return false;
       }
 
-   const safeData = {
-  ...payload,
-  date: new Date().toISOString(),
-};
+      const safeData = {
+        ...payload,
+        date: new Date().toISOString(),
+      };
 
-// 🔐 On ne garde que les champs sérialisables
-const filteredData = Object.fromEntries(
-  Object.entries(safeData).filter(([_, value]) => {
-    return (
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean' ||
-      value === null
-    );
-  })
-);
+      const filteredData = Object.fromEntries(
+        Object.entries(safeData).filter(([_, value]) => {
+          return (
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean' ||
+            value === null
+          );
+        })
+      );
 
-const safePayload = {
-  type: 'lost',
-  data: filteredData,
-};
+      const safePayload = {
+        type: 'lost',
+        data: filteredData,
+      };
 
+      console.log('📨 Envoi des données à /api/send-mail :', safePayload);
 
-      await fetch('/api/send-mail', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(safePayload),
-});
+      try {
+        const res = await fetch('/api/send-mail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(safePayload),
+        });
 
+        const result = await res.json();
+        console.log('✅ Réponse API /api/send-mail :', result);
+
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || 'Mail sending failed');
+        }
+      } catch (mailError) {
+        console.error('❌ Erreur envoi mail:', mailError);
+        alert('An error occurred while sending confirmation email. Please try again later.');
+        return false;
+      }
 
       return true;
     } catch (err) {
@@ -196,7 +204,7 @@ const safePayload = {
     }
 
     if (enforceValidation && step === 2) {
-      if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
+      if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim() || !formData.consent) {
         alert('Please complete all required contact details and accept the terms.');
         return;
       }
@@ -220,11 +228,25 @@ const safePayload = {
       },
     }));
 
-    await fetch('/api/send-mail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(safeClientData),
-    });
+    try {
+      console.log('📧 Envoi confirmation client avec:', safeClientData);
+
+      const res = await fetch('/api/send-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(safeClientData),
+      });
+
+      const result = await res.json();
+      console.log('📩 Résultat envoi mail client :', result);
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Failed to send confirmation email');
+      }
+    } catch (err) {
+      console.error('❌ Email client après paiement échoué :', err);
+      alert('We could not send the confirmation email. Please contact us if needed.');
+    }
   };
 
   if (!isClient) return null;
