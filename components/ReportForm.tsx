@@ -145,19 +145,35 @@ export default function ReportForm({
         return false;
       }
 
-      const safePayload = JSON.parse(JSON.stringify({
-        type: 'lost',
-        data: {
-          ...payload,
-          date: new Date().toISOString(),
-        },
-      }));
+   const safeData = {
+  ...payload,
+  date: new Date().toISOString(),
+};
+
+// 🔐 On ne garde que les champs sérialisables
+const filteredData = Object.fromEntries(
+  Object.entries(safeData).filter(([_, value]) => {
+    return (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      value === null
+    );
+  })
+);
+
+const safePayload = {
+  type: 'lost',
+  data: filteredData,
+};
+
 
       await fetch('/api/send-mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(safePayload),
-      });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(safePayload),
+});
+
 
       return true;
     } catch (err) {

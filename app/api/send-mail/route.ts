@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     try {
       await resend.emails.send({
-        from: 'ReportLost <no-reply@reportlost.org>',
+        from: 'ReportLost <support@reportlost.org>',
         to: email,
         subject: '🧾 Confirmation – Your lost item report has been received',
         html,
@@ -98,8 +98,8 @@ export async function POST(req: Request) {
 
   try {
     await resend.emails.send({
-      from: 'ReportLost <no-reply@reportlost.org>',
-      to: process.env.ADMIN_EMAIL || 'contact@reportlost.org',
+      from: 'ReportLost <support@reportlost.org>',
+      to: process.env.ADMIN_EMAIL || 'support@reportlost.org',
       subject,
       html: bodyHtml,
     });
