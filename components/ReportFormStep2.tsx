@@ -79,30 +79,10 @@ export default function ReportFormStep2({
       return;
     }
 
-    console.log('📦 formData before cleaning:', formData);
+    // ✅ Met à jour le consentement dans le formData
+    setFormData((prev: any) => ({ ...prev, consent: true }));
 
-    try {
-      const clean: any = {};
-      for (const key in formData) {
-        if (key === 'signature') continue;
-        try {
-          JSON.stringify(formData[key]);
-          clean[key] = formData[key];
-        } catch (e) {
-          console.warn(`🧨 Field "${key}" is unserializable and was removed.`);
-        }
-      }
-
-      // ✅ Ajout du consentement explicite
-      clean['consent'] = true;
-
-      setFormData(clean);
-      console.log('✅ formData prêt pour onNext :', clean);
-      onNext();
-    } catch (err) {
-      console.error('❌ Failed to clean formData:', err);
-      alert('Internal error – please try again or refresh the page.');
-    }
+    onNext();
   };
 
   return (
