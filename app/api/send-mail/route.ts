@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const mailersend = new MailerSend({
+  apiKey: process.env.MAILERSEND_API_KEY!,
+})
 
 export async function POST(req: Request) {
   let body: any
@@ -14,14 +16,13 @@ export async function POST(req: Request) {
   }
 
   const { type, data } = body
-
-  console.log('📩 Type:', type)
-  console.log('🧾 Data:', data)
-
   if (!type || !data) {
     return NextResponse.json({ success: false, error: 'Missing type or data' }, { status: 400 })
   }
 
+  const sender = new Sender('support@reportlost.org', 'ReportLost')
+
+  // --- Client confirmation ---
   if (type === 'client-confirmation') {
     const firstName = sanitize(data.first_name, 'Customer')
     const email = sanitize(data.email)
@@ -32,22 +33,25 @@ export async function POST(req: Request) {
       <p>We’ll get back to you within the next few hours. In the meantime, you can relax — your request is being taken care of 💌</p>
     `
 
+    const recipients = [new Recipient(email, firstName)]
+
+    const emailParams = new EmailParams()
+      .setFrom(sender)
+      .setTo(recipients)
+      .setSubject('🧾 Confirmation – Your lost item report has been received')
+      .setHtml(html)
+
     try {
-      console.log('📤 Envoi email client via Resend...')
-      await resend.emails.send({
-        from: 'ReportLost <support@reportlost.org>',
-        to: email,
-        subject: '🧾 Confirmation – Your lost item report has been received',
-        html,
-      })
+      console.log('📤 Envoi email client via Mailersend...')
+      await mailersend.email.send(emailParams)
       return NextResponse.json({ success: true })
     } catch (error: any) {
-      console.error('❌ Client email send error:', JSON.stringify(error, null, 2))
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      console.error('❌ Client email send error:', error)
+      return NextResponse.json({ success: false, error: error.message || 'Error sending email' }, { status: 500 })
     }
   }
 
-  // --- Admin alert: lost or found ---
+  // --- Admin notification ---
   const {
     title = 'No title',
     description = 'No description',
@@ -88,7 +92,7 @@ export async function POST(req: Request) {
     ? `Report-Lost (${formattedDate}) ${formattedContribution}`
     : `Report-Found (${formattedDate})`
 
-  const bodyHtml = `
+  const html = `
     <h2>${subject}</h2>
     <p><strong>🗓 Date:</strong> ${formattedDate}</p>
     <p><strong>📦 Object:</strong> ${sanitize(title)}</p>
@@ -101,19 +105,21 @@ export async function POST(req: Request) {
     ${object_photo ? `<p><strong>📷 Image:</strong><br/><img src="${sanitize(object_photo)}" alt="Object photo" style="max-width:300px;border-radius:8px;" /></p>` : ''}
   `
 
-  try {
-    console.log('📤 Envoi email admin via Resend...')
-    await resend.emails.send({
-      from: 'ReportLost <support@reportlost.org>',
-      to: process.env.ADMIN_EMAIL || 'support@reportlost.org',
-      subject,
-      html: bodyHtml,
-    })
+  const recipients = [new Recipient(process.env.ADMIN_EMAIL || 'support@reportlost.org', 'Admin')]
 
+  const emailParams = new EmailParams()
+    .setFrom(sender)
+    .setTo(recipients)
+    .setSubject(subject)
+    .setHtml(html)
+
+  try {
+    console.log('📤 Envoi email admin via Mailersend...')
+    await mailersend.email.send(emailParams)
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('❌ Admin email send error:', JSON.stringify(error, null, 2))
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    console.error('❌ Admin email send error:', error)
+    return NextResponse.json({ success: false, error: error.message || 'Error sending email' }, { status: 500 })
   }
 }
 
