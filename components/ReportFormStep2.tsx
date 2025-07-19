@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface Props {
@@ -22,6 +22,10 @@ export default function ReportFormStep2({
   const [confirm3, setConfirm3] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '');
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    console.log('🟦 Entrée dans ReportFormStep2 avec formData :', formData);
+  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,12 +79,12 @@ export default function ReportFormStep2({
       return;
     }
 
-    console.log('📦 formData before clean (no signature):', formData);
+    console.log('📦 formData before cleaning:', formData);
 
     try {
       const clean: any = {};
       for (const key in formData) {
-        if (key === 'signature') continue; // signature supprimée
+        if (key === 'signature') continue;
         try {
           JSON.stringify(formData[key]);
           clean[key] = formData[key];
@@ -89,7 +93,11 @@ export default function ReportFormStep2({
         }
       }
 
+      // ✅ Ajout du consentement explicite
+      clean['consent'] = true;
+
       setFormData(clean);
+      console.log('✅ formData prêt pour onNext :', clean);
       onNext();
     } catch (err) {
       console.error('❌ Failed to clean formData:', err);
