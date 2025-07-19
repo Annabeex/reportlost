@@ -66,9 +66,7 @@ export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: str
 
       const descriptionText = [labels, ocrText].filter(Boolean).join(' — ');
       if (descriptionText) {
-        setDescription(
-          `${descriptionText} — Please review and complete if needed. Specify where the item was found (e.g., street name, restaurant, mall...)`
-        );
+     setDescription(descriptionText);
       }
     } catch (err) {
       console.error('Image analysis failed:', err);
