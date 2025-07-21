@@ -10,11 +10,11 @@ type Props = {
 
 export default function AutoCompleteCitySelect({ value, onChange }: Props) {
   const [cities, setCities] = useState<string[]>([])
-  const [search, setSearch] = useState(value || '') // ✅ initialize search with value
+  const [search, setSearch] = useState(value || '')
   const [showSuggestions, setShowSuggestions] = useState(false)
 
   useEffect(() => {
-    setSearch(value || '') // ✅ update search when prop changes (if needed)
+    setSearch(value || '')
   }, [value])
 
   useEffect(() => {
@@ -29,6 +29,12 @@ export default function AutoCompleteCitySelect({ value, onChange }: Props) {
         .select('city_ascii, state_id')
         .ilike('city_ascii', `${search}%`)
         .limit(10)
+
+      if (error) {
+        console.error('Error fetching cities:', error)
+        setCities([])
+        return
+      }
 
       if (data) {
         const cityNames = data.map((row) => `${row.city_ascii} (${row.state_id})`)
@@ -48,7 +54,7 @@ export default function AutoCompleteCitySelect({ value, onChange }: Props) {
         value={search}
         onChange={(e) => {
           setSearch(e.target.value)
-          onChange(e.target.value) // informe le parent
+          // ❌ on ne déclenche pas onChange ici
         }}
         placeholder="City or ZIP code"
         className="border p-2 rounded w-full"
@@ -65,7 +71,7 @@ export default function AutoCompleteCitySelect({ value, onChange }: Props) {
               className="px-3 py-1 hover:bg-gray-100 cursor-pointer"
               onMouseDown={() => {
                 setSearch(city)
-                onChange(city)
+                onChange(city) // ✅ onChange uniquement à la sélection
                 setShowSuggestions(false)
               }}
             >

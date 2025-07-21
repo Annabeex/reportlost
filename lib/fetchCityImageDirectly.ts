@@ -1,4 +1,7 @@
-export default async function fetchCityImageFromPexels(city: string, state: string): Promise<{
+export default async function fetchCityImageDirectly(
+  city: string,
+  state: string
+): Promise<{
   url: string | null;
   alt: string;
   photographer: string | null;
@@ -6,15 +9,18 @@ export default async function fetchCityImageFromPexels(city: string, state: stri
 }> {
   const query = `${city} ${state} skyline`;
 
-  const res = await fetch(`/api/pexels?query=${encodeURIComponent(query)}`, {
-    cache: 'no-store', // ou { next: { revalidate: 3600 } si nécessaire côté server
+  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
+    headers: {
+      Authorization: process.env.PEXELS_API_KEY || '',
+    },
+    next: { revalidate: 3600 } // ⏳ facultatif : cache ISR 1h
   });
 
   if (!res.ok) {
-    console.error(`Local API /api/pexels error: ${res.status}`);
+    console.error(`Error fetching from Pexels: ${res.status}`);
     return {
       url: null,
-      alt: `View of ${city}, ${state}`,
+      alt: `Skyline of ${city}, ${state}`,
       photographer: null,
       source_url: null,
     };

@@ -3,9 +3,10 @@
 import { Info, Search, Zap } from 'lucide-react';
 
 interface Props {
-  contribution: number;
   onBack: () => void;
-  onNext: (amount: number) => void;
+  onNext: () => void;
+  contribution: number;
+  setFormData: (fn: (prev: any) => any) => void;
 }
 
 const plans = [
@@ -35,7 +36,12 @@ const plans = [
   },
 ];
 
-export default function ReportContributionPlans({ onBack, onNext }: Props) {
+export default function ReportContribution({ onBack, onNext, contribution, setFormData }: Props) {
+  const handleSelectPlan = (amount: number) => {
+    setFormData((prev: any) => ({ ...prev, contribution: amount }));
+    onNext();
+  };
+
   return (
     <section className="bg-gradient-to-b from-blue-50 to-white py-16 px-4">
       <div className="max-w-5xl mx-auto space-y-12">
@@ -43,7 +49,6 @@ export default function ReportContributionPlans({ onBack, onNext }: Props) {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Support the follow-up of your report
           </h2>
-
           <p className="text-gray-700 text-base leading-relaxed max-w-2xl mx-auto">
             Your contribution allows our team to manually review your report, contact relevant services,
             and optimize visibility for the first 30 days.
@@ -58,7 +63,7 @@ export default function ReportContributionPlans({ onBack, onNext }: Props) {
           {plans.map((plan) => (
             <button
               key={plan.id}
-              onClick={() => onNext(plan.amount)}
+              onClick={() => handleSelectPlan(plan.amount)}
               className="border rounded-xl p-6 bg-white hover:bg-blue-50 transition-colors shadow text-left flex flex-col justify-between h-full"
             >
               <div>

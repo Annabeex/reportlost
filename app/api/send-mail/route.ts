@@ -1,4 +1,18 @@
 // app/api/send-mail/route.ts
+
+// TEMPORAIREMENT DÉSACTIVÉ POUR TESTS (envoi de mails désactivé)
+import { NextResponse } from 'next/server';
+
+export async function POST(req: Request) {
+  console.log('📭 Email désactivé temporairement — requête ignorée.');
+  return NextResponse.json({ success: false, message: 'Email service temporarily disabled.' });
+}
+
+
+/*
+
+// ✅ Code original — à réactiver plus tard si besoin
+
 import { NextResponse } from 'next/server';
 const nodemailer = require('nodemailer');
 
@@ -44,3 +58,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
   }
 }
+
+*/
