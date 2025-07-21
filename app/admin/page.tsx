@@ -1,4 +1,18 @@
-/*'use client';
+/*
+
+'use client';
+
+export default function AdminPage() {
+  return (
+    <div className="p-10 text-xl text-center text-gray-600">
+      🛑 Admin temporairement désactivé pour test des emails.
+    </div>
+  );
+}
+
+///////////////////////////////////////////////////////////
+
+'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -76,7 +90,7 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-16">
-      
+
       <section>
         <h1 className="text-2xl font-bold mb-4">📦 Objets perdus</h1>
         <div className="grid gap-8">
@@ -101,8 +115,8 @@ export default function AdminPage() {
                 <div className="font-semibold text-lg">{item.description}</div>
                 <div className="text-gray-700">
                   <strong>Ville :</strong> {item.city}
-                  {item.loss_neighborhood && <> – {item.loss_neighborhood}</>}
-                  {item.loss_street && <> – {item.loss_street}</>}
+                  {item.loss_neighborhood && ` – ${item.loss_neighborhood}`}
+                  {item.loss_street && ` – ${item.loss_street}`}
                 </div>
                 {item.phone_description && (
                   <div className="text-gray-700">
@@ -120,7 +134,7 @@ export default function AdminPage() {
                   👤 {item.first_name} {item.last_name} – {item.email}
                 </div>
                 <div className="text-sm text-gray-500">
-                  💳 Contribution : {item.contribution != null ? `$${item.contribution}` : '—'}
+                  💳 Contribution : {item.contribution ? `$${item.contribution}` : '—'}
                 </div>
               </div>
             </div>
@@ -173,4 +187,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
 */
