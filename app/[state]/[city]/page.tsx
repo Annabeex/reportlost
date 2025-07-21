@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import '../../../app/globals.css'
 import Image from 'next/image'
-import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels'
+import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly';
 import dynamic from 'next/dynamic'
 import { exampleReports } from '@/lib/lostitems'
 
@@ -104,7 +104,7 @@ export default async function Page({ params }: { params: { state: string; city: 
 
   if (!cityImage) {
     try {
-      const image = await fetchCityImageFromPexels(cityName, stateName)
+      const image = await fetchCityImageDirectly(cityName, cityData.state_name); // ✅ appel direct sans API route
       cityImage = image.url
       cityImageAlt = image.alt
 

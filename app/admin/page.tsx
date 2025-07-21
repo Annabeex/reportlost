@@ -1,14 +1,29 @@
+/*
+'use client';
+
+export default function AdminPage() {
+  return (
+    <div className="p-10 text-xl text-center text-gray-600">
+      🛑 Admin temporairement désactivé pour test des emails.
+    </div>
+  );
+}
+*/
+
+/*
 'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 
+// Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// 🔠 Types
 type LostItem = {
   id: string;
   created_at: string;
@@ -35,8 +50,20 @@ type FoundItem = {
   created_at: string;
   city: string | null;
   description: string | null;
+  image_url: string | null;
+  title: string | null;
+  date: string | null;
+  labels: string | null;
+  logos: string | null;
+  objects: string | null;
+  ocr_text: string | null;
+  email: string | null;
+  phone: string | null;
+  dropoff_location: string | null;
+  has_item_with_you: boolean | null;
 };
 
+// 💡 Composant principal
 export default function AdminPage() {
   const [lostItems, setLostItems] = useState<LostItem[]>([]);
   const [foundItems, setFoundItems] = useState<FoundItem[]>([]);
@@ -62,6 +89,7 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-16">
+      
       <section>
         <h1 className="text-2xl font-bold mb-4">📦 Objets perdus</h1>
         <div className="grid gap-8">
@@ -113,24 +141,44 @@ export default function AdminPage() {
         </div>
       </section>
 
+      
       <section>
         <h1 className="text-2xl font-bold mb-4">🧾 Objets trouvés</h1>
         <table className="w-full table-auto border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="p-2 border">🕒 Date</th>
-              <th className="p-2 border">🆔 ID</th>
               <th className="p-2 border">📍 Ville</th>
-              <th className="p-2 border">📝 Commentaire</th>
+              <th className="p-2 border">📝 Titre / Description</th>
+              <th className="p-2 border">📷 Image</th>
+              <th className="p-2 border">📤 Lieu de dépôt</th>
+              <th className="p-2 border">📧 Email</th>
+              <th className="p-2 border">📞 Téléphone</th>
             </tr>
           </thead>
           <tbody>
             {foundItems.map((item) => (
               <tr key={item.id} className="border-b">
                 <td className="p-2 border">{new Date(item.created_at).toLocaleString()}</td>
-                <td className="p-2 border font-mono text-xs">{item.id}</td>
                 <td className="p-2 border">{item.city || '—'}</td>
-                <td className="p-2 border">{item.description || '—'}</td>
+                <td className="p-2 border">
+                  <div className="font-semibold">{item.title || '—'}</div>
+                  <div className="text-gray-600">{item.description || '—'}</div>
+                </td>
+                <td className="p-2 border">
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt="Objet trouvé"
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td className="p-2 border">{item.dropoff_location || '—'}</td>
+                <td className="p-2 border">{item.email || '—'}</td>
+                <td className="p-2 border">{item.phone || '—'}</td>
               </tr>
             ))}
           </tbody>

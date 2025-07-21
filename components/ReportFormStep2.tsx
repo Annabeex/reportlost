@@ -25,7 +25,7 @@ export default function ReportFormStep2({
 
   useEffect(() => {
     console.log('🟦 Entrée dans ReportFormStep2 avec formData :', formData);
-  }, []);
+  }, [formData]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,8 +64,18 @@ export default function ReportFormStep2({
   const handleContinue = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.first_name?.trim() || !formData.last_name?.trim() || !formData.email?.trim()) {
-      alert('Please fill in all required fields.');
+    if (!formData.first_name?.trim()) {
+      alert('Please enter your first name.');
+      return;
+    }
+
+    if (!formData.last_name?.trim()) {
+      alert('Please enter your last name.');
+      return;
+    }
+
+    if (!formData.email?.trim()) {
+      alert('Please enter your email address.');
       return;
     }
 
@@ -79,9 +89,7 @@ export default function ReportFormStep2({
       return;
     }
 
-    // ✅ Met à jour le consentement dans le formData
     setFormData((prev: any) => ({ ...prev, consent: true }));
-
     onNext();
   };
 

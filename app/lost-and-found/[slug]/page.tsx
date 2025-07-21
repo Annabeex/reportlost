@@ -1,15 +1,12 @@
-'use client';
-
 import { createClient } from '@supabase/supabase-js';
 import '../../../app/globals.css';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import fetchCityImageFromPexels from '@/lib/fetchCityImageFromPexels';
+import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly'; // ✅ nouvelle fonction serveur
 import { exampleReports } from '@/lib/lostitems';
 import { getSlugFromCity } from '@/lib/getSlugFromCity';
 import { getNearbyCities } from '@/lib/getNearbyCities';
-import generateContent from '@/lib/generatecontent';
 import ClientReportForm from '@/components/ClientReportForm';
 
 const CityMap = dynamic(() => import('@/components/Map').then(mod => mod.default), {
@@ -75,7 +72,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   if (!cityImage && isDev) {
     try {
-      const image = await fetchCityImageFromPexels(cityName, cityData.state_name);
+      const image = await fetchCityImageDirectly(cityName, cityData.state_name); // ✅ appel direct sans API route
       cityImage = image.url;
       cityImageAlt = image.alt;
 

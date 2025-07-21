@@ -1,66 +1,47 @@
-'use client';
-
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import ReportForm from '@/components/ReportForm';
-import '../../../app/globals.css';
-import Image from 'next/image';
+import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // pas la clé anonyme ici
 );
 
-// ✅ Déplacé ici
-type PexelsPhoto = {
-  src: { large: string };
-  alt?: string;
-  photographer?: string;
-  url?: string;
-};
+async function updateCitiesMissingImages(limit = 10) {
+  const { data: cities, error } = await supabase
+    .from('us_cities')
+    .select('*')
+    .is('image_url', null)
+    .limit(limit);
 
-type PexelsResponse = {
-  photos: PexelsPhoto[];
-};
+  if (error) {
+    console.error('Error fetching cities:', error);
+    return;
+  }
 
-interface Props {
-  params: { state: string; city: string };
-}
+  for (const city of cities) {
+    try {
+      const result = await fetchCityImageDirectly(city.city_ascii, city.state_name);
 
-function toTitleCase(str: string) {
-  return str
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+      if (result.url) {
+        await supabase
+          .from('us_cities')
+          .update({
+            image_url: result.url,
+            image_alt: result.alt,
+            photographer: result.photographer,
+            image_source_url: result.source_url,
+          })
+          .eq('id', city.id);
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-async function fetchCityImageFromPexels(
-  city: string,
-  state: string
-): Promise<{
-  url: string | null;
-  alt: string;
-  photographer: string | null;
-  source_url: string | null;
-}> {
-  const query = `${city} ${state} skyline`;
-  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1`, {
-    headers: {
-      Authorization: process.env.PEXELS_API_KEY!
+        console.log(`✅ Updated ${city.city_ascii}, ${city.state_name}`);
+      } else {
+        console.log(`⚠️ No image found for ${city.city_ascii}`);
+      }
+    } catch (err) {
+      console.warn(`❌ Error updating ${city.city_ascii}:`, err);
     }
-  });
-
-  const responseData: PexelsResponse = await res.json();
-  const photo = responseData.photos?.[0];
-
-  return {
-    url: photo?.src?.large || null,
-    alt: photo?.alt || `Skyline of ${city}, ${state} – aerial view`,
-    photographer: photo?.photographer || null,
-    source_url: photo?.url || null
-  };
+  }
 }
+
+updateCitiesMissingImages(20); // 👈 tu peux changer la limite ici

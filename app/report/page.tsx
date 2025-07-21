@@ -32,10 +32,14 @@ export default function ReportPage() {
         </button>
       </div>
 
-      {activeTab === 'lost' && (
+      {/* Toujours monter les deux composants pour conserver leur état interne */}
+      <div style={{ display: activeTab === 'lost' ? 'block' : 'none' }}>
         <ReportForm enforceValidation={true} defaultCity="" />
-      )}
-      {activeTab === 'found' && <FoundItemsForm />}
+      </div>
+
+      <div style={{ display: activeTab === 'found' ? 'block' : 'none' }}>
+        <FoundItemsForm />
+      </div>
     </main>
   );
 }
