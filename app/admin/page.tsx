@@ -1,5 +1,3 @@
-/*
-
 'use client';
 
 export default function AdminPage() {
@@ -10,8 +8,8 @@ export default function AdminPage() {
   );
 }
 
-///////////////////////////////////////////////////////////
-
+// 🔒 Code désactivé temporairement pour éviter les erreurs de déploiement sur Vercel
+const _ARCHIVED_CODE_DO_NOT_DELETE = `
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -90,7 +88,7 @@ export default function AdminPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-16">
-
+      
       <section>
         <h1 className="text-2xl font-bold mb-4">📦 Objets perdus</h1>
         <div className="grid gap-8">
@@ -115,8 +113,8 @@ export default function AdminPage() {
                 <div className="font-semibold text-lg">{item.description}</div>
                 <div className="text-gray-700">
                   <strong>Ville :</strong> {item.city}
-                  {item.loss_neighborhood && ` – ${item.loss_neighborhood}`}
-                  {item.loss_street && ` – ${item.loss_street}`}
+                  {item.loss_neighborhood && \` – \${item.loss_neighborhood}\`}
+                  {item.loss_street && \` – \${item.loss_street}\`}
                 </div>
                 {item.phone_description && (
                   <div className="text-gray-700">
@@ -125,16 +123,14 @@ export default function AdminPage() {
                 )}
                 {(item.departure_place || item.arrival_place) && (
                   <div className="text-gray-700">
-                    <strong>Trajet :</strong>{' '}
-                    {item.departure_place} → {item.arrival_place}{' '}
-                    ({item.departure_time} → {item.arrival_time}, {item.travel_number || '—'}, {item.time_slot || '—'})
+                    <strong>Trajet :</strong> {item.departure_place} → {item.arrival_place} ({item.departure_time} → {item.arrival_time}, {item.travel_number || '—'}, {item.time_slot || '—'})
                   </div>
                 )}
                 <div className="text-sm text-gray-500 mt-2">
                   👤 {item.first_name} {item.last_name} – {item.email}
                 </div>
                 <div className="text-sm text-gray-500">
-                  💳 Contribution : {item.contribution ? `$${item.contribution}` : '—'}
+                  💳 Contribution : {item.contribution ? \`$\${item.contribution}\` : '—'}
                 </div>
               </div>
             </div>
@@ -187,5 +183,4 @@ export default function AdminPage() {
     </div>
   );
 }
-
-*/
+`;
