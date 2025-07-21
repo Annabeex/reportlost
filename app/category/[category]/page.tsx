@@ -34,13 +34,14 @@ export default function CategoryPage({ params }: { params: { category: string } 
       </p>
 
       <div className="flex justify-center mb-8">
-        <Link
-          href="/reportform"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold"
-        >
-          Report a Lost {category.charAt(0).toUpperCase() + category.slice(1)}
-        </Link>
-      </div>
+  <button
+    disabled
+    className="bg-blue-400 text-white px-6 py-3 rounded-md font-semibold cursor-not-allowed opacity-70"
+  >
+    Report a Lost {category.charAt(0).toUpperCase() + category.slice(1)}
+  </button>
+</div>
+
 
       <div className="bg-white shadow rounded-lg p-6 text-gray-600 text-center">
         Reports related to "{category}" will appear here soon.
