@@ -17,7 +17,6 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
   const today = new Date().toISOString().split('T')[0];
 
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e);
     if (e.target.name === 'isCellphone') {
       setShowPhoneDetails(e.target.checked);
     }
@@ -64,9 +63,8 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
-            name="transport"
             onChange={handleCheckbox}
-            checked={!!formData.transport}
+            checked={showTransportFields}
           />
           <label>Was it during a transport (train, plane, bus, taxi)?</label>
         </div>
@@ -173,44 +171,24 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
-          name="isCellphone"
           onChange={handleCheckbox}
-          checked={!!formData.isCellphone}
+          checked={showPhoneDetails}
         />
         <label>If you lost your cell phone, click yes</label>
       </div>
 
       {showPhoneDetails && (
         <div className="grid grid-cols-1 gap-4 border p-4 rounded bg-gray-50">
-          {[
-            { label: 'Color', name: 'phoneColor' },
-            { label: 'Material (optional)', name: 'phoneMaterial' },
-            { label: 'Brand (optional)', name: 'phoneBrand' },
-            { label: 'Model (optional)', name: 'phoneModel' },
-            { label: 'Identification number / Serial (optional)', name: 'phoneSerial' },
-            { label: 'Proof of ownership (if any)', name: 'phoneProof' },
-            { label: 'Identifying element (sticker, engraving…)', name: 'phoneMark' },
-            { label: 'Other details', name: 'phoneOther', textarea: true }
-          ].map(({ label, name, textarea }) => (
-            <div key={name}>
-              <label className="block font-medium">{label}</label>
-              {textarea ? (
-                <textarea
-                  name={name}
-                  onChange={onChange}
-                  value={formData[name] || ''}
-                  className="w-full border px-3 py-1.5 rounded"
-                />
-              ) : (
-                <input
-                  name={name}
-                  onChange={onChange}
-                  value={formData[name] || ''}
-                  className="w-full border p-2 rounded"
-                />
-              )}
-            </div>
-          ))}
+          <div>
+            <label className="block font-medium">Description of the phone</label>
+            <textarea
+              name="phone_description"
+              placeholder="Color, brand, model, case, proof of ownership, stickers, etc."
+              onChange={onChange}
+              value={formData.phone_description || ''}
+              className="w-full border px-3 py-1.5 rounded"
+            />
+          </div>
         </div>
       )}
 
