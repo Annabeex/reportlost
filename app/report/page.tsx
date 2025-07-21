@@ -1,3 +1,5 @@
+/*Sert de point d’entrée principal pour l’URL /report.*/
+
 'use client';
 
 import { useState } from 'react';

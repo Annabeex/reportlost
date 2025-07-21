@@ -1,16 +1,3 @@
-/*
-'use client';
-
-export default function AdminPage() {
-  return (
-    <div className="p-10 text-xl text-center text-gray-600">
-      🛑 Admin temporairement désactivé pour test des emails.
-    </div>
-  );
-}
-*/
-
-/*
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -114,8 +101,8 @@ export default function AdminPage() {
                 <div className="font-semibold text-lg">{item.description}</div>
                 <div className="text-gray-700">
                   <strong>Ville :</strong> {item.city}
-                  {item.loss_neighborhood && ` – ${item.loss_neighborhood}`}
-                  {item.loss_street && ` – ${item.loss_street}`}
+                  {item.loss_neighborhood && <> – {item.loss_neighborhood}</>}
+                  {item.loss_street && <> – {item.loss_street}</>}
                 </div>
                 {item.phone_description && (
                   <div className="text-gray-700">
@@ -133,7 +120,7 @@ export default function AdminPage() {
                   👤 {item.first_name} {item.last_name} – {item.email}
                 </div>
                 <div className="text-sm text-gray-500">
-                  💳 Contribution : {item.contribution ? `$${item.contribution}` : '—'}
+                  💳 Contribution : {item.contribution != null ? `$${item.contribution}` : '—'}
                 </div>
               </div>
             </div>
@@ -141,7 +128,6 @@ export default function AdminPage() {
         </div>
       </section>
 
-      
       <section>
         <h1 className="text-2xl font-bold mb-4">🧾 Objets trouvés</h1>
         <table className="w-full table-auto border-collapse text-sm">
