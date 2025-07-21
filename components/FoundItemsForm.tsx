@@ -1,4 +1,4 @@
-// ✅ Nouveau fichier FoundItemsForm.tsx corrigé
+// ✅ Fichier FoundItemsForm.tsx corrigé pour éviter l'erreur NOT NULL
 'use client';
 
 import { useState } from 'react';
@@ -118,18 +118,18 @@ export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: str
 
       const { error } = await supabase.from('found_items').insert([
         {
-          image_url: publicImageUrl || null,
-          description: description || null,
-          city: city || null,
-          date: date || null,
-          labels: visionLabels || null,
-          logos: visionLogos || null,
-          objects: visionObjects || null,
-          ocr_text: visionOcrText || null,
-          title: title || null,
-          email: email || null,
-          phone: phone || null,
-          dropoff_location: dropoffLocation || null,
+          image_url: publicImageUrl,
+          description: description,
+          city: city,
+          date: date,
+          labels: visionLabels ?? '',
+          logos: visionLogos ?? '',
+          objects: visionObjects ?? '',
+          ocr_text: visionOcrText ?? '',
+          title: title ?? '',
+          email: email ?? '',
+          phone: phone ?? '',
+          dropoff_location: dropoffLocation ?? '',
         },
       ]);
       if (error) throw error;
