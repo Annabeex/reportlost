@@ -5,11 +5,11 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export async function getPopularCitiesByState(stateSlug: string) {
+export async function getPopularCitiesByState(stateAbbr: string) {
   const { data, error } = await supabase
     .from('us_cities')
-    .select('city_ascii, zip, population')
-    .eq('state_id', stateSlug.toUpperCase())
+    .select('city_ascii, state_id, population') // 👈 ici
+    .eq('state_id', stateAbbr.toUpperCase())
     .order('population', { ascending: false })
     .limit(6)
 

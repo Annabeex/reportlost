@@ -1,4 +1,4 @@
-// ✅ Fichier FoundItemsForm.tsx corrigé pour éviter l'erreur NOT NULL
+// ✅ Fichier FoundItemsForm.tsx corrigé
 'use client';
 
 import { useState } from 'react';
@@ -9,22 +9,10 @@ import generateContent from '@/lib/generatecontent';
 
 const MIN_CITY_CHARS = 1;
 
-const AutoCompleteCitySelectWithMinChar = (props: any) => {
-  const [inputValue, setInputValue] = useState('');
-  return (
-    <AutoCompleteCitySelect
-      {...props}
-      inputValue={inputValue}
-      onInputChange={(e: any) => setInputValue(e.target.value)}
-      minQueryLength={MIN_CITY_CHARS}
-    />
-  );
-};
-
 export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: string }) {
   const [photo, setPhoto] = useState<File | null>(null);
   const [description, setDescription] = useState('');
-  const [city, setCity] = useState(defaultCity);
+  const [city, setCity] = useState<string>(defaultCity);        // ✅ string explicite
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -120,7 +108,7 @@ export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: str
         {
           image_url: publicImageUrl,
           description: description,
-          city: city,
+          city: city,                       // ✅ string simple (ex: "Chicago (IL)" ou "Chicago")
           date: date,
           labels: visionLabels ?? '',
           logos: visionLogos ?? '',
@@ -178,7 +166,11 @@ export default function FoundItemsForm({ defaultCity = '' }: { defaultCity?: str
           )}
 
           <label className="block font-medium mt-4">🏩 City where it was found</label>
-          <AutoCompleteCitySelectWithMinChar value={city} onChange={setCity} />
+          <AutoCompleteCitySelect
+            value={city}
+            onChange={setCity}
+            minQueryLength={MIN_CITY_CHARS}
+          />
 
           <label className="block font-medium mt-4">🗕️ Date when it was found</label>
           <input

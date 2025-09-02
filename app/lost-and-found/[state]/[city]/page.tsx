@@ -1,14 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
-import '../../../../app/globals.css';                     // ← profondeur ajustée
+import '../../../../app/globals.css';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly';
 import { exampleReports } from '@/lib/lostitems';
-// ❌ plus de getSlugFromCity
 import { getNearbyCities } from '@/lib/getNearbyCities';
 import ClientReportForm from '@/components/ClientReportForm';
-import { fromCitySlug, buildCityPath } from '@/lib/slugify'; // ✅ nouveaux helpers
+import { fromCitySlug, buildCityPath } from '@/lib/slugify';
 
 const CityMap = dynamic(() => import('@/components/Map').then(mod => mod.default), {
   ssr: false,
@@ -28,11 +27,11 @@ function formatDate(date: Date) {
 }
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
-  // ✅ on lit state + city (plus de slug ZIP)
+  // ✅ URL params: /lost-and-found/{state}/{city}
   const state = (params.state || '').toLowerCase();
   const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city)));
 
-  // ✅ requête par state_id + city_ascii (plus de zips)
+  // ✅ lookup by state_id + city_ascii
   const { data: cityData } = await supabase
     .from('us_cities')
     .select('*')
@@ -44,10 +43,11 @@ export default async function Page({ params }: { params: { state: string; city: 
     return <div className="text-red-600 p-4">No data found for {cityName} ({state.toUpperCase()})</div>;
   }
 
-  // JSON -> objets
-  ['parks', 'malls', 'tourism_sites'].forEach((field) => {
-    if (typeof (cityData as any)[field] === 'string') {
-      try { (cityData as any)[field] = JSON.parse((cityData as any)[field]); }
+  // Normalize JSON string fields
+  (['parks', 'malls', 'tourism_sites'] as const).forEach((field) => {
+    const raw = (cityData as any)[field];
+    if (typeof raw === 'string') {
+      try { (cityData as any)[field] = JSON.parse(raw); }
       catch { (cityData as any)[field] = []; }
     }
   });
@@ -58,7 +58,7 @@ export default async function Page({ params }: { params: { state: string; city: 
   const reports = exampleReports(cityData);
   const nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
 
-  let cityImage = cityData.image_url;
+  let cityImage = cityData.image_url as string | null;
   let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
   let cityImageCredit = '';
 
@@ -85,9 +85,12 @@ export default async function Page({ params }: { params: { state: string; city: 
     }
   }
 
+  // Police stations (Overpass)
   let policeStations: any[] = [];
   try {
-    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node[amenity=police](around:10000,${cityData.lat},${cityData.lng});out tags center;`;
+    const overpassUrl =
+      `https://overpass-api.de/api/interpreter?data=` +
+      `[out:json];node[amenity=police](around:10000,${cityData.lat},${cityData.lng});out tags center;`;
     const res = await fetch(overpassUrl, { next: { revalidate: 3600 } });
     const data = await res.json();
     policeStations = data.elements;
@@ -150,13 +153,13 @@ export default async function Page({ params }: { params: { state: string; city: 
             <div className="lg:w-1/2 w-full">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
               <ul className="list-disc list-inside text-gray-700">
-                {nearbyCities.map((city: any) => (
-                  <li key={city.id}>
+                {nearbyCities.map((c: any) => (
+                  <li key={c.id}>
                     <Link
-                      href={buildCityPath(city.state_id, city.city_ascii)} // ✅ plus de ZIP
+                      href={buildCityPath(c.state_id, c.city_ascii)}
                       className="text-blue-600 hover:underline"
                     >
-                      {city.city_ascii} ({city.state_id.toUpperCase()})
+                      {c.city_ascii} ({c.state_id.toUpperCase()})
                     </Link>
                   </li>
                 ))}
@@ -164,15 +167,19 @@ export default async function Page({ params }: { params: { state: string; city: 
             </div>
 
             <div className="lg:w-1/2 w-full">
-              <Image
-                src={cityImage}
-                alt={cityImageAlt}
-                width={600}
-                height={400}
-                className="w-full h-[250px] object-cover rounded-lg shadow"
-              />
-              {cityImageCredit && (
-                <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
+              {cityImage && (
+                <>
+                  <Image
+                    src={cityImage}
+                    alt={cityImageAlt}
+                    width={600}
+                    height={400}
+                    className="w-full h-[250px] object-cover rounded-lg shadow"
+                  />
+                  {cityImageCredit && (
+                    <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
+                  )}
+                </>
               )}
             </div>
           </section>

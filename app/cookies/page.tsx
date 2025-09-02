@@ -6,8 +6,6 @@ import ReactMarkdown from 'react-markdown';
 const cookiesContent = `
 ## Cookie Policy – ReportLost.org
 
-_Last updated: [DATE]_
-
 ### 1. What Are Cookies?
 Cookies are small text files stored on your device when you visit a website. They help websites remember your actions and preferences over time.
 

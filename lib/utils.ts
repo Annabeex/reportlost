@@ -61,3 +61,15 @@ const stateSlugToName: Record<string, string> = {
 export function stateNameFromSlug(slug: string): string | null {
   return stateSlugToName[slug] ?? null
 }
+
+import states from '@/lib/states';
+
+// abbr -> nom complet (ex: "ny" -> "New York")
+const abbrToName: Record<string, string> = states.reduce((acc, s) => {
+  acc[s.code.toLowerCase()] = s.name;
+  return acc;
+}, {} as Record<string, string>);
+
+export function stateNameFromAbbr(abbr: string): string | null {
+  return abbrToName[(abbr || '').toLowerCase()] ?? null;
+}
