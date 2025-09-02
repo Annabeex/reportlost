@@ -1,3 +1,5 @@
+// Si tu ajoutes des liens vers des villes depuis une catégorie, utilise buildCityPath(state_id, city_ascii) (depuis lib/slugify) pour rester aligné sur /lost-and-found/{state}/{city}.Tu peux ajouter un generateMetadata pour un titre/description SEO par catégorie, mais ce n’est pas requis pour la migration des routes.// 
+
 'use client';
 
 import Image from 'next/image';
