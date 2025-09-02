@@ -6,17 +6,18 @@ import Link from 'next/link';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import UsaMap from '@/components/UsaMap';
 import categoryList from '@/lib/popularCategories';
-import { getSlugFromCity } from '@/lib/getSlugFromCity';
+import { buildCityPath } from '@/lib/slugify'; // ✅ nouveau helper
 
+// ✅ Ajoute l'état (abbr) pour générer /lost-and-found/{state}/{city}
 const majorCities = [
-  { name: 'New York', zip: '10001', image: '/images/cities/new-york.jpg' },
-  { name: 'Los Angeles', zip: '90001', image: '/images/cities/los-angeles.jpg' },
-  { name: 'Chicago', zip: '60601', image: '/images/cities/chicago.jpg' },
-  { name: 'Houston', zip: '77001', image: '/images/cities/houston.jpg' },
-  { name: 'Phoenix', zip: '85001', image: '/images/cities/phoenix.jpg' },
-  { name: 'Philadelphia', zip: '19019', image: '/images/cities/philadelphia.jpg' },
-  { name: 'San Antonio', zip: '78201', image: '/images/cities/san-antonio.jpg' },
-  { name: 'San Diego', zip: '92101', image: '/images/cities/san-diego.jpg' },
+  { name: 'New York',     state: 'NY', image: '/images/cities/new-york.jpg' },
+  { name: 'Los Angeles',  state: 'CA', image: '/images/cities/los-angeles.jpg' },
+  { name: 'Chicago',      state: 'IL', image: '/images/cities/chicago.jpg' },
+  { name: 'Houston',      state: 'TX', image: '/images/cities/houston.jpg' },
+  { name: 'Phoenix',      state: 'AZ', image: '/images/cities/phoenix.jpg' },
+  { name: 'Philadelphia', state: 'PA', image: '/images/cities/philadelphia.jpg' },
+  { name: 'San Antonio',  state: 'TX', image: '/images/cities/san-antonio.jpg' },
+  { name: 'San Diego',    state: 'CA', image: '/images/cities/san-diego.jpg' },
 ];
 
 export default function HomePage() {
@@ -53,8 +54,8 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
             {majorCities.map(city => (
               <Link
-                key={city.name}
-                href={`/lost-and-found/${getSlugFromCity(city.name, city.zip)}`}
+                key={`${city.name}-${city.state}`}
+                href={buildCityPath(city.state, city.name)} // ✅ /lost-and-found/{state}/{city}
                 className="text-center group transition-transform transform hover:scale-105"
               >
                 <Image
