@@ -1,5 +1,6 @@
+// app/lost-and-found/[state]/[city]/page.tsx
 import { createClient } from '@supabase/supabase-js';
-import '../../../../app/globals.css';
+import '@/app/globals.css';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -20,35 +21,78 @@ const supabase = createClient(
 );
 
 function toTitleCase(str: string) {
-  return str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
+
 function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
-  // ✅ URL params: /lost-and-found/{state}/{city}
-  const state = (params.state || '').toLowerCase();
+  // ✅ URL : /lost-and-found/{state}/{city}
+  const stateAbbr = (params.state || '').toUpperCase(); // on garde MAJ pour la table
   const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city)));
 
-  // ✅ lookup by state_id + city_ascii
-  const { data: cityData } = await supabase
+  // 1) Requête principale : même État, ILIKE exact (insensible à la casse)
+  let { data: candidates, error } = await supabase
     .from('us_cities')
     .select('*')
-    .eq('state_id', state)
+    .eq('state_id', stateAbbr)
     .ilike('city_ascii', cityName)
-    .maybeSingle();
+    .order('population', { ascending: false })
+    .limit(5);
 
-  if (!cityData) {
-    return <div className="text-red-600 p-4">No data found for {cityName} ({state.toUpperCase()})</div>;
+  if (error) {
+    console.warn('Supabase error (query 1):', error.message);
   }
 
-  // Normalize JSON string fields
+  // 2) Choix serveur : match exact > plus peuplée
+  let cityData =
+    candidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
+    (candidates && candidates[0]) ??
+    null;
+
+  // 3) Fallback : préfixe si toujours rien (ex: "Los Angeles%")
+  if (!cityData) {
+    const { data: prefixCandidates, error: error2 } = await supabase
+      .from('us_cities')
+      .select('*')
+      .eq('state_id', stateAbbr)
+      .ilike('city_ascii', `${cityName}%`)
+      .order('population', { ascending: false })
+      .limit(5);
+
+    if (error2) {
+      console.warn('Supabase error (query 2):', error2.message);
+    }
+
+    cityData =
+      prefixCandidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
+      (prefixCandidates && prefixCandidates[0]) ??
+      null;
+  }
+
+  if (!cityData) {
+    return (
+      <div className="text-red-600 p-4">
+        No data found for {cityName} ({stateAbbr})
+      </div>
+    );
+  }
+
+  // Normalisation des champs JSON éventuels
   (['parks', 'malls', 'tourism_sites'] as const).forEach((field) => {
     const raw = (cityData as any)[field];
     if (typeof raw === 'string') {
-      try { (cityData as any)[field] = JSON.parse(raw); }
-      catch { (cityData as any)[field] = []; }
+      try {
+        (cityData as any)[field] = JSON.parse(raw);
+      } catch {
+        (cityData as any)[field] = [];
+      }
     }
   });
 
@@ -56,8 +100,11 @@ export default async function Page({ params }: { params: { state: string; city: 
   const text = cityData.static_content || '';
   const today = formatDate(new Date());
   const reports = exampleReports(cityData);
+
+  // ⚠️ getNearbyCities peut renvoyer des éléments sans state_id → on gère un fallback
   const nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
 
+  // Image ville (dev seulement si pas d'image déjà stockée)
   let cityImage = cityData.image_url as string | null;
   let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
   let cityImageCredit = '';
@@ -85,7 +132,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     }
   }
 
-  // Police stations (Overpass)
+  // Postes de police via Overpass
   let policeStations: any[] = [];
   try {
     const overpassUrl =
@@ -148,21 +195,28 @@ export default async function Page({ params }: { params: { state: string; city: 
           />
         </section>
 
-        {nearbyCities.length > 0 && cityImage && (
+        {nearbyCities.length > 0 && (
           <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8 items-start">
             <div className="lg:w-1/2 w-full">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
               <ul className="list-disc list-inside text-gray-700">
-                {nearbyCities.map((c: any) => (
-                  <li key={c.id}>
-                    <Link
-                      href={buildCityPath(c.state_id, c.city_ascii)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {c.city_ascii} ({c.state_id.toUpperCase()})
-                    </Link>
-                  </li>
-                ))}
+                {nearbyCities.map((c: any) => {
+                  // ⚠️ Fallback si c.state_id est manquant
+                  const sidRaw = c.state_id ?? stateAbbr;
+                  const sidDisplay = typeof sidRaw === 'string' ? sidRaw.toUpperCase() : stateAbbr;
+                  const sidForLink = typeof sidRaw === 'string' ? sidRaw : stateAbbr;
+
+                  return (
+                    <li key={c.id ?? `${c.city_ascii}-${sidDisplay}`}>
+                      <Link
+                        href={buildCityPath(sidForLink, c.city_ascii)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {c.city_ascii} ({sidDisplay})
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 

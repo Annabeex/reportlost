@@ -17,7 +17,7 @@ export default async function generateMetadata(
   const { data } = await supabase
     .from('us_cities')
     .select('city_ascii, state_name, state_id, static_title')
-    .eq('state_id', state)
+    .eq('state_id', state.toUpperCase()) // ✅ important !
     .ilike('city_ascii', cityName)
     .maybeSingle();
 
