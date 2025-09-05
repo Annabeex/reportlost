@@ -1,7 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['images.pexels.com', 'mfxjzvqtkespoichhnkk.supabase.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'mfxjzvqtkespoichhnkk.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
   },
   webpack(config) {
     config.resolve.fallback = {
