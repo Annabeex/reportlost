@@ -1,14 +1,43 @@
+// lib/generatecontent.ts
+
+type Hotspot = { name?: string } | string;
 type CityData = {
   city: string;
-  malls: any[];
-  parks: any[];
-  tourism_sites: any[];
+  malls: Hotspot[] | string | null | undefined;
+  parks: Hotspot[] | string | null | undefined;
+  tourism_sites: Hotspot[] | string | null | undefined;
 };
 
-function extractNames(input: any[], max: number): string[] {
-  return Array.isArray(input)
-    ? input.filter(h => typeof h.name === 'string').map(h => h.name).slice(0, max)
-    : [];
+// --- Utils robustes ---------------------------------------------------------
+
+function toArray(input: unknown): Hotspot[] {
+  if (Array.isArray(input)) return input as Hotspot[];
+  if (typeof input === 'string') {
+    try {
+      const parsed = JSON.parse(input);
+      return Array.isArray(parsed) ? (parsed as Hotspot[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function extractNames(input: unknown, max: number): string[] {
+  const arr = toArray(input)
+    .map((h) => (typeof h === 'string' ? h : h?.name ?? ''))
+    .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    .map((s) => s.trim());
+
+  // déduplique en conservant l’ordre
+  const seen = new Set<string>();
+  const unique = arr.filter((n) => (seen.has(n) ? false : (seen.add(n), true)));
+
+  return unique.slice(0, max);
+}
+
+function randomFromArray<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 const intros = [
@@ -185,16 +214,12 @@ const phrase5Options = [
   "💡 Human-AI synergy: your best ally to get your lost item back."
 ];
 
-function randomFromArray(arr: string[]): string {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+export default function generateContent(cityData: CityData): { text: string; title: string } {
+  const { city } = cityData;
 
-export default function generateContent(cityData: CityData): { text: string, title: string } {
-  const { city, malls, parks, tourism_sites } = cityData;
-
-  const mallExamples = extractNames(malls, 2);
-  const parkExamples = extractNames(parks, 2);
-  const tourismExamples = extractNames(tourism_sites, 3);
+  const mallExamples = extractNames(cityData.malls, 2);
+  const parkExamples = extractNames(cityData.parks, 2);
+  const tourismExamples = extractNames(cityData.tourism_sites, 3);
 
   const mallText = mallExamples.length ? ` (e.g., ${mallExamples.join(', ')})` : '';
   const parkText = parkExamples.length ? ` (e.g., ${parkExamples.join(', ')})` : '';
@@ -206,7 +231,6 @@ export default function generateContent(cityData: CityData): { text: string, tit
     `Think about the places you visited recently: hotels, restaurants, malls${mallText}, parks${parkText}, or tourist attractions. ${tourismText}`,
     `You might have left something behind at a mall${mallText}, a park${parkText}, or a tourist site. ${tourismText}`,
     `Lost items are often found in busy spots like malls${mallText}, public parks${parkText}, or city landmarks. ${tourismText}`,
-    // ...
   ];
 
   const intro = randomFromArray(intros).replace(/{city}/g, city);
@@ -218,11 +242,7 @@ export default function generateContent(cityData: CityData): { text: string, tit
   const phrase5 = randomFromArray(phrase5Options);
   const title = randomFromArray(titleTemplates).replace(/{city}/g, city);
 
-  return {
-    text: [intro, '', intro2, '', phrase1, phrase2, '', phrase3, '', phrase4, '', phrase5].join('\n\n'),
-    title,
-  };
+  const text = [intro, '', intro2, '', phrase1, phrase2, '', phrase3, '', phrase4, '', phrase5].join('\n\n');
+
+  return { text, title };
 }
-
-
-
