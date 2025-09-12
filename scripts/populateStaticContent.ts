@@ -4,17 +4,26 @@ import { createClient } from '@supabase/supabase-js'
 import generateContent from '@/lib/generatecontent'
 
 /**
- * ✅ Utilise la service role key pour éviter les soucis de RLS en update.
- * Si tu tiens absolument à l'ANON, garde SUPABASE_ANON_KEY — mais assure-toi
- * que les policies autorisent ces updates.
+ * ⚙️ Comportement :
+ * - Par défaut : on met à jour si static_content est NULL ou s'il ne contient pas d'exemples "(e.g., ...)".
+ * - Pour écraser TOUTES les villes (même si déjà remplies), lance avec POPULATE_OVERWRITE=1.
+ *
+ * Exemples:
+ *    tsx scripts/populate-static-content.ts
+ *    POPULATE_OVERWRITE=1 tsx scripts/populate-static-content.ts
  */
+
+// --- Config ---
+const OVERWRITE_ALL = process.env.POPULATE_OVERWRITE === '1'
+const BATCH_SIZE = Number(process.env.POPULATE_BATCH_SIZE || 50)
+
+// ⚠️ Utilise la service role key pour écrire sans souci de RLS
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // ← plus sûr pour un script serveur
-  // process.env.SUPABASE_ANON_KEY!       // ← utilise ceci SEULEMENT si RLS ok
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Parse sûr pour champs JSON éventuellement stockés en string
+// --- Utils ---
 function safeParseArray(input: unknown): any[] {
   if (!input) return []
   if (Array.isArray(input)) return input
@@ -24,77 +33,96 @@ function safeParseArray(input: unknown): any[] {
   return []
 }
 
-async function processBatch(limit = 20): Promise<boolean> {
-  const { data: cities, error } = await supabase
-    .from('us_cities')
-    .select('*')
-    .or('static_title.is.null,static_content.is.null')
-    .order('id', { ascending: true }) // stabilité
-    .limit(limit)
+/** Détecte la présence d'exemples "(e.g., XXX, YYY)" dans le texte existant */
+function hasExamples(text?: string | null): boolean {
+  if (!text) return false
+  // repère "(e.g., <qqch>)" ou "(e.g. <qqch>)"
+  return /\(e\.g\.?,\s*[^)]+\)/i.test(text)
+}
 
-  if (error) {
-    console.error('❌ Error fetching cities:', error.message)
-    return false
-  }
+/** Doit-on régénérer le contenu ? */
+function shouldRefreshContent(current?: string | null): boolean {
+  if (OVERWRITE_ALL) return true
+  if (!current || current.trim().length === 0) return true
+  // si pas d'exemples, on régénère
+  if (!hasExamples(current)) return true
+  return false
+}
 
-  if (!cities || cities.length === 0) {
-    return false // plus rien à traiter
-  }
+// --- Traitement par curseur d'id pour stabilité ---
+async function processAll() {
+  console.log('🚀 Starting populate static content...')
+  let lastId = 0
+  let updated = 0
+  let scanned = 0
 
-  for (const city of cities) {
-    try {
-      const malls = safeParseArray(city.malls)
-      const parks = safeParseArray(city.parks)
-      const tourism_sites = safeParseArray(city.tourism_sites)
+  while (true) {
+    const { data: rows, error } = await supabase
+      .from('us_cities')
+      .select('id, city_ascii, static_title, static_content, malls, parks, tourism_sites')
+      .gt('id', lastId)
+      .order('id', { ascending: true })
+      .limit(BATCH_SIZE)
 
-      const { text, title } = generateContent({
-        city: city.city_ascii,
-        malls,
-        parks,
-        tourism_sites,
-      })
+    if (error) {
+      console.error('❌ Error fetching cities:', error.message)
+      break
+    }
+    if (!rows || rows.length === 0) break
 
-      const updatePayload: Record<string, string> = {}
-      if (!city.static_content) updatePayload.static_content = text
-      if (!city.static_title) updatePayload.static_title = title
+    for (const city of rows) {
+      scanned++
+      lastId = city.id
 
-      if (Object.keys(updatePayload).length > 0) {
+      try {
+        const malls = safeParseArray(city.malls)
+        const parks = safeParseArray(city.parks)
+        const tourism_sites = safeParseArray(city.tourism_sites)
+
+        const needContent = shouldRefreshContent(city.static_content)
+        const needTitle = !city.static_title || city.static_title.trim().length === 0
+
+        if (!needContent && !needTitle) {
+          // Rien à faire
+          // console.log(`⏭️ Skipped: ${city.city_ascii}`)
+          continue
+        }
+
+        const { text, title } = generateContent({
+          city: city.city_ascii,
+          malls,
+          parks,
+          tourism_sites,
+        })
+
+        const payload: Record<string, string> = {}
+        if (needContent) payload.static_content = text
+        if (needTitle) payload.static_title = title
+
         const { error: upErr } = await supabase
           .from('us_cities')
-          .update(updatePayload)
+          .update(payload)
           .eq('id', city.id)
 
         if (upErr) {
           console.error(`❌ Update failed for ${city.city_ascii}:`, upErr.message)
         } else {
+          updated++
           console.log(`✅ Updated: ${city.city_ascii}`)
         }
-      } else {
-        console.log(`⏭️ Skipped (already filled): ${city.city_ascii}`)
+      } catch (err) {
+        console.warn(`❌ Failed on ${city.city_ascii}:`, err)
       }
-
-      // (Optionnel) petite pause pour éviter de spammer la DB/quotas
-      // await new Promise(r => setTimeout(r, 50))
-    } catch (err) {
-      console.warn(`❌ Failed on ${city.city_ascii}:`, err)
     }
+
+    if (rows.length < BATCH_SIZE) break // fin
   }
 
-  return true // il reste potentiellement d'autres villes à traiter
+  console.log(`🎉 Done. Scanned: ${scanned}, Updated: ${updated}, Overwrite mode: ${OVERWRITE_ALL ? 'ON' : 'OFF'}`)
 }
 
-async function populateAll() {
-  console.log('🚀 Starting populate static content...')
-  let hasMore = true
-
-  while (hasMore) {
-    hasMore = await processBatch(20)
-  }
-
-  console.log('🎉 All done!')
-}
-
-populateAll().catch((e) => {
+// --- Run ---
+processAll().catch((e) => {
   console.error('💥 Fatal error:', e)
   process.exit(1)
 })

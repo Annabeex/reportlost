@@ -1,3 +1,4 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -5,10 +6,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'images.pexels.com',
+        pathname: '/**', // les URLs Pexels sont sur images.pexels.com/photos/.../...
       },
       {
         protocol: 'https',
-        hostname: 'mfxjzvqtkespoichhnkk.supabase.co',
+        hostname: 'mfxjzvqtkespoichhnkk.supabase.co', // ton domaine Supabase
         pathname: '/storage/v1/object/public/**',
       },
     ],

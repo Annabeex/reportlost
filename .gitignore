@@ -1,6 +1,12 @@
+# env files (ne jamais versionner)
+.env
+.env.local
+.env.*
+!.env.example
+
+# build & OS
 .next/
 node_modules/
-.env.local
 .DS_Store
 *.log
 .vercel
