@@ -1,14 +1,30 @@
 'use client';
 
+export const revalidate = 0;            // toujours des données fraîches
+// ou, équivalent:
+// export const dynamic = 'force-dynamic';
+
 import './globals.css';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import UsaMap from '@/components/UsaMap';
 import categoryList from '@/lib/popularCategories';
-import { buildCityPath } from '@/lib/slugify'; // ✅ nouveau helper
+import { buildCityPath } from '@/lib/slugify';
 
-// ✅ Ajoute l'état (abbr) pour générer /lost-and-found/{state}/{city}
+// ✅ helper: slug catégorie robuste (aligné avec la page catégorie)
+function categoryToSlug(name: string) {
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // accents
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')      // espaces -> tirets
+    .replace(/-+/g, '-')       // tirets multiples
+    .replace(/^-|-$/g, '');    // bords propres
+}
+
+// ✅ villes majeures: utiliser buildCityPath(state, city)
 const majorCities = [
   { name: 'New York',     state: 'NY', image: '/images/cities/new-york.jpg' },
   { name: 'Los Angeles',  state: 'CA', image: '/images/cities/los-angeles.jpg' },
@@ -121,22 +137,28 @@ export default function HomePage() {
             Most Frequently Lost Items
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
-            {categoryList.map(category => (
-              <Link
-                key={category.name}
-                href={`/category/${encodeURIComponent(category.name.toLowerCase())}`}
-                className="text-center"
-              >
-                <Image
-                  src={category.image}
-                  alt={category.name}
-                  width={120}
-                  height={120}
-                  className="rounded-full object-cover mx-auto shadow hover:scale-105 transition-transform"
-                />
-                <p className="text-sm font-medium mt-2 text-gray-700">{category.name}</p>
-              </Link>
-            ))}
+            {categoryList.map(category => {
+              const slug = categoryToSlug(category.name);
+              const imgSrc = category.image || `/images/categories/${slug}.jpg`; // ✅ fallback local
+              return (
+                <Link
+                  key={category.name}
+                  href={`/lost-and-found/category/${slug}`}   // ✅ nouvelle route
+                  className="text-center group transition-transform hover:scale-105"
+                >
+                  <Image
+                    src={imgSrc}
+                    alt={category.name}
+                    width={120}
+                    height={120}
+                    className="rounded-full object-cover mx-auto shadow"
+                  />
+                  <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
+                    {category.name}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>

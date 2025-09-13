@@ -15,19 +15,25 @@ type Props = { params: { state: string } };
 
 // ---------- helpers Option B ----------
 function cityToSlug(name: string) {
-  return name.toLowerCase().replace(/\s+/g, '-');
+  // slug robuste : minuscules, sans accents ni ponctuation parasite
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // enlève les accents
+    .replace(/&/g, 'and')                              // and cohérent
+    .replace(/[^a-z0-9\s-]/g, '')                      // supprime ponctuation
+    .replace(/\s+/g, '-')                              // espaces -> tirets
+    .replace(/-+/g, '-')                               // tirets multiples
+    .replace(/^-|-$/g, '');                            // bords propres
 }
 
 /**
- * Retourne le chemin d'image pour une ville si elle fait partie
- * des 6 villes prévues de l'État (via cityImages.byState) ou présente
+ * Retourne le chemin d'image .jpg pour une ville si elle fait partie
+ * des 6 villes prévues de l'État (via cityImages.byState) ou figure
  * dans cityImages.available ; sinon renvoie le fallback.
  */
 function getCityImage(stateAbbr: string, cityName: string) {
   const slug = cityToSlug(cityName);
-  const byState: Record<string, string[]> | undefined =
-    (cityImages as any).byState;
-
+  const byState: Record<string, string[]> | undefined = (cityImages as any).byState;
   const available: string[] | undefined = (cityImages as any).available;
 
   const listedInState = byState?.[stateAbbr]?.includes(slug);
@@ -35,8 +41,9 @@ function getCityImage(stateAbbr: string, cityName: string) {
 
   const hasPlannedImage = listedInState || listedGlobally;
 
+  // 👉 Utilisation JPG (déposez vos fichiers en .jpg dans public/images/cities)
   return hasPlannedImage
-    ? `/images/cities/${slug}.webp`
+    ? `/images/cities/${slug}.jpg`
     : '/images/cities/default.jpg';
 }
 // -------------------------------------
@@ -106,6 +113,7 @@ export default async function StatePage({ params }: Props) {
                 width={120}
                 height={120}
                 className="rounded-full object-cover mx-auto shadow w-[120px] h-[120px]"
+                loading="lazy"
               />
               <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
                 {city.city_ascii}
