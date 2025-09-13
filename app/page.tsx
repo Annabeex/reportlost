@@ -1,9 +1,5 @@
 'use client';
 
-export const revalidate = 0;            // toujours des données fraîches
-// ou, équivalent:
-// export const dynamic = 'force-dynamic';
-
 import './globals.css';
 import Image from 'next/image';
 import Link from 'next/link';
