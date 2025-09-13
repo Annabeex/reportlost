@@ -7,12 +7,39 @@ import { getPopularCitiesByState } from '@/lib/getPopularCitiesByState';
 import { stateNameFromAbbr } from '@/lib/utils';     // ex: 'ca' -> 'California'
 import { buildCityPath } from '@/lib/slugify';       // ex: (CA, "Los Angeles") -> /lost-and-found/ca/los-angeles
 import MaintenanceNotice from '@/components/MaintenanceNotice';
+import cityImages from '@/data/cityImages.json';
 
-// ⚠️ assure-toi d'avoir app/lost-and-found/[state]/generateStaticParams.ts
-// et de l'exporter ici pour le SSG des 50 états
 export { generateStaticParams } from './generateStaticParams';
 
 type Props = { params: { state: string } };
+
+// ---------- helpers Option B ----------
+function cityToSlug(name: string) {
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
+ * Retourne le chemin d'image pour une ville si elle fait partie
+ * des 6 villes prévues de l'État (via cityImages.byState) ou présente
+ * dans cityImages.available ; sinon renvoie le fallback.
+ */
+function getCityImage(stateAbbr: string, cityName: string) {
+  const slug = cityToSlug(cityName);
+  const byState: Record<string, string[]> | undefined =
+    (cityImages as any).byState;
+
+  const available: string[] | undefined = (cityImages as any).available;
+
+  const listedInState = byState?.[stateAbbr]?.includes(slug);
+  const listedGlobally = available?.includes(slug);
+
+  const hasPlannedImage = listedInState || listedGlobally;
+
+  return hasPlannedImage
+    ? `/images/cities/${slug}.webp`
+    : '/images/cities/default.jpg';
+}
+// -------------------------------------
 
 // Métadonnées par État
 export async function generateMetadata({ params }: Props) {
@@ -65,6 +92,8 @@ export default async function StatePage({ params }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
         {cities.map((city: any) => {
           const stateForPath = city.state_id ?? stateAbbr; // sécurité si state_id n'est pas renvoyé
+          const imgSrc = getCityImage(stateAbbr, city.city_ascii);
+
           return (
             <Link
               key={`${city.city_ascii}-${stateForPath}`}
@@ -72,7 +101,7 @@ export default async function StatePage({ params }: Props) {
               className="text-center group transition-transform transform hover:scale-105"
             >
               <Image
-                src={`/images/cities/${city.city_ascii.toLowerCase().replace(/\s+/g, '-')}.jpg`}
+                src={imgSrc}
                 alt={city.city_ascii}
                 width={120}
                 height={120}
