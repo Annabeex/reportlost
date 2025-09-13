@@ -1,10 +1,11 @@
-import './globals.css'
-import { Inter } from 'next/font/google'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import Script from 'next/script'
+import './globals.css';
+import { Inter } from 'next/font/google';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import Analytics from '@/components/Analytics';
 
-// ✅ METADATA GÉNÉRALE — utile si une page n’en définit pas une spécifique
+
+// ✅ METADATA GÉNÉRALE — Next l’injecte dans <head>
 export const metadata = {
   title: 'Lost and Found – ReportLost.org',
   description: 'Report your lost items and find them quickly with local help across the U.S.',
@@ -24,37 +25,20 @@ export const metadata = {
   alternates: {
     canonical: '/',
   },
-}
+};
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {/* Google Analytics */}
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-JGM5658XGE"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-JGM5658XGE');
-            `,
-          }}
-        />
-      </head>
+      {/* Pas de <head> manuel : metadata ci-dessus suffit */}
       <body className={`${inter.className} bg-gray-100`}>
+        <Analytics /> {/* GA scripts, côté client */}
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>
-  )
+  );
 }

@@ -1,23 +1,28 @@
 'use client';
 
-import './globals.css';
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
-import UsaMap from '@/components/UsaMap';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
+
+// ⚠️ La CSS globale doit être importée dans app/layout.tsx, pas ici.
+// import './globals.css'
+
+// ✅ Import dynamique de la carte, sans SSR (évite les erreurs côté serveur)
+const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
 // ✅ helper: slug catégorie robuste (aligné avec la page catégorie)
 function categoryToSlug(name: string) {
   return String(name)
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // accents
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')      // espaces -> tirets
-    .replace(/-+/g, '-')       // tirets multiples
-    .replace(/^-|-$/g, '');    // bords propres
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 // ✅ villes majeures: utiliser buildCityPath(state, city)
