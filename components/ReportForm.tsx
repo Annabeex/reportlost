@@ -50,7 +50,6 @@ export default function ReportForm({
     email: '',
     phone: '',
     address: '',
-    consent: false,
     contribution: 0,
     isCellphone: false,
     phoneColor: '',
@@ -62,6 +61,11 @@ export default function ReportForm({
     phoneMark: '',
     phoneOther: '',
     object_photo: '',
+    // ✅ flags UI pour les trois cases (peuvent aussi être ajoutés dynamiquement)
+    consent: false,
+    consent_contact: false,
+    consent_terms: false,
+    consent_authorized: false,
   });
 
   useEffect(() => {
@@ -108,13 +112,20 @@ export default function ReportForm({
       const phoneDescription = buildPhoneDescription();
       const object_photo = formData.object_photo || null;
 
+      // ✅ calcule un consent global robuste, même si `consent` n’a pas été posé
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
+
+      // contribution acceptée à 0 (ou adapte si ta table exige > 0)
       const safeContribution = formData.contribution ?? 0;
 
       const payload = {
-        title: formData.title,
-        description: formData.description,
-        city: formData.city,
-        date: formData.date,
+        title: formData.title || null,
+        description: formData.description || null,
+        city: formData.city || null,
+        date: formData.date || null,
         time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
         loss_street: formData.loss_street || null,
@@ -129,8 +140,9 @@ export default function ReportForm({
         phone: formData.phone || null,
         address: formData.address || null,
         contribution: safeContribution,
-        consent: formData.consent,
-        phone_description: phoneDescription,
+        // ✅ on n’envoie qu’une seule colonne boolean existante en base
+        consent: consentOK,
+        phone_description: phoneDescription || null,
         object_photo,
       };
 
@@ -141,7 +153,7 @@ export default function ReportForm({
       const { error } = await supabase.from('lost_items').insert([cleanedPayload]);
 
       if (error) {
-        console.error('❌ Supabase insert error:', error.message, error.details, error.hint, error.code);
+        console.error('❌ Supabase insert error:', error.message, (error as any)?.details, (error as any)?.hint, (error as any)?.code);
         alert(`Unexpected database error: ${error.message}`);
         return false;
       }
@@ -189,9 +201,9 @@ Your report is published and automatic alerts are active.
         });
 
         const result = await res.json();
-        console.log("📧 Résultat envoi mail:", result);
+        console.log('📧 Résultat envoi mail:', result);
       } catch (err) {
-        console.error("❌ Email confirmation deposit failed:", err);
+        console.error('❌ Email confirmation deposit failed:', err);
       }
 
       return true;
@@ -228,7 +240,14 @@ Your report is published and automatic alerts are active.
         alert('Please enter your email.');
         return;
       }
-      if (!formData.consent) {
+
+      // ✅ nouvelle validation : accepte soit consent global, soit les 3 cases
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
+
+      if (!consentOK) {
         alert('Please confirm all required checkboxes.');
         return;
       }
@@ -250,7 +269,7 @@ Your report is published and automatic alerts are active.
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: formData.email,
-          subject: "💙 Thank you for supporting your report",
+          subject: '💙 Thank you for supporting your report',
           text: `Hello ${formData.first_name},
 
 We confirm we have received your contribution of $${formData.contribution}.
@@ -261,7 +280,6 @@ Your report now benefits from:
 - Priority visibility and alerts.
 
 Thank you for supporting ReportLost.`,
-
           html: `
             <div style="font-family:sans-serif;max-width:600px;margin:auto;border:1px solid #eee;border-radius:8px;overflow:hidden">
               <div style="background:#16a34a;color:#fff;padding:16px;text-align:center;">
@@ -282,7 +300,7 @@ Thank you for supporting ReportLost.`,
         }),
       });
     } catch (err) {
-      console.error("❌ Email confirmation payment failed:", err);
+      console.error('❌ Email confirmation payment failed:', err);
     }
   };
 
@@ -290,7 +308,9 @@ Thank you for supporting ReportLost.`,
 
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
-      {step === 1 && <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />}
+      {step === 1 && (
+        <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
+      )}
       {step === 2 && (
         <ReportFormStep2
           formData={formData}
@@ -300,7 +320,9 @@ Thank you for supporting ReportLost.`,
           onBack={handleBack}
         />
       )}
-      {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
+      {step === 3 && (
+        <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />
+      )}
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
@@ -313,10 +335,15 @@ Thank you for supporting ReportLost.`,
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
           <Elements stripe={stripePromise}>
-            <CheckoutForm amount={formData.contribution} onSuccess={handleSuccessfulPayment} onBack={handleBack} />
+            <CheckoutForm
+              amount={formData.contribution}
+              onSuccess={handleSuccessfulPayment}
+              onBack={handleBack}
+            />
           </Elements>
         </div>
       )}
     </main>
   );
 }
+
