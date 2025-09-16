@@ -17,12 +17,11 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
   const today = new Date().toISOString().split('T')[0];
 
   const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name === 'isCellphone') {
-      setShowPhoneDetails(e.target.checked);
-    }
-    if (e.target.name === 'transport') {
-      setShowTransportFields(e.target.checked);
-    }
+    const { name, checked } = e.target;
+    if (name === 'isCellphone') setShowPhoneDetails(checked);
+    if (name === 'transport') setShowTransportFields(checked);
+    // Propager aussi au parent
+    onChange({ target: { name, value: checked } } as any);
   };
 
   if (showLocationStep) {
@@ -62,22 +61,24 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
 
         <div className="flex items-center gap-2">
           <input
+            id="transport"
+            name="transport"
             type="checkbox"
             onChange={handleCheckbox}
             checked={showTransportFields}
           />
-          <label>Was it during a transport (train, plane, bus, taxi)?</label>
+          <label htmlFor="transport">Was it during a transport (train, plane, bus, taxi)?</label>
         </div>
 
         {showTransportFields && (
           <div className="grid grid-cols-1 gap-4 border p-4 rounded bg-gray-50">
-            {[
+            {([
               ['departure_place', 'Place of departure'],
               ['arrival_place', 'Place of arrival'],
               ['departure_time', 'Departure time'],
               ['arrival_time', 'Arrival time'],
-              ['travel_number', 'Flight or Train number']
-            ].map(([name, label]) => (
+              ['travel_number', 'Flight or Train number'],
+            ] as const).map(([name, label]) => (
               <div key={name}>
                 <label className="block font-medium">{label}</label>
                 <input
@@ -170,11 +171,13 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
 
       <div className="flex items-center gap-2">
         <input
+          id="isCellphone"
+          name="isCellphone"
           type="checkbox"
           onChange={handleCheckbox}
           checked={showPhoneDetails}
         />
-        <label>If you lost your cell phone, click yes</label>
+        <label htmlFor="isCellphone">If you lost your cell phone, click yes</label>
       </div>
 
       {showPhoneDetails && (
