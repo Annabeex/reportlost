@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 
 interface Props {
   formData: any;
-  onChange: (e: React.ChangeEvent<any>) => void;
+  onChange: (e: React.ChangeEvent<any> | { target: { name: string; value: any } }) => void;
   onNext: () => void;
   onBack: () => void;
   setFormData: (data: any) => void;
@@ -17,15 +17,20 @@ export default function ReportFormStep2({
   onBack,
   setFormData
 }: Props) {
-  const [confirm1, setConfirm1] = useState(false);
-  const [confirm2, setConfirm2] = useState(false);
-  const [confirm3, setConfirm3] = useState(false);
+  // on initialise avec formData si déjà présent
+  const [confirm1, setConfirm1] = useState(!!formData.consent_contact);
+  const [confirm2, setConfirm2] = useState(!!formData.consent_terms);
+  const [confirm3, setConfirm3] = useState(!!formData.consent_authorized);
+
   const [previewUrl, setPreviewUrl] = useState(formData.object_photo || '');
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    console.log('🟦 Entrée dans ReportFormStep2 avec formData :', formData);
-  }, [formData]);
+    // si formData change (ex: retour arrière), on resynchronise
+    setConfirm1(!!formData.consent_contact);
+    setConfirm2(!!formData.consent_terms);
+    setConfirm3(!!formData.consent_authorized);
+  }, [formData.consent_contact, formData.consent_terms, formData.consent_authorized]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,7 +44,6 @@ export default function ReportFormStep2({
       const uploadResponse = await supabase.storage.from('images').upload(filename, file, {
         upsert: true
       });
-
       if (uploadResponse.error) throw uploadResponse.error;
 
       const publicUrlResponse = await supabase.storage.from('images').getPublicUrl(filename);
@@ -61,6 +65,17 @@ export default function ReportFormStep2({
     setPreviewUrl('');
   };
 
+  // petit helper pour éviter de répéter le code
+  const handleConfirmChange = (name: 'consent_contact' | 'consent_terms' | 'consent_authorized') =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = e.target.checked;
+      if (name === 'consent_contact') setConfirm1(checked);
+      if (name === 'consent_terms') setConfirm2(checked);
+      if (name === 'consent_authorized') setConfirm3(checked);
+      // on pousse la valeur dans formData (parent)
+      onChange({ target: { name, value: checked } });
+    };
+
   const handleContinue = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,28 +83,34 @@ export default function ReportFormStep2({
       alert('Please enter your first name.');
       return;
     }
-
     if (!formData.last_name?.trim()) {
       alert('Please enter your last name.');
       return;
     }
-
     if (!formData.email?.trim()) {
       alert('Please enter your email address.');
       return;
     }
-
     if (!emailRegex.test(formData.email.trim())) {
       alert('Please enter a valid email address.');
       return;
     }
 
+    // vérifie bien les 3 confirmations
     if (!confirm1 || !confirm2 || !confirm3) {
       alert('Please check all confirmation boxes.');
       return;
     }
 
-    setFormData((prev: any) => ({ ...prev, consent: true }));
+    // on stocke aussi un indicateur agrégé "consent" (compat colonne Supabase)
+    setFormData((prev: any) => ({
+      ...prev,
+      consent: true,
+      consent_contact: confirm1,
+      consent_terms: confirm2,
+      consent_authorized: confirm3,
+    }));
+
     onNext();
   };
 
@@ -147,27 +168,44 @@ export default function ReportFormStep2({
       <div className="space-y-3 pt-4">
         <h3 className="text-lg font-semibold">Final confirmation</h3>
 
-        {[
-          'By submitting this form, I agree to be contacted if my item is found. My report may be published on reportlost.org and social media. Data is stored up to 36 months.',
-          'I confirm that I have read and understood the Terms of Use.',
-          'I confirm that I am the person who lost the item or authorized to report it.'
-        ].map((text, i) => (
-          <div
-            key={i}
-            className="border border-gray-300 bg-gray-50 px-3 py-2.5 rounded-md flex items-start gap-2"
-          >
-            <input
-              type="checkbox"
-              checked={[confirm1, confirm2, confirm3][i]}
-              onChange={(e) => {
-                if (i === 0) setConfirm1(e.target.checked);
-                if (i === 1) setConfirm2(e.target.checked);
-                if (i === 2) setConfirm3(e.target.checked);
-              }}
-            />
-            <p className="text-sm text-gray-700">{text}</p>
-          </div>
-        ))}
+        <div className="border border-gray-300 bg-gray-50 px-3 py-2.5 rounded-md flex items-start gap-2">
+          <input
+            id="consent_contact"
+            name="consent_contact"
+            type="checkbox"
+            checked={confirm1}
+            onChange={handleConfirmChange('consent_contact')}
+          />
+          <label htmlFor="consent_contact" className="text-sm text-gray-700">
+            By submitting this form, I agree to be contacted if my item is found. My report may be published on reportlost.org and social media. Data is stored up to 36 months.
+          </label>
+        </div>
+
+        <div className="border border-gray-300 bg-gray-50 px-3 py-2.5 rounded-md flex items-start gap-2">
+          <input
+            id="consent_terms"
+            name="consent_terms"
+            type="checkbox"
+            checked={confirm2}
+            onChange={handleConfirmChange('consent_terms')}
+          />
+          <label htmlFor="consent_terms" className="text-sm text-gray-700">
+            I confirm that I have read and understood the Terms of Use.
+          </label>
+        </div>
+
+        <div className="border border-gray-300 bg-gray-50 px-3 py-2.5 rounded-md flex items-start gap-2">
+          <input
+            id="consent_authorized"
+            name="consent_authorized"
+            type="checkbox"
+            checked={confirm3}
+            onChange={handleConfirmChange('consent_authorized')}
+          />
+          <label htmlFor="consent_authorized" className="text-sm text-gray-700">
+            I confirm that I am the person who lost the item or authorized to report it.
+          </label>
+        </div>
       </div>
 
       <div className="flex justify-between pt-4">

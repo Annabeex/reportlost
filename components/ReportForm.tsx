@@ -14,6 +14,10 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const MAIL_ENABLED = false;
 
+type EventLike =
+  | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  | { target: { name: string; value: any; type?: string; checked?: boolean } };
+
 type ReportFormProps = {
   defaultCity?: string;
   enforceValidation?: boolean;
@@ -49,6 +53,9 @@ export default function ReportForm({
     phone: '',
     address: '',
     consent: false,
+    consent_contact: false,
+    consent_terms: false,
+    consent_authorized: false,
     contribution: 15,
     isCellphone: false,
     phoneColor: '',
@@ -66,12 +73,10 @@ export default function ReportForm({
     setIsClient(true);
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
-    const { name, value, type } = e.target;
-    const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    const { name, value, type, checked } = (e as any).target;
+    const finalValue = type === 'checkbox' ? !!checked : value;
     setFormData((prev: any) => ({ ...prev, [name]: finalValue }));
   };
 
@@ -138,6 +143,9 @@ export default function ReportForm({
           address: formData.address || null,
           contribution: formData.contribution,
           consent: formData.consent,
+          consent_contact: formData.consent_contact,
+          consent_terms: formData.consent_terms,
+          consent_authorized: formData.consent_authorized,
           phone_description: phoneDescription,
           object_photo,
         };
@@ -193,7 +201,7 @@ export default function ReportForm({
         alert('Please enter your email.');
         return;
       }
-      if (!formData.consent) {
+      if (!formData.consent_contact || !formData.consent_terms || !formData.consent_authorized) {
         alert('Please confirm all required checkboxes.');
         return;
       }
@@ -251,15 +259,14 @@ export default function ReportForm({
         />
       )}
       {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
-{step === 4 && (
- <ReportContribution
-  contribution={formData.contribution}
-  setFormData={setFormData}
-  onBack={handleBack}
-  onNext={handleNext}
-/>
-
-)}
+      {step === 4 && (
+        <ReportContribution
+          contribution={formData.contribution}
+          setFormData={setFormData}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
+      )}
       {step === 5 && (
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
