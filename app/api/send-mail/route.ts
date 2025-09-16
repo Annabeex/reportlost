@@ -1,6 +1,5 @@
-// app/api/send-mail/route.ts
-import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
@@ -8,33 +7,36 @@ export async function POST(req: Request) {
     const { to, subject, text, html } = data;
 
     if (!to || !subject || !text) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    // ✅ Transporteur Zoho Europe
     const transporter = nodemailer.createTransport({
-      host: 'smtp.zoho.com',
+      host: "smtp.zoho.eu",
       port: 465,
-      secure: true, // SSL
+      secure: true,
       auth: {
-        user: process.env.ZOHO_USER, // ex: support@reportlost.org
-        pass: process.env.ZOHO_PASS, // mot de passe d’application Zoho
+        user: process.env.ZOHO_USER, // support@reportlost.org
+        pass: process.env.ZOHO_PASS, // mot de passe spécifique app
       },
     });
 
-    const mailOptions = {
+    const info = await transporter.sendMail({
       from: `"ReportLost" <${process.env.ZOHO_USER}>`,
       to,
       subject,
       text,
       html,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('📤 Mail sent:', info.messageId);
+    console.log("📤 Mail envoyé:", info.messageId);
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('❌ Error sending email:', error);
-    return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
+    return NextResponse.json({ success: true, messageId: info.messageId });
+  } catch (error: any) {
+    console.error("❌ Error sending email:", error);
+    return NextResponse.json(
+      { error: "Email failed", code: error.code },
+      { status: 500 }
+    );
   }
 }
