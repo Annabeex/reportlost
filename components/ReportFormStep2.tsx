@@ -17,7 +17,7 @@ export default function ReportFormStep2({
   onBack,
   setFormData
 }: Props) {
-  // on initialise avec formData si déjà présent
+  // init depuis formData si on revient en arrière
   const [confirm1, setConfirm1] = useState(!!formData.consent_contact);
   const [confirm2, setConfirm2] = useState(!!formData.consent_terms);
   const [confirm3, setConfirm3] = useState(!!formData.consent_authorized);
@@ -26,7 +26,6 @@ export default function ReportFormStep2({
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    // si formData change (ex: retour arrière), on resynchronise
     setConfirm1(!!formData.consent_contact);
     setConfirm2(!!formData.consent_terms);
     setConfirm3(!!formData.consent_authorized);
@@ -65,14 +64,14 @@ export default function ReportFormStep2({
     setPreviewUrl('');
   };
 
-  // petit helper pour éviter de répéter le code
-  const handleConfirmChange = (name: 'consent_contact' | 'consent_terms' | 'consent_authorized') =>
+  // pousse la valeur vers le parent pour que ReportForm voie l'état exact
+  const handleConfirmChange =
+    (name: 'consent_contact' | 'consent_terms' | 'consent_authorized') =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const checked = e.target.checked;
       if (name === 'consent_contact') setConfirm1(checked);
       if (name === 'consent_terms') setConfirm2(checked);
       if (name === 'consent_authorized') setConfirm3(checked);
-      // on pousse la valeur dans formData (parent)
       onChange({ target: { name, value: checked } });
     };
 
@@ -96,21 +95,13 @@ export default function ReportFormStep2({
       return;
     }
 
-    // vérifie bien les 3 confirmations
     if (!confirm1 || !confirm2 || !confirm3) {
       alert('Please check all confirmation boxes.');
       return;
     }
 
-    // on stocke aussi un indicateur agrégé "consent" (compat colonne Supabase)
-    setFormData((prev: any) => ({
-      ...prev,
-      consent: true,
-      consent_contact: confirm1,
-      consent_terms: confirm2,
-      consent_authorized: confirm3,
-    }));
-
+    // ⛔️ On ne touche pas à formData.consent ici.
+    // ReportForm.tsx calcule un consent global au moment d’enregistrer (consentOK).
     onNext();
   };
 

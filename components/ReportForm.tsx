@@ -14,15 +14,15 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const MAIL_ENABLED = false;
 
-type EventLike =
-  | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  | { target: { name: string; value: any; type?: string; checked?: boolean } };
-
 type ReportFormProps = {
   defaultCity?: string;
   enforceValidation?: boolean;
   onBeforeSubmit?: (formData: any) => any;
 };
+
+type EventLike =
+  | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
 export default function ReportForm({
   defaultCity = '',
@@ -52,11 +52,8 @@ export default function ReportForm({
     email: '',
     phone: '',
     address: '',
-    consent: false,
-    consent_contact: false,
-    consent_terms: false,
-    consent_authorized: false,
-    contribution: 15,
+    consent: false, // global unique
+    contribution: 0, // ✅ plus de 15 par défaut
     isCellphone: false,
     phoneColor: '',
     phoneMaterial: '',
@@ -67,6 +64,10 @@ export default function ReportForm({
     phoneMark: '',
     phoneOther: '',
     object_photo: '',
+    // flags UI (non envoyés en BDD)
+    consent_contact: false,
+    consent_terms: false,
+    consent_authorized: false,
   });
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function ReportForm({
     return parts.join(' | ');
   };
 
-  const saveReportToDatabase = async () => {
+  const saveReportToDatabase = async ({ forceConsent }: { forceConsent?: boolean } = {}) => {
     try {
       console.log('📥 formData brut reçu :', formData);
 
@@ -141,11 +142,13 @@ export default function ReportForm({
           last_name: String(formData.last_name || ''),
           phone: formData.phone || null,
           address: formData.address || null,
-          contribution: formData.contribution,
-          consent: formData.consent,
-          consent_contact: formData.consent_contact,
-          consent_terms: formData.consent_terms,
-          consent_authorized: formData.consent_authorized,
+          contribution: formData.contribution, // ✅ désormais choisi à l’étape 4
+          consent:
+            forceConsent ??
+            !!(
+              formData.consent ||
+              (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+            ),
           phone_description: phoneDescription,
           object_photo,
         };
@@ -201,12 +204,33 @@ export default function ReportForm({
         alert('Please enter your email.');
         return;
       }
-      if (!formData.consent_contact || !formData.consent_terms || !formData.consent_authorized) {
+
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
+
+      if (!consentOK) {
         alert('Please confirm all required checkboxes.');
         return;
       }
 
-      const success = await saveReportToDatabase();
+      // 👇 On NE sauvegarde PAS encore : on attend le choix du forfait (step 4).
+    }
+
+    // Validation de l'étape 4 : un forfait doit être choisi
+    if (enforceValidation && step === 4) {
+      if (!formData.contribution || formData.contribution <= 0) {
+        alert('Please choose a contribution level.');
+        return;
+      }
+
+      // ✅ Maintenant on a tout (consent + contribution) → on enregistre
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
+      const success = await saveReportToDatabase({ forceConsent: consentOK });
       if (!success) return;
     }
 
@@ -248,7 +272,10 @@ export default function ReportForm({
 
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
-      {step === 1 && <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />}
+      {step === 1 && (
+        <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
+      )}
+
       {step === 2 && (
         <ReportFormStep2
           formData={formData}
@@ -258,7 +285,9 @@ export default function ReportForm({
           onBack={handleBack}
         />
       )}
+
       {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
+
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
@@ -267,11 +296,16 @@ export default function ReportForm({
           onNext={handleNext}
         />
       )}
+
       {step === 5 && (
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
           <Elements stripe={stripePromise}>
-            <CheckoutForm amount={formData.contribution} onSuccess={handleSuccessfulPayment} onBack={handleBack} />
+            <CheckoutForm
+              amount={formData.contribution}
+              onSuccess={handleSuccessfulPayment}
+              onBack={handleBack}
+            />
           </Elements>
         </div>
       )}
