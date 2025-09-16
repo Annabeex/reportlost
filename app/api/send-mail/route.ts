@@ -1,44 +1,24 @@
 // app/api/send-mail/route.ts
-
-// TEMPORAIREMENT DÉSACTIVÉ POUR TESTS (envoi de mails désactivé)
 import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
-  console.log('📭 Email désactivé temporairement — requête ignorée.');
-  return NextResponse.json({ success: false, message: 'Email service temporarily disabled.' });
-}
-
-
-/*
-
-// ✅ Code original — à réactiver plus tard si besoin
-
-import { NextResponse } from 'next/server';
-const nodemailer = require('nodemailer');
-
-export async function POST(req: Request) {
-  const data = await req.json();
-
-  const {
-    to, // email du client
-    subject,
-    text,
-    html,
-  } = data;
-
-  if (!to || !subject || !text) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
-  }
-
   try {
+    const data = await req.json();
+    const { to, subject, text, html } = data;
+
+    if (!to || !subject || !text) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.zoho.com',
       port: 465,
-      secure: true,
+      secure: true, // SSL
       auth: {
-        user: process.env.ZOHO_USER,       // support@reportlost.org
-        pass: process.env.ZOHO_PASS        // mot de passe d'application Zoho
-      }
+        user: process.env.ZOHO_USER, // ex: support@reportlost.org
+        pass: process.env.ZOHO_PASS, // mot de passe d’application Zoho
+      },
     });
 
     const mailOptions = {
@@ -46,7 +26,7 @@ export async function POST(req: Request) {
       to,
       subject,
       text,
-      html
+      html,
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -58,5 +38,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
   }
 }
-
-*/

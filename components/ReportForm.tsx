@@ -12,8 +12,6 @@ import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-const MAIL_ENABLED = false;
-
 type ReportFormProps = {
   defaultCity?: string;
   enforceValidation?: boolean;
@@ -52,8 +50,8 @@ export default function ReportForm({
     email: '',
     phone: '',
     address: '',
-    consent: false, // global unique
-    contribution: 0, // ✅ plus de 15 par défaut
+    consent: false,
+    contribution: 0,
     isCellphone: false,
     phoneColor: '',
     phoneMaterial: '',
@@ -64,10 +62,6 @@ export default function ReportForm({
     phoneMark: '',
     phoneOther: '',
     object_photo: '',
-    // flags UI (non envoyés en BDD)
-    consent_contact: false,
-    consent_terms: false,
-    consent_authorized: false,
   });
 
   useEffect(() => {
@@ -107,69 +101,99 @@ export default function ReportForm({
     return parts.join(' | ');
   };
 
-  const saveReportToDatabase = async ({ forceConsent }: { forceConsent?: boolean } = {}) => {
+  const saveReportToDatabase = async () => {
     try {
       console.log('📥 formData brut reçu :', formData);
 
-      let phoneDescription;
-      try {
-        phoneDescription = buildPhoneDescription();
-        console.log('📱 phoneDescription générée :', phoneDescription);
-      } catch (err) {
-        console.error('❌ Erreur dans buildPhoneDescription:', err);
-        throw new Error('Erreur lors de la génération de la description du téléphone');
-      }
-
+      const phoneDescription = buildPhoneDescription();
       const object_photo = formData.object_photo || null;
 
-      let payload;
-      try {
-        payload = {
-          title: formData.title,
-          description: formData.description,
-          city: formData.city,
-          date: formData.date,
-          time_slot: formData.time_slot || null,
-          loss_neighborhood: formData.loss_neighborhood || null,
-          loss_street: formData.loss_street || null,
-          departure_place: formData.departure_place || null,
-          arrival_place: formData.arrival_place || null,
-          departure_time: formData.departure_time || null,
-          arrival_time: formData.arrival_time || null,
-          travel_number: formData.travel_number || null,
-          email: String(formData.email || ''),
-          first_name: String(formData.first_name || ''),
-          last_name: String(formData.last_name || ''),
-          phone: formData.phone || null,
-          address: formData.address || null,
-          contribution: formData.contribution, // ✅ désormais choisi à l’étape 4
-          consent:
-            forceConsent ??
-            !!(
-              formData.consent ||
-              (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
-            ),
-          phone_description: phoneDescription,
-          object_photo,
-        };
-        console.log('📦 payload préparé :', payload);
-      } catch (err) {
-        console.error('❌ Erreur pendant la création du payload:', err);
-        throw new Error('Erreur lors de la préparation des données');
-      }
+      const safeContribution = formData.contribution ?? 0;
+
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        city: formData.city,
+        date: formData.date,
+        time_slot: formData.time_slot || null,
+        loss_neighborhood: formData.loss_neighborhood || null,
+        loss_street: formData.loss_street || null,
+        departure_place: formData.departure_place || null,
+        arrival_place: formData.arrival_place || null,
+        departure_time: formData.departure_time || null,
+        arrival_time: formData.arrival_time || null,
+        travel_number: formData.travel_number || null,
+        email: String(formData.email || ''),
+        first_name: String(formData.first_name || ''),
+        last_name: String(formData.last_name || ''),
+        phone: formData.phone || null,
+        address: formData.address || null,
+        contribution: safeContribution,
+        consent: formData.consent,
+        phone_description: phoneDescription,
+        object_photo,
+      };
 
       const cleanedPayload = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-      console.log('🗃 Enregistrement Supabase avec cleanedPayload :', cleanedPayload);
+      console.log('🗃 Tentative enregistrement Supabase :', cleanedPayload);
 
       const { error } = await supabase.from('lost_items').insert([cleanedPayload]);
+
       if (error) {
-        console.error('❌ Supabase insert error:', error);
-        alert(`Unexpected error from database: ${error.message}`);
+        console.error('❌ Supabase insert error:', error.message, error.details, error.hint, error.code);
+        alert(`Unexpected database error: ${error.message}`);
         return false;
       }
 
       console.log('✅ Report enregistré avec succès.');
+
+      // --- Envoi mail confirmation dépôt ---
+      try {
+        const res = await fetch('/api/send-mail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: formData.email,
+            subject: "✅ Your lost item report has been registered",
+            text: `Hello ${formData.first_name},
+
+We have received your lost item report on reportlost.org.
+
+Details:
+- Item: ${formData.title}
+- Date: ${formData.date}
+- City: ${formData.city}
+
+Your report is published and automatic alerts are active.
+➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).`,
+
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:auto;border:1px solid #eee;border-radius:8px;overflow:hidden">
+                <div style="background:#2563eb;color:#fff;padding:16px;text-align:center;">
+                  <h2 style="margin:0;">ReportLost</h2>
+                </div>
+                <div style="padding:20px;color:#333;">
+                  <p>Hello <b>${formData.first_name}</b>,</p>
+                  <p>We have received your lost item report on <a href="https://reportlost.org">reportlost.org</a>.</p>
+                  <p><b>Details of your report:</b><br>
+                  - Item: ${formData.title}<br>
+                  - Date: ${formData.date}<br>
+                  - City: ${formData.city}</p>
+                  <p>Your report is now published and automatic alerts are active.</p>
+                  <p><a href="https://reportlost.org/contribute" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Upgrade with a contribution</a></p>
+                  <p style="font-size:13px;color:#666;">Thank you for using ReportLost.</p>
+                </div>
+              </div>`,
+          }),
+        });
+
+        const result = await res.json();
+        console.log("📧 Résultat envoi mail:", result);
+      } catch (err) {
+        console.error("❌ Email confirmation deposit failed:", err);
+      }
+
       return true;
     } catch (err) {
       console.error('💥 Unexpected error while saving report:', err);
@@ -204,33 +228,12 @@ export default function ReportForm({
         alert('Please enter your email.');
         return;
       }
-
-      const consentOK = !!(
-        formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
-      );
-
-      if (!consentOK) {
+      if (!formData.consent) {
         alert('Please confirm all required checkboxes.');
         return;
       }
 
-      // 👇 On NE sauvegarde PAS encore : on attend le choix du forfait (step 4).
-    }
-
-    // Validation de l'étape 4 : un forfait doit être choisi
-    if (enforceValidation && step === 4) {
-      if (!formData.contribution || formData.contribution <= 0) {
-        alert('Please choose a contribution level.');
-        return;
-      }
-
-      // ✅ Maintenant on a tout (consent + contribution) → on enregistre
-      const consentOK = !!(
-        formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
-      );
-      const success = await saveReportToDatabase({ forceConsent: consentOK });
+      const success = await saveReportToDatabase();
       if (!success) return;
     }
 
@@ -241,30 +244,45 @@ export default function ReportForm({
   const handleSuccessfulPayment = async () => {
     alert('✅ Payment successful. Thank you for your contribution!');
 
-    if (MAIL_ENABLED) {
-      const safeClientData = {
-        type: 'client-confirmation',
-        data: {
-          first_name: String(formData.first_name || ''),
-          email: String(formData.email || ''),
-        },
-      };
+    try {
+      await fetch('/api/send-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: formData.email,
+          subject: "💙 Thank you for supporting your report",
+          text: `Hello ${formData.first_name},
 
-      try {
-        const res = await fetch('/api/send-mail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(safeClientData),
-        });
+We confirm we have received your contribution of $${formData.contribution}.
 
-        const result = await res.json();
-        if (!res.ok || !result.success) {
-          throw new Error(result.error || 'Failed to send confirmation email');
-        }
-      } catch (err) {
-        console.error('❌ Email client après paiement échoué :', err);
-        alert('We could not send the confirmation email.');
-      }
+Your report now benefits from:
+- A 30-day manual follow-up,
+- Targeted distribution,
+- Priority visibility and alerts.
+
+Thank you for supporting ReportLost.`,
+
+          html: `
+            <div style="font-family:sans-serif;max-width:600px;margin:auto;border:1px solid #eee;border-radius:8px;overflow:hidden">
+              <div style="background:#16a34a;color:#fff;padding:16px;text-align:center;">
+                <h2 style="margin:0;">ReportLost</h2>
+              </div>
+              <div style="padding:20px;color:#333;">
+                <p>Hello <b>${formData.first_name}</b>,</p>
+                <p>We confirm we have received your contribution of <b>$${formData.contribution}</b>.</p>
+                <ul>
+                  <li>✅ 30-day manual follow-up</li>
+                  <li>✅ Targeted distribution</li>
+                  <li>✅ Priority visibility and alerts</li>
+                </ul>
+                <p>Our team will do its best to maximize the chances of recovering your item.</p>
+                <p style="font-size:13px;color:#666;">Thank you for supporting ReportLost.</p>
+              </div>
+            </div>`,
+        }),
+      });
+    } catch (err) {
+      console.error("❌ Email confirmation payment failed:", err);
     }
   };
 
@@ -272,10 +290,7 @@ export default function ReportForm({
 
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
-      {step === 1 && (
-        <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
-      )}
-
+      {step === 1 && <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />}
       {step === 2 && (
         <ReportFormStep2
           formData={formData}
@@ -285,9 +300,7 @@ export default function ReportForm({
           onBack={handleBack}
         />
       )}
-
       {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
-
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
@@ -296,16 +309,11 @@ export default function ReportForm({
           onNext={handleNext}
         />
       )}
-
       {step === 5 && (
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
           <Elements stripe={stripePromise}>
-            <CheckoutForm
-              amount={formData.contribution}
-              onSuccess={handleSuccessfulPayment}
-              onBack={handleBack}
-            />
+            <CheckoutForm amount={formData.contribution} onSuccess={handleSuccessfulPayment} onBack={handleBack} />
           </Elements>
         </div>
       )}
