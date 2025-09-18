@@ -3,12 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-// ⚠️ Client admin (Service Role) pour écrire côté serveur (ne jamais exposer au front)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20' as any,
 });
@@ -27,28 +21,38 @@ export async function POST(req: NextRequest) {
   // Stripe exige le raw body → utiliser req.text()
   try {
     const body = await req.text();
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(
+      body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
   } catch (err: any) {
     console.error('❌ Webhook signature verification failed:', err.message);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
   try {
+    // ✅ créer le client Supabase *au runtime*, pas au niveau module
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
 
-        // On récupère l'id du report passé en metadata quand tu crées le PaymentIntent côté front
+        // id du report passé en metadata lors de la création du PaymentIntent
         const reportId = pi.metadata?.report_id || '';
         if (!reportId) {
           console.warn('⚠️ payment_intent.succeeded sans report_id en metadata');
           break;
         }
 
-        // Montant reçu en dollars (Stripe renvoie en cents)
+        // Montant en dollars (Stripe renvoie en cents)
         const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
-        // 1) Lire la ligne pour connaître l’état (déduplication)
+        // 1) Lire la ligne existante (pour déduplication)
         const { data: row, error: readErr } = await supabaseAdmin
           .from('lost_items')
           .select('id, paid, payment_email_sent, contribution, email, first_name')
@@ -77,17 +81,17 @@ export async function POST(req: NextRequest) {
 
           if (upErr) {
             console.error('❌ Supabase update paid error:', upErr);
-            // on continue quand même à tenter l’email si pas envoyé, mais log utile
+            // on tente quand même l’email si pas envoyé
           }
         }
 
         // 3) Envoyer l’email de confirmation paiement une seule fois
         if (!row.payment_email_sent) {
           try {
+            // base absolue pour appeler /api/send-mail depuis ce serveur
             const base =
               process.env.NEXT_PUBLIC_BASE_URL ||
-              // fallback local
-              `http://localhost:${process.env.PORT || 3000}`;
+              new URL(req.url).origin; // ex: https://reportlost.org
 
             const to = row.email;
             const firstName = row.first_name || 'there';
@@ -148,7 +152,7 @@ Thank you for supporting ReportLost.`,
               console.error('❌ /api/send-mail returned non-OK:', res.status, t);
             }
 
-            // 4) Marquer le flag pour éviter tout second envoi
+            // 4) Marquer le flag pour éviter un second envoi
             const { error: flagErr } = await supabaseAdmin
               .from('lost_items')
               .update({ payment_email_sent: true })
