@@ -32,7 +32,7 @@ export default function ReportForm({
   const formRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<any>({
-    report_id: '',
+    report_id: '', // correspond à la colonne id en BDD
     title: '',
     description: '',
     city: defaultCity,
@@ -62,7 +62,7 @@ export default function ReportForm({
     phoneMark: '',
     phoneOther: '',
     object_photo: '',
-    // cases de consentement
+    // consent
     consent: false,
     consent_contact: false,
     consent_terms: false,
@@ -72,7 +72,7 @@ export default function ReportForm({
   useEffect(() => {
     setIsClient(true);
 
-    // Ouvre directement l’étape contribution et récupère l'id s’il est passé en URL
+    // Ouvre directement l’étape contribution si go=contribute
     const params = new URLSearchParams(window.location.search);
     if (params.get('go') === 'contribute') {
       setStep(4);
@@ -121,7 +121,6 @@ export default function ReportForm({
       const phoneDescription = buildPhoneDescription();
       const object_photo = formData.object_photo || null;
 
-      // consent global : soit le booléen unique, soit les 3 cases cochées
       const consentOK = !!(
         formData.consent ||
         (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
@@ -173,7 +172,7 @@ export default function ReportForm({
         localStorage.setItem('reportlost_rid', String(reportId));
       } catch {}
 
-      // --- Envoi mail confirmation dépôt (texte exact + vert dégradé + bon lien) ---
+      // --- Envoi mail confirmation dépôt ---
       try {
         const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
 
@@ -201,33 +200,21 @@ ${contributeUrl}`,
                 <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:20px 16px;text-align:center;">
                   <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
                 </div>
-
                 <div style="padding:22px;color:#111827;line-height:1.55">
-                  <p style="margin:0 0 12px">Hello <b>${formData.first_name}</b>,</p>
-                  <p style="margin:0 0 16px">
-                    We have received your lost item report on
-                    <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+                  <p>Hello <b>${formData.first_name}</b>,</p>
+                  <p>We have received your lost item report on 
+                     <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
                   </p>
-
-                  <p style="margin:0 0 4px"><b>Details of your report:</b></p>
-                  <pre style="margin:0 0 16px;white-space:pre-wrap;font-family:inherit">
-- Item: ${formData.title}
+                  <p><b>Details of your report:</b></p>
+                  <pre>- Item: ${formData.title}
 - Date: ${formData.date}
 - City: ${formData.city}</pre>
-
-                  <p style="margin:0 0 10px">
-                    Your report is now published and automatic alerts are active.
-                    <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
-                  </p>
-
-                  <p style="margin:18px 0 0">
-                    <a href="${contributeUrl}"
-                       style="display:inline-block;background:#0f766e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
-                       Upgrade with a contribution
-                    </a>
-                  </p>
-
-                  <p style="margin:22px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+                  <p>Your report is now published and automatic alerts are active.<br/>
+                  ➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).</p>
+                  <p><a href="${contributeUrl}" 
+                        style="display:inline-block;background:#0f766e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+                        Upgrade with a contribution</a></p>
+                  <p style="font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
                 </div>
               </div>`,
           }),
@@ -291,40 +278,7 @@ ${contributeUrl}`,
 
   const handleSuccessfulPayment = async () => {
     alert('✅ Payment successful. Thank you for your contribution!');
-
-    try {
-      if (formData.report_id) {
-        await supabase
-          .from('lost_items')
-          .update({
-            contribution: formData.contribution,
-            paid: true,
-            paid_at: new Date().toISOString(),
-          })
-          .eq('id', formData.report_id);
-      }
-
-      await fetch('/api/send-mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: formData.email,
-          subject: '💙 Thank you for supporting your report',
-          text: `Hello ${formData.first_name},
-
-We confirm we have received your contribution of $${formData.contribution}.
-
-Your report now benefits from:
-- A 30-day manual follow-up,
-- Targeted distribution,
-- Priority visibility and alerts.
-
-Thank you for supporting ReportLost.`,
-        }),
-      });
-    } catch (err) {
-      console.error('❌ Post-payment update failed:', err);
-    }
+    // Le webhook fera la mise à jour + envoi email unique
   };
 
   if (!isClient) return null;
@@ -360,6 +314,7 @@ Thank you for supporting ReportLost.`,
           <Elements stripe={stripePromise}>
             <CheckoutForm
               amount={formData.contribution}
+              reportId={formData.report_id} // ✅ on passe l'id du report ici
               onSuccess={handleSuccessfulPayment}
               onBack={handleBack}
             />

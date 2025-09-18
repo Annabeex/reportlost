@@ -9,11 +9,12 @@ import {
 
 interface Props {
   amount: number
+  reportId?: string         // ✅ nouvelle prop
   onSuccess?: () => void
-  onBack?: () => void // ✅ Nouvelle prop
+  onBack?: () => void
 }
 
-export default function CheckoutForm({ amount, onSuccess, onBack }: Props) {
+export default function CheckoutForm({ amount, reportId, onSuccess, onBack }: Props) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -30,10 +31,11 @@ export default function CheckoutForm({ amount, onSuccess, onBack }: Props) {
       return
     }
 
+    // ✅ On envoie aussi reportId à l’API
     const res = await fetch('/api/create-payment-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount }),
+      body: JSON.stringify({ amount, reportId }),
     })
 
     const { clientSecret, error } = await res.json()
@@ -45,7 +47,6 @@ export default function CheckoutForm({ amount, onSuccess, onBack }: Props) {
     }
 
     const cardElement = elements.getElement(CardElement)
-
     if (!cardElement) {
       setMessage('Card element not found.')
       setLoading(false)
@@ -85,7 +86,6 @@ export default function CheckoutForm({ amount, onSuccess, onBack }: Props) {
         </div>
 
         <div className="flex justify-between items-center">
-          {/* ✅ Bouton Back */}
           {onBack && (
             <button
               type="button"
