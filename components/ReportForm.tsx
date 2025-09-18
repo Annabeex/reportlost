@@ -1,3 +1,4 @@
+// app/report/ReportForm.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -32,7 +33,7 @@ export default function ReportForm({
   const formRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<any>({
-    report_id: '', // correspond à la colonne id en BDD
+    report_id: '',
     title: '',
     description: '',
     city: defaultCity,
@@ -62,7 +63,6 @@ export default function ReportForm({
     phoneMark: '',
     phoneOther: '',
     object_photo: '',
-    // consent
     consent: false,
     consent_contact: false,
     consent_terms: false,
@@ -71,34 +71,21 @@ export default function ReportForm({
 
   useEffect(() => {
     setIsClient(true);
-
-    // Ouvre directement l’étape contribution si go=contribute
     const params = new URLSearchParams(window.location.search);
-    if (params.get('go') === 'contribute') {
-      setStep(4);
-    }
+    if (params.get('go') === 'contribute') setStep(4);
     const rid = params.get('rid') || localStorage.getItem('reportlost_rid') || '';
-    if (rid) {
-      setFormData((prev: any) => ({ ...prev, report_id: rid }));
-    }
+    if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
   }, []);
 
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
     const { name, value, type, checked } = (e as any).target;
-    const finalValue = type === 'checkbox' ? !!checked : value;
-    setFormData((prev: any) => ({ ...prev, [name]: finalValue }));
+    setFormData((prev: any) => ({ ...prev, [name]: type === 'checkbox' ? !!checked : value }));
   };
 
   const handleBack = () => {
-    scrollToTop();
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: 'smooth' });
     setStep((s) => Math.max(1, s - 1));
-  };
-
-  const scrollToTop = () => {
-    if (formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   const buildPhoneDescription = () => {
@@ -113,7 +100,7 @@ export default function ReportForm({
       formData.phoneMark && `Mark: ${formData.phoneMark}`,
       formData.phoneOther && `Other: ${formData.phoneOther}`,
     ].filter(Boolean);
-    return parts.join(' | ');
+    return parts.join(' • ');
   };
 
   const saveReportToDatabase = async () => {
@@ -125,8 +112,6 @@ export default function ReportForm({
         formData.consent ||
         (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
       );
-
-      const safeContribution = formData.contribution ?? 0;
 
       const payload = {
         title: formData.title || null,
@@ -146,17 +131,17 @@ export default function ReportForm({
         last_name: String(formData.last_name || ''),
         phone: formData.phone || null,
         address: formData.address || null,
-        contribution: safeContribution,
+        contribution: formData.contribution ?? 0,
         consent: consentOK,
         phone_description: phoneDescription || null,
         object_photo,
       };
 
-      const cleanedPayload = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
+      const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
       const { data, error } = await supabase
         .from('lost_items')
-        .insert([cleanedPayload])
+        .insert([cleaned])
         .select('id')
         .single();
 
@@ -167,12 +152,12 @@ export default function ReportForm({
       }
 
       const reportId = data?.id;
-      setFormData((prev: any) => ({ ...prev, report_id: reportId }));
+      setFormData((p: any) => ({ ...p, report_id: reportId }));
       try {
         localStorage.setItem('reportlost_rid', String(reportId));
       } catch {}
 
-      // --- Envoi mail confirmation dépôt ---
+      // -------- Email #1 (registration) — CTA AU-DESSUS DES DÉTAILS --------
       try {
         const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
 
@@ -196,27 +181,38 @@ Your report is now published and automatic alerts are active.
 
 ${contributeUrl}`,
             html: `
-              <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-                <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:20px 16px;text-align:center;">
-                  <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-                </div>
-                <div style="padding:22px;color:#111827;line-height:1.55">
-                  <p>Hello <b>${formData.first_name}</b>,</p>
-                  <p>We have received your lost item report on 
-                     <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
-                  </p>
-                  <p><b>Details of your report:</b></p>
-                  <pre>- Item: ${formData.title}
-- Date: ${formData.date}
-- City: ${formData.city}</pre>
-                  <p>Your report is now published and automatic alerts are active.<br/>
-                  ➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).</p>
-                  <p><a href="${contributeUrl}" 
-                        style="display:inline-block;background:#0f766e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
-                        Upgrade with a contribution</a></p>
-                  <p style="font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
-                </div>
-              </div>`,
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+  <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+  </div>
+  <div style="padding:20px;color:#111827;line-height:1.55">
+    <p style="margin:0 0 12px">Hello <b>${formData.first_name}</b>,</p>
+    <p style="margin:0 0 14px">
+      We have received your lost item report on
+      <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+    </p>
+
+    <!-- CTA remonté ici pour éviter d’être masqué -->
+    <p style="margin:0 0 14px">
+      Your report is now published and automatic alerts are active.
+      <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+    </p>
+    <p style="margin:0 0 18px">
+      <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+        Upgrade with a contribution
+      </a>
+    </p>
+
+    <p style="margin:0 0 8px"><b>Details of your report</b></p>
+    <ul style="margin:0 0 16px;padding-left:18px">
+      <li><b>Item:</b> ${formData.title}</li>
+      <li><b>Date:</b> ${formData.date}</li>
+      <li><b>City:</b> ${formData.city}</li>
+    </ul>
+
+    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+  </div>
+</div>`,
           }),
         });
       } catch (err) {
@@ -272,22 +268,34 @@ ${contributeUrl}`,
       if (!success) return;
     }
 
-    scrollToTop();
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: 'smooth' });
     setStep((s) => s + 1);
   };
 
   const handleSuccessfulPayment = async () => {
+    // ✅ Ne plus envoyer d’email ici. Le webhook Stripe s’en charge (EN + dédoublonnage).
     alert('✅ Payment successful. Thank you for your contribution!');
-    // Le webhook fera la mise à jour + envoi email unique
+    try {
+      if (formData.report_id) {
+        await supabase
+          .from('lost_items')
+          .update({
+            contribution: formData.contribution,
+            paid: true,
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', formData.report_id);
+      }
+    } catch (err) {
+      console.error('❌ DB update after payment failed:', err);
+    }
   };
 
   if (!isClient) return null;
 
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
-      {step === 1 && (
-        <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
-      )}
+      {step === 1 && <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />}
       {step === 2 && (
         <ReportFormStep2
           formData={formData}
@@ -297,9 +305,7 @@ ${contributeUrl}`,
           onBack={handleBack}
         />
       )}
-      {step === 3 && (
-        <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />
-      )}
+      {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
@@ -312,12 +318,7 @@ ${contributeUrl}`,
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
           <Elements stripe={stripePromise}>
-            <CheckoutForm
-              amount={formData.contribution}
-              reportId={formData.report_id} // ✅ on passe l'id du report ici
-              onSuccess={handleSuccessfulPayment}
-              onBack={handleBack}
-            />
+            <CheckoutForm amount={formData.contribution} onSuccess={handleSuccessfulPayment} onBack={handleBack} />
           </Elements>
         </div>
       )}
