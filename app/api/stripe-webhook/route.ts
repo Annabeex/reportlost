@@ -1,187 +1,143 @@
 // app/api/stripe-webhook/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any,
+  apiVersion: "2024-06-20" as any,
 });
 
-export const dynamic = 'force-dynamic'; // pas de cache
-export const runtime = 'nodejs';        // signature Stripe => Node runtime obligatoire
+export const dynamic = "force-dynamic"; // jamais de cache
+export const runtime = "nodejs";        // obligatoire pour Stripe
+
+function json(data: any, init?: ResponseInit) {
+  const res = NextResponse.json(data, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
 
 export async function POST(req: NextRequest) {
-  const sig = req.headers.get('stripe-signature');
+  const sig = req.headers.get("stripe-signature");
   if (!sig) {
-    return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 400 });
+    return json({ error: "Missing Stripe signature" }, { status: 400 });
   }
 
   let event: Stripe.Event;
-
-  // Stripe exige le raw body → utiliser req.text()
   try {
-    const body = await req.text();
+    const body = await req.text(); // raw body requis
     event = stripe.webhooks.constructEvent(
       body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err: any) {
-    console.error('❌ Webhook signature verification failed:', err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    console.error("❌ Stripe signature verification failed:", err.message);
+    return json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
   try {
-    // ✅ créer le client Supabase *au runtime*, pas au niveau module
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
+      case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
+        const reportId = pi.metadata?.report_id || "";
 
-        // id du report passé en metadata lors de la création du PaymentIntent
-        const reportId = pi.metadata?.report_id || '';
         if (!reportId) {
-          console.warn('⚠️ payment_intent.succeeded sans report_id en metadata');
+          console.warn("⚠️ payment_intent.succeeded sans report_id en metadata");
           break;
         }
 
-        // Montant en dollars (Stripe renvoie en cents)
         const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
-        // 1) Lire la ligne existante (pour déduplication)
+        // 🔎 Lecture sécurisée
         const { data: row, error: readErr } = await supabaseAdmin
-          .from('lost_items')
-          .select('id, paid, payment_email_sent, contribution, email, first_name')
-          .eq('id', reportId)
+          .from("lost_items")
+          .select("id, paid, payment_email_sent, contribution, email, first_name")
+          .eq("id", reportId)
           .single();
 
         if (readErr) {
-          console.error('❌ Supabase read error:', readErr);
+          console.error("❌ Supabase read error:", readErr.message);
           break;
         }
         if (!row) {
-          console.warn('⚠️ Aucun report trouvé pour id =', reportId);
+          console.warn("⚠️ Aucun report trouvé pour id =", reportId);
           break;
         }
 
-        // 2) Marquer payé + contribution (idempotent)
+        // ✅ Mise à jour paiement si nécessaire
         if (!row.paid || (row.contribution ?? 0) !== paidAmount) {
           const { error: upErr } = await supabaseAdmin
-            .from('lost_items')
+            .from("lost_items")
             .update({
               paid: true,
               paid_at: new Date().toISOString(),
               contribution: paidAmount,
             })
-            .eq('id', reportId);
+            .eq("id", reportId);
 
           if (upErr) {
-            console.error('❌ Supabase update paid error:', upErr);
-            // on tente quand même l’email si pas envoyé
+            console.error("❌ Supabase update error:", upErr.message);
           }
         }
 
-        // 3) Envoyer l’email de confirmation paiement une seule fois
+        // 📩 Email de confirmation (1 seule fois)
         if (!row.payment_email_sent) {
           try {
-            // base absolue pour appeler /api/send-mail depuis ce serveur
             const base =
-              process.env.NEXT_PUBLIC_BASE_URL ||
-              new URL(req.url).origin; // ex: https://reportlost.org
+              process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin;
 
-            const to = row.email;
-            const firstName = row.first_name || 'there';
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000); // max 8s
 
             const res = await fetch(`${base}/api/send-mail`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                to,
-                subject: '💙 Contribution received — manual follow-up started',
-                text: `Hello ${firstName},
-
-We confirm we have received your contribution of $${paidAmount}.
-Your report will now receive a 30-day manual follow-up.
-
-What happens next:
-• We review your report and check key details.
-• We distribute your case to relevant partners (transport, venues, platforms).
-• We optimize search visibility and set up targeted alerts.
-• You’ll receive updates if we find a match or need extra info.
-
-If you have updates (new clues, corrected details, extra photo), just reply to this email.
-
-Thank you for supporting ReportLost.`,
-                html: `
-                  <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:20px 16px;text-align:center;">
-                      <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-                    </div>
-                    <div style="padding:22px;color:#111827;line-height:1.55">
-                      <p style="margin:0 0 12px">Hello <b>${firstName}</b>,</p>
-                      <p style="margin:0 0 14px">
-                        We confirm we have received your contribution of
-                        <b>$${paidAmount}</b>. Your report will now receive a
-                        <b>30-day manual follow-up</b>.
-                      </p>
-                      <p style="margin:10px 0 6px;"><b>What happens next</b></p>
-                      <ul style="margin:0 0 14px;padding-left:18px">
-                        <li>We review your report and check key details.</li>
-                        <li>We distribute your case to relevant partners (transport, venues, platforms).</li>
-                        <li>We optimize search visibility and set up targeted alerts.</li>
-                        <li>You’ll receive updates if we find a match or need extra info.</li>
-                      </ul>
-                      <p style="margin:0 0 16px;">
-                        If you have updates (new clues, corrected details, extra photo),
-                        just reply to this email.
-                      </p>
-                      <p style="margin:18px 0 0;font-size:13px;color:#6b7280">
-                        Thank you for supporting ReportLost.
-                      </p>
-                    </div>
-                  </div>`,
+                to: row.email,
+                subject: "💙 Contribution received — manual follow-up started",
+                text: `Hello ${row.first_name || "there"}, we confirm we received your contribution of $${paidAmount}.`,
+                html: `<p>Hello <b>${row.first_name || "there"}</b>,<br/>We confirm we received your contribution of <b>$${paidAmount}</b>.</p>`,
               }),
+              signal: controller.signal,
             });
 
+            clearTimeout(timeout);
+
             if (!res.ok) {
-              const t = await res.text().catch(() => '');
-              console.error('❌ /api/send-mail returned non-OK:', res.status, t);
+              const t = await res.text().catch(() => "");
+              console.error("❌ /api/send-mail returned:", res.status, t);
             }
 
-            // 4) Marquer le flag pour éviter un second envoi
-            const { error: flagErr } = await supabaseAdmin
-              .from('lost_items')
+            await supabaseAdmin
+              .from("lost_items")
               .update({ payment_email_sent: true })
-              .eq('id', reportId);
-
-            if (flagErr) {
-              console.error('❌ Supabase update payment_email_sent error:', flagErr);
-            }
-          } catch (mailErr) {
-            console.error('❌ Failed to send payment confirmation email (webhook):', mailErr);
+              .eq("id", reportId);
+          } catch (mailErr: any) {
+            console.error("❌ Email sending failed:", mailErr.message);
           }
         }
 
         break;
       }
 
-      case 'payment_intent.payment_failed': {
+      case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.warn('⚠️ Payment failed:', pi.id);
+        console.warn("⚠️ Payment failed:", pi.id);
         break;
       }
 
       default:
-        console.log(`ℹ️ Unhandled event type: ${event.type}`);
+        console.log("ℹ️ Unhandled event type:", event.type);
     }
 
-    return NextResponse.json({ received: true });
+    return json({ received: true });
   } catch (err: any) {
-    console.error('❌ Webhook handler failed:', err.message);
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
+    console.error("❌ Webhook handler failed:", err.message);
+    return json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

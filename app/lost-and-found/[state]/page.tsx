@@ -1,29 +1,32 @@
 // app/lost-and-found/[state]/page.tsx
-import { notFound } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 
-import { getPopularCitiesByState } from '@/lib/getPopularCitiesByState';
-import { stateNameFromAbbr } from '@/lib/utils';     // ex: 'ca' -> 'California'
-import { buildCityPath } from '@/lib/slugify';       // ex: (CA, "Los Angeles") -> /lost-and-found/ca/los-angeles
-import MaintenanceNotice from '@/components/MaintenanceNotice';
-import cityImages from '@/data/cityImages.json';
+import { getPopularCitiesByState } from "@/lib/getPopularCitiesByState";
+import { stateNameFromAbbr } from "@/lib/utils";     // ex: 'ca' -> 'California'
+import { buildCityPath } from "@/lib/slugify";       // ex: (CA, "Los Angeles") -> /lost-and-found/ca/los-angeles
+import MaintenanceNotice from "@/components/MaintenanceNotice";
+import cityImages from "@/data/cityImages.json";
 
-export { generateStaticParams } from './generateStaticParams';
+// ISR : revalidation toutes les 24h
+export const revalidate = 86400;
 
-type Props = { params: { state: string } };
+// (optionnel) si tu veux forcer un rendu dynamique malgré ISR, décommente
+// export const dynamic = "force-dynamic";
 
 // ---------- helpers Option B ----------
 function cityToSlug(name: string) {
   // slug robuste : minuscules, sans accents ni ponctuation parasite
   return String(name)
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // enlève les accents
-    .replace(/&/g, 'and')                              // and cohérent
-    .replace(/[^a-z0-9\s-]/g, '')                      // supprime ponctuation
-    .replace(/\s+/g, '-')                              // espaces -> tirets
-    .replace(/-+/g, '-')                               // tirets multiples
-    .replace(/^-|-$/g, '');                            // bords propres
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // enlève les accents
+    .replace(/&/g, "and")            // and cohérent
+    .replace(/[^a-z0-9\s-]/g, "")    // supprime ponctuation
+    .replace(/\s+/g, "-")            // espaces -> tirets
+    .replace(/-+/g, "-")             // tirets multiples
+    .replace(/^-|-$/g, "");          // bords propres
 }
 
 /**
@@ -42,22 +45,22 @@ function getCityImage(stateAbbr: string, cityName: string) {
   const hasPlannedImage = listedInState || listedGlobally;
 
   // 👉 Utilisation JPG (déposez vos fichiers en .jpg dans public/images/cities)
-  return hasPlannedImage
-    ? `/images/cities/${slug}.jpg`
-    : '/images/cities/default.jpg';
+  return hasPlannedImage ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
 }
 // -------------------------------------
 
+type Props = { params: { state: string } };
+
 // Métadonnées par État
 export async function generateMetadata({ params }: Props) {
-  const stateSlug = (params.state || '').toLowerCase(); // ex: 'ca'
+  const stateSlug = (params.state || "").toLowerCase(); // ex: 'ca'
   const stateName = stateNameFromAbbr(stateSlug);       // ex: 'California'
 
   if (!stateName) {
     return {
-      title: 'Lost & Found in the USA',
-      description: 'Report and recover lost items in the United States.',
-      alternates: { canonical: 'https://reportlost.org/lost-and-found' },
+      title: "Lost & Found in the USA",
+      description: "Report and recover lost items in the United States.",
+      alternates: { canonical: "https://reportlost.org/lost-and-found" },
     };
   }
 
@@ -69,65 +72,82 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function StatePage({ params }: Props) {
-  // slug param = abréviation en minuscule (ex: 'ca')
-  const stateSlug = (params.state || '').toLowerCase();
-  if (!stateSlug) return notFound();
+  try {
+    // slug param = abréviation en minuscule (ex: 'ca')
+    const stateSlug = (params.state || "").toLowerCase();
+    if (!stateSlug) return notFound();
 
-  const stateName = stateNameFromAbbr(stateSlug);
-  if (!stateName) return notFound();
+    const stateName = stateNameFromAbbr(stateSlug);
+    if (!stateName) return notFound();
 
-  // getPopularCitiesByState attend l’abréviation en MAJ (ex: 'CA')
-  const stateAbbr = stateSlug.toUpperCase();
+    // getPopularCitiesByState attend l’abréviation en MAJ (ex: 'CA')
+    const stateAbbr = stateSlug.toUpperCase();
 
-  // Doit renvoyer au minimum: city_ascii, state_id, population
-  const cities = await getPopularCitiesByState(stateAbbr);
+    // Doit renvoyer au minimum: city_ascii, state_id, population
+    let cities: any[] = [];
+    try {
+      // si getPopularCitiesByState utilise fetch, il bénéficiera de revalidate=86400 de la page
+      const result = await getPopularCitiesByState(stateAbbr);
+      cities = Array.isArray(result) ? result : [];
+    } catch (err) {
+      console.warn("getPopularCitiesByState failed:", err);
+      cities = [];
+    }
 
-  return (
-    <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-6">
-        Lost &amp; Found Services in {stateName}
-      </h1>
+    return (
+      <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-6">
+          Lost &amp; Found Services in {stateName}
+        </h1>
 
-      <p className="text-gray-700 text-center max-w-2xl mx-auto mb-10">
-        Discover how to report or find lost items across major cities in {stateName}. We help you connect with local services, transportation hubs, and more.
-      </p>
+        <p className="text-gray-700 text-center max-w-2xl mx-auto mb-10">
+          Discover how to report or find lost items across major cities in {stateName}. We help you connect with local services, transportation hubs, and more.
+        </p>
 
-      <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
-        Most Populated Cities in {stateName}
-      </h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+          Most Populated Cities in {stateName}
+        </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
-        {cities.map((city: any) => {
-          const stateForPath = city.state_id ?? stateAbbr; // sécurité si state_id n'est pas renvoyé
-          const imgSrc = getCityImage(stateAbbr, city.city_ascii);
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
+          {cities.map((city: any) => {
+            const stateForPath = city.state_id ?? stateAbbr; // sécurité si state_id n'est pas renvoyé
+            const imgSrc = getCityImage(stateAbbr, city.city_ascii);
 
-          return (
-            <Link
-              key={`${city.city_ascii}-${stateForPath}`}
-              href={buildCityPath(stateForPath, city.city_ascii)}
-              className="text-center group transition-transform transform hover:scale-105"
-            >
-              <Image
-                src={imgSrc}
-                alt={city.city_ascii}
-                width={120}
-                height={120}
-                className="rounded-full object-cover mx-auto shadow w-[120px] h-[120px]"
-                loading="lazy"
-              />
-              <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
-                {city.city_ascii}
-              </p>
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={`${city.city_ascii}-${stateForPath}`}
+                href={buildCityPath(stateForPath, city.city_ascii)}
+                className="text-center group transition-transform transform hover:scale-105"
+              >
+                <Image
+                  src={imgSrc}
+                  alt={city.city_ascii}
+                  width={120}
+                  height={120}
+                  className="rounded-full object-cover mx-auto shadow w-[120px] h-[120px]"
+                  loading="lazy"
+                />
+                <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
+                  {city.city_ascii}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+
+        {cities.length === 0 && (
+          <MaintenanceNotice
+            message={`We're still working on listing lost & found services for all cities in ${stateName}. Please check back soon!`}
+          />
+        )}
       </div>
-
-      {cities.length === 0 && (
-        <MaintenanceNotice
-          message={`We're still working on listing lost & found services for all cities in ${stateName}. Please check back soon!`}
-        />
-      )}
-    </div>
-  );
+    );
+  } catch (e) {
+    console.error("💥 Unexpected error in state page:", e);
+    // ts-expect-error: Response est accepté dans l'App Router
+    return new Response("Service temporarily unavailable", {
+      status: 503,
+      headers: { "Retry-After": "60" },
+    });
+  }
 }

@@ -2,41 +2,31 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Autorise les images distantes utilisées par <Image />
     remotePatterns: [
-      // Pexels (si tu utilises leurs images)
-      {
-        protocol: 'https',
-        hostname: 'images.pexels.com',
-        pathname: '/**',
-      },
-      // Supabase Storage (public bucket)
-      {
-        protocol: 'https',
-        hostname: 'mfxjzvqtkespoichhnkk.supabase.co', // ton projet
-        pathname: '/storage/v1/object/public/**',
-      },
-      // (optionnel) autoriser d’autres projets Supabase si besoin
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
+      { protocol: "https", hostname: "images.pexels.com", pathname: "/**" },
+      { protocol: "https", hostname: "mfxjzvqtkespoichhnkk.supabase.co", pathname: "/storage/v1/object/public/**" },
+      { protocol: "https", hostname: "**.supabase.co", pathname: "/storage/v1/object/public/**" },
+
+      // (ajoute ici toute source réelle d’images que tu utilises)
+      // { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
+      // { protocol: "https", hostname: "upload.wikimedia.org", pathname: "/**" },
     ],
   },
 
-  async rewrites() {
+  async redirects() {
     return [
-      // Anciennes URLs -> nouvelles catégories
-      { source: '/category/:slug', destination: '/lost-and-found/category/:slug' },
+      {
+        source: "/category/:slug",
+        destination: "/lost-and-found/category/:slug",
+        permanent: true, // 301
+      },
     ];
   },
 
-  // Ton fallback webpack existant
   webpack(config) {
     config.resolve.fallback = {
       ...config.resolve.fallback,
-      buffer: require.resolve('buffer'),
+      buffer: require.resolve("buffer"),
     };
     return config;
   },
