@@ -4,58 +4,36 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { getPopularCitiesByState } from "@/lib/getPopularCitiesByState";
-import { stateNameFromAbbr } from "@/lib/utils";     // ex: 'ca' -> 'California'
-import { buildCityPath } from "@/lib/slugify";       // ex: (CA, "Los Angeles") -> /lost-and-found/ca/los-angeles
+import { stateNameFromAbbr } from "@/lib/utils";
+import { buildCityPath } from "@/lib/slugify";
 import MaintenanceNotice from "@/components/MaintenanceNotice";
 import cityImages from "@/data/cityImages.json";
 
-// ISR : revalidation toutes les 24h
 export const revalidate = 86400;
 
-// (optionnel) si tu veux forcer un rendu dynamique malgré ISR, décommente
-// export const dynamic = "force-dynamic";
-
-// ---------- helpers Option B ----------
 function cityToSlug(name: string) {
-  // slug robuste : minuscules, sans accents ni ponctuation parasite
   return String(name)
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // enlève les accents
-    .replace(/&/g, "and")            // and cohérent
-    .replace(/[^a-z0-9\s-]/g, "")    // supprime ponctuation
-    .replace(/\s+/g, "-")            // espaces -> tirets
-    .replace(/-+/g, "-")             // tirets multiples
-    .replace(/^-|-$/g, "");          // bords propres
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
-
-/**
- * Retourne le chemin d'image .jpg pour une ville si elle fait partie
- * des 6 villes prévues de l'État (via cityImages.byState) ou figure
- * dans cityImages.available ; sinon renvoie le fallback.
- */
 function getCityImage(stateAbbr: string, cityName: string) {
   const slug = cityToSlug(cityName);
   const byState: Record<string, string[]> | undefined = (cityImages as any).byState;
   const available: string[] | undefined = (cityImages as any).available;
-
-  const listedInState = byState?.[stateAbbr]?.includes(slug);
-  const listedGlobally = available?.includes(slug);
-
-  const hasPlannedImage = listedInState || listedGlobally;
-
-  // 👉 Utilisation JPG (déposez vos fichiers en .jpg dans public/images/cities)
-  return hasPlannedImage ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
+  const has = byState?.[stateAbbr]?.includes(slug) || available?.includes(slug);
+  return has ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
 }
-// -------------------------------------
 
 type Props = { params: { state: string } };
 
-// Métadonnées par État
 export async function generateMetadata({ params }: Props) {
-  const stateSlug = (params.state || "").toLowerCase(); // ex: 'ca'
-  const stateName = stateNameFromAbbr(stateSlug);       // ex: 'California'
-
+  const stateSlug = (params.state || "").toLowerCase();
+  const stateName = stateNameFromAbbr(stateSlug);
   if (!stateName) {
     return {
       title: "Lost & Found in the USA",
@@ -63,7 +41,6 @@ export async function generateMetadata({ params }: Props) {
       alternates: { canonical: "https://reportlost.org/lost-and-found" },
     };
   }
-
   return {
     title: `Lost & Found in ${stateName} - ReportLost.org`,
     description: `Submit or find lost items in ${stateName}. Our platform helps reconnect lost belongings with their owners through a combination of AI and local networks.`,
@@ -73,26 +50,19 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function StatePage({ params }: Props) {
   try {
-    // slug param = abréviation en minuscule (ex: 'ca')
     const stateSlug = (params.state || "").toLowerCase();
     if (!stateSlug) return notFound();
 
     const stateName = stateNameFromAbbr(stateSlug);
     if (!stateName) return notFound();
 
-    // getPopularCitiesByState attend l’abréviation en MAJ (ex: 'CA')
     const stateAbbr = stateSlug.toUpperCase();
 
-    // Doit renvoyer au minimum: city_ascii, state_id, population
     let cities: any[] = [];
     try {
-      // si getPopularCitiesByState utilise fetch, il bénéficiera de revalidate=86400 de la page
       const result = await getPopularCitiesByState(stateAbbr);
       cities = Array.isArray(result) ? result : [];
-    } catch (err) {
-      console.warn("getPopularCitiesByState failed:", err);
-      cities = [];
-    }
+    } catch { cities = []; }
 
     return (
       <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
@@ -110,9 +80,8 @@ export default async function StatePage({ params }: Props) {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
           {cities.map((city: any) => {
-            const stateForPath = city.state_id ?? stateAbbr; // sécurité si state_id n'est pas renvoyé
+            const stateForPath = city.state_id ?? stateAbbr;
             const imgSrc = getCityImage(stateAbbr, city.city_ascii);
-
             return (
               <Link
                 key={`${city.city_ascii}-${stateForPath}`}
@@ -142,9 +111,10 @@ export default async function StatePage({ params }: Props) {
         )}
       </div>
     );
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.digest === "NEXT_NOT_FOUND") throw e;
     console.error("💥 Unexpected error in state page:", e);
-    // ts-expect-error: Response est accepté dans l'App Router
+    // ts-expect-error Response accepté par l'App Router
     return new Response("Service temporarily unavailable", {
       status: 503,
       headers: { "Retry-After": "60" },

@@ -9,16 +9,19 @@ import { notFound } from 'next/navigation';
 import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly';
 import { exampleReports } from '@/lib/lostitems';
 import { getNearbyCities } from '@/lib/getNearbyCities';
-import ClientReportForm from '@/components/ClientReportForm';
 import { fromCitySlug, buildCityPath } from '@/lib/slugify';
 
-// ISR : 24h
-export const revalidate = 86400;
+export const revalidate = 86400; // ISR 24h
 
-const CityMap = dynamic(() => import('@/components/Map').then(mod => mod.default), {
+// ✅ composants client sensibles chargés côté navigateur uniquement
+const CityMap = dynamic(() => import('@/components/Map').then(m => m.default), {
   ssr: false,
   loading: () => <div className="text-gray-400">Loading map...</div>,
 });
+const ClientReportForm = dynamic(
+  () => import('@/components/ClientReportForm').then(m => m.default),
+  { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
+);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,24 +29,21 @@ const supabase = createClient(
 );
 
 function toTitleCase(str: string) {
-  return str
-    .toLowerCase()
-    .split(' ')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  return str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-}
+type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
   try {
-    // ✅ URL : /lost-and-found/{state}/{city}
     const stateAbbr = (params.state || '').toUpperCase();
-    const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city)));
+    const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city || '')));
+    if (!stateAbbr || !cityName) notFound();
 
-    // 1) Requête principale Supabase
+    // 1) requête principale
     let { data: candidates, error } = await supabase
       .from('us_cities')
       .select('*')
@@ -51,46 +51,35 @@ export default async function Page({ params }: { params: { state: string; city: 
       .ilike('city_ascii', cityName)
       .order('population', { ascending: false })
       .limit(5);
-
     if (error) console.warn('Supabase error (query 1):', error.message);
 
     let cityData =
       candidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
-      (candidates && candidates[0]) ??
-      null;
+      candidates?.[0] ?? null;
 
-    // 2) Fallback préfixe si rien trouvé
+    // 2) fallback préfixe
     if (!cityData) {
-      const { data: prefixCandidates, error: error2 } = await supabase
+      const { data: prefixCandidates, error: e2 } = await supabase
         .from('us_cities')
         .select('*')
         .eq('state_id', stateAbbr)
         .ilike('city_ascii', `${cityName}%`)
         .order('population', { ascending: false })
         .limit(5);
-
-      if (error2) console.warn('Supabase error (query 2):', error2.message);
+      if (e2) console.warn('Supabase error (query 2):', e2.message);
 
       cityData =
         prefixCandidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
-        (prefixCandidates && prefixCandidates[0]) ??
-        null;
+        prefixCandidates?.[0] ?? null;
     }
 
-    if (!cityData) {
-      // Ville inexistante → 404 propre
-      notFound();
-    }
+    if (!cityData) notFound();
 
-    // 3) Normalisation des champs JSON
-    (['parks', 'malls', 'tourism_sites'] as const).forEach((field) => {
-      const raw = (cityData as any)[field];
+    // 3) normalise éventuels JSON string
+    (['parks', 'malls', 'tourism_sites'] as const).forEach((f) => {
+      const raw = (cityData as any)[f];
       if (typeof raw === 'string') {
-        try {
-          (cityData as any)[field] = JSON.parse(raw);
-        } catch {
-          (cityData as any)[field] = [];
-        }
+        try { (cityData as any)[f] = JSON.parse(raw); } catch { (cityData as any)[f] = []; }
       }
     });
 
@@ -99,61 +88,46 @@ export default async function Page({ params }: { params: { state: string; city: 
     const today = formatDate(new Date());
     const reports = exampleReports(cityData);
 
-    // 4) Nearby cities
+    // 4) nearby
     let nearbyCities: any[] = [];
-    try {
-      nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
-    } catch (err) {
-      console.warn('Nearby cities fetch failed:', err);
-      nearbyCities = [];
-    }
+    try { nearbyCities = await getNearbyCities(cityData.id, cityData.state_id); } catch { nearbyCities = []; }
 
-    // 5) Image ville
-    let cityImage = cityData.image_url as string | null;
+    // 5) image (dev only si manquante)
+    let cityImage = (cityData.image_url as string | null) || null;
     let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
     let cityImageCredit = '';
-
-    const isDev = process.env.NODE_ENV !== 'production';
-    if (!cityImage && isDev) {
+    if (!cityImage && process.env.NODE_ENV !== 'production') {
       try {
-        const image = await fetchCityImageDirectly(cityName, cityData.state_name);
-        cityImage = image.url;
-        cityImageAlt = image.alt;
-
-        await supabase
-          .from('us_cities')
-          .update({
-            image_url: image.url,
-            image_alt: image.alt,
-            photographer: image.photographer,
-            image_source_url: image.source_url,
-          })
-          .eq('id', cityData.id);
-
-        cityImageCredit = image.photographer ? `Photo by ${image.photographer}` : '';
-      } catch (err) {
-        console.warn('Could not fetch city image:', err);
-      }
+        const img = await fetchCityImageDirectly(cityName, cityData.state_name);
+        cityImage = img.url; cityImageAlt = img.alt;
+        await supabase.from('us_cities').update({
+          image_url: img.url, image_alt: img.alt,
+          photographer: img.photographer, image_source_url: img.source_url,
+        }).eq('id', cityData.id);
+        cityImageCredit = img.photographer ? `Photo by ${img.photographer}` : '';
+      } catch { /* ignore */ }
     }
 
-    // 6) Postes de police via Overpass
-    let policeStations: any[] = [];
+    // 6) Overpass → plain objects pour composant client
+    let policeStations: PoliceStation[] = [];
     try {
       const overpassUrl =
         `https://overpass-api.de/api/interpreter?data=` +
         `[out:json];node[amenity=police](around:10000,${cityData.lat},${cityData.lng});out tags center;`;
-
       const res = await fetch(overpassUrl, { next: { revalidate: 3600 } });
       if (res.ok) {
         const data = await res.json();
-        policeStations = data.elements || [];
+        const raw = Array.isArray(data?.elements) ? data.elements : [];
+        policeStations = raw.map((el: any) => ({
+          id: (typeof el?.id === 'number' || typeof el?.id === 'string') ? String(el.id) : undefined,
+          lat: typeof el?.lat === 'number' ? el.lat : (typeof el?.center?.lat === 'number' ? el.center.lat : null),
+          lon: typeof el?.lon === 'number' ? el.lon : (typeof el?.center?.lon === 'number' ? el.center.lon : null),
+          name: typeof el?.tags?.name === 'string' ? el.tags.name : null,
+        }));
       }
-    } catch (err) {
-      console.warn('Police station fetch failed:', err);
-      policeStations = [];
-    }
+    } catch { policeStations = []; }
 
-    // 7) Mise en forme du texte
+    // 7) texte enrichi
     const enrichedText = `<p>${(text || '')
       .replace(/(\n\n|\n)/g, '\n')
       .replace(/(?<!\n)\n(?!\n)/g, '\n\n')
@@ -167,7 +141,7 @@ export default async function Page({ params }: { params: { state: string; city: 
       .replace(/\n\n+/g, '</p><p>')
       .replace(/\n/g, ' ')}</p>`;
 
-    // 8) Rendu UI
+    // 8) rendu
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-16">
@@ -250,9 +224,12 @@ export default async function Page({ params }: { params: { state: string; city: 
         </div>
       </main>
     );
-  } catch (e) {
+  } catch (e: any) {
+    // ⚠️ laisser passer le 404 pour que Next serve la vraie page 404
+    if (e?.digest === 'NEXT_NOT_FOUND') throw e;
+
     console.error('💥 Unexpected error in city page:', e);
-    // ts-expect-error Response est accepté dans App Router
+    // ts-expect-error Response accepté par l'App Router
     return new Response('Service temporarily unavailable', {
       status: 503,
       headers: { 'Retry-After': '60' },

@@ -1,14 +1,18 @@
+// app/components/ReportForm.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { supabase } from "@/lib/supabase";
+
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
 import WhatHappensNext from "./WhatHappensNext";
 import ReportContribution from "./ReportContribution";
 import CheckoutForm from "./CheckoutForm";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import { supabase } from "@/lib/supabase";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type ReportFormProps = {
   defaultCity?: string;
@@ -28,12 +32,6 @@ export default function ReportForm({
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
-
-  // Stripe: créé au client seulement
-  const stripePromise = useMemo(() => {
-    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
-    return key ? loadStripe(key) : null;
-  }, []);
 
   const [formData, setFormData] = useState<any>({
     report_id: "",
@@ -72,22 +70,17 @@ export default function ReportForm({
     consent_authorized: false,
   });
 
+  // --- Mount-only logic (client) ---
   useEffect(() => {
     setIsClient(true);
 
-    // Lis les query params & localStorage uniquement côté client
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
-
-      const rid =
-        params.get("rid") ||
-        (typeof localStorage !== "undefined" ? localStorage.getItem("reportlost_rid") : "") ||
-        "";
-
+      const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
     } catch {
-      // ignore
+      /* ignore */
     }
   }, []);
 
@@ -98,7 +91,7 @@ export default function ReportForm({
   };
 
   const handleBack = () => {
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => Math.max(1, s - 1));
   };
 
@@ -174,26 +167,64 @@ export default function ReportForm({
         /* ignore */
       }
 
-      // Email de confirmation (ne bloque pas l’avancement)
+      // Email de confirmation d’enregistrement
       try {
         const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
-        void fetch("/api/send-mail", {
+
+        await fetch("/api/send-mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: formData.email,
             subject: "✅ Your lost item report has been registered",
-            text: `Hello ${formData.first_name}
+            text: `Hello ${formData.first_name},
+
 We have received your lost item report on reportlost.org.
+
 Your report is now published and automatic alerts are active.
 ➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+
 Details of your report:
 - Item: ${formData.title}
 - Date: ${formData.date}
 - City: ${formData.city}
-https://reportlost.org/report?go=contribute&rid=${reportId}
+
+${contributeUrl}
+
 Thank you for using ReportLost.`,
-            html: `...same as before...`,
+            html: `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+  <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+  </div>
+  <div style="padding:20px;color:#111827;line-height:1.55">
+    <p style="margin:0 0 12px">Hello <b>${formData.first_name}</b>,</p>
+    <p style="margin:0 0 14px">
+      We have received your lost item report on
+      <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+    </p>
+
+    <p style="margin:0 0 14px">
+      Your report is now published and automatic alerts are active.
+      <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+    </p>
+
+    <p style="margin:0 0 18px">
+      <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+        Upgrade with a contribution
+      </a>
+    </p>
+
+    <p style="margin:0 0 8px"><b>Details of your report</b></p>
+    <ul style="margin:0 0 16px;padding-left:18px">
+      <li><b>Item:</b> ${formData.title}</li>
+      <li><b>Date:</b> ${formData.date}</li>
+      <li><b>City:</b> ${formData.city}</li>
+    </ul>
+
+    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+  </div>
+</div>`,
           }),
         });
       } catch (err) {
@@ -249,7 +280,7 @@ Thank you for using ReportLost.`,
       if (!success) return;
     }
 
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => s + 1);
   };
 
@@ -271,7 +302,6 @@ Thank you for using ReportLost.`,
     }
   };
 
-  // Évite tout rendu avant hydratation (empêche l'accès accidentel au navigateur)
   if (!isClient) return null;
 
   return (
@@ -279,6 +309,7 @@ Thank you for using ReportLost.`,
       {step === 1 && (
         <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
       )}
+
       {step === 2 && (
         <ReportFormStep2
           formData={formData}
@@ -288,7 +319,11 @@ Thank you for using ReportLost.`,
           onBack={handleBack}
         />
       )}
-      {step === 3 && <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />}
+
+      {step === 3 && (
+        <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />
+      )}
+
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
@@ -297,18 +332,18 @@ Thank you for using ReportLost.`,
           onNext={handleNext}
         />
       )}
+
       {step === 5 && (
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
-          {stripePromise && (
-            <Elements stripe={stripePromise}>
-              <CheckoutForm
-                amount={formData.contribution}
-                onSuccess={handleSuccessfulPayment}
-                onBack={handleBack}
-              />
-            </Elements>
-          )}
+          <Elements stripe={stripePromise}>
+            <CheckoutForm
+              amount={formData.contribution}
+              reportId={String(formData.report_id || "")}
+              onSuccess={handleSuccessfulPayment}
+              onBack={handleBack}
+            />
+          </Elements>
         </div>
       )}
     </main>
