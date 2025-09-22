@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+// app/api/test-mail/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-export async function GET(req: Request) {
+export const dynamic = "force-dynamic"; // ✅ pas de rendu statique
+
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const to = searchParams.get("to");
+    const to = req.nextUrl.searchParams.get("to");
 
     if (!to) {
       return NextResponse.json({ error: "Missing recipient" }, { status: 400 });
