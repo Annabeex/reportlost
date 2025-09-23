@@ -7,13 +7,10 @@ import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
 
-// ⚠️ La CSS globale doit être importée dans app/layout.tsx, pas ici.
-// import './globals.css'
-
-// ✅ Import dynamique de la carte, sans SSR (évite les erreurs côté serveur)
+// ✅ Import dynamique de la carte, sans SSR
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
-// ✅ helper: slug catégorie robuste (aligné avec la page catégorie)
+// helper: slug catégorie
 function categoryToSlug(name: string) {
   return String(name)
     .toLowerCase()
@@ -25,7 +22,7 @@ function categoryToSlug(name: string) {
     .replace(/^-|-$/g, '');
 }
 
-// ✅ villes majeures: utiliser buildCityPath(state, city)
+// ✅ villes majeures
 const majorCities = [
   { name: 'New York',     state: 'NY', image: '/images/cities/new-york.jpg' },
   { name: 'Los Angeles',  state: 'CA', image: '/images/cities/los-angeles.jpg' },
@@ -54,6 +51,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/report"
+              prefetch={false}
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold"
             >
               Report a Lost Item
@@ -72,7 +70,8 @@ export default function HomePage() {
             {majorCities.map(city => (
               <Link
                 key={`${city.name}-${city.state}`}
-                href={buildCityPath(city.state, city.name)} // ✅ /lost-and-found/{state}/{city}
+                href={buildCityPath(city.state, city.name)}
+                prefetch={false}
                 className="text-center group transition-transform transform hover:scale-105"
               >
                 <Image
@@ -140,11 +139,12 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
             {categoryList.map(category => {
               const slug = categoryToSlug(category.name);
-              const imgSrc = category.image || `/images/categories/${slug}.jpg`; // ✅ fallback local
+              const imgSrc = category.image || `/images/categories/${slug}.jpg`;
               return (
                 <Link
                   key={category.name}
-                  href={`/lost-and-found/category/${slug}`}   // ✅ nouvelle route
+                  href={`/lost-and-found/category/${slug}`}
+                  prefetch={false}
                   className="text-center group transition-transform hover:scale-105"
                 >
                   <Image

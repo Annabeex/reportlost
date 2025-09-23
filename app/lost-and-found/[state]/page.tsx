@@ -9,8 +9,15 @@ import { buildCityPath } from "@/lib/slugify";
 import MaintenanceNotice from "@/components/MaintenanceNotice";
 import cityImages from "@/data/cityImages.json";
 
-export const revalidate = 86400;
+export const revalidate = 86400; // ISR 24h
 
+type CityRow = {
+  city_ascii: string;
+  state_id?: string | null;
+  population?: number | null;
+};
+
+// --- utils images locales ----------------------------------------------------
 function cityToSlug(name: string) {
   return String(name)
     .toLowerCase()
@@ -21,19 +28,22 @@ function cityToSlug(name: string) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
 function getCityImage(stateAbbr: string, cityName: string) {
   const slug = cityToSlug(cityName);
   const byState: Record<string, string[]> | undefined = (cityImages as any).byState;
   const available: string[] | undefined = (cityImages as any).available;
-  const has = byState?.[stateAbbr]?.includes(slug) || available?.includes(slug);
-  return has ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
+  const planned = byState?.[stateAbbr]?.includes(slug) || available?.includes(slug);
+  return planned ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
 }
 
+// --- metadata ---------------------------------------------------------------
 type Props = { params: { state: string } };
 
 export async function generateMetadata({ params }: Props) {
   const stateSlug = (params.state || "").toLowerCase();
   const stateName = stateNameFromAbbr(stateSlug);
+
   if (!stateName) {
     return {
       title: "Lost & Found in the USA",
@@ -41,6 +51,7 @@ export async function generateMetadata({ params }: Props) {
       alternates: { canonical: "https://reportlost.org/lost-and-found" },
     };
   }
+
   return {
     title: `Lost & Found in ${stateName} - ReportLost.org`,
     description: `Submit or find lost items in ${stateName}. Our platform helps reconnect lost belongings with their owners through a combination of AI and local networks.`,
@@ -48,6 +59,7 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
+// --- page -------------------------------------------------------------------
 export default async function StatePage({ params }: Props) {
   try {
     const stateSlug = (params.state || "").toLowerCase();
@@ -58,11 +70,20 @@ export default async function StatePage({ params }: Props) {
 
     const stateAbbr = stateSlug.toUpperCase();
 
-    let cities: any[] = [];
+    // Récupère les villes populaires (format plat/serialisable)
+    let cities: CityRow[] = [];
     try {
       const result = await getPopularCitiesByState(stateAbbr);
-      cities = Array.isArray(result) ? result : [];
-    } catch { cities = []; }
+      cities = (Array.isArray(result) ? result : [])
+        .filter((c: any) => c && typeof c.city_ascii === "string")
+        .map((c: any) => ({
+          city_ascii: c.city_ascii,
+          state_id: typeof c.state_id === "string" ? c.state_id : null,
+          population: typeof c.population === "number" ? c.population : null,
+        }));
+    } catch {
+      cities = [];
+    }
 
     return (
       <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
@@ -79,13 +100,15 @@ export default async function StatePage({ params }: Props) {
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
-          {cities.map((city: any) => {
-            const stateForPath = city.state_id ?? stateAbbr;
+          {cities.map((city) => {
+            const sid = city.state_id ?? stateAbbr; // fallback si manquant
             const imgSrc = getCityImage(stateAbbr, city.city_ascii);
+
             return (
               <Link
-                key={`${city.city_ascii}-${stateForPath}`}
-                href={buildCityPath(stateForPath, city.city_ascii)}
+                key={`${city.city_ascii}-${sid}`}
+                href={buildCityPath(sid, city.city_ascii)}
+                prefetch={false} // ← évite les préchargements automatiques
                 className="text-center group transition-transform transform hover:scale-105"
               >
                 <Image
@@ -114,7 +137,7 @@ export default async function StatePage({ params }: Props) {
   } catch (e: any) {
     if (e?.digest === "NEXT_NOT_FOUND") throw e;
     console.error("💥 Unexpected error in state page:", e);
-    // ts-expect-error Response accepté par l'App Router
+    // ts-expect-error: Response est OK dans l’App Router
     return new Response("Service temporarily unavailable", {
       status: 503,
       headers: { "Retry-After": "60" },

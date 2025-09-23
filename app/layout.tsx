@@ -25,15 +25,14 @@ export const metadata = {
 
 const inter = Inter({ subsets: ["latin"] });
 
+// app/layout.tsx
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-100`}>
-        <Navbar />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
-        {/* GA scripts, uniquement côté client */}
+      <body>
         <Analytics />
+        {children}
       </body>
     </html>
   );

@@ -1,25 +1,24 @@
 // app/lost-and-found/[state]/[city]/page.tsx
-import { createClient } from '@supabase/supabase-js';
-import '@/app/globals.css';
-import Image from 'next/image';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import "@/app/globals.css";
+import Image from "next/image";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { notFound } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
-import fetchCityImageDirectly from '@/lib/fetchCityImageDirectly';
-import { exampleReports } from '@/lib/lostitems';
-import { getNearbyCities } from '@/lib/getNearbyCities';
-import { fromCitySlug, buildCityPath } from '@/lib/slugify';
+import { exampleReports } from "@/lib/lostitems";
+import { getNearbyCities } from "@/lib/getNearbyCities";
+import { fromCitySlug, buildCityPath } from "@/lib/slugify";
 
 export const revalidate = 86400; // ISR 24h
 
-// ✅ composants client sensibles chargés côté navigateur uniquement
-const CityMap = dynamic(() => import('@/components/Map').then(m => m.default), {
+// ✅ composants client chargés côté navigateur uniquement
+const CityMap = dynamic(() => import("@/components/MapClient").then(m => m.default), {
   ssr: false,
   loading: () => <div className="text-gray-400">Loading map...</div>,
 });
 const ClientReportForm = dynamic(
-  () => import('@/components/ClientReportForm').then(m => m.default),
+  () => import("@/components/ClientReportForm").then(m => m.default),
   { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
 );
 
@@ -29,86 +28,96 @@ const supabase = createClient(
 );
 
 function toTitleCase(str: string) {
-  return str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return str.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
 type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
   try {
-    const stateAbbr = (params.state || '').toUpperCase();
-    const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city || '')));
+    const stateAbbr = (params.state || "").toUpperCase();
+    const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city || "")));
     if (!stateAbbr || !cityName) notFound();
 
-    // 1) requête principale
+    // 1) Requête principale
     let { data: candidates, error } = await supabase
-      .from('us_cities')
-      .select('*')
-      .eq('state_id', stateAbbr)
-      .ilike('city_ascii', cityName)
-      .order('population', { ascending: false })
+      .from("us_cities")
+      .select("*")
+      .eq("state_id", stateAbbr)
+      .ilike("city_ascii", cityName)
+      .order("population", { ascending: false })
       .limit(5);
-    if (error) console.warn('Supabase error (query 1):', error.message);
+    if (error) console.warn("Supabase error (query 1):", error.message);
 
     let cityData =
-      candidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
-      candidates?.[0] ?? null;
+      candidates?.find(c => (c.city_ascii || "").toLowerCase() === cityName.toLowerCase()) ??
+      candidates?.[0] ??
+      null;
 
-    // 2) fallback préfixe
+    // 2) Fallback préfixe
     if (!cityData) {
       const { data: prefixCandidates, error: e2 } = await supabase
-        .from('us_cities')
-        .select('*')
-        .eq('state_id', stateAbbr)
-        .ilike('city_ascii', `${cityName}%`)
-        .order('population', { ascending: false })
+        .from("us_cities")
+        .select("*")
+        .eq("state_id", stateAbbr)
+        .ilike("city_ascii", `${cityName}%`)
+        .order("population", { ascending: false })
         .limit(5);
-      if (e2) console.warn('Supabase error (query 2):', e2.message);
+      if (e2) console.warn("Supabase error (query 2):", e2.message);
 
       cityData =
-        prefixCandidates?.find(c => (c.city_ascii || '').toLowerCase() === cityName.toLowerCase()) ??
-        prefixCandidates?.[0] ?? null;
+        prefixCandidates?.find(c => (c.city_ascii || "").toLowerCase() === cityName.toLowerCase()) ??
+        prefixCandidates?.[0] ??
+        null;
     }
 
     if (!cityData) notFound();
 
-    // 3) normalise éventuels JSON string
-    (['parks', 'malls', 'tourism_sites'] as const).forEach((f) => {
+    // 3) Normalise JSON éventuels
+    (["parks", "malls", "tourism_sites"] as const).forEach((f) => {
       const raw = (cityData as any)[f];
-      if (typeof raw === 'string') {
+      if (typeof raw === "string") {
         try { (cityData as any)[f] = JSON.parse(raw); } catch { (cityData as any)[f] = []; }
       }
     });
 
     const title = cityData.static_title || `Lost something in ${cityData.city_ascii}?`;
-    const text = cityData.static_content || '';
+    const text = cityData.static_content || "";
     const today = formatDate(new Date());
     const reports = exampleReports(cityData);
 
-    // 4) nearby
+    // 4) Nearby
     let nearbyCities: any[] = [];
     try { nearbyCities = await getNearbyCities(cityData.id, cityData.state_id); } catch { nearbyCities = []; }
 
-    // 5) image (dev only si manquante)
+    // 5) Image (dev uniquement si manquante) — IMPORT DYNAMIQUE
     let cityImage = (cityData.image_url as string | null) || null;
     let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
-    let cityImageCredit = '';
-    if (!cityImage && process.env.NODE_ENV !== 'production') {
+    let cityImageCredit = "";
+    if (!cityImage && process.env.NODE_ENV !== "production") {
       try {
+        const { default: fetchCityImageDirectly } = await import("@/lib/fetchCityImageDirectly");
         const img = await fetchCityImageDirectly(cityName, cityData.state_name);
         cityImage = img.url; cityImageAlt = img.alt;
-        await supabase.from('us_cities').update({
-          image_url: img.url, image_alt: img.alt,
-          photographer: img.photographer, image_source_url: img.source_url,
-        }).eq('id', cityData.id);
-        cityImageCredit = img.photographer ? `Photo by ${img.photographer}` : '';
+
+        await supabase
+          .from("us_cities")
+          .update({
+            image_url: img.url,
+            image_alt: img.alt,
+            photographer: img.photographer,
+            image_source_url: img.source_url,
+          })
+          .eq("id", cityData.id);
+
+        cityImageCredit = img.photographer ? `Photo by ${img.photographer}` : "";
       } catch { /* ignore */ }
     }
 
-    // 6) Overpass → plain objects pour composant client
+    // 6) Overpass → objets plats pour le composant client
     let policeStations: PoliceStation[] = [];
     try {
       const overpassUrl =
@@ -119,29 +128,29 @@ export default async function Page({ params }: { params: { state: string; city: 
         const data = await res.json();
         const raw = Array.isArray(data?.elements) ? data.elements : [];
         policeStations = raw.map((el: any) => ({
-          id: (typeof el?.id === 'number' || typeof el?.id === 'string') ? String(el.id) : undefined,
-          lat: typeof el?.lat === 'number' ? el.lat : (typeof el?.center?.lat === 'number' ? el.center.lat : null),
-          lon: typeof el?.lon === 'number' ? el.lon : (typeof el?.center?.lon === 'number' ? el.center.lon : null),
-          name: typeof el?.tags?.name === 'string' ? el.tags.name : null,
+          id: (typeof el?.id === "number" || typeof el?.id === "string") ? String(el.id) : undefined,
+          lat: typeof el?.lat === "number" ? el.lat : (typeof el?.center?.lat === "number" ? el.center.lat : null),
+          lon: typeof el?.lon === "number" ? el.lon : (typeof el?.center?.lon === "number" ? el.center.lon : null),
+          name: typeof el?.tags?.name === "string" ? el.tags.name : null,
         }));
       }
     } catch { policeStations = []; }
 
-    // 7) texte enrichi
-    const enrichedText = `<p>${(text || '')
-      .replace(/(\n\n|\n)/g, '\n')
-      .replace(/(?<!\n)\n(?!\n)/g, '\n\n')
-      .replace(/hotels?/gi, '🏨 hotels')
-      .replace(/restaurants?/gi, '🍽️ restaurants')
-      .replace(/malls?/gi, '🛍️ malls')
-      .replace(/parks?/gi, '🌳 parks')
-      .replace(/tourist attractions?/gi, '🧭 tourist attractions')
-      .replace(/museum/gi, '🖼️ museum')
-      .replace(/staff/gi, '👥 staff')
-      .replace(/\n\n+/g, '</p><p>')
-      .replace(/\n/g, ' ')}</p>`;
+    // 7) Texte enrichi
+    const enrichedText = `<p>${(text || "")
+      .replace(/(\n\n|\n)/g, "\n")
+      .replace(/(?<!\n)\n(?!\n)/g, "\n\n")
+      .replace(/hotels?/gi, "🏨 hotels")
+      .replace(/restaurants?/gi, "🍽️ restaurants")
+      .replace(/malls?/gi, "🛍️ malls")
+      .replace(/parks?/gi, "🌳 parks")
+      .replace(/tourist attractions?/gi, "🧭 tourist attractions")
+      .replace(/museum/gi, "🖼️ museum")
+      .replace(/staff/gi, "👥 staff")
+      .replace(/\n\n+/g, "</p><p>")
+      .replace(/\n/g, " ")}</p>`;
 
-    // 8) rendu
+    // 8) Rendu
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-16">
@@ -186,12 +195,12 @@ export default async function Page({ params }: { params: { state: string; city: 
                 <ul className="list-disc list-inside text-gray-700">
                   {nearbyCities.map((c: any) => {
                     const sidRaw = c.state_id ?? stateAbbr;
-                    const sidDisplay = typeof sidRaw === 'string' ? sidRaw.toUpperCase() : stateAbbr;
-                    const sidForLink = typeof sidRaw === 'string' ? sidRaw : stateAbbr;
-
+                    const sidDisplay = typeof sidRaw === "string" ? sidRaw.toUpperCase() : stateAbbr;
+                    const sidForLink = typeof sidRaw === "string" ? sidRaw : stateAbbr;
                     return (
                       <li key={c.id ?? `${c.city_ascii}-${sidDisplay}`}>
                         <Link
+                          prefetch={false}
                           href={buildCityPath(sidForLink, c.city_ascii)}
                           className="text-blue-600 hover:underline"
                         >
@@ -225,14 +234,12 @@ export default async function Page({ params }: { params: { state: string; city: 
       </main>
     );
   } catch (e: any) {
-    // ⚠️ laisser passer le 404 pour que Next serve la vraie page 404
-    if (e?.digest === 'NEXT_NOT_FOUND') throw e;
-
-    console.error('💥 Unexpected error in city page:', e);
-    // ts-expect-error Response accepté par l'App Router
-    return new Response('Service temporarily unavailable', {
+    if (e?.digest === "NEXT_NOT_FOUND") throw e; // laisse Next rendre la vraie 404
+    console.error("💥 Unexpected error in city page:", e);
+    // ts-expect-error Response est OK dans l'App Router
+    return new Response("Service temporarily unavailable", {
       status: 503,
-      headers: { 'Retry-After': '60' },
+      headers: { "Retry-After": "60" },
     });
   }
 }

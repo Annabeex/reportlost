@@ -3,8 +3,6 @@
 @tailwind utilities;
 @tailwind typography;
 
-@import 'leaflet/dist/leaflet.css';
-
 /* Fix Leaflet map display bug */
 .leaflet-container {
   height: 100%;

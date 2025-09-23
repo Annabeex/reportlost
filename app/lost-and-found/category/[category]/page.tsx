@@ -76,12 +76,12 @@ const KEYWORDS: Record<string, string[]> = {
   ],
   jewelry: [
     "ring","bracelet","necklace","earring","earrings","watch","pendant","wedding band",
-    "bague", // exception fréquente si l'utilisateur met du FR
+    "bague",
   ],
   clothes: [
     "jacket","coat","hoodie","sweater","jumper","scarf","cap","hat","beanie","gloves","raincoat","vest",
     "t-shirt","shirt","jeans",
-    "pull", // exception FR -> clothes
+    "pull",
   ],
   bag: [
     "bag","backpack","rucksack","suitcase","carry-on","handbag","tote","duffel","messenger bag","purse","briefcase",
@@ -345,7 +345,7 @@ function ReportCard({ report }: { report: Report }) {
   );
 
   return report.city && report.state_id ? (
-    <Link href={buildCityPath(report.state_id, report.city)} className="block group">
+    <Link prefetch={false} href={buildCityPath(report.state_id, report.city)} className="block group">
       {card}
     </Link>
   ) : (

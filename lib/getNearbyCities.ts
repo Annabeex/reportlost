@@ -1,49 +1,47 @@
-// lib/getNearbyCities.ts
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
+// lib/getNearbyCities.ts (REST, sans supabase-js)
 export type NearbyCity = {
   id: number;
   city_ascii: string;
-  state_id: string | null;   // ⚠️ parfois null
+  state_id: string | null;
   population?: number;
 };
 
-/**
- * Récupère les villes proches via la fonction PostgreSQL `get_nearby_cities`.
- * - currentCityId : id de la ville actuelle
- * - stateId : abréviation d’état (ex: "CA")
- * - limit : nombre max de résultats
- */
 export async function getNearbyCities(
   currentCityId: number,
   stateId: string,
   limit = 5
 ): Promise<NearbyCity[]> {
-  const { data, error } = await supabase.rpc('get_nearby_cities', {
-    input_id: currentCityId,
-    input_state: stateId,
-    max_results: limit,
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_nearby_cities`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      input_id: currentCityId,
+      input_state: stateId,
+      max_results: limit,
+    }),
+    // petit cache de 1h si tu veux :
+    next: { revalidate: 3600 },
   });
 
-  if (error) {
-    console.error('❌ Error fetching nearby cities via RPC:', error.message);
+  if (!res.ok) {
+    console.error('❌ RPC get_nearby_cities failed:', res.status, await res.text());
     return [];
   }
 
-  // Normalisation : garantir state_id non null (au moins string vide)
-  const normalized = (data || []).map((c: any) => ({
+  const data = (await res.json()) as any[];
+  const normalized = (data || []).map((c) => ({
     ...c,
     state_id: typeof c.state_id === 'string' ? c.state_id : '',
   }));
 
-if (normalized.some((c: NearbyCity) => !c.state_id)) {
-  console.warn('⚠️ Some nearby cities have no state_id, fallback applied:', normalized);
-}
+  if (normalized.some((c) => !c.state_id)) {
+    console.warn('⚠️ Some nearby cities have no state_id, fallback applied:', normalized);
+  }
 
   return normalized;
 }
