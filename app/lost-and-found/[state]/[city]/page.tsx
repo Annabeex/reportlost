@@ -2,7 +2,7 @@
 import "@/app/globals.css";
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import NextDynamic from "next/dynamic"; // renamed to avoid local linter issues
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,14 +10,17 @@ import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { fromCitySlug, buildCityPath } from "@/lib/slugify";
 
-export const revalidate = 86400; // ISR 24h
+// force rendu à la volée (évite les PRERENDER stale)
+export const dynamic = 'force-dynamic' as const;
+
+export const revalidate = 86400; // ISR 24h (conservé, but dynamic takes precedence)
 
 // ✅ composants client chargés côté navigateur uniquement
-const CityMap = dynamic(() => import("@/components/MapClient").then(m => m.default), {
+const CityMap = NextDynamic(() => import("@/components/MapClient").then(m => m.default), {
   ssr: false,
   loading: () => <div className="text-gray-400">Loading map...</div>,
 });
-const ClientReportForm = dynamic(
+const ClientReportForm = NextDynamic(
   () => import("@/components/ClientReportForm").then(m => m.default),
   { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
 );
@@ -93,7 +96,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     let nearbyCities: any[] = [];
     try { nearbyCities = await getNearbyCities(cityData.id, cityData.state_id); } catch { nearbyCities = []; }
 
-    // 5) Image (dev uniquement si manquante) — IMPORT DYNAMIQUE
+    // 5) Image (dev only if missing) — import dynamique
     let cityImage = (cityData.image_url as string | null) || null;
     let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
     let cityImageCredit = "";
@@ -150,7 +153,7 @@ export default async function Page({ params }: { params: { state: string; city: 
       .replace(/\n\n+/g, "</p><p>")
       .replace(/\n/g, " ")}</p>`;
 
-    // 8) Rendu
+    // 8) Render
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-16">
@@ -236,7 +239,6 @@ export default async function Page({ params }: { params: { state: string; city: 
   } catch (e: any) {
     if (e?.digest === "NEXT_NOT_FOUND") throw e; // laisse Next rendre la vraie 404
     console.error("💥 Unexpected error in city page:", e);
-    // ts-expect-error Response est OK dans l'App Router
     return new Response("Service temporarily unavailable", {
       status: 503,
       headers: { "Retry-After": "60" },
