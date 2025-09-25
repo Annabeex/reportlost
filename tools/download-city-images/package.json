@@ -1,0 +1,18 @@
+{
+  "name": "download-city-images",
+  "version": "1.0.0",
+  "main": "download-cities.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "p-limit": "^7.1.1",
+    "sharp": "^0.34.4"
+  },
+  "description": ""
+}
