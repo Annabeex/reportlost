@@ -54,6 +54,11 @@ export default async function generateMetadata({
 }: {
   params: { state: string };
 }): Promise<Metadata> {
+  // Instrumentation
+  try {
+    console.log("[generateMetadata state] called", { params, timestamp: new Date().toISOString() });
+  } catch (_) {}
+
   try {
     const stateSlug = (params?.state || "").toLowerCase();
     if (!stateSlug) return makeFallbackMetaForState(stateSlug);
@@ -62,6 +67,7 @@ export default async function generateMetadata({
     const now = Date.now();
     const cached = cache[stateSlug];
     if (cached && now - cached.ts < CACHE_TTL_SECONDS * 1000) {
+      console.log("[generateMetadata state] cache hit for", stateSlug);
       return cached.meta;
     }
 
@@ -70,7 +76,8 @@ export default async function generateMetadata({
 
     if (!stateName) {
       const fallback = makeFallbackMetaForState(stateSlug);
-      cache[stateSlug] = { meta: fallback, ts: now };
+      try { cache[stateSlug] = { meta: fallback, ts: now }; } catch {}
+      console.log("[generateMetadata state] unknown slug, returning fallback for", stateSlug);
       return fallback;
     }
 
@@ -78,8 +85,7 @@ export default async function generateMetadata({
     const description = `Submit or find lost items in ${stateName}. Our platform helps reconnect lost belongings with their owners.`;
     const canonical = `${CANONICAL_BASE}/lost-and-found/${stateSlug}`;
 
-    // Optional OG image pattern: if you host per-state images under /images/states/{stateSlug}.jpg,
-    // social cards will show better. If those files don't exist it's okay — crawlers ignore missing images.
+    // Optional OG image pattern
     const ogImageUrl = `${CANONICAL_BASE}/images/states/${encodeURIComponent(stateSlug)}.jpg`;
 
     const meta: Metadata = {
@@ -101,13 +107,14 @@ export default async function generateMetadata({
       },
     };
 
-    cache[stateSlug] = { meta, ts: now };
+    try { cache[stateSlug] = { meta, ts: now }; } catch {}
+    console.log("[generateMetadata state] returning meta for", stateSlug);
     return meta;
   } catch (err) {
     // Never throw — return a safe fallback
     console.error("generateMetadata (state) unexpected error:", err);
     const fallback = makeFallbackMetaForState((params && params.state) || "");
-    cache[(params && params.state) || ""] = { meta: fallback, ts: Date.now() };
+    try { cache[(params && params.state) || ""] = { meta: fallback, ts: Date.now() }; } catch {}
     return fallback;
   }
 }
