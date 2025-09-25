@@ -8,7 +8,7 @@ import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
 
 // ✅ Import dynamique de la carte, sans SSR
-const UsaMap = NextDynamic(() => import('@/components/UsaMap'), { ssr: false });
+const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
 // helper: slug catégorie
 function categoryToSlug(name: string) {
