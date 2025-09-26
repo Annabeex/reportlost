@@ -1,25 +1,51 @@
-import { createClient } from '@supabase/supabase-js';
-import { toCitySlug } from '@/lib/slugify';
+// app/lost-and-found/[state]/[city]/generateStaticParams.ts
+import { toCitySlug } from "@/lib/slugify";
+import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
+/**
+ * Safe generateStaticParams:
+ * - Défend contre l'absence d'env (renvoie [] et logge)
+ * - Attrape toute erreur Supabase et renvoie []
+ * - Crée le client après la vérification d'env (évite comportement surprenant à l'import)
+ */
 export async function generateStaticParams() {
-  const { data, error } = await supabase
-    .from('us_cities')
-    .select('city_ascii, state_id')
-    .order('id')
-    .limit(20000); // adapte selon tes besoins
-
-  if (error) {
-    console.error('❌ Error fetching cities:', error.message);
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    // ceci apparaîtra dans les Build Logs Vercel
+    console.warn(
+      "[generateStaticParams] Missing Supabase env vars at build time. Returning empty params."
+    );
     return [];
   }
 
-  return (data || []).map((row) => ({
-    state: row.state_id.toLowerCase(),
-    city: toCitySlug(row.city_ascii),
-  }));
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  try {
+    // limite configurable pour tests / éviter builds trop longs
+    const { data, error } = await supabase
+      .from("us_cities")
+      .select("city_ascii, state_id")
+      .order("id")
+      .limit(20000);
+
+    if (error) {
+      console.error("[generateStaticParams] Supabase error:", error);
+      return [];
+    }
+    if (!data || data.length === 0) {
+      console.info("[generateStaticParams] no cities returned from DB");
+      return [];
+    }
+
+    console.info("[generateStaticParams] got", data.length, "cities");
+    return data.map((row: any) => ({
+      state: String(row.state_id || "").toLowerCase(),
+      city: toCitySlug(String(row.city_ascii || "")),
+    }));
+  } catch (err) {
+    console.error("[generateStaticParams] unexpected error:", err);
+    return [];
+  }
 }
