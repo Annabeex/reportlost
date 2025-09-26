@@ -2,14 +2,6 @@
 import type { Metadata } from "next";
 import { stateNameFromSlug } from "@/lib/utils";
 
-/**
- * Robust generateMetadata for state pages
- * - Always returns a Metadata object (never empty / never throws)
- * - Small in-memory cache to reduce work on warm instances
- * - Uses force-static (no external calls here) to avoid server-side 5xx risk
- */
-
-/* ----------------- Config ----------------- */
 const CACHE_TTL_SECONDS = 60 * 60; // 1 hour
 const CANONICAL_BASE = "https://reportlost.org";
 
@@ -49,43 +41,35 @@ function makeFallbackMetaForState(stateSlug: string): Metadata {
   };
 }
 
-export default async function generateMetadata({
+/* === IMPORTANT: named export (not default) === */
+export async function generateMetadata({
   params,
 }: {
   params: { state: string };
 }): Promise<Metadata> {
-  // Instrumentation
-  try {
-    console.log("[generateMetadata state] called", { params, timestamp: new Date().toISOString() });
-  } catch (_) {}
-
   try {
     const stateSlug = (params?.state || "").toLowerCase();
     if (!stateSlug) return makeFallbackMetaForState(stateSlug);
 
-    // Check cache
+    // cache check
     const now = Date.now();
     const cached = cache[stateSlug];
     if (cached && now - cached.ts < CACHE_TTL_SECONDS * 1000) {
-      console.log("[generateMetadata state] cache hit for", stateSlug);
+      console.info("generateMetadata(state) cache hit", stateSlug);
       return cached.meta;
     }
 
-    // Resolve human-readable state name via local util
+    // resolve human-readable state name via local util
     const stateName = stateNameFromSlug(stateSlug);
-
     if (!stateName) {
       const fallback = makeFallbackMetaForState(stateSlug);
-      try { cache[stateSlug] = { meta: fallback, ts: now }; } catch {}
-      console.log("[generateMetadata state] unknown slug, returning fallback for", stateSlug);
+      cache[stateSlug] = { meta: fallback, ts: now };
       return fallback;
     }
 
     const title = `Lost & Found in ${stateName} - ReportLost.org`;
     const description = `Submit or find lost items in ${stateName}. Our platform helps reconnect lost belongings with their owners.`;
     const canonical = `${CANONICAL_BASE}/lost-and-found/${stateSlug}`;
-
-    // Optional OG image pattern
     const ogImageUrl = `${CANONICAL_BASE}/images/states/${encodeURIComponent(stateSlug)}.jpg`;
 
     const meta: Metadata = {
@@ -107,14 +91,13 @@ export default async function generateMetadata({
       },
     };
 
-    try { cache[stateSlug] = { meta, ts: now }; } catch {}
-    console.log("[generateMetadata state] returning meta for", stateSlug);
+    cache[stateSlug] = { meta, ts: now };
+    console.info("generateMetadata(state) done", stateSlug);
     return meta;
   } catch (err) {
-    // Never throw — return a safe fallback
     console.error("generateMetadata (state) unexpected error:", err);
     const fallback = makeFallbackMetaForState((params && params.state) || "");
-    try { cache[(params && params.state) || ""] = { meta: fallback, ts: Date.now() }; } catch {}
+    cache[(params && params.state) || ""] = { meta: fallback, ts: Date.now() };
     return fallback;
   }
 }
