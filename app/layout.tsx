@@ -5,23 +5,29 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 
+/**
+ * IMPORTANT:
+ * Do NOT set a static `title` or `description` here if you want per-route
+ * `generateMetadata` to take effect. Keep only site-level metadata.
+ */
 export const metadata = {
-  title: "Lost and Found – ReportLost.org",
-  description: "Report your lost items and find them quickly with local help across the U.S.",
+  // base URL for open graph / canonical building
   metadataBase: new URL("https://reportlost.org"),
+
+  // site-level only (no static title/description)
   openGraph: {
-    title: "Lost and Found – ReportLost.org",
-    description: "Find your lost belongings by contacting local authorities and checking known hotspots.",
-    url: "https://reportlost.org",
-    type: "website",
     siteName: "ReportLost.org",
+    type: "website",
+    // don't set a global `title`/`description` here
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "Lost and Found – ReportLost.org",
-    description: "Find your lost items by searching locally across the U.S.",
   },
-  alternates: { canonical: "/" },
+
+  // Optionally, if you want a structured fallback title you can use:
+  // title: { default: "ReportLost.org", template: "%s - ReportLost.org" },
+  // but avoid setting a single static title/description.
 };
 
 const inter = Inter({ subsets: ["latin"] });
@@ -38,9 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         {/* Main content */}
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
 
         {/* Global footer */}
         <footer>
