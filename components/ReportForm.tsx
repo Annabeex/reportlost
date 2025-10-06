@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase";
+import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
@@ -33,41 +34,46 @@ export default function ReportForm({
   const [isClient, setIsClient] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const [formData, setFormData] = useState<any>({
-    report_id: "",
-    title: "",
-    description: "",
-    city: defaultCity,
-    date: "",
-    time_slot: "",
-    loss_neighborhood: "",
-    loss_street: "",
-    transport: false,
-    departure_place: "",
-    arrival_place: "",
-    departure_time: "",
-    arrival_time: "",
-    travel_number: "",
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    address: "",
-    contribution: 0,
-    isCellphone: false,
-    phoneColor: "",
-    phoneMaterial: "",
-    phoneBrand: "",
-    phoneModel: "",
-    phoneSerial: "",
-    phoneProof: "",
-    phoneMark: "",
-    phoneOther: "",
-    object_photo: "",
-    consent: false,
-    consent_contact: false,
-    consent_terms: false,
-    consent_authorized: false,
+  const [formData, setFormData] = useState<any>(() => {
+    const normalizedCity = normalizeCityInput(defaultCity);
+
+    return {
+      report_id: "",
+      title: "",
+      description: "",
+      city: normalizedCity.label,
+      state_id: normalizedCity.stateId,
+      date: "",
+      time_slot: "",
+      loss_neighborhood: "",
+      loss_street: "",
+      transport: false,
+      departure_place: "",
+      arrival_place: "",
+      departure_time: "",
+      arrival_time: "",
+      travel_number: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      address: "",
+      contribution: 0,
+      isCellphone: false,
+      phoneColor: "",
+      phoneMaterial: "",
+      phoneBrand: "",
+      phoneModel: "",
+      phoneSerial: "",
+      phoneProof: "",
+      phoneMark: "",
+      phoneOther: "",
+      object_photo: "",
+      consent: false,
+      consent_contact: false,
+      consent_terms: false,
+      consent_authorized: false,
+    };
   });
 
   // --- Mount-only logic (client) ---
@@ -87,7 +93,29 @@ export default function ReportForm({
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
     const { name, value, type, checked } = (e as any).target;
-    setFormData((prev: any) => ({ ...prev, [name]: type === "checkbox" ? !!checked : value }));
+    setFormData((prev: any) => {
+      const nextValue = type === "checkbox" ? !!checked : value;
+
+      if (name === "city") {
+        const normalized = normalizeCityInput(String(nextValue ?? ""));
+        return {
+          ...prev,
+          city: normalized.label,
+          state_id: normalized.stateId,
+        };
+      }
+
+      if (name === "state_id") {
+        const normalizedState =
+          typeof nextValue === "string" ? nextValue.trim().toUpperCase() : "";
+        return {
+          ...prev,
+          state_id: normalizedState || null,
+        };
+      }
+
+      return { ...prev, [name]: nextValue };
+    });
   };
 
   const handleBack = () => {
@@ -120,10 +148,13 @@ export default function ReportForm({
         (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
       );
 
+      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
+
       const payload = {
         title: formData.title || null,
         description: formData.description || null,
-        city: formData.city || null,
+        city: cityDisplay || null,
+        state_id: formData.state_id || null,
         date: formData.date || null,
         time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
@@ -187,7 +218,7 @@ Your report is now published and automatic alerts are active.
 Details of your report:
 - Item: ${formData.title}
 - Date: ${formData.date}
-- City: ${formData.city}
+- City: ${cityDisplay}
 
 ${contributeUrl}
 
@@ -219,7 +250,7 @@ Thank you for using ReportLost.`,
     <ul style="margin:0 0 16px;padding-left:18px">
       <li><b>Item:</b> ${formData.title}</li>
       <li><b>Date:</b> ${formData.date}</li>
-      <li><b>City:</b> ${formData.city}</li>
+      <li><b>City:</b> ${cityDisplay}</li>
     </ul>
 
     <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>

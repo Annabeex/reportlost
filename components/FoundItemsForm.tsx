@@ -9,10 +9,24 @@ import generateContent from "@/lib/generatecontent";
 
 const MIN_CITY_CHARS = 1;
 
+const CITY_STATE_REGEX = /^(.*?)(?:\s*\(([A-Za-z]{2})\))?$/;
+
+function extractCityAndState(raw: string): { city: string; stateId: string } {
+  const trimmed = (raw || "").trim();
+  const match = trimmed.match(CITY_STATE_REGEX);
+  if (!match) {
+    return { city: trimmed, stateId: "" };
+  }
+  const cityPart = (match[1] || "").trim();
+  const statePart = (match[2] || "").toUpperCase();
+  return { city: cityPart, stateId: statePart };
+}
+
 export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: string }) {
   const [photo, setPhoto] = useState<File | null>(null);
   const [description, setDescription] = useState("");
   const [city, setCity] = useState<string>(defaultCity);
+  const [stateId, setStateId] = useState<string>(() => extractCityAndState(defaultCity).stateId);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   const [uploading, setUploading] = useState(false);
@@ -78,6 +92,12 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
     }
   };
 
+  const handleCityChange = (value: string) => {
+    setCity(value);
+    const { stateId: parsedStateId } = extractCityAndState(value);
+    setStateId(parsedStateId);
+  };
+
   const handleNext = () => setStep(2);
 
   const handleSubmit = async () => {
@@ -85,6 +105,10 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
     setErrorMsg("");
 
     try {
+      const { city: cleanedCityFromInput, stateId: parsedStateId } = extractCityAndState(city);
+      const normalizedCity = cleanedCityFromInput;
+      const normalizedStateId = (stateId || parsedStateId || "").toUpperCase();
+
       // 1) upload optionnel de l’image
       let publicImageUrl = "";
       if (photo) {
@@ -114,7 +138,8 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
         {
           image_url: publicImageUrl,
           description,
-          city, // string simple "Chicago" ou "Chicago (IL)"
+          city: normalizedCity,
+          state_id: normalizedStateId || null,
           date,
           labels: visionLabels ?? "",
           logos: visionLogos ?? "",
@@ -169,7 +194,12 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
           )}
 
           <label className="block font-medium mt-4">🏩 City where it was found</label>
-          <AutoCompleteCitySelect value={city} onChange={setCity} minQueryLength={MIN_CITY_CHARS} />
+          <AutoCompleteCitySelect
+            value={city}
+            onChange={handleCityChange}
+            onSelect={(selected) => setStateId(selected.state_id)}
+            minQueryLength={MIN_CITY_CHARS}
+          />
 
           <label className="block font-medium mt-4">🗓️ Date when it was found</label>
           <input

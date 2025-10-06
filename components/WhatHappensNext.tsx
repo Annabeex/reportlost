@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { formatCityWithState } from "@/lib/locationUtils";
 
 interface Props {
   formData: any;
@@ -15,6 +16,11 @@ export default function WhatHappensNext({
   onBack,
   fullScreen,
 }: Props) {
+  const cityDisplay = formatCityWithState(formData.city, formData.state_id);
+  const locationSummary = [cityDisplay, formData.loss_neighborhood, formData.loss_street]
+    .filter((part) => typeof part === "string" && part.trim().length > 0)
+    .join(", ");
+
   const handleContinue = () => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -114,8 +120,7 @@ export default function WhatHappensNext({
                 </li>
               )}
               <li>
-                <strong>Location:</strong> {formData.city},{" "}
-                {formData.loss_neighborhood}, {formData.loss_street}
+                <strong>Location:</strong> {locationSummary || "—"}
               </li>
 
               {formData.transport && (

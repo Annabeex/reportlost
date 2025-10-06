@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import AutoCompleteCitySelect from '@/components/AutoCompleteCitySelect';
+import { normalizeCityInput } from '@/lib/locationUtils';
 
 interface Props {
   formData: any;
@@ -36,6 +37,17 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             onChange={(value: string) =>
               onChange({ target: { name: 'city', value } } as React.ChangeEvent<HTMLInputElement>)
             }
+            onSelect={(city) => {
+              onChange({
+                target: {
+                  name: 'city',
+                  value: `${city.city_ascii} (${city.state_id})`,
+                },
+              } as React.ChangeEvent<HTMLInputElement>);
+              onChange({
+                target: { name: 'state_id', value: city.state_id },
+              } as React.ChangeEvent<HTMLInputElement>);
+            }}
           />
         </div>
 
@@ -102,7 +114,24 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
           </button>
           <button
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-            onClick={onNext}
+            onClick={() => {
+              const normalized = normalizeCityInput(formData.city);
+
+              if (normalized.label !== (formData.city || '')) {
+                onChange({
+                  target: { name: 'city', value: normalized.label },
+                } as React.ChangeEvent<HTMLInputElement>);
+              }
+
+              const currentState = formData.state_id ?? null;
+              if (currentState !== normalized.stateId) {
+                onChange({
+                  target: { name: 'state_id', value: normalized.stateId ?? '' },
+                } as React.ChangeEvent<HTMLInputElement>);
+              }
+
+              onNext();
+            }}
           >
             Next
           </button>
