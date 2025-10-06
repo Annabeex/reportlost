@@ -122,6 +122,11 @@ export default function WhatHappensNext({
               <li>
                 <strong>Location:</strong> {locationSummary || "—"}
               </li>
+              {formData.report_public_id && (
+                <li>
+                  <strong>Reference code:</strong> {formData.report_public_id}
+                </li>
+              )}
 
               {formData.transport && (
                 <>

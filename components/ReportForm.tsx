@@ -6,6 +6,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase";
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
+import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
 
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
@@ -73,6 +74,7 @@ export default function ReportForm({
       consent_contact: false,
       consent_terms: false,
       consent_authorized: false,
+      report_public_id: "",
     };
   });
 
@@ -84,7 +86,11 @@ export default function ReportForm({
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
       const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
+      const publicRid =
+        params.get("ref") || localStorage.getItem("reportlost_public_id") || "";
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
+      if (publicRid)
+        setFormData((p: any) => ({ ...p, report_public_id: normalizePublicId(publicRid) }));
     } catch {
       /* ignore */
     }
@@ -183,17 +189,22 @@ export default function ReportForm({
         .select("id")
         .single();
 
-      if (error) {
-        console.error("❌ Supabase insert error:", error);
-        alert(`Unexpected database error: ${error.message}`);
+      if (error || !data?.id) {
+        if (error) {
+          console.error("❌ Supabase insert error:", error);
+        }
+        alert("Unexpected error. Please try again later.");
         return false;
       }
 
-      const reportId = data?.id;
-      setFormData((p: any) => ({ ...p, report_id: reportId }));
+      const reportId = data.id as string;
+      const publicId = publicIdFromUuid(reportId);
+
+      setFormData((p: any) => ({ ...p, report_id: reportId, report_public_id: publicId }));
 
       try {
         localStorage.setItem("reportlost_rid", String(reportId));
+        if (publicId) localStorage.setItem("reportlost_public_id", String(publicId));
       } catch {
         /* ignore */
       }
@@ -201,6 +212,9 @@ export default function ReportForm({
       // Email de confirmation d’enregistrement
       try {
         const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
+        const referenceLine = publicId
+          ? `Reference code: ${publicId}\n`
+          : "";
 
         await fetch("/api/send-mail", {
           method: "POST",
@@ -219,6 +233,7 @@ Details of your report:
 - Item: ${formData.title}
 - Date: ${formData.date}
 - City: ${cityDisplay}
+${referenceLine}
 
 ${contributeUrl}
 
@@ -251,6 +266,7 @@ Thank you for using ReportLost.`,
       <li><b>Item:</b> ${formData.title}</li>
       <li><b>Date:</b> ${formData.date}</li>
       <li><b>City:</b> ${cityDisplay}</li>
+      ${publicId ? `<li><b>Reference code:</b> ${publicId}</li>` : ""}
     </ul>
 
     <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
@@ -358,6 +374,7 @@ Thank you for using ReportLost.`,
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
+          referenceCode={formData.report_public_id}
           setFormData={setFormData}
           onBack={handleBack}
           onNext={handleNext}

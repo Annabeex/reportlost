@@ -7,6 +7,7 @@ interface Props {
   onNext: () => void;
   contribution: number;
   setFormData: (fn: (prev: any) => any) => void;
+  referenceCode?: string;
 }
 
 const plans = [
@@ -36,7 +37,13 @@ const plans = [
   },
 ];
 
-export default function ReportContribution({ onBack, onNext, contribution, setFormData }: Props) {
+export default function ReportContribution({
+  onBack,
+  onNext,
+  contribution,
+  setFormData,
+  referenceCode,
+}: Props) {
   const handleSelectPlan = (amount: number) => {
     setFormData((prev: any) => ({ ...prev, contribution: amount }));
     onNext();
@@ -45,7 +52,7 @@ export default function ReportContribution({ onBack, onNext, contribution, setFo
   return (
     <section className="bg-gradient-to-b from-blue-50 to-white py-16 px-4">
       <div className="max-w-5xl mx-auto space-y-12">
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Support the follow-up of your report
           </h2>
@@ -57,6 +64,12 @@ export default function ReportContribution({ onBack, onNext, contribution, setFo
               After that period, your report remains published and you'll be notified automatically in case of a match.
             </span>
           </p>
+          {referenceCode && (
+            <p className="inline-flex items-center gap-2 bg-white border border-blue-200 text-blue-700 px-4 py-2 rounded-full text-sm font-medium shadow-sm">
+              <span role="img" aria-label="reference">🔖</span>
+              Share this reference code with support: <span className="font-semibold">{referenceCode}</span>
+            </p>
+          )}
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
