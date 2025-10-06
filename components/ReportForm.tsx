@@ -201,7 +201,10 @@ export default function ReportForm({
       const publicId = publicIdFromUuid(reportId);
 
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
       if (publicId) {
         try {
           const candidateColumns = ["public_id", "report_public_id"] as const;
@@ -233,6 +236,9 @@ export default function ReportForm({
         }
       }
 
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
       setFormData((p: any) => ({ ...p, report_id: reportId, report_public_id: publicId }));
 
