@@ -200,6 +200,40 @@ export default function ReportForm({
       const reportId = data.id as string;
       const publicId = publicIdFromUuid(reportId);
 
+<<<<<<< ours
+=======
+      if (publicId) {
+        try {
+          const candidateColumns = ["public_id", "report_public_id"] as const;
+          let persisted = false;
+
+          for (const column of candidateColumns) {
+            const payload = { [column]: publicId } as Record<string, string>;
+            const { error: publicIdError } = await supabase
+              .from("lost_items")
+              .update(payload)
+              .eq("id", reportId);
+
+            if (!publicIdError) {
+              persisted = true;
+              break;
+            }
+
+            if (publicIdError.code !== "42703") {
+              console.warn("⚠️ Failed to persist public reference:", publicIdError.message);
+              break;
+            }
+          }
+
+          if (!persisted) {
+            console.warn("⚠️ Unable to persist a public reference id (no matching column).");
+          }
+        } catch (updateError) {
+          console.warn("⚠️ Exception while persisting public_id:", updateError);
+        }
+      }
+
+>>>>>>> theirs
       setFormData((p: any) => ({ ...p, report_id: reportId, report_public_id: publicId }));
 
       try {

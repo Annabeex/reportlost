@@ -30,6 +30,8 @@ type LostItem = {
   email: string;
   first_name: string;
   last_name: string;
+  public_id?: string | null;
+  report_public_id?: string | null;
 };
 
 type FoundItem = {
@@ -119,6 +121,11 @@ export default function AdminPage() {
                 <div className="text-sm text-gray-500">
                   💳 Contribution : {item.contribution ? `$${item.contribution}` : '—'}
                 </div>
+                {(item.public_id || item.report_public_id) && (
+                  <div className="text-sm text-gray-500">
+                    🔖 Reference : {item.public_id || item.report_public_id}
+                  </div>
+                )}
               </div>
             </div>
           ))}
