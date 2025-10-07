@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
+import { Suspense } from "react";
 
 /**
  * IMPORTANT:
@@ -18,16 +19,10 @@ export const metadata = {
   openGraph: {
     siteName: "ReportLost.org",
     type: "website",
-    // don't set a global `title`/`description` here
   },
-
-  twitter: {
-    card: "summary_large_image",
-  },
-
-  // Optionally, if you want a structured fallback title you can use:
+  twitter: { card: "summary_large_image" },
+  // Optionally:
   // title: { default: "ReportLost.org", template: "%s - ReportLost.org" },
-  // but avoid setting a single static title/description.
 };
 
 const inter = Inter({ subsets: ["latin"] });
@@ -36,7 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-gray-50 text-gray-800`}>
-        <Analytics />
+        {/* ✅ Analytics utilise useSearchParams → il DOIT être sous Suspense */}
+        <Suspense fallback={null}>
+          <Analytics />
+        </Suspense>
 
         {/* Global navbar */}
         <header>
