@@ -1,7 +1,7 @@
 // components/ReportForm.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +23,7 @@ type ReportFormProps = {
 };
 
 type EventLike =
-  | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  | ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
 export default function ReportForm({
@@ -40,7 +40,6 @@ export default function ReportForm({
   const [formData, setFormData] = useState<any>(() => {
     return {
       // Étape 1
-      category: "",
       title: "",
       description: "",
       date: "",
@@ -170,7 +169,12 @@ export default function ReportForm({
     try {
       // Validation minimale côté client
       if (enforceValidation) {
-        if (!formData.title?.trim() || !formData.description?.trim() || !formData.city?.trim() || !formData.date?.trim()) {
+        if (
+          !formData.title?.trim() ||
+          !formData.description?.trim() ||
+          !formData.city?.trim() ||
+          !formData.date?.trim()
+        ) {
           alert("Please fill in all required fields.");
           setSubmitting(false);
           return false;
@@ -200,29 +204,35 @@ export default function ReportForm({
       // Photo éventuelle
       const object_photo = formData.object_photo || null;
 
-      // Payload DB
+      // Payload DB — aligné exactement sur ta BDD
       const payload = {
-        category: formData.category || null,
         title: String(formData.title || ""),
         description: String(formData.description || ""),
-        date: String(formData.date || ""),
+        // date (colonne de type DATE) → YYYY-MM-DD ou NULL
+        date: formData.date ? new Date(formData.date).toISOString().slice(0, 10) : null,
         city: String(formData.city || ""),
         state_id: formData.state_id || null,
+
         loss_neighborhood: formData.loss_neighborhood || null,
         loss_street: formData.loss_street || null,
+
         departure_place: formData.departure_place || null,
         arrival_place: formData.arrival_place || null,
         departure_time: formData.departure_time || null,
         arrival_time: formData.arrival_time || null,
         travel_number: formData.travel_number || null,
+
         email: String(formData.email || ""),
         first_name: String(formData.first_name || ""),
         last_name: String(formData.last_name || ""),
         phone: formData.phone || null,
         address: formData.address || null,
-        contribution: formData.contribution ?? 0,
-        consent: consentOK,
-        phone_description: phoneDescription,
+
+        contribution: Number(formData.contribution ?? 0),
+        consent: !!formData.consent,
+
+        // nom exact de la colonne en base sur ta capture
+        phone_descrip: phoneDescription || null,
         object_photo,
       };
 
@@ -236,8 +246,13 @@ export default function ReportForm({
         .single();
 
       if (error || !data?.id) {
-        if (error) console.error("❌ Supabase insert error:", error);
-        alert("Unexpected error. Please try again later.");
+        console.error("❌ Supabase insert error:", {
+          code: (error as any)?.code,
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+        });
+        alert(`Database error: ${(error as any)?.message || "unknown"}`);
         setSubmitting(false);
         return false;
       }
