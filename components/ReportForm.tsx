@@ -1,4 +1,4 @@
-// app/components/ReportForm.tsx
+// components/ReportForm.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -31,35 +31,41 @@ export default function ReportForm({
   enforceValidation = false,
   onBeforeSubmit,
 }: ReportFormProps) {
-  const [step, setStep] = useState(1);
-  const [isClient, setIsClient] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<any>(() => {
-    const normalizedCity = normalizeCityInput(defaultCity);
-
     return {
-      report_id: "",
+      // Étape 1
+      category: "",
       title: "",
       description: "",
-      city: normalizedCity.label,
-      state_id: normalizedCity.stateId,
       date: "",
-      time_slot: "",
+      city: "",
+      state_id: "",
       loss_neighborhood: "",
       loss_street: "",
-      transport: false,
+      // Travel (si utilisé)
       departure_place: "",
       arrival_place: "",
       departure_time: "",
       arrival_time: "",
       travel_number: "",
+
+      // Étape 2 (coordonnées)
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       address: "",
+
+      // Contribution
       contribution: 0,
+
+      // Téléphone (si catégorie téléphone)
       isCellphone: false,
       phoneColor: "",
       phoneMaterial: "",
@@ -69,32 +75,55 @@ export default function ReportForm({
       phoneProof: "",
       phoneMark: "",
       phoneOther: "",
+
+      // Média
       object_photo: "",
+
+      // Consentements
       consent: false,
       consent_contact: false,
       consent_terms: false,
       consent_authorized: false,
+
+      // Références
+      report_id: "",
       report_public_id: "",
     };
   });
 
-  // --- Mount-only logic (client) ---
+  // Mount-only (client)
   useEffect(() => {
     setIsClient(true);
 
+    // Préremplir la ville par défaut si fournie par la page
+    if (defaultCity) {
+      const normalized = normalizeCityInput(defaultCity);
+      setFormData((p: any) => ({
+        ...p,
+        city: normalized.label,
+        state_id: normalized.stateId,
+      }));
+    }
+
+    // Récupérer rid/ref des paramètres d'URL / localStorage si présents
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
+
       const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
       const publicRid =
         params.get("ref") || localStorage.getItem("reportlost_public_id") || "";
+
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
       if (publicRid)
-        setFormData((p: any) => ({ ...p, report_public_id: normalizePublicId(publicRid) }));
+        setFormData((p: any) => ({
+          ...p,
+          report_public_id: normalizePublicId(publicRid),
+        }));
     } catch {
-      /* ignore */
+      // ignore
     }
-  }, []);
+  }, [defaultCity]);
 
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
@@ -116,53 +145,69 @@ export default function ReportForm({
           typeof nextValue === "string" ? nextValue.trim().toUpperCase() : "";
         return {
           ...prev,
-          state_id: normalizedState || null,
+          state_id: normalizedState,
         };
       }
 
-      return { ...prev, [name]: nextValue };
+      return {
+        ...prev,
+        [name]: nextValue,
+      };
     });
   };
 
-  const handleBack = () => {
-    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
-    setStep((s) => Math.max(1, s - 1));
+  const handleBack = () => setStep((s) => Math.max(1, s - 1));
+
+  const handleSuccessfulPayment = () => {
+    // Après paiement, on peut rediriger ou afficher un message
+    setStep(1);
   };
 
-  const buildPhoneDescription = () => {
-    if (!formData.isCellphone) return null;
-    const parts = [
-      formData.phoneColor && `Color: ${formData.phoneColor}`,
-      formData.phoneMaterial && `Material: ${formData.phoneMaterial}`,
-      formData.phoneBrand && `Brand: ${formData.phoneBrand}`,
-      formData.phoneModel && `Model: ${formData.phoneModel}`,
-      formData.phoneSerial && `Serial: ${formData.phoneSerial}`,
-      formData.phoneProof && `Proof: ${formData.phoneProof}`,
-      formData.phoneMark && `Mark: ${formData.phoneMark}`,
-      formData.phoneOther && `Other: ${formData.phoneOther}`,
-    ].filter(Boolean);
-    return parts.join(" • ");
-  };
+  const submitReport = async () => {
+    if (submitting) return false;
+    setSubmitting(true);
 
-  const saveReportToDatabase = async () => {
     try {
-      const phoneDescription = buildPhoneDescription();
+      // Validation minimale côté client
+      if (enforceValidation) {
+        if (!formData.title?.trim() || !formData.description?.trim() || !formData.city?.trim() || !formData.date?.trim()) {
+          alert("Please fill in all required fields.");
+          setSubmitting(false);
+          return false;
+        }
+        if (!formData.first_name?.trim()) {
+          alert("Please enter your first name.");
+          setSubmitting(false);
+          return false;
+        }
+      }
+
+      const consentOK = !!formData.consent && !!formData.consent_terms;
+
+      // Description téléphone compacte si utile
+      const phoneBits = [
+        formData.phoneBrand,
+        formData.phoneModel,
+        formData.phoneColor,
+        formData.phoneMaterial,
+        formData.phoneMark,
+        formData.phoneOther,
+      ]
+        .filter(Boolean)
+        .map((s: string) => String(s).trim());
+      const phoneDescription = phoneBits.length ? phoneBits.join(", ") : null;
+
+      // Photo éventuelle
       const object_photo = formData.object_photo || null;
 
-      const consentOK = !!(
-        formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
-      );
-
-      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
-
+      // Payload DB
       const payload = {
-        title: formData.title || null,
-        description: formData.description || null,
-        city: cityDisplay || null,
+        category: formData.category || null,
+        title: String(formData.title || ""),
+        description: String(formData.description || ""),
+        date: String(formData.date || ""),
+        city: String(formData.city || ""),
         state_id: formData.state_id || null,
-        date: formData.date || null,
-        time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
         loss_street: formData.loss_street || null,
         departure_place: formData.departure_place || null,
@@ -177,12 +222,13 @@ export default function ReportForm({
         address: formData.address || null,
         contribution: formData.contribution ?? 0,
         consent: consentOK,
-        phone_description: phoneDescription || null,
+        phone_description: phoneDescription,
         object_photo,
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
+      // Insert Supabase
       const { data, error } = await supabase
         .from("lost_items")
         .insert([cleaned])
@@ -190,107 +236,50 @@ export default function ReportForm({
         .single();
 
       if (error || !data?.id) {
-        if (error) {
-          console.error("❌ Supabase insert error:", error);
-        }
+        if (error) console.error("❌ Supabase insert error:", error);
         alert("Unexpected error. Please try again later.");
+        setSubmitting(false);
         return false;
       }
 
       const reportId = data.id as string;
       const publicId = publicIdFromUuid(reportId);
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-      if (publicId) {
-        try {
-          const candidateColumns = ["public_id", "report_public_id"] as const;
-          let persisted = false;
-
-          for (const column of candidateColumns) {
-            const payload = { [column]: publicId } as Record<string, string>;
-            const { error: publicIdError } = await supabase
-              .from("lost_items")
-              .update(payload)
-              .eq("id", reportId);
-
-            if (!publicIdError) {
-              persisted = true;
-              break;
-            }
-
-            if (publicIdError.code !== "42703") {
-              console.warn("⚠️ Failed to persist public reference:", publicIdError.message);
-              break;
-            }
-          }
-
-          if (!persisted) {
-            console.warn("⚠️ Unable to persist a public reference id (no matching column).");
-          }
-        } catch (updateError) {
-          console.warn("⚠️ Exception while persisting public_id:", updateError);
+      // Persiste public_id (si pas de trigger SQL qui le fait déjà)
+      try {
+        const resp = await fetch("/api/report-public-id", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reportId, publicId }),
+        });
+        if (!resp.ok) {
+          console.warn("⚠️ Failed to persist public_id via API", { status: resp.status });
         }
+      } catch (e) {
+        console.warn("⚠️ Exception while persisting public_id:", e);
       }
 
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
-      if (publicId) {
-        try {
-          const response = await fetch("/api/report-public-id", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reportId, publicId }),
-          });
-
-          if (!response.ok) {
-            let details: unknown = null;
-            try {
-              details = await response.json();
-            } catch {
-              /* ignore */
-            }
-
-            console.warn("⚠️ Failed to persist public reference via API", {
-              status: response.status,
-              details,
-            });
-          }
-        } catch (updateError) {
-          console.warn("⚠️ Exception while persisting public_id via API:", updateError);
-        }
-      }
-
->>>>>>> theirs
-      setFormData((p: any) => ({ ...p, report_id: reportId, report_public_id: publicId }));
+      // État + stockage local pour l’UI et les emails
+      setFormData((p: any) => ({
+        ...p,
+        report_id: reportId,
+        report_public_id: publicId,
+      }));
 
       try {
-        localStorage.setItem("reportlost_rid", String(reportId));
-        if (publicId) localStorage.setItem("reportlost_public_id", String(publicId));
+        localStorage.setItem("reportlost_rid", reportId);
+        localStorage.setItem("reportlost_public_id", publicId ?? "");
       } catch {
-        /* ignore */
+        // ignore
       }
 
-      // Email de confirmation d’enregistrement
-      try {
-        const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
-        const referenceLine = publicId
-          ? `Reference code: ${publicId}\n`
-          : "";
+      // Emails
+      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
+      const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
+      const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
 
+      // 1) Email utilisateur
+      try {
         await fetch("/api/send-mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -309,9 +298,7 @@ Details of your report:
 - Date: ${formData.date}
 - City: ${cityDisplay}
 ${referenceLine}
-
 ${contributeUrl}
-
 Thank you for using ReportLost.`,
             html: `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
@@ -324,18 +311,15 @@ Thank you for using ReportLost.`,
       We have received your lost item report on
       <a href="https://reportlost.org" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
     </p>
-
     <p style="margin:0 0 14px">
       Your report is now published and automatic alerts are active.
       <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
     </p>
-
     <p style="margin:0 0 18px">
       <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
         Upgrade with a contribution
       </a>
     </p>
-
     <p style="margin:0 0 8px"><b>Details of your report</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
       <li><b>Item:</b> ${formData.title}</li>
@@ -343,7 +327,6 @@ Thank you for using ReportLost.`,
       <li><b>City:</b> ${cityDisplay}</li>
       ${publicId ? `<li><b>Reference code:</b> ${publicId}</li>` : ""}
     </ul>
-
     <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
   </div>
 </div>`,
@@ -353,6 +336,7 @@ Thank you for using ReportLost.`,
         console.error("❌ Email confirmation deposit failed:", err);
       }
 
+      // 2) Notification interne
       const notificationEmail = process.env.NEXT_PUBLIC_REPORT_NOTIFICATION_EMAIL;
       if (notificationEmail) {
         try {
@@ -371,74 +355,44 @@ Thank you for using ReportLost.`,
         }
       }
 
+      setSubmitting(false);
       return true;
     } catch (err) {
       console.error("💥 Unexpected error while saving report:", err);
       alert("Unexpected error. Please try again later.");
+      setSubmitting(false);
       return false;
     }
   };
 
   const handleNext = async () => {
-    if (enforceValidation && step === 1) {
-      if (
-        !formData.title?.trim() ||
-        !formData.description?.trim() ||
-        !formData.city?.trim() ||
-        !formData.date?.trim()
-      ) {
-        alert("Please fill in all required fields.");
-        return;
+    if (step === 1 || step === 2 || step === 3) {
+      if (step === 1 && enforceValidation) {
+        if (
+          !formData.title?.trim() ||
+          !formData.description?.trim() ||
+          !formData.city?.trim() ||
+          !formData.date?.trim()
+        ) {
+          alert("Please fill in all required fields.");
+          return;
+        }
       }
+      if (step === 2 && enforceValidation) {
+        if (!formData.first_name?.trim()) {
+          alert("Please enter your first name.");
+          return;
+        }
+      }
+      setStep((s) => s + 1);
+      return;
     }
 
-    if (enforceValidation && step === 2) {
-      if (!formData.first_name?.trim()) {
-        alert("Please enter your first name.");
-        return;
-      }
-      if (!formData.last_name?.trim()) {
-        alert("Please enter your last name.");
-        return;
-      }
-      if (!formData.email?.trim()) {
-        alert("Please enter your email.");
-        return;
-      }
-
-      const consentOK = !!(
-        formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
-      );
-
-      if (!consentOK) {
-        alert("Please confirm all required checkboxes.");
-        return;
-      }
-
-      const success = await saveReportToDatabase();
-      if (!success) return;
-    }
-
-    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
-    setStep((s) => s + 1);
-  };
-
-  const handleSuccessfulPayment = async () => {
-    alert("✅ Payment successful. Thank you for your contribution!");
-    try {
-      if (formData.report_id) {
-        await supabase
-          .from("lost_items")
-          .update({
-            contribution: formData.contribution,
-            paid: true,
-            paid_at: new Date().toISOString(),
-          })
-          .eq("id", formData.report_id);
-      }
-    } catch (err) {
-      console.error("❌ DB update after payment failed:", err);
+    // Étape 4 → soumission (avant paiement)
+    if (step === 4) {
+      const ok = await submitReport();
+      if (ok) setStep(5);
+      return;
     }
   };
 
