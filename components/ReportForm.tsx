@@ -202,7 +202,10 @@ export default function ReportForm({
 
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
       if (publicId) {
@@ -237,6 +240,9 @@ export default function ReportForm({
       }
 
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -316,6 +322,24 @@ Thank you for using ReportLost.`,
         });
       } catch (err) {
         console.error("❌ Email confirmation deposit failed:", err);
+      }
+
+      const notificationEmail = process.env.NEXT_PUBLIC_REPORT_NOTIFICATION_EMAIL;
+      if (notificationEmail) {
+        try {
+          await fetch("/api/send-mail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: notificationEmail,
+              subject: "🆕 Nouveau signalement ReportLost",
+              text: "test",
+              html: "<p>test</p>",
+            }),
+          });
+        } catch (err) {
+          console.error("❌ Email admin notification failed:", err);
+        }
       }
 
       return true;

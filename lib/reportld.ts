@@ -1,7 +1,5 @@
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ID_LENGTH = 5;
-const BASE = BigInt(ALPHABET.length);
-
 export function normalizePublicId(value: string | null | undefined) {
   if (!value) return "";
   return String(value)
@@ -15,14 +13,20 @@ export function publicIdFromUuid(uuid: string | null | undefined) {
   const cleaned = String(uuid).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
   if (!cleaned) return "";
 
-  const hex = cleaned.slice(0, 12);
-  let numeric = BigInt("0x" + hex);
+  const sliceLength = ID_LENGTH * 2;
+  const hex = cleaned.slice(0, sliceLength);
+  if (!hex) return "";
+
+  let numeric = Number.parseInt(hex, 16);
+  if (!Number.isFinite(numeric) || Number.isNaN(numeric)) {
+    return "";
+  }
 
   let result = "";
   for (let i = 0; i < ID_LENGTH; i += 1) {
-    const remainder = Number(numeric % BASE);
+    const remainder = numeric % ALPHABET.length;
     result = ALPHABET[remainder] + result;
-    numeric = numeric / BASE;
+    numeric = Math.floor(numeric / ALPHABET.length);
   }
 
   return result.padStart(ID_LENGTH, ALPHABET[0]);
