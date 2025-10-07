@@ -1,12 +1,12 @@
 // components/ReportForm.tsx
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase";
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
-import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
+import { publicIdFromUuid } from "@/lib/reportId";
 
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
@@ -23,7 +23,7 @@ type ReportFormProps = {
 };
 
 type EventLike =
-  | ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
 export default function ReportForm({
@@ -31,40 +31,35 @@ export default function ReportForm({
   enforceValidation = false,
   onBeforeSubmit,
 }: ReportFormProps) {
-  const formRef = useRef<HTMLDivElement>(null);
-  const [isClient, setIsClient] = useState(false);
-
   const [step, setStep] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<any>(() => {
+    const normalizedCity = normalizeCityInput(defaultCity);
+
     return {
-      // Étape 1
+      report_id: "",
       title: "",
       description: "",
+      city: normalizedCity.label,
+      state_id: normalizedCity.stateId,
       date: "",
-      city: "",
-      state_id: "",
+      time_slot: "",
       loss_neighborhood: "",
       loss_street: "",
-      // Travel (si utilisé)
+      transport: false,
       departure_place: "",
       arrival_place: "",
       departure_time: "",
       arrival_time: "",
       travel_number: "",
-
-      // Étape 2 (coordonnées)
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       address: "",
-
-      // Contribution
       contribution: 0,
-
-      // Téléphone (si catégorie téléphone)
       isCellphone: false,
       phoneColor: "",
       phoneMaterial: "",
@@ -74,53 +69,27 @@ export default function ReportForm({
       phoneProof: "",
       phoneMark: "",
       phoneOther: "",
-
-      // Média
       object_photo: "",
-
-      // Consentements
       consent: false,
       consent_contact: false,
       consent_terms: false,
       consent_authorized: false,
-
-      // Références (UI)
-      report_id: "",
-      report_public_id: "",
     };
   });
 
-  // Mount-only (client)
+  // --- Mount-only logic (client) ---
   useEffect(() => {
     setIsClient(true);
-
-    if (defaultCity) {
-      const normalized = normalizeCityInput(defaultCity);
-      setFormData((p: any) => ({
-        ...p,
-        city: normalized.label,
-        state_id: normalized.stateId,
-      }));
-    }
 
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
-
       const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
-      const publicRid =
-        params.get("ref") || localStorage.getItem("reportlost_public_id") || "";
-
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
-      if (publicRid)
-        setFormData((p: any) => ({
-          ...p,
-          report_public_id: normalizePublicId(publicRid),
-        }));
     } catch {
       /* ignore */
     }
-  }, [defaultCity]);
+  }, []);
 
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
@@ -142,91 +111,75 @@ export default function ReportForm({
           typeof nextValue === "string" ? nextValue.trim().toUpperCase() : "";
         return {
           ...prev,
-          state_id: normalizedState,
+          state_id: normalizedState || null,
         };
       }
 
-      return {
-        ...prev,
-        [name]: nextValue,
-      };
+      return { ...prev, [name]: nextValue };
     });
   };
 
-  const handleBack = () => setStep((s) => Math.max(1, s - 1));
-  const handleSuccessfulPayment = () => setStep(1);
+  const handleBack = () => {
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
+    setStep((s) => Math.max(1, s - 1));
+  };
 
-  const submitReport = async () => {
-    if (submitting) return false;
-    setSubmitting(true);
+  const buildPhoneDescription = () => {
+    if (!formData.isCellphone) return null;
+    const parts = [
+      formData.phoneColor && `Color: ${formData.phoneColor}`,
+      formData.phoneMaterial && `Material: ${formData.phoneMaterial}`,
+      formData.phoneBrand && `Brand: ${formData.phoneBrand}`,
+      formData.phoneModel && `Model: ${formData.phoneModel}`,
+      formData.phoneSerial && `Serial: ${formData.phoneSerial}`,
+      formData.phoneProof && `Proof: ${formData.phoneProof}`,
+      formData.phoneMark && `Mark: ${formData.phoneMark}`,
+      formData.phoneOther && `Other: ${formData.phoneOther}`,
+    ].filter(Boolean);
+    return parts.join(" • ");
+  };
 
+  const saveReportToDatabase = async () => {
     try {
-      if (enforceValidation) {
-        if (
-          !formData.title?.trim() ||
-          !formData.description?.trim() ||
-          !formData.city?.trim() ||
-          !formData.date?.trim()
-        ) {
-          alert("Please fill in all required fields.");
-          setSubmitting(false);
-          return false;
-        }
-        if (!formData.first_name?.trim()) {
-          alert("Please enter your first name.");
-          setSubmitting(false);
-          return false;
-        }
-      }
-
-      const consentOK = !!formData.consent && !!formData.consent_terms;
-
-      const phoneBits = [
-        formData.phoneBrand,
-        formData.phoneModel,
-        formData.phoneColor,
-        formData.phoneMaterial,
-        formData.phoneMark,
-        formData.phoneOther,
-      ]
-        .filter(Boolean)
-        .map((s: string) => String(s).trim());
-      const phoneDescription = phoneBits.length ? phoneBits.join(", ") : null;
-
+      const phoneDescription = buildPhoneDescription();
       const object_photo = formData.object_photo || null;
 
-      // ✅ payload aligné BDD (phone_description correct)
-      const payload = {
-        title: String(formData.title || ""),
-        description: String(formData.description || ""),
-        date: formData.date ? new Date(formData.date).toISOString().slice(0, 10) : null, // YYYY-MM-DD
-        city: String(formData.city || ""),
-        state_id: formData.state_id || null,
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
 
+      // mapping identique à ta version qui marchait
+      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
+
+      const payload = {
+        title: formData.title || null,
+        description: formData.description || null,
+        city: cityDisplay || null,
+        state_id: formData.state_id || null,
+        date: formData.date || null,
+        time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
         loss_street: formData.loss_street || null,
-
         departure_place: formData.departure_place || null,
         arrival_place: formData.arrival_place || null,
         departure_time: formData.departure_time || null,
         arrival_time: formData.arrival_time || null,
         travel_number: formData.travel_number || null,
-
         email: String(formData.email || ""),
         first_name: String(formData.first_name || ""),
         last_name: String(formData.last_name || ""),
         phone: formData.phone || null,
         address: formData.address || null,
-
-        contribution: Number(formData.contribution ?? 0),
-        consent: !!formData.consent,
-
+        contribution: formData.contribution ?? 0,
+        consent: consentOK,
         phone_description: phoneDescription || null,
         object_photo,
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
+      // insert + retour id, public_id
       const { data, error } = await supabase
         .from("lost_items")
         .insert([cleaned])
@@ -234,42 +187,33 @@ export default function ReportForm({
         .single();
 
       if (error || !data?.id) {
-        console.error("❌ Supabase insert error:", {
-          code: (error as any)?.code,
-          message: (error as any)?.message,
-          details: (error as any)?.details,
-          hint: (error as any)?.hint,
-        });
-        alert(`Database error: ${(error as any)?.message || "unknown"}`);
-        setSubmitting(false);
+        console.error("❌ Supabase insert error:", error);
+        alert(`Unexpected database error: ${error?.message || "unknown"}`);
         return false;
       }
 
-      const reportId = data.id as string;
-      let publicId = (data as any).public_id as string | null | undefined;
+      const reportId = String(data.id);
+      let publicId: string | null = (data as any).public_id || null;
 
-      // si pas de trigger qui remplit public_id, fallback
+      // si pas de public_id, on calcule depuis l'UUID et on persiste dans public_id
       if (!publicId) {
-        publicId = publicIdFromUuid(reportId);
-        try {
-          const resp = await fetch("/api/report-public-id", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reportId, publicId }),
-          });
-          if (!resp.ok) {
-            console.warn("⚠️ Failed to persist public_id via API", { status: resp.status });
+        publicId = publicIdFromUuid(reportId) || null;
+        if (publicId) {
+          try {
+            const { error: upErr } = await supabase
+              .from("lost_items")
+              .update({ public_id: publicId })
+              .eq("id", reportId);
+            if (upErr) {
+              console.warn("⚠️ Failed to persist public_id:", upErr);
+            }
+          } catch (e) {
+            console.warn("⚠️ Exception while persisting public_id:", e);
           }
-        } catch (e) {
-          console.warn("⚠️ Exception while persisting public_id:", e);
         }
       }
 
-      setFormData((p: any) => ({
-        ...p,
-        report_id: reportId,
-        report_public_id: publicId || "",
-      }));
+      setFormData((p: any) => ({ ...p, report_id: reportId }));
 
       try {
         localStorage.setItem("reportlost_rid", reportId);
@@ -278,12 +222,11 @@ export default function ReportForm({
         /* ignore */
       }
 
-      // Emails
-      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
-      const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
-      const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
-
+      // Email de confirmation d’enregistrement
       try {
+        const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
+        const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
+
         await fetch("/api/send-mail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -303,6 +246,7 @@ Details of your report:
 - City: ${cityDisplay}
 ${referenceLine}
 ${contributeUrl}
+
 Thank you for using ReportLost.`,
             html: `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
@@ -340,61 +284,74 @@ Thank you for using ReportLost.`,
         console.error("❌ Email confirmation deposit failed:", err);
       }
 
-      const notificationEmail = process.env.NEXT_PUBLIC_REPORT_NOTIFICATION_EMAIL;
-      if (notificationEmail) {
-        try {
-          await fetch("/api/send-mail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              to: notificationEmail,
-              subject: "🆕 Nouveau signalement ReportLost",
-              text: "test",
-              html: "<p>test</p>",
-            }),
-          });
-        } catch (err) {
-          console.error("❌ Email admin notification failed:", err);
-        }
-      }
-
-      setSubmitting(false);
       return true;
     } catch (err) {
       console.error("💥 Unexpected error while saving report:", err);
       alert("Unexpected error. Please try again later.");
-      setSubmitting(false);
       return false;
     }
   };
 
   const handleNext = async () => {
-    if (step === 1 || step === 2 || step === 3) {
-      if (step === 1 && enforceValidation) {
-        if (
-          !formData.title?.trim() ||
-          !formData.description?.trim() ||
-          !formData.city?.trim() ||
-          !formData.date?.trim()
-        ) {
-          alert("Please fill in all required fields.");
-          return;
-        }
+    if (enforceValidation && step === 1) {
+      if (
+        !formData.title?.trim() ||
+        !formData.description?.trim() ||
+        !formData.city?.trim() ||
+        !formData.date?.trim()
+      ) {
+        alert("Please fill in all required fields.");
+        return;
       }
-      if (step === 2 && enforceValidation) {
-        if (!formData.first_name?.trim()) {
-          alert("Please enter your first name.");
-          return;
-        }
-      }
-      setStep((s) => s + 1);
-      return;
     }
 
-    if (step === 4) {
-      const ok = await submitReport();
-      if (ok) setStep(5);
-      return;
+    if (enforceValidation && step === 2) {
+      if (!formData.first_name?.trim()) {
+        alert("Please enter your first name.");
+        return;
+      }
+      if (!formData.last_name?.trim()) {
+        alert("Please enter your last name.");
+        return;
+      }
+      if (!formData.email?.trim()) {
+        alert("Please enter your email.");
+        return;
+      }
+
+      const consentOK = !!(
+        formData.consent ||
+        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+      );
+
+      if (!consentOK) {
+        alert("Please confirm all required checkboxes.");
+        return;
+      }
+
+      const success = await saveReportToDatabase();
+      if (!success) return;
+    }
+
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
+    setStep((s) => s + 1);
+  };
+
+  const handleSuccessfulPayment = async () => {
+    alert("✅ Payment successful. Thank you for your contribution!");
+    try {
+      if (formData.report_id) {
+        await supabase
+          .from("lost_items")
+          .update({
+            contribution: formData.contribution,
+            paid: true,
+            paid_at: new Date().toISOString(),
+          })
+          .eq("id", formData.report_id);
+      }
+    } catch (err) {
+      console.error("❌ DB update after payment failed:", err);
     }
   };
 
@@ -423,7 +380,6 @@ Thank you for using ReportLost.`,
       {step === 4 && (
         <ReportContribution
           contribution={formData.contribution}
-          referenceCode={formData.report_public_id}
           setFormData={setFormData}
           onBack={handleBack}
           onNext={handleNext}
