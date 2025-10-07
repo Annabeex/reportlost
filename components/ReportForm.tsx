@@ -203,6 +203,7 @@ export default function ReportForm({
 <<<<<<< ours
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
 =======
 >>>>>>> theirs
@@ -245,6 +246,34 @@ export default function ReportForm({
 =======
 >>>>>>> theirs
 =======
+>>>>>>> theirs
+=======
+      if (publicId) {
+        try {
+          const response = await fetch("/api/report-public-id", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reportId, publicId }),
+          });
+
+          if (!response.ok) {
+            let details: unknown = null;
+            try {
+              details = await response.json();
+            } catch {
+              /* ignore */
+            }
+
+            console.warn("⚠️ Failed to persist public reference via API", {
+              status: response.status,
+              details,
+            });
+          }
+        } catch (updateError) {
+          console.warn("⚠️ Exception while persisting public_id via API:", updateError);
+        }
+      }
+
 >>>>>>> theirs
       setFormData((p: any) => ({ ...p, report_id: reportId, report_public_id: publicId }));
 
