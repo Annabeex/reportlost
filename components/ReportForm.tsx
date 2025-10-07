@@ -84,7 +84,7 @@ export default function ReportForm({
       consent_terms: false,
       consent_authorized: false,
 
-      // Références
+      // Références (UI)
       report_id: "",
       report_public_id: "",
     };
@@ -94,7 +94,6 @@ export default function ReportForm({
   useEffect(() => {
     setIsClient(true);
 
-    // Préremplir la ville par défaut si fournie par la page
     if (defaultCity) {
       const normalized = normalizeCityInput(defaultCity);
       setFormData((p: any) => ({
@@ -104,7 +103,6 @@ export default function ReportForm({
       }));
     }
 
-    // Récupérer rid/ref des paramètres d'URL / localStorage si présents
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
@@ -120,7 +118,7 @@ export default function ReportForm({
           report_public_id: normalizePublicId(publicRid),
         }));
     } catch {
-      // ignore
+      /* ignore */
     }
   }, [defaultCity]);
 
@@ -156,18 +154,13 @@ export default function ReportForm({
   };
 
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
-
-  const handleSuccessfulPayment = () => {
-    // Après paiement, on peut rediriger ou afficher un message
-    setStep(1);
-  };
+  const handleSuccessfulPayment = () => setStep(1);
 
   const submitReport = async () => {
     if (submitting) return false;
     setSubmitting(true);
 
     try {
-      // Validation minimale côté client
       if (enforceValidation) {
         if (
           !formData.title?.trim() ||
@@ -188,7 +181,6 @@ export default function ReportForm({
 
       const consentOK = !!formData.consent && !!formData.consent_terms;
 
-      // Description téléphone compacte si utile
       const phoneBits = [
         formData.phoneBrand,
         formData.phoneModel,
@@ -201,15 +193,13 @@ export default function ReportForm({
         .map((s: string) => String(s).trim());
       const phoneDescription = phoneBits.length ? phoneBits.join(", ") : null;
 
-      // Photo éventuelle
       const object_photo = formData.object_photo || null;
 
-      // Payload DB — aligné exactement sur ta BDD
+      // ✅ payload aligné BDD (phone_description correct)
       const payload = {
         title: String(formData.title || ""),
         description: String(formData.description || ""),
-        // date (colonne de type DATE) → YYYY-MM-DD ou NULL
-        date: formData.date ? new Date(formData.date).toISOString().slice(0, 10) : null,
+        date: formData.date ? new Date(formData.date).toISOString().slice(0, 10) : null, // YYYY-MM-DD
         city: String(formData.city || ""),
         state_id: formData.state_id || null,
 
@@ -231,18 +221,16 @@ export default function ReportForm({
         contribution: Number(formData.contribution ?? 0),
         consent: !!formData.consent,
 
-        // nom exact de la colonne en base sur ta capture
-        phone_descrip: phoneDescription || null,
+        phone_description: phoneDescription || null,
         object_photo,
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-      // Insert Supabase
       const { data, error } = await supabase
         .from("lost_items")
         .insert([cleaned])
-        .select("id")
+        .select("id, public_id")
         .single();
 
       if (error || !data?.id) {
@@ -258,34 +246,36 @@ export default function ReportForm({
       }
 
       const reportId = data.id as string;
-      const publicId = publicIdFromUuid(reportId);
+      let publicId = (data as any).public_id as string | null | undefined;
 
-      // Persiste public_id (si pas de trigger SQL qui le fait déjà)
-      try {
-        const resp = await fetch("/api/report-public-id", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reportId, publicId }),
-        });
-        if (!resp.ok) {
-          console.warn("⚠️ Failed to persist public_id via API", { status: resp.status });
+      // si pas de trigger qui remplit public_id, fallback
+      if (!publicId) {
+        publicId = publicIdFromUuid(reportId);
+        try {
+          const resp = await fetch("/api/report-public-id", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reportId, publicId }),
+          });
+          if (!resp.ok) {
+            console.warn("⚠️ Failed to persist public_id via API", { status: resp.status });
+          }
+        } catch (e) {
+          console.warn("⚠️ Exception while persisting public_id:", e);
         }
-      } catch (e) {
-        console.warn("⚠️ Exception while persisting public_id:", e);
       }
 
-      // État + stockage local pour l’UI et les emails
       setFormData((p: any) => ({
         ...p,
         report_id: reportId,
-        report_public_id: publicId,
+        report_public_id: publicId || "",
       }));
 
       try {
         localStorage.setItem("reportlost_rid", reportId);
-        localStorage.setItem("reportlost_public_id", publicId ?? "");
+        if (publicId) localStorage.setItem("reportlost_public_id", publicId);
       } catch {
-        // ignore
+        /* ignore */
       }
 
       // Emails
@@ -293,7 +283,6 @@ export default function ReportForm({
       const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
       const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
 
-      // 1) Email utilisateur
       try {
         await fetch("/api/send-mail", {
           method: "POST",
@@ -351,7 +340,6 @@ Thank you for using ReportLost.`,
         console.error("❌ Email confirmation deposit failed:", err);
       }
 
-      // 2) Notification interne
       const notificationEmail = process.env.NEXT_PUBLIC_REPORT_NOTIFICATION_EMAIL;
       if (notificationEmail) {
         try {
@@ -403,7 +391,6 @@ Thank you for using ReportLost.`,
       return;
     }
 
-    // Étape 4 → soumission (avant paiement)
     if (step === 4) {
       const ok = await submitReport();
       if (ok) setStep(5);
