@@ -183,7 +183,7 @@ export default function ReportForm({
       const { data, error } = await supabase
         .from("lost_items")
         .insert([cleaned])
-        .select("id, public_id")
+        .select("id, public_id, created_at")
         .single();
 
       if (error || !data?.id) {
@@ -194,6 +194,7 @@ export default function ReportForm({
 
       const reportId = String(data.id);
       let publicId: string | null = (data as any).public_id || null;
+      const createdAt: string = (data as any).created_at || new Date().toISOString();
 
       // si pas de public_id, on calcule depuis l'UUID et on persiste dans public_id
       if (!publicId) {
@@ -282,6 +283,45 @@ Thank you for using ReportLost.`,
         });
       } catch (err) {
         console.error("❌ Email confirmation deposit failed:", err);
+      }
+
+      // Email notification to support
+      try {
+        let subjectSuffix = "";
+        if (formData.city) subjectSuffix += `à ${formData.city}`;
+        if (formData.state_id) {
+          subjectSuffix += subjectSuffix ? ` , ${formData.state_id}` : `à ${formData.state_id}`;
+        }
+        subjectSuffix = subjectSuffix.trim();
+        const subjectBase = `Lost item : ${formData.title || "Untitled"}`;
+        const subject = subjectSuffix ? `${subjectBase} ${subjectSuffix}` : subjectBase;
+
+        const dateAndSlot = [formData.date, formData.time_slot].filter(Boolean).join(" ");
+        const reference = publicId || "N/A";
+        const bodyText = `🕒 ${createdAt}
+
+Lost item : ${formData.title || ""}
+Description : ${formData.description || ""}
+Date of lost : ${dateAndSlot}
+
+If you think you found it, please contact : support@reportlost.org reference (${reference})
+
+City : ${formData.city || ""}
+State : ${formData.state_id || ""}
+
+Contribution : ${formData.contribution ?? 0}`;
+
+        await fetch("/api/send-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: "support@reportlost.org",
+            subject,
+            text: bodyText,
+          }),
+        });
+      } catch (err) {
+        console.error("❌ Email notification to support failed:", err);
       }
 
       return true;
