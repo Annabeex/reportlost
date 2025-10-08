@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { supabase } from "@/lib/supabase";
+// NOTE: plus d'import direct de supabase dans ce composant : on appelle /api/save-report
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 import { publicIdFromUuid } from "@/lib/reportId";
 
@@ -25,39 +25,6 @@ type ReportFormProps = {
 type EventLike =
   | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
-
-/** helper to normalize supabase-like results that can be array/object/null */
-function normalizeDbResult(resData: any) {
-  if (resData == null) return null;
-  if (Array.isArray(resData)) return resData[0] ?? null;
-  return resData;
-}
-
-/**
- * Compute a stable fingerprint on client from canonicalized important fields.
- * Uses SubtleCrypto (browser). Returns hex SHA-256.
- */
-async function computeFingerprint(payload: Record<string, any>): Promise<string> {
-  try {
-    const s = [
-      payload.title || "",
-      payload.description || "",
-      payload.city || "",
-      payload.date || "",
-      payload.time_slot || "",
-      payload.phone || "",
-      (payload.email || "").toLowerCase(),
-    ].join("|").trim();
-
-    const enc = new TextEncoder().encode(s);
-    const hashBuf = await crypto.subtle.digest("SHA-256", enc);
-    const hashArr = Array.from(new Uint8Array(hashBuf));
-    return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
-  } catch (e) {
-    console.warn("Fingerprint compute failed, falling back to timestamp:", e);
-    return `fallback-${Date.now()}`;
-  }
-}
 
 export default function ReportForm({
   defaultCity = "",
@@ -115,6 +82,7 @@ export default function ReportForm({
   // --- Mount-only logic (client) ---
   useEffect(() => {
     setIsClient(true);
+
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
@@ -173,6 +141,10 @@ export default function ReportForm({
     return parts.join(" • ");
   };
 
+  /**
+   * Envoi des données au endpoint serveur /api/save-report.
+   * Le serveur gère insert/update/dedupe/mail sent flag/public_id.
+   */
   const saveReportToDatabase = async () => {
     try {
       const phoneDescription = buildPhoneDescription();
@@ -207,6 +179,7 @@ export default function ReportForm({
       const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
       const payload = {
+        // minimal normalized fields
         title: formData.title || null,
         description: formData.description || null,
         city: cityDisplay || null,
@@ -229,39 +202,38 @@ export default function ReportForm({
         consent: consentOK,
         phone_description: phoneDescription || null,
         object_photo,
+        // client-local identifiers (optional) — server will interpret report_id as DB id if present
+        report_id: formData.report_id || null,
+        public_id: formData.public_id || null,
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-      // compute fingerprint client-side to give server the same input
-      const fingerprint = await computeFingerprint(cleaned);
-
-      // Call centralized server endpoint to save (server handles dedupe + mail once)
-      const bodyToSend = {
-        ...cleaned,
-        fingerprint,
-        report_id: formData.report_id || null,
-      };
-
+      // POST to server endpoint which does the DB work
       const res = await fetch("/api/save-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyToSend),
+        body: JSON.stringify(cleaned),
       });
 
       const json = await res.json().catch(() => null);
-
-      if (!res.ok || !json?.ok) {
-        console.error("Server save error:", json || res.statusText);
-        alert(`Unexpected server error: ${json?.error || res.statusText || "save failed"}`);
+      if (!res.ok || !json) {
+        console.error("save-report error:", json || res.statusText);
+        alert(`Unexpected database error: ${json?.error || res.statusText || res.status}`);
         return false;
       }
 
-      const reportId = String(json.id);
+      // response should contain id (DB id) and public_id
+      const reportId = json.id ? String(json.id) : json.id ?? null;
       const publicId = json.public_id || null;
-      const createdAt = json.created_at || new Date().toISOString();
 
-      // update client state/localStorage
+      if (!reportId) {
+        console.error("save-report: no id returned:", json);
+        alert("Unexpected database error: no id returned");
+        return false;
+      }
+
+      // persist to client state + localStorage
       setFormData((p: any) => ({
         ...p,
         report_id: reportId,
@@ -278,7 +250,6 @@ export default function ReportForm({
         /* ignore */
       }
 
-      // Server is responsible for sending emails (once). Client does not re-send.
       return true;
     } catch (err) {
       console.error("💥 Unexpected error while saving report:", err);
@@ -335,18 +306,23 @@ export default function ReportForm({
   const handleSuccessfulPayment = async () => {
     alert("✅ Payment successful. Thank you for your contribution!");
     try {
+      // If you still want to mark payment in DB from client, call a server endpoint.
+      // For now, attempt to patch via /api/save-report by sending report_id and paid fields.
       if (formData.report_id) {
-        await supabase
-          .from("lost_items")
-          .update({
+        await fetch("/api/save-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            report_id: formData.report_id,
             contribution: formData.contribution,
             paid: true,
             paid_at: new Date().toISOString(),
-          })
-          .eq("id", formData.report_id);
+            _internal_update_only: true, // optional flag for server to treat as payment update
+          }),
+        });
       }
     } catch (err) {
-      console.error("❌ DB update after payment failed:", err);
+      console.error("❌ Payment update failed:", err);
     }
   };
 
