@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-// NOTE: plus d'import direct de supabase dans ce composant : on appelle /api/save-report
+// import { supabase } from "@/lib/supabase"; // <= removed: don't use Supabase from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 import { publicIdFromUuid } from "@/lib/reportId";
 
@@ -25,6 +25,39 @@ type ReportFormProps = {
 type EventLike =
   | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
+
+/** helper to normalize supabase responses which can be `null`, object, or array */
+function normalizeDbResult(resData: any) {
+  if (resData == null) return null;
+  if (Array.isArray(resData)) return resData[0] ?? null;
+  return resData;
+}
+
+/**
+ * Compute a stable fingerprint on client from canonicalized important fields.
+ * Uses SubtleCrypto (browser). Returns hex SHA-256.
+ */
+async function computeFingerprint(payload: Record<string, any>): Promise<string> {
+  try {
+    const s = [
+      payload.title || "",
+      payload.description || "",
+      payload.city || "",
+      payload.date || "",
+      payload.time_slot || "",
+      payload.phone || "",
+      (payload.email || "").toLowerCase(),
+    ].join("|").trim();
+
+    const enc = new TextEncoder().encode(s);
+    const hashBuf = await crypto.subtle.digest("SHA-256", enc);
+    const hashArr = Array.from(new Uint8Array(hashBuf));
+    return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    console.warn("Fingerprint compute failed, falling back to timestamp:", e);
+    return `fallback-${Date.now()}`;
+  }
+}
 
 export default function ReportForm({
   defaultCity = "",
@@ -142,8 +175,8 @@ export default function ReportForm({
   };
 
   /**
-   * Envoi des données au endpoint serveur /api/save-report.
-   * Le serveur gère insert/update/dedupe/mail sent flag/public_id.
+   * Save report using server endpoint /api/save-report
+   * The server implements dedupe/fingerprint/update/insert and controls email sending.
    */
   const saveReportToDatabase = async () => {
     try {
@@ -179,7 +212,6 @@ export default function ReportForm({
       const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
       const payload = {
-        // minimal normalized fields
         title: formData.title || null,
         description: formData.description || null,
         city: cityDisplay || null,
@@ -202,57 +234,84 @@ export default function ReportForm({
         consent: consentOK,
         phone_description: phoneDescription || null,
         object_photo,
-        // client-local identifiers (optional) — server will interpret report_id as DB id if present
-        report_id: formData.report_id || null,
-        public_id: formData.public_id || null,
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-      // POST to server endpoint which does the DB work
-      const res = await fetch("/api/save-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleaned),
-      });
+      // compute fingerprint client-side so server and client fingerprint match
+      const fingerprint = await computeFingerprint(cleaned);
+
+      // build body to POST to server endpoint
+      const bodyToSend: Record<string, any> = {
+        ...cleaned,
+        fingerprint,
+      };
+
+      // include report_id if we already have one (update flow)
+      if (formData.report_id) bodyToSend.report_id = String(formData.report_id);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      let res: Response;
+      try {
+        res = await fetch("/api/save-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyToSend),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("❌ /api/save-report returned non-ok:", res.status, text);
+        alert("Unexpected database error. Please try again later.");
+        return false;
+      }
 
       const json = await res.json().catch(() => null);
-      if (!res.ok || !json) {
-        console.error("save-report error:", json || res.statusText);
-        alert(`Unexpected database error: ${json?.error || res.statusText || res.status}`);
+      if (!json || !json.ok) {
+        console.error("❌ /api/save-report error payload:", json);
+        alert(`Unexpected database error: ${json?.error || "unknown"}`);
         return false;
       }
 
-      // response should contain id (DB id) and public_id
-      const reportId = json.id ? String(json.id) : json.id ?? null;
-      const publicId = json.public_id || null;
-
-      if (!reportId) {
-        console.error("save-report: no id returned:", json);
-        alert("Unexpected database error: no id returned");
-        return false;
-      }
+      const action = json.action as string;
+      const returnedId = json.id?.toString?.() || "";
+      const returnedPublicId = json.public_id || "";
 
       // persist to client state + localStorage
       setFormData((p: any) => ({
         ...p,
-        report_id: reportId,
-        public_id: publicId ?? "",
-        report_public_id: publicId ?? "",
+        report_id: returnedId || p.report_id,
+        public_id: returnedPublicId || p.public_id,
+        report_public_id: returnedPublicId || p.report_public_id,
         city: cityDisplay,
         state_id: finalStateId,
       }));
 
       try {
-        localStorage.setItem("reportlost_rid", reportId);
-        if (publicId) localStorage.setItem("reportlost_public_id", publicId);
+        if (returnedId) localStorage.setItem("reportlost_rid", returnedId);
+        if (returnedPublicId) localStorage.setItem("reportlost_public_id", returnedPublicId);
       } catch {
         /* ignore */
       }
 
+      // If server said inserted (new) it already sent confirmation email server-side.
+      // If updated, server intentionally does NOT send confirmation email (as requested).
+      // We still protect client: do not fire any client email-sends here.
+
       return true;
-    } catch (err) {
-      console.error("💥 Unexpected error while saving report:", err);
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        console.error("❌ /api/save-report timed out");
+        alert("Request timed out. Please try again.");
+        return false;
+      }
+      console.error("💥 Unexpected error while saving report (client):", err);
       alert("Unexpected error. Please try again later.");
       return false;
     }
@@ -304,26 +363,11 @@ export default function ReportForm({
   };
 
   const handleSuccessfulPayment = async () => {
+    // IMPORTANT: do NOT update Supabase directly from client here.
+    // The Stripe webhook on the server will update the DB (paid=true) and send the payment confirmation email.
     alert("✅ Payment successful. Thank you for your contribution!");
-    try {
-      // If you still want to mark payment in DB from client, call a server endpoint.
-      // For now, attempt to patch via /api/save-report by sending report_id and paid fields.
-      if (formData.report_id) {
-        await fetch("/api/save-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            report_id: formData.report_id,
-            contribution: formData.contribution,
-            paid: true,
-            paid_at: new Date().toISOString(),
-            _internal_update_only: true, // optional flag for server to treat as payment update
-          }),
-        });
-      }
-    } catch (err) {
-      console.error("❌ Payment update failed:", err);
-    }
+    // Optional: if you want immediate client feedback beyond the alert, you can fetch a
+    // small server endpoint that returns the updated report row. But avoid writing to DB from client.
   };
 
   if (!isClient) return null;
