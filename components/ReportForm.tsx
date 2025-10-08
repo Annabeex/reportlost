@@ -26,6 +26,13 @@ type EventLike =
   | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
+/** helper to normalize supabase-like results that can be array/object/null */
+function normalizeDbResult(resData: any) {
+  if (resData == null) return null;
+  if (Array.isArray(resData)) return resData[0] ?? null;
+  return resData;
+}
+
 /**
  * Compute a stable fingerprint on client from canonicalized important fields.
  * Uses SubtleCrypto (browser). Returns hex SHA-256.
@@ -108,7 +115,6 @@ export default function ReportForm({
   // --- Mount-only logic (client) ---
   useEffect(() => {
     setIsClient(true);
-
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
@@ -230,7 +236,7 @@ export default function ReportForm({
       // compute fingerprint client-side to give server the same input
       const fingerprint = await computeFingerprint(cleaned);
 
-      // Call server endpoint to save (centralized logic + dedupe + email)
+      // Call centralized server endpoint to save (server handles dedupe + mail once)
       const bodyToSend = {
         ...cleaned,
         fingerprint,
