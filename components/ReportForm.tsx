@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-// import { supabase } from "@/lib/supabase"; // <= removed: don't use Supabase from client
+// import { supabase } from "@/lib/supabase"; // <= intentionally not used from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 import { publicIdFromUuid } from "@/lib/reportId";
 
@@ -26,7 +26,6 @@ type EventLike =
   | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
-/** helper to normalize supabase responses which can be `null`, object, or array */
 function normalizeDbResult(resData: any) {
   if (resData == null) return null;
   if (Array.isArray(resData)) return resData[0] ?? null;
@@ -178,6 +177,7 @@ export default function ReportForm({
    * Save report using server endpoint /api/save-report
    * The server implements dedupe/fingerprint/update/insert and controls email sending.
    */
+  // Diagnostic-friendly save function (replaces older client-side DB writes)
   const saveReportToDatabase = async () => {
     try {
       const phoneDescription = buildPhoneDescription();
@@ -204,7 +204,7 @@ export default function ReportForm({
 
       if (!finalStateId) {
         alert(
-          "Please specify the state for the city (e.g., select a suggestion like \"Chicago (IL)\").",
+          'Please specify the state for the city (e.g., select a suggestion like "Chicago (IL)").',
         );
         return false;
       }
@@ -265,23 +265,44 @@ export default function ReportForm({
         clearTimeout(timeout);
       }
 
+      // Diagnostic: if non-ok, lire et afficher le body (json ou texte)
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        console.error("❌ /api/save-report returned non-ok:", res.status, text);
-        alert("Unexpected database error. Please try again later.");
+        const contentType = res.headers.get("content-type") || "";
+        let bodyText = "";
+        try {
+          if (contentType.includes("application/json")) {
+            const j = await res.json().catch(() => null);
+            bodyText = JSON.stringify(j, null, 2);
+          } else {
+            bodyText = await res.text().catch(() => "");
+          }
+        } catch (e) {
+          bodyText = String(e);
+        }
+        console.error("❌ /api/save-report non-ok:", res.status, bodyText);
+        alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
         return false;
       }
 
-      const json = await res.json().catch(() => null);
-      if (!json || !json.ok) {
-        console.error("❌ /api/save-report error payload:", json);
-        alert(`Unexpected database error: ${json?.error || "unknown"}`);
+      // Parse successful response; guard against invalid JSON
+      let jsonRes: any = null;
+      try {
+        jsonRes = await res.json();
+      } catch (e) {
+        const txt = await res.text().catch(() => "");
+        console.error("❌ /api/save-report returned invalid JSON:", txt, e);
+        alert("Server returned invalid response. Voir console pour détails.");
         return false;
       }
 
-      const action = json.action as string;
-      const returnedId = json.id?.toString?.() || "";
-      const returnedPublicId = json.public_id || "";
+      if (!jsonRes || !jsonRes.ok) {
+        console.error("❌ /api/save-report error payload:", jsonRes);
+        alert(`Unexpected database error: ${jsonRes?.error || "unknown"}`);
+        return false;
+      }
+
+      const returnedId = jsonRes.id?.toString?.() || "";
+      const returnedPublicId = jsonRes.public_id || "";
 
       // persist to client state + localStorage
       setFormData((p: any) => ({
@@ -300,10 +321,6 @@ export default function ReportForm({
         /* ignore */
       }
 
-      // If server said inserted (new) it already sent confirmation email server-side.
-      // If updated, server intentionally does NOT send confirmation email (as requested).
-      // We still protect client: do not fire any client email-sends here.
-
       return true;
     } catch (err: any) {
       if (err?.name === "AbortError") {
@@ -312,12 +329,14 @@ export default function ReportForm({
         return false;
       }
       console.error("💥 Unexpected error while saving report (client):", err);
-      alert("Unexpected error. Please try again later.");
+      alert(`Unexpected error. Voir la console pour plus d'infos: ${String(err?.message || err)}`);
       return false;
     }
   };
 
+  // --- navigation / step logic (was missing, causing TS errors) ---
   const handleNext = async () => {
+    // Step 1 validation
     if (enforceValidation && step === 1) {
       if (
         !formData.title?.trim() ||
@@ -330,6 +349,7 @@ export default function ReportForm({
       }
     }
 
+    // Step 2: personal info + submit to DB
     if (enforceValidation && step === 2) {
       if (!formData.first_name?.trim()) {
         alert("Please enter your first name.");
@@ -363,11 +383,8 @@ export default function ReportForm({
   };
 
   const handleSuccessfulPayment = async () => {
-    // IMPORTANT: do NOT update Supabase directly from client here.
-    // The Stripe webhook on the server will update the DB (paid=true) and send the payment confirmation email.
+    // We don't write to DB from client here — Stripe webhook on server updates DB and sends confirmation.
     alert("✅ Payment successful. Thank you for your contribution!");
-    // Optional: if you want immediate client feedback beyond the alert, you can fetch a
-    // small server endpoint that returns the updated report row. But avoid writing to DB from client.
   };
 
   if (!isClient) return null;
