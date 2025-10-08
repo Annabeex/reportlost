@@ -26,6 +26,13 @@ type EventLike =
   | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   | { target: { name: string; value: any; type?: string; checked?: boolean } };
 
+/** helper to normalize supabase responses which can be `null`, object, or array */
+function normalizeDbResult(resData: any) {
+  if (resData == null) return null;
+  if (Array.isArray(resData)) return resData[0] ?? null;
+  return resData;
+}
+
 export default function ReportForm({
   defaultCity = "",
   enforceValidation = false,
@@ -141,6 +148,32 @@ export default function ReportForm({
     return parts.join(" • ");
   };
 
+  /**
+   * Compute a stable fingerprint on client from canonicalized important fields.
+   * Uses SubtleCrypto (browser). Returns hex SHA-256.
+   */
+  async function computeFingerprint(payload: Record<string, any>): Promise<string> {
+    try {
+      const s = [
+        payload.title || "",
+        payload.description || "",
+        payload.city || "",
+        payload.date || "",
+        payload.time_slot || "",
+        payload.phone || "",
+        (payload.email || "").toLowerCase(),
+      ].join("|").trim();
+
+      const enc = new TextEncoder().encode(s);
+      const hashBuf = await crypto.subtle.digest("SHA-256", enc);
+      const hashArr = Array.from(new Uint8Array(hashBuf));
+      return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) {
+      console.warn("Fingerprint compute failed, falling back to timestamp:", e);
+      return `fallback-${Date.now()}`;
+    }
+  }
+
   const saveReportToDatabase = async () => {
     try {
       const phoneDescription = buildPhoneDescription();
@@ -206,12 +239,11 @@ export default function ReportForm({
       // ---------- UPDATE EXISTING (if report_id provided) ----------
       if (isUpdate) {
         const existingReportId = String(formData.report_id);
-        const { data: updateData, error: updateError } = await supabase
+        const { data: updateDataRaw, error: updateError } = await supabase
           .from("lost_items")
           .update(cleaned)
           .eq("id", existingReportId)
-          .select("public_id, created_at")
-          .single();
+          .select("public_id, created_at");
 
         if (updateError) {
           console.error("❌ Supabase update error:", updateError);
@@ -219,6 +251,7 @@ export default function ReportForm({
           return false;
         }
 
+        const updateData = normalizeDbResult(updateDataRaw);
         const persistedPublicId = (updateData as any)?.public_id || formData.public_id || "";
         // const createdAt = (updateData as any)?.created_at || new Date().toISOString();
 
@@ -243,39 +276,14 @@ export default function ReportForm({
       }
 
       // ---------- INSERT NEW WITH DEDUPE (fingerprint) ----------
-      /** compute a deterministic fingerprint (SHA-256 hex) from key fields */
-      async function computeFingerprint(payload: Record<string, any>): Promise<string> {
-        try {
-          const s = [
-            payload.title || "",
-            payload.description || "",
-            payload.city || "",
-            payload.date || "",
-            payload.time_slot || "",
-            payload.phone || "",
-            (payload.email || "").toLowerCase(),
-          ].join("|").trim();
-
-          // browser crypto
-          const enc = new TextEncoder().encode(s);
-          const hashBuf = await crypto.subtle.digest("SHA-256", enc);
-          const hashArr = Array.from(new Uint8Array(hashBuf));
-          return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
-        } catch (e) {
-          console.warn("Fingerprint compute failed, falling back to UUID:", e);
-          return `fallback-${Date.now()}`;
-        }
-      }
-
       const fingerprint = await computeFingerprint(cleaned);
 
-      // holders
       let reportId: string | null = null;
       let publicId: string | null = null;
       let createdAt: string | null = null;
       let wasInserted = false;
 
-      // 1) Try to find an existing report with same fingerprint (robust: return array)
+      // 1) Try to find an existing report with same fingerprint
       try {
         const { data: existingRows, error: selErr } = await supabase
           .from("lost_items")
@@ -294,7 +302,7 @@ export default function ReportForm({
           publicId = existing.public_id || null;
           createdAt = existing.created_at || new Date().toISOString();
 
-          // update existing row with latest fields (non-blocking)
+          // attempt to refresh row (non-blocking)
           try {
             const { error: refreshErr } = await supabase
               .from("lost_items")
@@ -312,19 +320,15 @@ export default function ReportForm({
       // 2) If not found, attempt insert (handle unique constraint race)
       if (!reportId) {
         try {
-          const { data: insertDataRaw, error: insertErr } = await supabase
+          const { data: insertRaw, error: insertErr } = await supabase
             .from("lost_items")
             .insert([{ ...cleaned, fingerprint }])
             .select("id, public_id, created_at");
 
-          const insertData = Array.isArray(insertDataRaw)
-            ? insertDataRaw[0]
-            : insertDataRaw ?? undefined;
-
           if (insertErr) {
             const msg = String(insertErr?.message || insertErr?.code || "");
             if (/unique|23505/i.test(msg)) {
-              // possible concurrent insert -> re-read the latest row
+              // race -> re-read latest row
               try {
                 const { data: racedRows, error: racedErr } = await supabase
                   .from("lost_items")
@@ -360,15 +364,45 @@ export default function ReportForm({
               alert(`Unexpected database error: ${insertErr?.message || "unknown"}`);
               return false;
             }
-          } else if (insertData?.id) {
-            reportId = String(insertData.id);
-            publicId = (insertData as any).public_id || null;
-            createdAt = (insertData as any).created_at || new Date().toISOString();
-            wasInserted = true;
-          } else if (!insertData) {
-            console.error("Insert completed without returning a row.");
-            alert("Unexpected database error. Please try again.");
-            return false;
+          } else {
+            const insertData = normalizeDbResult(insertRaw);
+            if (insertData?.id) {
+              reportId = String(insertData.id);
+              publicId = insertData.public_id || null;
+              createdAt = insertData.created_at || new Date().toISOString();
+              wasInserted = true;
+            } else {
+              // Nothing returned (shouldn't usually happen) — attempt to re-read
+              try {
+                const { data: r2, error: r2Err } = await supabase
+                  .from("lost_items")
+                  .select("id, public_id, created_at")
+                  .eq("fingerprint", fingerprint)
+                  .order("created_at", { ascending: false })
+                  .limit(1);
+
+                if (r2Err) {
+                  console.error("Error reading after insert returned nothing:", r2Err);
+                  alert(`Unexpected database error: ${r2Err?.message || "unknown"}`);
+                  return false;
+                }
+                if (Array.isArray(r2) && r2.length > 0) {
+                  const row = r2[0] as any;
+                  reportId = String(row.id);
+                  publicId = row.public_id || null;
+                  createdAt = row.created_at || new Date().toISOString();
+                  wasInserted = false;
+                } else {
+                  console.error("Insert returned nothing and no row found afterwards.");
+                  alert("Unexpected database error. Please try again.");
+                  return false;
+                }
+              } catch (rr) {
+                console.error("Exception during fallback read after insert:", rr);
+                alert("Unexpected database error. Please try again.");
+                return false;
+              }
+            }
           }
         } catch (err) {
           console.error("❌ Exception during insert:", err);
@@ -377,7 +411,7 @@ export default function ReportForm({
         }
       }
 
-      // 3) Ensure a public_id exists (persist if missing)
+      // 3) Ensure public_id exists (compute from uuid if missing and persist)
       if (reportId && !publicId) {
         try {
           const computed = publicIdFromUuid(reportId) || null;
@@ -529,7 +563,6 @@ Contribution : ${formData.contribution ?? 0}`;
           console.error("❌ Email notification to support failed:", err);
         }
       } else {
-        // not a new insert — do not send emails
         console.info("No emails sent for report (wasInserted:", wasInserted, "alreadySent:", alreadySent, ")");
       }
 
