@@ -79,7 +79,6 @@ export default function ReportForm({
     };
   });
 
-  // --- Mount-only logic (client) ---
   useEffect(() => {
     setIsClient(true);
 
@@ -141,10 +140,6 @@ export default function ReportForm({
     return parts.join(" • ");
   };
 
-  /**
-   * Compute a stable fingerprint on client from canonicalized important fields.
-   * Uses SubtleCrypto (browser). Returns hex SHA-256.
-   */
   async function computeFingerprint(payload: Record<string, any>): Promise<string> {
     try {
       const s = [
@@ -229,15 +224,15 @@ export default function ReportForm({
 
       const isUpdate = Boolean(formData.report_id);
 
-      // ---------- UPDATE EXISTING (if report_id provided) ----------
       if (isUpdate) {
         const existingReportId = String(formData.report_id);
+        // maybeSingle: id is unique, maybe the row doesn't exist => no crash
         const { data: updateData, error: updateError } = await supabase
           .from("lost_items")
           .update(cleaned)
           .eq("id", existingReportId)
           .select("public_id, created_at")
-          .single();
+          .maybeSingle();
 
         if (updateError) {
           console.error("❌ Supabase update error:", updateError);
@@ -264,25 +259,17 @@ export default function ReportForm({
           /* ignore */
         }
 
-        // Send confirmation for update (optional)
+        // emails for update (kept simple)
         try {
-          const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${existingReportId}`;
-          const referenceLine = persistedPublicId ? `Reference code: ${persistedPublicId}\n` : "";
-
           await fetch("/api/send-mail", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               to: formData.email,
               subject: "✅ Your lost item report has been updated",
-              text: `Hello ${formData.first_name},
-
-Your lost item report has been updated on reportlost.org.
-
-${referenceLine}
-${contributeUrl}
-
-Thank you for using ReportLost.`,
+              text: `Hello ${formData.first_name},\n\nYour lost item report has been updated on reportlost.org.\n\nReference: ${
+                persistedPublicId || "N/A"
+              }\n`,
             }),
           });
         } catch (err) {
@@ -311,15 +298,14 @@ Thank you for using ReportLost.`,
         return true;
       }
 
-      // ---------- INSERT NEW WITH DEDUPE (fingerprint) ----------
-      // Compute fingerprint
+      // --- INSERT WITH DEDUPE ---
       const fingerprint = await computeFingerprint(cleaned);
 
       let reportId: string | null = null;
       let publicId: string | null = null;
       let createdAt: string | null = null;
 
-      // 1) Try to find existing report with same fingerprint (robust: don't use .single())
+      // 1) read existing by fingerprint (limit 1 to avoid .single() errors)
       try {
         const { data: existingRows, error: selErr } = await supabase
           .from("lost_items")
@@ -338,7 +324,7 @@ Thank you for using ReportLost.`,
           publicId = (existing as any).public_id || null;
           createdAt = (existing as any).created_at || new Date().toISOString();
 
-          // Optionally refresh row with latest fields (non-blocking)
+          // refresh with latest fields (non-blocking)
           try {
             const { error: refreshErr } = await supabase
               .from("lost_items")
@@ -353,7 +339,7 @@ Thank you for using ReportLost.`,
         console.warn("Unexpected while checking fingerprint:", e);
       }
 
-      // 2) If not found, attempt insert (and handle unique constraint race)
+      // 2) if not found -> insert
       if (!reportId) {
         try {
           const { data: insertData, error: insertErr } = await supabase
@@ -363,10 +349,9 @@ Thank you for using ReportLost.`,
             .single();
 
           if (insertErr) {
-            // Unique constraint / race detection
             const msg = String(insertErr?.message || insertErr?.code || "");
             if (/unique|23505/i.test(msg)) {
-              // someone else inserted same fingerprint concurrently -> re-read latest row
+              // race — someone else inserted same fingerprint: re-read latest row safely
               try {
                 const { data: racedRows, error: racedErr } = await supabase
                   .from("lost_items")
@@ -409,7 +394,7 @@ Thank you for using ReportLost.`,
         }
       }
 
-      // 3) Ensure public_id exists (compute from uuid if missing and persist)
+      // 3) ensure public_id exists
       if (reportId && !publicId) {
         try {
           const computed = publicIdFromUuid(reportId) || null;
@@ -429,7 +414,6 @@ Thank you for using ReportLost.`,
         }
       }
 
-      // 4) Persist to client state + localStorage
       if (!reportId) {
         console.error("No report id after insert/dedupe - aborting");
         alert("Unexpected database error. Please try again later.");
@@ -454,7 +438,7 @@ Thank you for using ReportLost.`,
 
       if (!createdAt) createdAt = new Date().toISOString();
 
-      // ---------- EMAILS (only once per report row) ----------
+      // send confirmation email (once per saved row)
       try {
         const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
         const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
@@ -516,7 +500,7 @@ Thank you for using ReportLost.`,
         console.error("❌ Email confirmation deposit failed:", err);
       }
 
-      // Email notification to support
+      // support notification
       try {
         const subjectBase = `Lost item : ${formData.title || "Untitled"}`;
         const subject = cityDisplay ? `${subjectBase} à ${cityDisplay}` : subjectBase;
