@@ -141,6 +141,33 @@ export default function ReportForm({
     return parts.join(" • ");
   };
 
+  /**
+   * computeFingerprint - client-side deterministic fingerprint (sha-256 hex)
+   * based on fields that identify a submission. If crypto.subtle is not available
+   * we fallback to a timestamp-based fallback (less ideal).
+   */
+  async function computeFingerprint(payload: Record<string, any>): Promise<string> {
+    try {
+      const s = [
+        payload.title || "",
+        payload.description || "",
+        payload.city || "",
+        payload.date || "",
+        payload.time_slot || "",
+        payload.phone || "",
+        (payload.email || "").toLowerCase(),
+      ].join("|").trim();
+
+      const enc = new TextEncoder().encode(s);
+      const hashBuf = await crypto.subtle.digest("SHA-256", enc);
+      const hashArr = Array.from(new Uint8Array(hashBuf));
+      return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) {
+      console.warn("Fingerprint compute failed, falling back to timestamp:", e);
+      return `fallback-${Date.now()}`;
+    }
+  }
+
   const saveReportToDatabase = async () => {
     try {
       const phoneDescription = buildPhoneDescription();
@@ -203,6 +230,7 @@ export default function ReportForm({
 
       const isUpdate = Boolean(formData.report_id);
 
+      // --- Update existing report (user editing an existing report) ---
       if (isUpdate) {
         const existingReportId = String(formData.report_id);
         const { data, error } = await supabase
@@ -219,6 +247,7 @@ export default function ReportForm({
         }
 
         const persistedPublicId = (data as any)?.public_id || formData.public_id || "";
+        const persistedCreatedAt = (data as any)?.created_at || new Date().toISOString();
 
         setFormData((p: any) => ({
           ...p,
@@ -226,6 +255,7 @@ export default function ReportForm({
           state_id: finalStateId,
           public_id: persistedPublicId,
           report_public_id: persistedPublicId,
+          report_id: existingReportId,
         }));
 
         try {
@@ -235,44 +265,124 @@ export default function ReportForm({
           /* ignore */
         }
 
+        // we consider this an update => do not resend confirmation emails
         return true;
       }
 
-      // insert + retour id, public_id
-      const { data, error } = await supabase
-        .from("lost_items")
-        .insert([cleaned])
-        .select("id, public_id, created_at")
-        .single();
+      // --- start dedupe/insert flow (fingerprint-based) ---
+      const fingerprint = await computeFingerprint(cleaned);
 
-      if (error || !data?.id) {
-        console.error("❌ Supabase insert error:", error);
-        alert(`Unexpected database error: ${error?.message || "unknown"}`);
-        return false;
+      let reportId: string | null = null;
+      let publicId: string | null = null;
+      let createdAt: string | null = null;
+      let wasCreated = false;
+
+      // 1) try to find existing by fingerprint
+      try {
+        const { data: existing, error: selErr } = await supabase
+          .from("lost_items")
+          .select("id, public_id, created_at")
+          .eq("fingerprint", fingerprint)
+          .maybeSingle();
+
+        if (selErr) {
+          console.warn("Supabase select fingerprint error (non-fatal):", selErr);
+        }
+
+        if (existing?.id) {
+          reportId = String(existing.id);
+          publicId = (existing as any).public_id || null;
+          createdAt = (existing as any).created_at || new Date().toISOString();
+
+          // optional: refresh fields on existing row (keeps DB latest) — non blocking
+          try {
+            const { error: updErr } = await supabase
+              .from("lost_items")
+              .update({ ...cleaned, fingerprint })
+              .eq("id", reportId);
+            if (updErr) console.warn("Failed to refresh existing row:", updErr);
+          } catch (u) {
+            console.warn("Exception while refreshing existing row:", u);
+          }
+        }
+      } catch (e) {
+        console.warn("Unexpected while checking fingerprint:", e);
       }
 
-      const reportId = String(data.id);
-      let publicId: string | null = (data as any).public_id || null;
-      const createdAt: string = (data as any).created_at || new Date().toISOString();
+      // 2) if not found, try insert (with fingerprint)
+      if (!reportId) {
+        try {
+          const { data: insertData, error: insertErr } = await supabase
+            .from("lost_items")
+            .insert([{ ...cleaned, fingerprint }])
+            .select("id, public_id, created_at")
+            .single();
 
-      // si pas de public_id, on calcule depuis l'UUID et on persiste dans public_id
-      if (!publicId) {
-        publicId = publicIdFromUuid(reportId) || null;
-        if (publicId) {
-          try {
-            const { error: upErr } = await supabase
-              .from("lost_items")
-              .update({ public_id: publicId })
-              .eq("id", reportId);
-            if (upErr) {
-              console.warn("⚠️ Failed to persist public_id:", upErr);
+          if (insertErr) {
+            const msg = String(insertErr?.message || insertErr?.code || "");
+            // race condition: unique constraint on fingerprint -> try re-read
+            if (/unique|duplicate|23505/i.test(msg)) {
+              const { data: raced, error: racedErr } = await supabase
+                .from("lost_items")
+                .select("id, public_id, created_at")
+                .eq("fingerprint", fingerprint)
+                .maybeSingle();
+              if (racedErr) {
+                console.error("Error reading row after unique violation:", racedErr);
+                alert(`Unexpected database error: ${racedErr?.message || "unknown"}`);
+                return false;
+              }
+              if (raced?.id) {
+                reportId = String(raced.id);
+                publicId = (raced as any).public_id || null;
+                createdAt = (raced as any).created_at || new Date().toISOString();
+              }
+            } else {
+              console.error("❌ Supabase insert error:", insertErr);
+              alert(`Unexpected database error: ${insertErr?.message || "unknown"}`);
+              return false;
             }
-          } catch (e) {
-            console.warn("⚠️ Exception while persisting public_id:", e);
+          } else if (insertData?.id) {
+            reportId = String(insertData.id);
+            publicId = (insertData as any).public_id || null;
+            createdAt = (insertData as any).created_at || new Date().toISOString();
+            wasCreated = true;
           }
+        } catch (err) {
+          console.error("❌ Exception during insert:", err);
+          alert("Unexpected database error while saving. Please try again.");
+          return false;
         }
       }
 
+      // 3) Ensure public_id exists (persist if missing)
+      if (reportId && !publicId) {
+        try {
+          const computed = publicIdFromUuid(reportId) || null;
+          if (computed) {
+            const { error: upErr } = await supabase
+              .from("lost_items")
+              .update({ public_id: computed })
+              .eq("id", reportId);
+            if (upErr) {
+              console.warn("Failed to persist computed public_id:", upErr);
+            } else {
+              publicId = computed;
+            }
+          }
+        } catch (e) {
+          console.warn("Exception while writing public_id:", e);
+        }
+      }
+
+      // final checks
+      if (!reportId) {
+        console.error("No report id after insert/dedupe - aborting");
+        alert("Unexpected database error. Please try again later.");
+        return false;
+      }
+
+      // persist to client state + localStorage
       setFormData((p: any) => ({
         ...p,
         report_id: reportId,
@@ -289,18 +399,25 @@ export default function ReportForm({
         /* ignore */
       }
 
-      // Email de confirmation d’enregistrement
-      try {
-        const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
-        const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
+      // keep createdAt variable for emails
+      if (!createdAt) createdAt = new Date().toISOString();
 
-        await fetch("/api/send-mail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: formData.email,
-            subject: "✅ Your lost item report has been registered",
-            text: `Hello ${formData.first_name},
+      // --- end dedupe/insert flow ---
+
+      // --- Email sending: only if a new row was created (wasCreated === true) ---
+      if (wasCreated) {
+        // Email de confirmation d’enregistrement
+        try {
+          const contributeUrl = `https://reportlost.org/report?go=contribute&rid=${reportId}`;
+          const referenceLine = publicId ? `Reference code: ${publicId}\n` : "";
+
+          await fetch("/api/send-mail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: formData.email,
+              subject: "✅ Your lost item report has been registered",
+              text: `Hello ${formData.first_name},
 
 We have received your lost item report on reportlost.org.
 
@@ -315,7 +432,7 @@ ${referenceLine}
 ${contributeUrl}
 
 Thank you for using ReportLost.`,
-            html: `
+              html: `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
@@ -345,20 +462,20 @@ Thank you for using ReportLost.`,
     <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
   </div>
 </div>`,
-          }),
-        });
-      } catch (err) {
-        console.error("❌ Email confirmation deposit failed:", err);
-      }
+            }),
+          });
+        } catch (err) {
+          console.error("❌ Email confirmation deposit failed:", err);
+        }
 
-      // Email notification to support
-      try {
-        const subjectBase = `Lost item : ${formData.title || "Untitled"}`;
-        const subject = cityDisplay ? `${subjectBase} à ${cityDisplay}` : subjectBase;
+        // Email notification to support
+        try {
+          const subjectBase = `Lost item : ${formData.title || "Untitled"}`;
+          const subject = cityDisplay ? `${subjectBase} à ${cityDisplay}` : subjectBase;
 
-        const dateAndSlot = [formData.date, formData.time_slot].filter(Boolean).join(" ");
-        const reference = publicId || "N/A";
-        const bodyText = `🕒 ${createdAt}
+          const dateAndSlot = [formData.date, formData.time_slot].filter(Boolean).join(" ");
+          const reference = publicId || "N/A";
+          const bodyText = `🕒 ${createdAt}
 
 Lost item : ${formData.title || ""}
 Description : ${formData.description || ""}
@@ -371,18 +488,19 @@ State : ${finalStateId || ""}
 
 Contribution : ${formData.contribution ?? 0}`;
 
-        await fetch("/api/send-mail", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: "support@reportlost.org",
-            subject,
-            text: bodyText,
-          }),
-        });
-      } catch (err) {
-        console.error("❌ Email notification to support failed:", err);
-      }
+          await fetch("/api/send-mail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: "support@reportlost.org",
+              subject,
+              text: bodyText,
+            }),
+          });
+        } catch (err) {
+          console.error("❌ Email notification to support failed:", err);
+        }
+      } // end wasCreated
 
       return true;
     } catch (err) {
