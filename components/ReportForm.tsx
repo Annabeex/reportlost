@@ -40,6 +40,8 @@ export default function ReportForm({
 
     return {
       report_id: "",
+      public_id: "",
+      report_public_id: "",
       title: "",
       description: "",
       city: normalizedCity.label,
@@ -149,14 +151,34 @@ export default function ReportForm({
         (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
       );
 
-      // mapping identique à ta version qui marchait
-      const cityDisplay = formatCityWithState(formData.city, formData.state_id);
+      const normalizedCity = normalizeCityInput(formData.city);
+      if (!normalizedCity.city) {
+        alert("Please select the city where the item was lost.");
+        return false;
+      }
+
+      const explicitState =
+        typeof formData.state_id === "string" ? formData.state_id.trim().toUpperCase() : "";
+      const fallbackState =
+        typeof normalizedCity.stateId === "string"
+          ? normalizedCity.stateId.trim().toUpperCase()
+          : "";
+      const finalStateId = explicitState || fallbackState;
+
+      if (!finalStateId) {
+        alert(
+          "Please specify the state for the city (e.g., select a suggestion like \"Chicago (IL)\").",
+        );
+        return false;
+      }
+
+      const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
       const payload = {
         title: formData.title || null,
         description: formData.description || null,
         city: cityDisplay || null,
-        state_id: formData.state_id || null,
+        state_id: finalStateId,
         date: formData.date || null,
         time_slot: formData.time_slot || null,
         loss_neighborhood: formData.loss_neighborhood || null,
@@ -178,6 +200,43 @@ export default function ReportForm({
       };
 
       const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
+
+      const isUpdate = Boolean(formData.report_id);
+
+      if (isUpdate) {
+        const existingReportId = String(formData.report_id);
+        const { data, error } = await supabase
+          .from("lost_items")
+          .update(cleaned)
+          .eq("id", existingReportId)
+          .select("public_id, created_at")
+          .single();
+
+        if (error) {
+          console.error("❌ Supabase update error:", error);
+          alert(`Unexpected database error: ${error?.message || "unknown"}`);
+          return false;
+        }
+
+        const persistedPublicId = (data as any)?.public_id || formData.public_id || "";
+
+        setFormData((p: any) => ({
+          ...p,
+          city: cityDisplay,
+          state_id: finalStateId,
+          public_id: persistedPublicId,
+          report_public_id: persistedPublicId,
+        }));
+
+        try {
+          localStorage.setItem("reportlost_rid", existingReportId);
+          if (persistedPublicId) localStorage.setItem("reportlost_public_id", persistedPublicId);
+        } catch {
+          /* ignore */
+        }
+
+        return true;
+      }
 
       // insert + retour id, public_id
       const { data, error } = await supabase
@@ -214,7 +273,14 @@ export default function ReportForm({
         }
       }
 
-      setFormData((p: any) => ({ ...p, report_id: reportId }));
+      setFormData((p: any) => ({
+        ...p,
+        report_id: reportId,
+        public_id: publicId ?? "",
+        report_public_id: publicId ?? "",
+        city: cityDisplay,
+        state_id: finalStateId,
+      }));
 
       try {
         localStorage.setItem("reportlost_rid", reportId);
@@ -287,14 +353,8 @@ Thank you for using ReportLost.`,
 
       // Email notification to support
       try {
-        let subjectSuffix = "";
-        if (formData.city) subjectSuffix += `à ${formData.city}`;
-        if (formData.state_id) {
-          subjectSuffix += subjectSuffix ? ` , ${formData.state_id}` : `à ${formData.state_id}`;
-        }
-        subjectSuffix = subjectSuffix.trim();
         const subjectBase = `Lost item : ${formData.title || "Untitled"}`;
-        const subject = subjectSuffix ? `${subjectBase} ${subjectSuffix}` : subjectBase;
+        const subject = cityDisplay ? `${subjectBase} à ${cityDisplay}` : subjectBase;
 
         const dateAndSlot = [formData.date, formData.time_slot].filter(Boolean).join(" ");
         const reference = publicId || "N/A";
@@ -306,8 +366,8 @@ Date of lost : ${dateAndSlot}
 
 If you think you found it, please contact : support@reportlost.org reference (${reference})
 
-City : ${formData.city || ""}
-State : ${formData.state_id || ""}
+City : ${cityDisplay || ""}
+State : ${finalStateId || ""}
 
 Contribution : ${formData.contribution ?? 0}`;
 

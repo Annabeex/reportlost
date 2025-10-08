@@ -117,6 +117,13 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
             onClick={() => {
               const normalized = normalizeCityInput(formData.city);
 
+              if (!normalized.stateId) {
+                alert(
+                  'Please select a city with its state (e.g., choose "Chicago (IL)" from the suggestions).',
+                );
+                return;
+              }
+
               if (normalized.label !== (formData.city || '')) {
                 onChange({
                   target: { name: 'city', value: normalized.label },
