@@ -44,10 +44,6 @@ async function getSupabaseClient(): Promise<SupabaseClient | null> {
   });
 }
 
-/**
- * Proxy to internal /api/send-mail endpoint (keeps mail sending centralized).
- * Returns true if request succeeded (HTTP 2xx).
- */
 async function sendMailViaApi(payload: {
   to: string | string[];
   subject: string;
@@ -58,22 +54,63 @@ async function sendMailViaApi(payload: {
 }) {
   try {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
     const res = await fetch(`${site}/api/send-mail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeout);
     return res.ok;
   } catch (e) {
     console.error("sendMailViaApi error", e);
     return false;
   }
+}
+
+/**
+ * Liste blanche des colonnes autorisées à écrire dans lost_items.
+ * IMPORTANT : ne pas ajouter 'report_id' ici (la table n'a pas cette colonne).
+ */
+const ALLOWED_COLUMNS = new Set([
+  "description",
+  "city",
+  "date",
+  "email",
+  "title",
+  "departure_place",
+  "arrival_place",
+  "departure_time",
+  "arrival_time",
+  "travel_number",
+  "time_slot",
+  "first_name",
+  "last_name",
+  "phone",
+  "address",
+  "contribution",
+  "consent",
+  "phone_description",
+  "loss_neighborhood",
+  "loss_street",
+  "object_photo",
+  "paid",
+  "paid_at",
+  "payment_email_sent",
+  "state_id",
+  "public_id",
+  "fingerprint",
+  "mail_sent",
+  "confirmation_sent",
+]);
+
+/** filtre un objet pour ne garder que les colonnes autorisées */
+function filterAllowed(payload: Record<string, any>) {
+  const out: Record<string, any> = {};
+  for (const k of Object.keys(payload || {})) {
+    if (ALLOWED_COLUMNS.has(k)) {
+      out[k] = payload[k];
+    }
+  }
+  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -87,59 +124,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Missing Supabase env vars" }, { status: 500 });
     }
 
-    // normalize minimal fields
+    // normalize minimal fields (for fingerprint)
     const title = (body.title ?? "").trim() || null;
     const description = (body.description ?? "").trim() || null;
     const city = (body.city ?? "").trim() || null;
-    // safe to call toUpperCase on empty string
     const state_id = (body.state_id ?? "").toUpperCase() || null;
     const date = body.date ?? null;
     const email = (body.email ?? "").toLowerCase() || null;
-    const other = body; // keep other fields to pass to DB insert/update
 
     const fingerprint = computeFingerprint({ title, description, city, state_id, date, email });
 
-    // unified payload we'll use for updates/inserts
-    const updatePayload = { ...other, fingerprint, state_id };
+    // build update/insert payload but FILTER unwanted keys (report_id, report_public_id, etc.)
+    const inbound = { ...(body || {}) };
+    // remove client-specific helpers that are not DB columns
+    delete inbound.report_id;
+    delete inbound.report_public_id;
+    // now keep only allowed columns
+    const safeFields = filterAllowed(inbound);
+    // ensure fingerprint and normalized state_id are present
+    safeFields.fingerprint = fingerprint;
+    if (state_id) safeFields.state_id = state_id;
 
-    // helper: update an existing row and optionally send a mail if not already sent
-    const handleExistingRow = async (
-      existing: { id: string; public_id: string | null; mail_sent: boolean },
-    ) => {
-      // Apply update (non-transactional here)
-      const { error: updErr } = await supabase.from("lost_items").update(updatePayload).eq("id", existing.id);
+    // helper: handle an existing row (update + maybe send mail once)
+    const handleExistingRow = async (existing: { id: string; public_id: string | null; mail_sent: boolean }) => {
+      // update existing row with safeFields
+      const { error: updErr } = await supabase.from("lost_items").update(safeFields).eq("id", existing.id);
       if (updErr) {
         console.error("Supabase update(existing) failed:", updErr);
         return NextResponse.json({ ok: false, error: updErr.message }, { status: 500 });
       }
 
-      // Ensure public_id present
       let public_id = existing.public_id;
       if (!public_id) {
         public_id = publicIdFromUuid(existing.id) || null;
         if (public_id) {
-          await supabase.from("lost_items").update({ public_id }).eq("id", existing.id);
+          // persist computed public_id (best-effort)
+          try {
+            await supabase.from("lost_items").update({ public_id }).eq("id", existing.id);
+          } catch (e) {
+            console.warn("Could not persist computed public_id for existing row:", e);
+          }
         }
       }
 
-      // Send confirmation email only if not already sent
+      // send confirmation mail once if not already sent
       let mail_sent = !!existing.mail_sent;
       if (!mail_sent && email) {
         const subject = `✅ Your lost item report has been registered`;
-        const text = `Hello ${other.first_name || ""}\n\nWe found an existing report matching your submission. Reference: ${public_id || "N/A"}`;
+        const text = `Hello ${body.first_name || ""}\n\nWe found an existing report matching your submission. Reference: ${public_id || "N/A"}`;
         try {
-          const ok = await sendMailViaApi({ to: email, subject, text });
-          if (ok) {
-            // persist that we've sent the mail
-            try {
-              await supabase.from("lost_items").update({ mail_sent: true }).eq("id", existing.id);
-              mail_sent = true;
-            } catch (e) {
-              console.warn("Could not persist mail_sent flag after sending:", e);
-            }
-          }
+          await sendMailViaApi({ to: email, subject, text });
+          // mark mail_sent true
+          await supabase.from("lost_items").update({ mail_sent: true }).eq("id", existing.id);
+          mail_sent = true;
         } catch (e) {
-          console.warn("sendMailViaApi failed for existing row:", e);
+          console.warn("Failed to send/mark mail_sent for existing row:", e);
         }
       }
 
@@ -152,8 +191,9 @@ export async function POST(req: NextRequest) {
       });
     };
 
-    // If client sent a report_id (localStorage), try to update that row first (explicit update flow)
     const clientProvidedId = body.report_id ? String(body.report_id) : null;
+
+    // 1) If client provided an id -> try update that specific row
     if (clientProvidedId) {
       const { data: existing, error: e1 } = await supabase
         .from("lost_items")
@@ -164,39 +204,13 @@ export async function POST(req: NextRequest) {
       if (e1) {
         console.error("Supabase error checking clientProvidedId:", e1);
       } else if (existing) {
-        // Update payload already computed
-        const { error: upErr } = await supabase.from("lost_items").update(updatePayload).eq("id", clientProvidedId);
-        if (upErr) {
-          console.error("Supabase update (clientProvidedId) failed:", upErr);
-          return NextResponse.json({ ok: false, error: upErr.message }, { status: 500 });
-        }
-
-        // ensure public_id exists
-        let public_id = existing.public_id;
-        if (!public_id) {
-          public_id = publicIdFromUuid(clientProvidedId) || null;
-          if (public_id) await supabase.from("lost_items").update({ public_id }).eq("id", clientProvidedId);
-        }
-
-        // send mail only if not already sent
-        if (!existing.mail_sent && email) {
-          const subject = `✅ Your lost item report has been registered`;
-          const text = `Hello ${other.first_name || ""}\n\nYour report is registered. Reference: ${public_id || "N/A"}`;
-          try {
-            const ok = await sendMailViaApi({ to: email, subject, text });
-            if (ok) {
-              await supabase.from("lost_items").update({ mail_sent: true }).eq("id", clientProvidedId);
-            }
-          } catch (e) {
-            console.warn("sendMailViaApi failed for clientProvidedId:", e);
-          }
-        }
-
-        return NextResponse.json({ ok: true, action: "updated", id: clientProvidedId, public_id }, { status: 200 });
+        // Delegate to handler which updates and maybe send mail
+        return handleExistingRow(existing as any);
       }
+      // if not found, continue as normal (will attempt fingerprint match/insert)
     }
 
-    // 2) Try to find existing by fingerprint (may return array)
+    // 2) Try to find existing by fingerprint (most recent)
     const { data: foundRows, error: findErr } = await supabase
       .from("lost_items")
       .select("id, public_id, mail_sent, created_at")
@@ -210,24 +224,23 @@ export async function POST(req: NextRequest) {
 
     const found = Array.isArray(foundRows) ? (foundRows[0] as any) : null;
     if (found) {
-      // We found an existing row that matches fingerprint -> update it (and possibly send email once)
-      return handleExistingRow(found as any);
+      return handleExistingRow(found);
     }
 
-    // 3) Insert new row (use updatePayload but ensure mail_sent=false initially)
-    const insertPayload = { ...updatePayload, mail_sent: false };
+    // 3) Insert new row
+    // Ensure we do NOT include client-only fields (report_id), we already filtered above
+    const insertPayload = { ...safeFields, mail_sent: false };
+
     const { data: insData, error: insErr } = await supabase
       .from("lost_items")
       .insert([insertPayload])
       .select("id, public_id, created_at")
       .single();
 
-    // handle unique/race conditions: if insert failed due to duplicate, try to fetch existing row
     if (insErr || !insData?.id) {
-      // postgres unique violation codes vary; check common patterns
+      // handle possible unique-constraint race (someone inserted same fingerprint concurrently)
       const msg = String(insErr?.message || insErr?.code || "");
-      if (insErr && (/unique|duplicate|23505/i.test(msg))) {
-        // someone inserted concurrently — fetch the latest matching fingerprint
+      if (/unique|23505|duplicate key value/i.test(msg)) {
         try {
           const { data: existingRows, error: fetchErr } = await supabase
             .from("lost_items")
@@ -238,11 +251,11 @@ export async function POST(req: NextRequest) {
 
           if (fetchErr) {
             console.error("Supabase fetch after unique violation failed:", fetchErr);
-          } else {
-            const existing = Array.isArray(existingRows) ? (existingRows[0] as any) : null;
-            if (existing) {
-              return handleExistingRow(existing);
-            }
+          }
+
+          const existing = Array.isArray(existingRows) ? (existingRows[0] as any) : null;
+          if (existing) {
+            return handleExistingRow(existing);
           }
         } catch (e) {
           console.error("Exception while recovering from unique violation:", e);
@@ -253,7 +266,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: insErr?.message || "insert_failed" }, { status: 500 });
     }
 
-    // compute & persist public_id if missing
+    // Persist a computed public_id if missing
     let public_id = insData.public_id;
     if (!public_id) {
       try {
@@ -262,22 +275,21 @@ export async function POST(req: NextRequest) {
           await supabase.from("lost_items").update({ public_id }).eq("id", insData.id);
         }
       } catch (e) {
-        console.warn("Could not compute public_id:", e);
+        console.warn("Could not compute/persist public_id:", e);
       }
     }
 
-    // send confirmation email once for NEW INSERT
+    // send confirmation email once (server-side)
     if (email) {
       const subject = `✅ Your lost item report has been registered`;
-      const text = `Hello ${other.first_name || ""}\n\nWe received your report. Reference: ${public_id || "N/A"}`;
+      const text = `Hello ${body.first_name || ""}\n\nWe received your report. Reference: ${public_id || "N/A"}`;
       try {
         const ok = await sendMailViaApi({ to: email, subject, text });
         if (ok) {
-          // mark mail_sent true in DB
           try {
             await supabase.from("lost_items").update({ mail_sent: true }).eq("id", insData.id);
           } catch (e) {
-            console.warn("Could not persist mail_sent after sending:", e);
+            console.warn("Could not set mail_sent after sending mail:", e);
           }
         }
       } catch (e) {

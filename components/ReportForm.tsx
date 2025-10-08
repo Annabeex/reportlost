@@ -248,7 +248,21 @@ export default function ReportForm({
       };
 
       // include report_id if we already have one (update flow)
-      if (formData.report_id) bodyToSend.report_id = String(formData.report_id);
+      // ONLY send report_id if it *looks like a UUID* (to avoid sending random public_ids and
+      // thereby causing DB attempts to write a non-existent 'report_id' column).
+      if (formData.report_id) {
+        const candidate = String(formData.report_id).trim();
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(candidate)) {
+          bodyToSend.report_id = candidate;
+        } else if (formData.public_id) {
+          // if we have a short public id (and the stored report_id looks not like a uuid),
+          // send the public id instead so server can try to find by public id if needed.
+          bodyToSend.report_public_id = String(formData.public_id);
+        } else {
+          console.warn("Not sending report_id because it is not a UUID:", candidate);
+        }
+      }
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
