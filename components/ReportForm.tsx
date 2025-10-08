@@ -312,11 +312,14 @@ export default function ReportForm({
       // 2) If not found, attempt insert (handle unique constraint race)
       if (!reportId) {
         try {
-          const { data: insertData, error: insertErr } = await supabase
+          const { data: insertDataRaw, error: insertErr } = await supabase
             .from("lost_items")
             .insert([{ ...cleaned, fingerprint }])
-            .select("id, public_id, created_at")
-            .single();
+            .select("id, public_id, created_at");
+
+          const insertData = Array.isArray(insertDataRaw)
+            ? insertDataRaw[0]
+            : insertDataRaw ?? undefined;
 
           if (insertErr) {
             const msg = String(insertErr?.message || insertErr?.code || "");
@@ -362,6 +365,10 @@ export default function ReportForm({
             publicId = (insertData as any).public_id || null;
             createdAt = (insertData as any).created_at || new Date().toISOString();
             wasInserted = true;
+          } else if (!insertData) {
+            console.error("Insert completed without returning a row.");
+            alert("Unexpected database error. Please try again.");
+            return false;
           }
         } catch (err) {
           console.error("❌ Exception during insert:", err);
