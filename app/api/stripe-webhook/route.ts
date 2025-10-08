@@ -31,65 +31,91 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err: any) {
-    console.error("❌ Stripe signature verification failed:", err.message);
-    return json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    console.error("❌ Stripe signature verification failed:", err.message || err);
+    return json({ error: `Webhook Error: ${err.message || err}` }, { status: 400 });
   }
 
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Supabase Admin client (service role) — attention : MUST be present in env
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // helpers to look up row by id or public_id
+    async function findRowByIdOrPublic(idOrPublic?: string | null) {
+      if (!idOrPublic) return null;
+      // try by id
+      try {
+        const byId = await supabaseAdmin
+          .from("lost_items")
+          .select("id, paid, payment_email_sent, contribution, email, first_name, public_id")
+          .eq("id", idOrPublic)
+          .maybeSingle();
+        if (!byId.error && byId.data) return byId.data;
+      } catch (e) {
+        /* ignore */
+      }
+
+      // fallback: by public_id
+      try {
+        const byPub = await supabaseAdmin
+          .from("lost_items")
+          .select("id, paid, payment_email_sent, contribution, email, first_name, public_id")
+          .eq("public_id", idOrPublic)
+          .maybeSingle();
+        if (!byPub.error && byPub.data) return byPub.data;
+      } catch (e) {
+        /* ignore */
+      }
+      return null;
+    }
 
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        const reportId = pi.metadata?.report_id || "";
+        const metaReportId = String(pi.metadata?.report_id ?? "").trim();
+        const metaPublicId = String(pi.metadata?.report_public_id ?? "").trim();
 
-        if (!reportId) {
-          console.warn("⚠️ payment_intent.succeeded sans report_id en metadata");
-          break;
+        // Find the row: try meta.report_id then meta.report_public_id
+        let row: any = null;
+        if (metaReportId) {
+          row = await findRowByIdOrPublic(metaReportId);
         }
-
-        const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
-
-        // 🔎 Lecture sécurisée
-        const { data: row, error: readErr } = await supabaseAdmin
-          .from("lost_items")
-          .select("id, paid, payment_email_sent, contribution, email, first_name")
-          .eq("id", reportId)
-          .single();
-
-        if (readErr) {
-          console.error("❌ Supabase read error:", readErr.message);
-          break;
+        if (!row && metaPublicId) {
+          row = await findRowByIdOrPublic(metaPublicId);
         }
         if (!row) {
-          console.warn("⚠️ Aucun report trouvé pour id =", reportId);
-          break;
+          console.warn("⚠️ payment_intent.succeeded: no report found for metadata", { metaReportId, metaPublicId });
+          return json({ received: true }); // ack the webhook anyway
         }
 
-        // ✅ Mise à jour paiement si nécessaire
-        if (!row.paid || (row.contribution ?? 0) !== paidAmount) {
-          const { error: upErr } = await supabaseAdmin
-            .from("lost_items")
-            .update({
-              paid: true,
-              paid_at: new Date().toISOString(),
-              contribution: paidAmount,
-            })
-            .eq("id", reportId);
+        const reportId = String(row.id);
+        const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
-          if (upErr) {
-            console.error("❌ Supabase update error:", upErr.message);
+        // Update payment fields if needed
+        try {
+          const needsUpdate = !row.paid || Number(row.contribution ?? 0) !== Number(paidAmount);
+          if (needsUpdate) {
+            const { error: upErr } = await supabaseAdmin
+              .from("lost_items")
+              .update({
+                paid: true,
+                paid_at: new Date().toISOString(),
+                contribution: paidAmount,
+              })
+              .eq("id", reportId);
+            if (upErr) {
+              console.error("❌ Supabase update error:", upErr);
+            }
           }
+        } catch (e) {
+          console.error("❌ Exception while updating payment status:", e);
         }
 
-        // 📩 Email de confirmation (1 seule fois)
-        if (!row.payment_email_sent) {
-          try {
-            const base =
-              process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin;
+        // Send confirmation email once
+        try {
+          if (!row.payment_email_sent && row.email) {
+            const base = process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin;
 
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000); // max 8s
@@ -110,16 +136,18 @@ export async function POST(req: NextRequest) {
 
             if (!res.ok) {
               const t = await res.text().catch(() => "");
-              console.error("❌ /api/send-mail returned:", res.status, t);
+              console.error("❌ /api/send-mail returned non-ok:", res.status, t);
+            } else {
+              // mark payment_email_sent = true
+              try {
+                await supabaseAdmin.from("lost_items").update({ payment_email_sent: true }).eq("id", reportId);
+              } catch (e) {
+                console.warn("Could not persist payment_email_sent:", e);
+              }
             }
-
-            await supabaseAdmin
-              .from("lost_items")
-              .update({ payment_email_sent: true })
-              .eq("id", reportId);
-          } catch (mailErr: any) {
-            console.error("❌ Email sending failed:", mailErr.message);
           }
+        } catch (mailErr: any) {
+          console.error("❌ Email sending failed:", mailErr?.message || mailErr);
         }
 
         break;
@@ -137,7 +165,7 @@ export async function POST(req: NextRequest) {
 
     return json({ received: true });
   } catch (err: any) {
-    console.error("❌ Webhook handler failed:", err.message);
+    console.error("❌ Webhook handler failed:", err?.message || err);
     return json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

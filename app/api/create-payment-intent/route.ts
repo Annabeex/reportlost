@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       amount?: number | string;
       currency?: string;
       reportId?: string | number;
+      reportPublicId?: string;
       description?: string;
     } | null;
 
@@ -69,13 +70,18 @@ export async function POST(req: NextRequest) {
       (body.description?.slice(0, 255)) ||
       (body.reportId ? `ReportLost contribution for report #${body.reportId}` : "ReportLost contribution");
 
+    // metadata defensif : inclure report_id et report_public_id si fournis
+    const metadata: Record<string, string> = {};
+    if (body.reportId != null) metadata.report_id = String(body.reportId);
+    if (body.reportPublicId) metadata.report_public_id = String(body.reportPublicId);
+
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: amountInCents,
         currency,
         automatic_payment_methods: { enabled: true },
         description,
-        metadata: body.reportId ? { report_id: String(body.reportId) } : undefined,
+        metadata: Object.keys(metadata).length ? metadata : undefined,
       },
       idempotencyKey ? { idempotencyKey } : undefined
     );
@@ -86,7 +92,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     // Normalisation des erreurs Stripe
-    if (err && typeof err === "object" && err.type?.toString().startsWith("Stripe")) {
+    if (err && typeof err === "object" && String(err.type || "").startsWith("Stripe")) {
       console.error("Stripe error:", err);
       return json({ error: err.message ?? "Stripe error" }, { status: 400 });
     }
