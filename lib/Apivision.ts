@@ -1,10 +1,8 @@
 // lib/Apivision.ts
-import { supabase } from "@/lib/supabase";
-import { Buffer } from "buffer";
+// client-side helper: upload image to Supabase storage, then call server /api/apivision
+import { supabase } from '@/lib/supabase';
+import { Buffer } from 'buffer';
 
-/**
- * Result shape returned to UI
- */
 export type VisionResult = {
   imageUrl: string;
   labels: string[];
@@ -13,128 +11,85 @@ export type VisionResult = {
   ocrText: string;
 };
 
-/**
- * Sanitize file names to avoid encoding / special character issues
- */
-function sanitizeFileName(original: string) {
-  const extMatch = original.match(/(\.[a-z0-9]+)$/i);
-  const ext = extMatch ? extMatch[1] : "";
-  const base = original.replace(ext, "");
-  const slug = base
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "") // remove accents
-    .replace(/[^a-zA-Z0-9._-]/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 80);
-  return `${slug}${ext}`;
+function sanitizeFileName(name: string) {
+  return name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
 }
 
-/**
- * Upload a file to the "images" bucket and return the public URL.
- * Throws on error; caller should catch.
- */
-async function uploadToStorage(file: File): Promise<string> {
-  const safeName = `${Date.now()}-${sanitizeFileName(file.name)}`;
-  // Keep a predictable folder for found items
-  const path = `found/${safeName}`;
-
-  // upload
-  const { error: uploadError } = await supabase.storage.from("images").upload(path, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
-  if (uploadError) {
-    console.error("Supabase upload error object:", uploadError);
-    throw uploadError;
-  }
-
-  // get public URL (use the client SDK's getPublicUrl)
-  const { data: urlData, error: urlError } = supabase.storage.from("images").getPublicUrl(path);
-  if (urlError) {
-    console.error("Supabase getPublicUrl error:", urlError);
-    throw urlError;
-  }
-  const publicUrl = urlData?.publicUrl;
-  if (!publicUrl) {
-    throw new Error("No publicUrl returned after upload");
-  }
-  return publicUrl;
-}
-
-/**
- * Upload image (if needed), call the server Vision endpoint, return aggregated result.
- *
- * Behavior:
- *  - Uploads the file to storage and returns the publicUrl even if Vision fails.
- *  - Calls internal endpoint `/api/apivision` with base64 of the file (server-side calls Google).
- *  - Throws on severe failures (upload or non-ok /api/apivision), so caller can show error UI.
- */
 export async function uploadImageAndAnalyze(file: File): Promise<VisionResult> {
-  // 1) upload to storage so we always have a public URL
-  let imageUrl = "";
-  try {
-    imageUrl = await uploadToStorage(file);
-  } catch (uploadErr) {
-    console.error("uploadImageAndAnalyze — upload failed:", uploadErr);
-    // propagate so caller can show error; we could alternatively continue without url,
-    // but safer to fail early so UI can notify the user.
-    throw uploadErr;
-  }
+  // 1) prepare filename
+  const safeName = sanitizeFileName(file.name || 'upload.jpg');
+  const fileName = `found-${Date.now()}-${safeName}`;
 
-  // 2) prepare base64 for Vision API
-  let base64 = "";
+  // 2) upload to Supabase storage
   try {
-    const buffer = await file.arrayBuffer();
-    base64 = Buffer.from(buffer).toString("base64");
-  } catch (err) {
-    console.error("Failed to convert file to base64:", err);
-    // still return imageUrl with empty analysis to avoid blocking user entirely?
-    // Here we choose to throw so caller sees the failure.
-    throw err;
-  }
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-  // 3) call server-side Vision route (it will call Google Vision with service key)
-  try {
-    const res = await fetch("/api/apivision", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      throw uploadError;
+    }
+
+    // 3) get public URL
+    const { data: urlData } = supabase.storage.from('images').getPublicUrl(fileName);
+    const publicUrl = urlData?.publicUrl || '';
+
+    if (!publicUrl) {
+      throw new Error('No publicUrl returned from Supabase');
+    }
+
+    // 4) quick HEAD check to ensure URL is accessible (helps diagnostiquer 400/403/404)
+    try {
+      const head = await fetch(publicUrl, { method: 'HEAD' });
+      if (!head.ok) {
+        // don't fail hard — keep going, but log useful info
+        console.warn('Public URL HEAD returned non-ok', head.status, publicUrl);
+      }
+    } catch (headErr) {
+      console.warn('HEAD check for publicUrl failed (network?):', headErr);
+    }
+
+    // 5) convert file to base64 for Vision API
+    const arrayBuffer = await file.arrayBuffer();
+    // Buffer.from is used because btoa can choke on binary data
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+    // 6) call server endpoint that proxies the Google Vision API
+    const res = await fetch('/api/apivision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: base64 }),
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error("/api/apivision returned non-ok:", res.status, text);
-      // throw an error with details for easier debugging
-      throw new Error(`Vision API endpoint failed: ${res.status} ${text}`);
+      const body = await res.text().catch(() => '');
+      console.error('Vision API proxy returned non-ok', res.status, body);
+      throw new Error(`Vision API proxy error: ${res.status} ${body}`);
     }
 
     const json = await res.json().catch((e) => {
-      console.error("/api/apivision returned invalid JSON:", e);
-      return null;
+      console.error('Failed to parse Vision proxy JSON:', e);
+      throw new Error('Invalid JSON from Vision proxy');
     });
 
-    if (!json) {
-      throw new Error("Vision API returned invalid response");
-    }
-
-    // Normalize shapes (server may return arrays or undefined)
-    const labels = Array.isArray(json.labels) ? json.labels : (json.labels ? [String(json.labels)] : []);
-    const logos = Array.isArray(json.logos) ? json.logos : (json.logos ? [String(json.logos)] : []);
-    const objects = Array.isArray(json.objects) ? json.objects : (json.objects ? [String(json.objects)] : []);
-    const ocrText = typeof json.text === "string" ? json.text : (json.ocr_text || json.fullText || "");
+    // 7) normalize results
+    const labels = Array.isArray(json.labels) ? json.labels : [];
+    const logos = Array.isArray(json.logos) ? json.logos : [];
+    const objects = Array.isArray(json.objects) ? json.objects : [];
+    const text = typeof json.text === 'string' ? json.text : '';
 
     return {
-      imageUrl,
+      imageUrl: publicUrl,
       labels,
       logos,
       objects,
-      ocrText,
+      ocrText: text,
     };
-  } catch (err) {
-    console.error("uploadImageAndAnalyze — Vision call failed:", err);
-    // We decide to *propagate* the error so caller can show "analysis failed".
-    // The caller already has imageUrl so it can still submit without analysis if desired.
+  } catch (err: any) {
+    console.error('uploadImageAndAnalyze error:', err);
+    // rethrow so caller can show message
     throw err;
   }
 }
