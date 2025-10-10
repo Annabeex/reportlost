@@ -49,7 +49,7 @@ export default function ImageUpload({ formData, setFormData }: Props) {
     try {
       const base64Image = await toBase64(file)
 
-      const response = await fetch('/api/Apivision', {
+      const response = await fetch('/api/apivision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: base64Image }),

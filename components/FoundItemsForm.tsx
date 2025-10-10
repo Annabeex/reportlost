@@ -41,12 +41,14 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
   const [visionLogos, setVisionLogos] = useState("");
   const [visionObjects, setVisionObjects] = useState("");
   const [visionOcrText, setVisionOcrText] = useState("");
+  const [visionImageUrl, setVisionImageUrl] = useState("");
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [fixedTitle, setFixedTitle] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
@@ -63,11 +65,13 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
       const logos = result.logos?.join(", ") || "";
       const objects = result.objects?.join(", ") || "";
       const ocrText = result.ocrText || "";
+      const imageUrl = result.imageUrl || "";
 
       setVisionLabels(labels);
       setVisionLogos(logos);
       setVisionObjects(objects);
       setVisionOcrText(ocrText);
+      setVisionImageUrl(imageUrl);
 
       const descriptionText = [labels, ocrText].filter(Boolean).join(" — ");
       if (descriptionText) {
@@ -76,6 +80,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
       }
     } catch (err) {
       console.error("Image analysis failed:", err);
+      setVisionImageUrl("");
     } finally {
       clearInterval(progressInterval);
       setProgress(100);
@@ -87,6 +92,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setPhoto(file);
+    setVisionImageUrl("");
     if (file) {
       await handleImageUpload(file);
     }
@@ -101,31 +107,37 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
   const handleNext = () => setStep(2);
 
   const handleSubmit = async () => {
-    if (uploading || analyzing) return; // éviter double-submit pendant analyse/upload
+    if (uploading || analyzing || submitting) return; // éviter double-submit pendant analyse/upload
     setErrorMsg("");
+    setSubmitting(true);
 
     try {
       const { city: cleanedCityFromInput, stateId: parsedStateId } = extractCityAndState(city);
       const normalizedCity = cleanedCityFromInput;
       const normalizedStateId = (stateId || parsedStateId || "").toUpperCase();
 
-      // 1) upload optionnel de l’image
-      let publicImageUrl = "";
-      if (photo) {
+      // 1) Réutilise l’URL générée par l’analyse Vision ou téléverse à la volée
+      let publicImageUrl = visionImageUrl;
+      if (!publicImageUrl && photo) {
         const safeName = photo.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
         const filename = `found-${Date.now()}-${safeName}`;
+        setUploading(true);
+        try {
+          const { error: uploadError } = await supabase.storage.from("images").upload(filename, photo);
+          if (uploadError) throw uploadError;
 
-        const { error: uploadError } = await supabase.storage.from("images").upload(filename, photo);
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = await supabase.storage.from("images").getPublicUrl(filename);
-        if (!urlData?.publicUrl) throw new Error("No public URL returned.");
-        publicImageUrl = urlData.publicUrl;
+          const { data: urlData } = await supabase.storage.from("images").getPublicUrl(filename);
+          if (!urlData?.publicUrl) throw new Error("No public URL returned.");
+          publicImageUrl = urlData.publicUrl;
+          setVisionImageUrl(publicImageUrl);
+        } finally {
+          setUploading(false);
+        }
       }
 
       // 2) titre auto (même logique que côté lost pour rester homogène)
       const fakeCityData = {
-        city,
+        city: normalizedCity || city,
         malls: [],
         parks: [],
         tourism_sites: [],
@@ -133,13 +145,15 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
       const { title } = generateContent(fakeCityData);
       setFixedTitle(title);
 
-      // 3) insertion en base
-      const { error } = await supabase.from("found_items").insert([
-        {
+      // 3) insertion via API sécurisée
+      const response = await fetch("/api/found-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           image_url: publicImageUrl,
           description,
           city: normalizedCity,
-          state_id: normalizedStateId || null,
+          state_id: normalizedStateId,
           date,
           labels: visionLabels ?? "",
           logos: visionLogos ?? "",
@@ -149,15 +163,22 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
           email: email ?? "",
           phone: phone ?? "",
           dropoff_location: dropoffLocation ?? "",
-        },
-      ]);
-      if (error) throw error;
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Error submitting found item via API:", response.status, errorBody);
+        throw new Error("Failed to submit found item");
+      }
 
       setSuccess(true);
       setStep(3);
     } catch (err) {
-      console.error("Error submitting to Supabase:", err);
+      console.error("Error submitting found item:", err);
       setErrorMsg("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -211,7 +232,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
 
           <button
             onClick={handleNext}
-            disabled={uploading || analyzing}
+            disabled={uploading || analyzing || submitting}
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             Next
@@ -252,7 +273,11 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
 
           {errorMsg && <p className="text-red-600 text-sm mt-2">{errorMsg}</p>}
 
-          <button onClick={handleSubmit} disabled={uploading} className="bg-green-600 text-white px-4 py-2 rounded mt-4">
+          <button
+            onClick={handleSubmit}
+            disabled={uploading || analyzing || submitting}
+            className="bg-green-600 text-white px-4 py-2 rounded mt-4"
+          >
             Submit report
           </button>
         </>
