@@ -50,18 +50,27 @@ export async function uploadImageAndAnalyze(file: File): Promise<VisionResult> {
       console.warn('HEAD check for publicUrl failed (network?):', headErr);
     }
 
-    // 5) convert file to base64 for Vision API
-    const arrayBuffer = await file.arrayBuffer();
-    // Buffer.from is used because btoa can choke on binary data
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    // 5) call server endpoint that proxies the Google Vision API
+    const callVision = async (payload: Record<string, string>) =>
+      fetch('/api/apivision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
 
-    // 6) call server endpoint that proxies the Google Vision API
-    const res = await fetch('/api/apivision', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64 }),
-      cache: 'no-store',
-    });
+    let res = await callVision({ image_url: publicUrl });
+
+    // if Vision cannot access the public URL (private bucket, DNS, ...),
+    // fall back to sending the base64 payload.
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => '');
+      console.warn('Vision API via image_url failed, falling back to base64', res.status, bodyText);
+
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      res = await callVision({ image: base64 });
+    }
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
