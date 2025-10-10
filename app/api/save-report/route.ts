@@ -1,13 +1,13 @@
 // app/api/save-report/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { publicIdFromUuid } from "@/lib/reportId";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* compute fingerprint (server-side, same logic as client) */
+/* compute fingerprint (server-side, should match client) */
 function computeFingerprint(obj: {
   title?: string | null;
   description?: string | null;
@@ -26,21 +26,6 @@ function computeFingerprint(obj: {
   ];
   const raw = parts.join("|");
   return crypto.createHash("sha1").update(raw).digest("hex");
-}
-
-/** create Supabase admin client (service role) */
-async function getSupabaseClient(): Promise<SupabaseClient | null> {
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars for save-report endpoint");
-    return null;
-  }
-
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
 }
 
 async function sendMailViaApi(payload: {
@@ -70,8 +55,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ ok: false, error: "invalid json" }, { status: 400 });
 
-    // supabase admin client
-    const supabase = await getSupabaseClient();
+    // supabase admin client (centralisé)
+    const supabase = getSupabaseAdmin();
     if (!supabase) {
       return NextResponse.json({ ok: false, error: "Missing Supabase env vars" }, { status: 500 });
     }
@@ -94,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     const updatePayload = { ...other, fingerprint, state_id };
 
-    // helper for an existing row (shared for found & race)
+    // helper for an existing row (shared for found & lost)
     const handleExistingRow = async (
       existing: { id: string; public_id: string | null; mail_sent: boolean; created_at?: string | null },
     ) => {

@@ -1,6 +1,6 @@
 // lib/Apivision.ts
 // client-side helper: upload image to Supabase storage, then call server /api/apivision
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { Buffer } from 'buffer';
 
 export type VisionResult = {

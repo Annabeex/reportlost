@@ -80,6 +80,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
       }
     } catch (err) {
       console.error("Image analysis failed:", err);
+      // clear vision image url if analysis/upload failed
       setVisionImageUrl("");
     } finally {
       clearInterval(progressInterval);
@@ -106,6 +107,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
 
   const handleNext = () => setStep(2);
 
+  // ===== Client-side fallback submit (immediate fix) =====
   const handleSubmit = async () => {
     if (uploading || analyzing || submitting) return; // éviter double-submit pendant analyse/upload
     setErrorMsg("");
@@ -145,42 +147,44 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
       const { title } = generateContent(fakeCityData);
       setFixedTitle(title);
 
-      // 3) insertion via API sécurisée
-      const response = await fetch("/api/found-items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: publicImageUrl,
-          description,
-          city: normalizedCity,
-          state_id: normalizedStateId,
-          date,
-          labels: visionLabels ?? "",
-          logos: visionLogos ?? "",
-          objects: visionObjects ?? "",
-          ocr_text: visionOcrText ?? "",
-          title: title ?? "",
-          email: email ?? "",
-          phone: phone ?? "",
-          dropoff_location: dropoffLocation ?? "",
-        }),
-      });
+      // 3) Direct client-side insert (fallback rapide pour remettre la fonctionnalité en prod)
+const payload = {
+      image_url: publicImageUrl,
+      description,
+      city: normalizedCity,
+      state_id: normalizedStateId || null,
+      date,
+      labels: visionLabels ?? "",
+      logos: visionLogos ?? "",
+      objects: visionObjects ?? "",
+      ocr_text: visionOcrText ?? "",
+      title: title ?? "",
+      email: email ?? "",
+      phone: phone ?? "",
+      dropoff_location: dropoffLocation ?? "",
+    };
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Error submitting found item via API:", response.status, errorBody);
-        throw new Error("Failed to submit found item");
-      }
+    const res = await fetch("/api/found-items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      setSuccess(true);
-      setStep(3);
-    } catch (err) {
-      console.error("Error submitting found item:", err);
-      setErrorMsg("Something went wrong. Please try again.");
-    } finally {
-      setSubmitting(false);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error("Error submitting found item via API:", res.status, body);
+      throw new Error("Failed to submit found item");
     }
-  };
+
+    setSuccess(true);
+    setStep(3);
+  } catch (err) {
+    console.error("Error submitting found item:", err);
+    setErrorMsg("Something went wrong. Please try again.");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <div className="bg-white p-6 rounded-xl shadow space-y-4">
