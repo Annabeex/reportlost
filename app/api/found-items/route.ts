@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
 
-    // getSupabaseAdmin is synchronous in your lib -> do NOT await it
+    // getSupabaseAdmin returns SupabaseClient | null (server-only)
     const supabase: SupabaseClient | null = getSupabaseAdmin();
     if (!supabase) {
       console.error("found-items: missing supabase admin client (env may be missing)");
@@ -62,12 +62,12 @@ export async function POST(req: NextRequest) {
       dropoff_location,
     };
 
-    // Try to insert using preferred "description" column.
+    // Helpers to attempt insert using either `description` (preferred) or `text` (legacy)
     async function tryInsertWithDesc(row: Record<string, any>) {
+      // .maybeSingle() returns { data, error }
       return supabase.from("found_items").insert([row]).select("id, created_at").maybeSingle();
     }
 
-    // fallback insert to use 'text' column if 'description' doesn't exist in schema
     async function tryInsertWithText(row: Record<string, any>) {
       const r = { ...row };
       delete r.description;
@@ -77,13 +77,17 @@ export async function POST(req: NextRequest) {
 
     // 1) Try insert with description column
     let insertPayload = { ...baseRow, description: description || null };
-    let { data: insData, error: insErr } = await tryInsertWithDesc(insertPayload);
+    let insResponse = await tryInsertWithDesc(insertPayload);
+    let insData = (insResponse as any).data;
+    let insErr = (insResponse as any).error;
 
     // 2) If failed due to missing column 'description', fallback to 'text'
     if (insErr) {
       const msg = String(insErr.message || "").toLowerCase();
       if (msg.includes("column") && msg.includes("description")) {
-        ({ data: insData, error: insErr } = await tryInsertWithText(insertPayload));
+        insResponse = await tryInsertWithText(insertPayload);
+        insData = (insResponse as any).data;
+        insErr = (insResponse as any).error;
       }
     }
 
