@@ -26,11 +26,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
 
     // getSupabaseAdmin returns SupabaseClient | null (server-only)
-    const supabase: SupabaseClient | null = getSupabaseAdmin();
-    if (!supabase) {
+    const supabaseOrNull: SupabaseClient | null = getSupabaseAdmin();
+    if (!supabaseOrNull) {
       console.error("found-items: missing supabase admin client (env may be missing)");
       return json({ ok: false, error: "Missing Supabase credentials" }, { status: 500 });
     }
+
+    // bind a non-null client so TypeScript/IDE know it's safe to call .from(...)
+    const sb: SupabaseClient = supabaseOrNull;
 
     // sanitize incoming fields
     const image_url = nullable(body.image_url);
@@ -65,29 +68,27 @@ export async function POST(req: NextRequest) {
     // Helpers to attempt insert using either `description` (preferred) or `text` (legacy)
     async function tryInsertWithDesc(row: Record<string, any>) {
       // .maybeSingle() returns { data, error }
-      return supabase.from("found_items").insert([row]).select("id, created_at").maybeSingle();
+      return sb.from("found_items").insert([row]).select("id, created_at").maybeSingle();
     }
 
     async function tryInsertWithText(row: Record<string, any>) {
       const r = { ...row };
       delete r.description;
       r.text = description || null;
-      return supabase.from("found_items").insert([r]).select("id, created_at").maybeSingle();
+      return sb.from("found_items").insert([r]).select("id, created_at").maybeSingle();
     }
 
     // 1) Try insert with description column
     let insertPayload = { ...baseRow, description: description || null };
-    let insResponse = await tryInsertWithDesc(insertPayload);
-    let insData = (insResponse as any).data;
-    let insErr = (insResponse as any).error;
+    let { data: insData, error: insErr } = await tryInsertWithDesc(insertPayload);
 
     // 2) If failed due to missing column 'description', fallback to 'text'
     if (insErr) {
       const msg = String(insErr.message || "").toLowerCase();
       if (msg.includes("column") && msg.includes("description")) {
-        insResponse = await tryInsertWithText(insertPayload);
-        insData = (insResponse as any).data;
-        insErr = (insResponse as any).error;
+        const fallback = await tryInsertWithText(insertPayload);
+        insData = (fallback as any).data;
+        insErr = (fallback as any).error;
       }
     }
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
       // Try to find existing row by image_url (best heuristic)
       let existing: any = null;
       if (image_url) {
-        const { data: e1, error: e1err } = await supabase
+        const { data: e1, error: e1err } = await sb
           .from("found_items")
           .select("id, created_at")
           .eq("image_url", image_url)
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
 
       // If not found and we have title+date+city, try that combination
       if (!existing && title && date && city) {
-        const { data: e2, error: e2err } = await supabase
+        const { data: e2, error: e2err } = await sb
           .from("found_items")
           .select("id, created_at")
           .eq("title", title)
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
             ...baseRow,
             description: description || null,
           };
-          const { error: upErr } = await supabase.from("found_items").update(updPayload).eq("id", existing.id);
+          const { error: upErr } = await sb.from("found_items").update(updPayload).eq("id", existing.id);
           if (upErr) {
             console.error("Failed to update existing found_items row:", upErr);
             return json({ ok: false, error: "update_failed", details: upErr }, { status: 500 });
