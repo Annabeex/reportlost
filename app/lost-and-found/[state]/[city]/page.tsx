@@ -239,32 +239,43 @@ export default async function Page({ params }: { params: { state: string; city: 
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-16">
-          <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-xl shadow">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
-          </section>
+          {/* 🔹 Nouveau groupage : section titre détachée mais collée */}
+          <div>
+            {/* Titre seul */}
+            <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                {title}
+              </h1>
+            </section>
 
-          <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8">
-            <div className="lg:w-1/2 w-full prose text-gray-800">
-              <h2 className="text-xl font-semibold text-blue-900 mb-3">
-                🔍 Recently reported lost items in {cityData.city_ascii} – updated this {today}
-              </h2>
-              <ul className="list-none space-y-2 pl-0">
-                {reports.map((r: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-blue-500">📍</span>
-                    <span>{r}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
-              <CityMap stations={policeStations} />
-            </div>
-          </section>
+            {/* Section “Recently + Map” collée (aucune marge) */}
+            <section className="bg-white p-6 rounded-b-xl shadow -mt-px">
+              <div className="flex flex-col lg:flex-row gap-8">
+                <div className="lg:w-1/2 w-full prose text-gray-800">
+                  <h2 className="text-xl font-semibold text-blue-900 mb-3 relative pl-6">
+                    {/* l’icône reste en absolu pour ne pas décaler le texte */}
+                    <span className="absolute left-0 top-0">🔍</span>
+                    Recently reported lost items in {cityData.city_ascii} – updated this {today}
+                  </h2>
+                  <ul className="list-none space-y-2 pl-0">
+                    {reports.map((r: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-blue-500">📍</span>
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-          <section className="bg-blue-100 py-10 px-6 rounded-xl shadow">
-            <ClientReportForm defaultCity={cityData.city_ascii} />
-          </section>
+                <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
+                  <CityMap stations={policeStations} />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Formulaire LOST, sans wrapper bleu supplémentaire */}
+          <ClientReportForm defaultCity={cityData.city_ascii} initialTab="lost" />
 
           <section className="bg-white p-6 rounded-xl shadow">
             <div

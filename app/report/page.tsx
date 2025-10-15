@@ -1,47 +1,25 @@
-/*Sert de point d’entrée principal pour l’URL /report.*/
+// app/report/page.tsx
+import ClientReportForm from '@/components/ClientReportForm';
+import type { Metadata } from 'next';
 
-'use client';
+// optionnel: metadata
+export const metadata: Metadata = {
+  title: 'Report — ReportLost.org',
+};
 
-import { useState } from 'react';
-import ReportForm from '@/components/ReportForm';
-import FoundItemsForm from '@/components/FoundItemsForm';
+export default function ReportPage({
+  searchParams,
+}: {
+  searchParams?: { tab?: string };
+}) {
+  // /report?tab=found  -> initialTab = 'found'
+  const tabParam = (searchParams?.tab || '').toLowerCase();
+  const initialTab = tabParam === 'found' ? 'found' : 'lost';
 
-export default function ReportPage() {
-  const [activeTab, setActiveTab] = useState<'lost' | 'found'>('lost');
-
+  // ClientReportForm est un composant client qui accepte `initialTab`
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex justify-center gap-4 mb-6">
-        <button
-          onClick={() => setActiveTab('lost')}
-          className={`px-4 py-2 rounded ${
-            activeTab === 'lost'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          I lost something
-        </button>
-        <button
-          onClick={() => setActiveTab('found')}
-          className={`px-4 py-2 rounded ${
-            activeTab === 'found'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-          }`}
-        >
-          I found something
-        </button>
-      </div>
-
-      {/* Toujours monter les deux composants pour conserver leur état interne */}
-      <div style={{ display: activeTab === 'lost' ? 'block' : 'none' }}>
-        <ReportForm enforceValidation={true} defaultCity="" />
-      </div>
-
-      <div style={{ display: activeTab === 'found' ? 'block' : 'none' }}>
-        <FoundItemsForm />
-      </div>
+      <ClientReportForm defaultCity="" initialTab={initialTab} />
     </main>
   );
 }
