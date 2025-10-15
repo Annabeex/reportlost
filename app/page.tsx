@@ -2,19 +2,20 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import NextDynamic from 'next/dynamic';
+import dynamic from 'next/dynamic';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
 
 // ✅ Import dynamique de la carte, sans SSR
-const UsaMap = NextDynamic(() => import('@/components/UsaMap'), { ssr: false });
+const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
 // helper: slug catégorie
 function categoryToSlug(name: string) {
   return String(name)
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
@@ -24,20 +25,23 @@ function categoryToSlug(name: string) {
 
 // ✅ villes majeures
 const majorCities = [
-  { name: 'New York',     state: 'NY', image: '/images/cities/new-york.jpg' },
-  { name: 'Los Angeles',  state: 'CA', image: '/images/cities/los-angeles.jpg' },
-  { name: 'Chicago',      state: 'IL', image: '/images/cities/chicago.jpg' },
-  { name: 'Houston',      state: 'TX', image: '/images/cities/houston.jpg' },
-  { name: 'Phoenix',      state: 'AZ', image: '/images/cities/phoenix.jpg' },
+  { name: 'New York', state: 'NY', image: '/images/cities/new-york.jpg' },
+  { name: 'Los Angeles', state: 'CA', image: '/images/cities/los-angeles.jpg' },
+  { name: 'Chicago', state: 'IL', image: '/images/cities/chicago.jpg' },
+  { name: 'Houston', state: 'TX', image: '/images/cities/houston.jpg' },
+  { name: 'Phoenix', state: 'AZ', image: '/images/cities/phoenix.jpg' },
   { name: 'Philadelphia', state: 'PA', image: '/images/cities/philadelphia.jpg' },
-  { name: 'San Antonio',  state: 'TX', image: '/images/cities/san-antonio.jpg' },
-  { name: 'San Diego',    state: 'CA', image: '/images/cities/san-diego.jpg' },
+  { name: 'San Antonio', state: 'TX', image: '/images/cities/san-antonio.jpg' },
+  { name: 'San Diego', state: 'CA', image: '/images/cities/san-diego.jpg' },
 ];
 
 export default function HomePage() {
   return (
     <>
-      <section className="w-full bg-white px-4 py-8 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+      <section
+        className="w-full bg-white px-4 py-8 animate-fade-in"
+        style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
+      >
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="w-full md:w-[48%]">
             <UsaMap />
@@ -61,13 +65,16 @@ export default function HomePage() {
         <div className="w-full h-px bg-gray-200 mt-12" />
       </section>
 
-      <section className="bg-white w-full px-8 py-10 mx-auto animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
+      <section
+        className="bg-white w-full px-8 py-10 mx-auto animate-fade-in"
+        style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
+      >
         <div className="max-w-5xl mx-auto">
           <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
             Explore Lost & Found Services in Major U.S. Cities
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
-            {majorCities.map(city => (
+            {majorCities.map((city) => (
               <Link
                 key={`${city.name}-${city.state}`}
                 href={buildCityPath(city.state, city.name)}
@@ -90,7 +97,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-r from-blue-50 to-yellow-50 w-full px-8 py-16 mx-auto animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
+      <section
+        className="bg-gradient-to-r from-blue-50 to-yellow-50 w-full px-8 py-16 mx-auto animate-fade-in"
+        style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
+      >
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-sm text-gray-700">
             <div className="bg-white shadow p-6 rounded-lg hover:shadow-lg transition">
@@ -98,12 +108,21 @@ export default function HomePage() {
                 <Workflow size={20} className="text-blue-500" /> How It Works
               </h3>
               <ul className="space-y-1">
-                <li className="flex gap-2"><span className="text-blue-500">→</span> Submit a detailed report with as much information as possible.</li>
-                <li className="flex gap-2"><span className="text-blue-500">→</span> We analyze and match your report with databases and local groups.</li>
-                <li className="flex gap-2"><span className="text-blue-500">→</span> Your report is shared with appropriate authorities and relevant services.</li>
-                <li className="flex gap-2"><span className="text-blue-500">→</span> Receive real-time updates and connect with the team if your item is found.</li>
+                <li className="flex gap-2">
+                  <span className="text-blue-500">→</span> Submit a detailed report with as much information as possible.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-500">→</span> We analyze and match your report with databases and local groups.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-500">→</span> Your report is shared with appropriate authorities and relevant services.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-500">→</span> Receive real-time updates and connect with the team if your item is found.
+                </li>
               </ul>
             </div>
+
             <div className="bg-white shadow p-6 rounded-lg hover:shadow-lg transition">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <ShieldCheck size={20} className="text-green-500" /> Why ReportLost.org?
@@ -116,6 +135,7 @@ export default function HomePage() {
                 <li className="mb-2">✅ Private, anonymous submissions available</li>
               </ul>
             </div>
+
             <div className="bg-white shadow p-6 rounded-lg hover:shadow-lg transition">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <Target size={20} className="text-yellow-500" /> Who Is This For?
@@ -131,13 +151,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-gray-50 w-full px-8 py-16 mx-auto animate-fade-in" style={{ animationDelay: '0.7s', animationFillMode: 'both' }}>
+      <section
+        className="bg-gray-50 w-full px-8 py-16 mx-auto animate-fade-in"
+        style={{ animationDelay: '0.7s', animationFillMode: 'both' }}
+      >
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
-            Most Frequently Lost Items
-          </h2>
+          <h2 className="text-center text-xl font-bold text-gray-800 mb-6">Most Frequently Lost Items</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
-            {categoryList.map(category => {
+            {categoryList.map((category) => {
               const slug = categoryToSlug(category.name);
               const imgSrc = category.image || `/images/categories/${slug}.jpg`;
               return (
