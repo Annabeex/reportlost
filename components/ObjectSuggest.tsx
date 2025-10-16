@@ -10,7 +10,10 @@ type Props = {
   limit?: number;
   autoFocus?: boolean;
   required?: boolean;
-  onOtherSelected?: () => void; // permet au parent de masquer le bandeau d’info
+  onOtherSelected?: () => void; // callback quand l'utilisateur choisit "Other"
+  label?: string;               // libellé au-dessus de l'input (facultatif)
+  showOther?: boolean;          // afficher la ligne "Other" (défaut: true)
+  otherText?: string;           // texte de la ligne "Other"
 };
 
 const DEFAULT_ITEMS = [
@@ -42,6 +45,9 @@ export default function ObjectSuggest({
   autoFocus,
   required,
   onOtherSelected,
+  label,
+  showOther = true,
+  otherText = "Other – My item isn't listed",
 }: Props) {
   const data = items && items.length ? items : DEFAULT_ITEMS;
 
@@ -75,12 +81,12 @@ export default function ObjectSuggest({
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) { setOpen(true); return; }
     if (!open) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => (c + 1) % (results.length + 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => (c - 1 + (results.length + 1)) % (results.length + 1)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => (c + 1) % (results.length + (showOther ? 1 : 0))); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => (c - 1 + (results.length + (showOther ? 1 : 0))) % (results.length + (showOther ? 1 : 0))); }
     else if (e.key === "Enter") {
       e.preventDefault();
       if (cursor < results.length) onPick(results[cursor]);
-      else enterOtherMode();
+      else if (showOther) enterOtherMode();
     } else if (e.key === "Escape") setOpen(false);
   }
 
@@ -93,13 +99,28 @@ export default function ObjectSuggest({
   function enterOtherMode() {
     setCustomMode(true);
     setOpen(false);
-    onOtherSelected?.(); // ✅ masque le bandeau côté parent
+    onOtherSelected?.();
     if (!value) onChange("");
   }
 
+  const optionRow = (label: string, i: number) => (
+    <button
+      key={label + i}
+      type="button"
+      role="option"
+      aria-selected={cursor === i}
+      className={`w-full text-left px-3 py-2 hover:bg-blue-50 ${cursor === i ? "bg-blue-50" : ""}`}
+      onMouseDown={(e) => e.preventDefault()}
+      onMouseEnter={() => setCursor(i)}
+      onClick={() => onPick(label)}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div ref={rootRef} className="relative">
-      <label className="block font-medium mb-1">What did you lose?</label>
+      {!!label && <label className="block font-medium mb-1">{label}</label>}
 
       <input
         ref={inputRef}
@@ -125,51 +146,39 @@ export default function ObjectSuggest({
           className="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
         >
           {results.length > 0 ? (
-            results.map((label, i) => (
-              <button
-                key={label + i}
-                type="button"
-                role="option"
-                aria-selected={cursor === i}
-                className={`w-full text-left px-3 py-2 hover:bg-blue-50 ${cursor === i ? "bg-blue-50" : ""}`}
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setCursor(i)}
-                onClick={() => onPick(label)}
-              >
-                {label}
-              </button>
-            ))
+            results.map(optionRow)
           ) : (
             <div className="px-3 py-2 text-gray-500">No suggestions.</div>
           )}
 
-          {/* "Other" row — vert foncé */}
-          <button
-            type="button"
-            role="option"
-            aria-selected={cursor === results.length}
-            className={`w-full text-left px-3 py-2 border-t ${cursor === results.length ? "bg-[#e6f3ea]" : "bg-white"} hover:bg-[#e6f3ea] text-[#226638] font-medium`}
-            onMouseDown={(e) => e.preventDefault()}
-            onMouseEnter={() => setCursor(results.length)}
-            onClick={enterOtherMode}
-          >
-            ➕ Other – My item isn't listed
-          </button>
+          {showOther && (
+            <button
+              type="button"
+              role="option"
+              aria-selected={cursor === results.length}
+              className={`w-full text-left px-3 py-2 border-t ${cursor === results.length ? "bg-[#e6f3ea]" : "bg-white"} hover:bg-[#e6f3ea] text-[#226638] font-medium`}
+              onMouseDown={(e) => e.preventDefault()}
+              onMouseEnter={() => setCursor(results.length)}
+              onClick={enterOtherMode}
+            >
+              ➕ {otherText}
+            </button>
+          )}
         </div>
       )}
 
       {customMode && (
         <div className="mt-3 border rounded-md bg-gray-50 p-3">
-          <label className="block font-medium text-gray-800 mb-1">Enter your item’s category</label>
+          <label className="block font-medium text-gray-800 mb-1">Enter a custom value</label>
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="Example: medical device, power tool, necklace…"
+            placeholder="Type here…"
             className="w-full rounded-lg border border-blue-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <p className="text-sm text-gray-600 mt-2">
-            Please type the <strong>main category</strong> of your item. You’ll be able to <strong>add detailed info and photos</strong> in the next step.
+            If the right option isn’t listed, you can type your own value here.
           </p>
         </div>
       )}

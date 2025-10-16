@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-// import { supabase } from "@/lib/supabase"; // <= intentionally not used from client
+// import { supabase } from "@/lib/supabaseClient"; // <= intentionally not used from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 import { publicIdFromUuid } from "@/lib/reportId";
 
@@ -88,6 +88,17 @@ export default function ReportForm({
       departure_time: "",
       arrival_time: "",
       travel_number: "",
+      transport_type: "",
+transport_type_other: "",
+place_type: "",
+place_type_other: "",
+
+airline_name: "",
+metro_line_known: null,   // boolean | null
+metro_line: "",
+train_company: "",
+rideshare_platform: "",
+taxi_company: "",
       first_name: "",
       last_name: "",
       email: "",
