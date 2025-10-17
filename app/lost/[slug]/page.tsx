@@ -7,6 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import ShareButton from "@/components/ShareButton";
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
+import { MapPin } from "lucide-react"; // ✅ icône MapPin verte
 
 type PageProps = { params: { slug: string } };
 
@@ -272,11 +273,10 @@ export default async function LostReportPage({ params }: PageProps) {
           {date ? `${date}${timeSlot ? ` (estimated time: ${timeSlot})` : ""}` : "Not specified"}
         </p>
 
-        <p>
-          <span className="font-bold">
-            {icon} {displayTitle} lost at{" "}
-          </span>
-          {placeLabel}
+        {/* ✅ MapPin verte à la place de l’emoji */}
+        <p className="flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-green-700" />
+          <span className="font-bold">{displayTitle} lost at</span> {placeLabel}
         </p>
 
         {/* Public email box */}
@@ -285,12 +285,17 @@ export default async function LostReportPage({ params }: PageProps) {
           <a href={`mailto:${publicAlias}`} className="text-green-700 underline font-mono text-lg">
             {publicAlias}
           </a>
+          {/* ✅ nouvelle ligne d’explication */}
+          <p className="text-sm text-green-900/80 mt-1">
+            This email is unique to this report and forwards directly to the owner.
+          </p>
         </div>
 
+        {/* ✅ sans emojis pour ces lignes */}
         <p className="mt-2">
-          <span className="font-bold">🏙️ City:</span> {city || "—"} <br />
-          <span className="font-bold">📮 ZIP code:</span> {effectiveZip || "—"} <br />
-          <span className="font-bold">🗺️ State:</span> {stateId || "—"}
+          <span className="font-bold">City:</span> {city || "—"} <br />
+          <span className="font-bold">ZIP code:</span> {effectiveZip || "—"} <br />
+          <span className="font-bold">State:</span> {stateId || "—"}
         </p>
 
         {Boolean(circumstances) && (

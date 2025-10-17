@@ -3,9 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
+import { supabase } from '@/lib/supabaseClient'; // ✅ ajout
 
 // ✅ Import dynamique de la carte, sans SSR
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
@@ -35,9 +37,60 @@ const majorCities = [
   { name: 'San Diego', state: 'CA', image: '/images/cities/san-diego.jpg' },
 ];
 
+// ---- types pour la liste de rapports ----
+type HomeLostItem = {
+  id: string;
+  slug: string | null;
+  title: string | null;
+  city: string | null;
+  state_id: string | null;
+  created_at: string | null;
+};
+
+// Formatteur "YYYY-MM-DD" (sans heure)
+function toYmd(dateStr?: string | null) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  } catch {
+    return '—';
+  }
+}
+
 export default function HomePage() {
+  // --- état pour les 10 derniers signalements
+  const [recent, setRecent] = useState<HomeLostItem[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+
+  useEffect(() => {
+    const fetchRecent = async () => {
+      setLoadingRecent(true);
+      try {
+        const { data, error } = await supabase
+          .from('lost_items')
+          .select('id, slug, title, city, state_id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (!error && Array.isArray(data)) setRecent(data as HomeLostItem[]);
+        else if (error) console.warn('supabase recent lost error', error);
+      } catch (e) {
+        console.warn('fetch recent lost failed', e);
+      } finally {
+        setLoadingRecent(false);
+      }
+    };
+
+    fetchRecent();
+  }, []);
+
   return (
     <>
+      {/* --- Hero section --- */}
       <section
         className="w-full bg-white px-4 py-8 animate-fade-in"
         style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
@@ -65,6 +118,7 @@ export default function HomePage() {
         <div className="w-full h-px bg-gray-200 mt-12" />
       </section>
 
+      {/* --- Section villes majeures --- */}
       <section
         className="bg-white w-full px-8 py-10 mx-auto animate-fade-in"
         style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
@@ -97,6 +151,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* --- Section informations --- */}
       <section
         className="bg-gradient-to-r from-blue-50 to-yellow-50 w-full px-8 py-16 mx-auto animate-fade-in"
         style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
@@ -151,12 +206,15 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* --- Section catégories --- */}
       <section
         className="bg-gray-50 w-full px-8 py-16 mx-auto animate-fade-in"
         style={{ animationDelay: '0.7s', animationFillMode: 'both' }}
       >
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-center text-xl font-bold text-gray-800 mb-6">Most Frequently Lost Items</h2>
+          <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
+            Most Frequently Lost Items
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 justify-items-center">
             {categoryList.map((category) => {
               const slug = categoryToSlug(category.name);
@@ -182,6 +240,60 @@ export default function HomePage() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* --- NOUVELLE SECTION : 10 derniers signalements --- */}
+      <section
+        className="bg-white w-full px-8 py-16 mx-auto animate-fade-in"
+        style={{ animationDelay: '0.9s', animationFillMode: 'both' }}
+      >
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
+            Recent lost reports
+          </h2>
+
+          {loadingRecent ? (
+            <div className="text-center text-gray-500">Loading…</div>
+          ) : recent.length === 0 ? (
+            <div className="text-center text-gray-500">No reports yet.</div>
+          ) : (
+            <div className="space-y-4">
+          {recent.map((item) => {
+  const slug = item.slug || '';
+  let city = item.city || '—';
+  const state = item.state_id || '';
+  const title = item.title || 'Item';
+  const dateYmd = toYmd(item.created_at);
+
+  // ✅ Supprime le doublon de l’État si déjà dans le nom de la ville
+  const normalizedCity = city.replace(/\s*\(([A-Z]{2})\)\s*/g, '').trim();
+  const showState = normalizedCity.toLowerCase().includes(state.toLowerCase())
+    ? ''
+    : ` (${state})`;
+
+  return (
+    <Link
+      key={item.id}
+      href={slug ? `/lost/${slug}` : '#'}
+      prefetch={false}
+      className="block rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 hover:border-blue-300 hover:bg-blue-100 transition"
+    >
+      <div className="text-base md:text-lg font-semibold text-blue-800">
+        {title}{' '}
+        <span className="font-normal text-gray-700">lost in</span>{' '}
+        {normalizedCity}
+        {showState}
+      </div>
+      <div className="text-sm text-gray-600 mt-1">
+        Date of report: {dateYmd}
+      </div>
+    </Link>
+  );
+})}
+
+            </div>
+          )}
         </div>
       </section>
     </>
