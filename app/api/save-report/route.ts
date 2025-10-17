@@ -50,6 +50,21 @@ async function sendMailViaApi(payload: {
   }
 }
 
+/** NEW: déclenche la génération/maj du slug pour un report donné (fire & forget) */
+async function triggerSlugGeneration(id: string) {
+  try {
+    const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+    await fetch(`${site}/api/generate-report-slug`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+      // on laisse le server répondre, mais on ignore toute erreur
+    });
+  } catch (e) {
+    console.warn("generate-report-slug failed (ignored):", e);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -105,6 +120,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // NEW: trigger slug generation (non bloquant)
+      await triggerSlugGeneration(existing.id);
+
       // send confirmation to user only once
       let mail_sent = !!existing.mail_sent;
       if (!mail_sent && (other.email || email)) {
@@ -138,14 +156,14 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
       We have received your lost item report on
-      <a href="${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
       Your report is now published and automatic alerts are active.
       <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
     </p>
     <p style="margin:0 0 18px">
-      <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
         Upgrade with a contribution
       </a>
     </p>
@@ -261,6 +279,9 @@ Contribution : ${other.contribution ?? 0}`;
           }
         }
 
+        // NEW: trigger slug generation (non bloquant)
+        await triggerSlugGeneration(clientProvidedId);
+
         // send user confirmation if not already done
         if (!existing.mail_sent && (other.email || email)) {
           try {
@@ -293,14 +314,14 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
       We have received your lost item report on
-      <a href="${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
       Your report is now published and automatic alerts are active.
       <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
     </p>
     <p style="margin:0 0 18px">
-      <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
         Upgrade with a contribution
       </a>
     </p>
@@ -442,6 +463,9 @@ Contribution : ${other.contribution ?? 0}`;
       }
     }
 
+    // NEW: trigger slug generation (non bloquant)
+    await triggerSlugGeneration(String(insData.id));
+
     // send confirmation email once (user)
     if (other.email || email) {
       try {
@@ -474,14 +498,14 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
       We have received your lost item report on
-      <a href="${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
       Your report is now published and automatic alerts are active.
       <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
     </p>
     <p style="margin:0 0 18px">
-      <a href="${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
         Upgrade with a contribution
       </a>
     </p>

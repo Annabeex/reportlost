@@ -7,6 +7,7 @@ import { loadStripe } from "@stripe/stripe-js";
 // import { supabase } from "@/lib/supabaseClient"; // <= intentionally not used from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
 import { publicIdFromUuid } from "@/lib/reportId";
+import { useRouter } from "next/navigation";
 
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
@@ -66,6 +67,7 @@ export default function ReportForm({
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const [formData, setFormData] = useState<any>(() => {
     const normalizedCity = normalizeCityInput(defaultCity);
@@ -89,16 +91,16 @@ export default function ReportForm({
       arrival_time: "",
       travel_number: "",
       transport_type: "",
-transport_type_other: "",
-place_type: "",
-place_type_other: "",
+      transport_type_other: "",
+      place_type: "",
+      place_type_other: "",
 
-airline_name: "",
-metro_line_known: null,   // boolean | null
-metro_line: "",
-train_company: "",
-rideshare_platform: "",
-taxi_company: "",
+      airline_name: "",
+      metro_line_known: null,   // boolean | null
+      metro_line: "",
+      train_company: "",
+      rideshare_platform: "",
+      taxi_company: "",
       first_name: "",
       last_name: "",
       email: "",
@@ -345,6 +347,9 @@ taxi_company: "",
       } catch {
         /* ignore */
       }
+
+      // === NOTE: pas de génération/redirect de slug ici.
+      // Le slug sera géré côté admin/backoffice pour ne pas affecter le funnel.
 
       return true;
     } catch (err: any) {
