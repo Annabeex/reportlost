@@ -1,57 +1,43 @@
 // lib/reportId.ts
-// Alphabet sans I, O, 0, 1 pour éviter les confusions visuelles.
-export const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-export const ID_LENGTH = 5; // passe à 4 ou 6 si besoin
-const BASE = ALPHABET.length; // 32
+// Identifiant public court : exactement 5 CHIFFRES (00000–99999)
+
+import crypto from "crypto";
+
+export const ID_LENGTH = 5;
 
 /**
  * Normalise un identifiant saisi par l'utilisateur :
- * - Uppercase
- * - Ne conserve QUE les caractères présents dans l'ALPHABET (donc pas I/O/0/1)
- * - Tronque à ID_LENGTH
+ * - ne garde QUE les chiffres 0-9
+ * - tronque à 5
  */
 export function normalizePublicId(value: string | null | undefined): string {
   if (!value) return "";
-  const up = String(value).toUpperCase();
-  let out = "";
-  for (const ch of up) {
-    if (ALPHABET.includes(ch)) {
-      out += ch;
-      if (out.length >= ID_LENGTH) break;
-    }
-  }
-  return out;
+  const digits = String(value).replace(/\D+/g, "");
+  return digits.slice(0, ID_LENGTH);
 }
 
 /**
- * Dérive un code court lisible à partir d'un UUID :
- * - Prend les 10 premiers hex (40 bits) → entier sûr (< 2^53)
- * - Convertit en base 32 ALPHABET
- * - Rend exactement ID_LENGTH caractères
- * NB: Collision théorique possible (compression 40→25 bits). Protéger avec UNIQUE(public_id) en BDD.
+ * Code public STABLE à partir d'un UUID (v4/v7, etc.)
+ * - SHA-1(uuid) -> on prend 8 hex -> int32 -> modulo 100000
+ * - left-pad pour obtenir toujours 5 chiffres
+ * - Stable : même UUID => même code
  */
-export function publicIdFromUuid(uuid: string | null | undefined): string {
-  if (!uuid) return "";
-  const cleaned = String(uuid).replace(/[^a-fA-F0-9]/g, "").toUpperCase();
-  if (!cleaned) return "";
-
-  const sliceLength = ID_LENGTH * 2; // ex. 10 hex pour 5 chars
-  const hex = cleaned.slice(0, sliceLength);
-  if (!hex) return "";
-
-  let numeric = Number.parseInt(hex, 16);
-  if (!Number.isFinite(numeric) || Number.isNaN(numeric)) {
-    return "";
+export function publicIdFromUuid(uuid: string): string {
+  try {
+    const hashHex = crypto.createHash("sha1").update(String(uuid)).digest("hex");
+    const n32 = parseInt(hashHex.slice(0, 8), 16);
+    const num = n32 % 100000; // 0..99999
+    return String(num).padStart(ID_LENGTH, "0");
+  } catch {
+    const num = Math.floor(Math.random() * 100000);
+    return String(num).padStart(ID_LENGTH, "0");
   }
-
-  // Convertit en base "ALPHABET"
-  let result = "";
-  for (let i = 0; i < ID_LENGTH; i++) {
-    const remainder = numeric % BASE;
-    result = ALPHABET[remainder] + result;
-    numeric = Math.floor(numeric / BASE);
-  }
-
-  // Si numeric était très petit, on pad à gauche avec le premier char (A)
-  return result.padStart(ID_LENGTH, ALPHABET[0]);
 }
+
+/** Optionnel : code aléatoire non stable (pas utilisé par défaut) */
+export function randomPublicId(): string {
+  const num = Math.floor(Math.random() * 100000);
+  return String(num).padStart(ID_LENGTH, "0");
+}
+
+export default publicIdFromUuid;
