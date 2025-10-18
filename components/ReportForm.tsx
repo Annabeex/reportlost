@@ -85,6 +85,7 @@ export default function ReportForm({
       loss_neighborhood: "",
       loss_street: "",
       transport: false,
+      transport_answer: "",          // <-- ajouté
       departure_place: "",
       arrival_place: "",
       departure_time: "",
@@ -101,11 +102,16 @@ export default function ReportForm({
       train_company: "",
       rideshare_platform: "",
       taxi_company: "",
+      circumstances: "",        // <-- ajouté
+
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       address: "",
+      preferred_contact_channel: "",   // <-- ajouté
+      research_report_opt_in: null,    // <-- ajouté (bool | null)
+
       contribution: 0,
       isCellphone: false,
       phoneColor: "",
@@ -224,28 +230,54 @@ export default function ReportForm({
 
       const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
+      // utilitaire léger pour convertir "" -> null
+      const toNull = (v: any) => (v === "" || v === undefined ? null : v);
+
       const payload = {
-        title: formData.title || null,
-        description: formData.description || null,
+        title: toNull(formData.title),
+        description: toNull(formData.description),
         city: cityDisplay || null,
         state_id: finalStateId,
-        date: formData.date || null,
-        time_slot: formData.time_slot || null,
-        loss_neighborhood: formData.loss_neighborhood || null,
-        loss_street: formData.loss_street || null,
-        departure_place: formData.departure_place || null,
-        arrival_place: formData.arrival_place || null,
-        departure_time: formData.departure_time || null,
-        arrival_time: formData.arrival_time || null,
-        travel_number: formData.travel_number || null,
+        date: toNull(formData.date),
+        time_slot: toNull(formData.time_slot),
+        loss_neighborhood: toNull(formData.loss_neighborhood),
+        loss_street: toNull(formData.loss_street),
+
+        // === Nouveaux champs: contexte / transport / lieu ===
+        transport_answer: toNull(formData.transport_answer),
+        transport_type: toNull(formData.transport_type),
+        transport_type_other: toNull(formData.transport_type_other),
+        place_type: toNull(formData.place_type),
+        place_type_other: toNull(formData.place_type_other),
+        airline_name: toNull(formData.airline_name),
+        metro_line_known: formData.metro_line_known ?? null,
+        metro_line: toNull(formData.metro_line),
+        train_company: toNull(formData.train_company),
+        rideshare_platform: toNull(formData.rideshare_platform),
+        taxi_company: toNull(formData.taxi_company),
+        circumstances: toNull(formData.circumstances),
+
+        // === Trajet ===
+        departure_place: toNull(formData.departure_place),
+        arrival_place: toNull(formData.arrival_place),
+        departure_time: toNull(formData.departure_time),
+        arrival_time: toNull(formData.arrival_time),
+        travel_number: toNull(formData.travel_number),
+
+        // === Contact ===
         email: String(formData.email || ""),
         first_name: String(formData.first_name || ""),
         last_name: String(formData.last_name || ""),
-        phone: formData.phone || null,
-        address: formData.address || null,
+        phone: toNull(formData.phone),
+        address: toNull(formData.address),
+
+        // === Préférences ===
+        preferred_contact_channel: toNull(formData.preferred_contact_channel),
+        research_report_opt_in: formData.research_report_opt_in ?? null,
+
         contribution: formData.contribution ?? 0,
         consent: consentOK,
-        phone_description: phoneDescription || null,
+        phone_description: toNull(phoneDescription),
         object_photo,
       };
 

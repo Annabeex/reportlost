@@ -143,6 +143,23 @@ async function searchTable(
   });
 }
 
+// --------- Extra filtres “pets” (évite CAT™ & co) ----------
+const ANIMAL_RE = /\b(cat|dog|kitten|puppy|bird|parrot|tortoise|rabbit|bunny|hamster|ferret)s?\b/i;
+const NON_PET_RE = /\b(battery|jumper|cables?|charger|terminal|ids?|passport|wallet|phone|laptop|computer|tool|equipment|generator|power\s*bank|brand|caterpillar)\b/i;
+
+function isPetReportLike(r: Report): boolean {
+  // Besoin d'une image réelle
+  if (!r.image) return false;
+
+  const text = (r.title || "").toLowerCase();
+  // Exclure "CAT" en majuscules (marque) ou tout indice non animal
+  if (/\bCAT\b/.test(r.title || "")) return false;
+  if (NON_PET_RE.test(text)) return false;
+
+  // Doit contenir un vrai mot d’animal
+  return ANIMAL_RE.test(text);
+}
+
 async function fetchReportsByKeyword(categorySlug: string): Promise<{ lost: Report[]; found: Report[] }> {
   const sb = getSupabase();
   const kws = KEYWORDS[categorySlug] ?? [categorySlug];
@@ -152,13 +169,20 @@ async function fetchReportsByKeyword(categorySlug: string): Promise<{ lost: Repo
     searchTable(sb, "found_items", kws, 10),
   ]);
 
-  const lost: Report[] = (lostRaw as any[]).map((r) => ({ ...r, category: categorySlug }));
-  const found: Report[] = (foundRaw as any[]).map((r) => ({ ...r, category: categorySlug }));
+  let lost: Report[] = (lostRaw as any[]).map((r) => ({ ...r, category: categorySlug }));
+  let found: Report[] = (foundRaw as any[]).map((r) => ({ ...r, category: categorySlug }));
+
+  // ✅ Spécifique à "pets" : image obligatoire + heuristique “animal”
+  if (categorySlug === "pets") {
+    lost = lost.filter(isPetReportLike);
+    found = found.filter(isPetReportLike);
+  }
+
   return { lost, found };
 }
 
 // ---------- Seeds (~20 cards) with 85% cats/dogs for pets ----------
-function pick<T>(arr: T[]) { return arr[Math.floor(Math.random() * arr.length)]; }
+function pick<T>(arr: T[]) { return Math.floor(Math.random()*arr.length) in arr ? arr[Math.floor(Math.random()*arr.length)] : arr[0]; }
 const DEMO_CITIES = [
   { city: "Seattle", state_id: "WA" }, { city: "Portland", state_id: "OR" },
   { city: "San Francisco", state_id: "CA" }, { city: "Los Angeles", state_id: "CA" },
@@ -186,7 +210,7 @@ const SEED_TITLES: Record<string, { lost: string[]; found: string[] }> = {
          found: ["Backpack on bus","Suitcase at airport","Tote in bookstore","Handbag in restroom","Messenger bag at café","Gym bag by court"] },
   // pets: handled specially (85% cats/dogs)
   pets: { lost: ["Missing cat with collar","Lost dog black harness","Parrot green","Tortoise in garden","White rabbit","Brown ferret"],
-          found: ["Cat found in courtyard","Dog near park","Bird on balcony","Puppy to shelter","Rabbit near school","Kitten by river"] },
+          found: ["Cat found in courtyard","Dog near park","Bird on balcony","Puppy turned in","Rabbit near school","Kitten by river"] },
   other: { lost: ["Umbrella black","Water bottle","Dotted notebook","Sketchbook","Portable speaker","Camera strap"],
            found: ["Umbrella in lobby","Bottle in gym","Notebook turned in","Speaker on lawn","Tripod found","Book on bench"] },
 };

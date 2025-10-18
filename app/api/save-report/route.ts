@@ -84,9 +84,57 @@ export async function POST(req: NextRequest) {
     const date = body.date ?? null;
     const email = (body.email ?? "").toLowerCase() || null;
 
+    // === Ajout: whitelist & sanitation des champs, avec coercition bool ===
+    const toNull = (v: any) =>
+      v === "" || v === undefined ? null : v;
+
+    const toBoolOrNull = (v: any) => {
+      if (v === true || v === false) return v;
+      if (v === "true") return true;
+      if (v === "false") return false;
+      return v == null ? null : Boolean(v);
+    };
+
+    const allowedKeys = new Set<string>([
+      // existants
+      "title","description","city","state_id","date","time_slot",
+      "loss_neighborhood","loss_street",
+      "departure_place","arrival_place","departure_time","arrival_time","travel_number",
+      "email","first_name","last_name","phone","address",
+      "contribution","consent","phone_description","object_photo",
+      // NOUVEAUX champs
+      "transport_answer","transport_type","transport_type_other",
+      "place_type","place_type_other","airline_name",
+      "metro_line_known","metro_line","train_company",
+      "rideshare_platform","taxi_company","circumstances",
+      "preferred_contact_channel","research_report_opt_in",
+      // identifiants/fingerprint (gérés à part mais on les laisse passer si déjà présents)
+      "fingerprint","report_id","report_public_id",
+    ]);
+
     // keep original payload for email templating but sanitize before DB operations
     const otherRaw = { ...(body || {}) };
-    const other: Record<string, any> = { ...otherRaw };
+    const other: Record<string, any> = {};
+
+    // on copie uniquement les champs whitelists avec sanitation légère
+    for (const k of Object.keys(otherRaw)) {
+      if (!allowedKeys.has(k)) continue;
+      let val = otherRaw[k];
+
+      if (k === "metro_line_known" || k === "research_report_opt_in") {
+        val = toBoolOrNull(val);
+      } else if (
+        typeof val === "string" &&
+        !["email", "state_id", "time_slot", "preferred_contact_channel"].includes(k)
+      ) {
+        val = val.trim();
+      }
+      other[k] = toNull(val);
+    }
+
+    // 🔧 Correction demandée : valeur par défaut pour respecter NOT NULL
+    if (!other.preferred_contact_channel) other.preferred_contact_channel = "email";
+
     delete other.report_id;
     delete other.report_public_id;
 
