@@ -65,6 +65,25 @@ async function triggerSlugGeneration(id: string) {
   }
 }
 
+/* --- Ajout MINIMAL: recheck avant envoi au client --- */
+async function canSendUserMail(supabase: any, id: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("lost_items")
+      .select("mail_sent")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) {
+      console.warn("canSendUserMail check error (continue anyway):", error);
+      return true; // on préfère envoyer plutôt que rater
+    }
+    return !data?.mail_sent;
+  } catch (e) {
+    console.warn("canSendUserMail exception (continue anyway):", e);
+    return true; // on préfère envoyer plutôt que rater
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
@@ -132,7 +151,7 @@ export async function POST(req: NextRequest) {
       other[k] = toNull(val);
     }
 
-    // 🔧 Correction demandée : valeur par défaut pour respecter NOT NULL
+    // valeur par défaut pour respecter NOT NULL
     if (!other.preferred_contact_channel) other.preferred_contact_channel = "email";
 
     delete other.report_id;
@@ -171,15 +190,17 @@ export async function POST(req: NextRequest) {
       // NEW: trigger slug generation (non bloquant)
       await triggerSlugGeneration(existing.id);
 
-      // send confirmation to user only once
+      // send confirmation to user only once (avec recheck)
       let mail_sent = !!existing.mail_sent;
       if (!mail_sent && (other.email || email)) {
         try {
-          const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-          const contributeUrl = `${site}/report?go=contribute&rid=${existing.id}`;
-          const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+          const shouldSend = await canSendUserMail(supabase, existing.id);
+          if (shouldSend) {
+            const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+            const contributeUrl = `${site}/report?go=contribute&rid=${existing.id}`;
+            const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
 
-          const text = `Hello ${other.first_name || ""},
+            const text = `Hello ${other.first_name || ""},
 
 We have received your lost item report on reportlost.org.
 
@@ -195,7 +216,7 @@ ${contributeUrl}
 
 Thank you for using ReportLost.`;
 
-          const html = `
+            const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
@@ -226,23 +247,26 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-          const okUser = await sendMailViaApi({
-            to: other.email || email || "",
-            subject: "✅ Your lost item report has been registered",
-            text,
-            html,
-          });
+            const okUser = await sendMailViaApi({
+              to: other.email || email || "",
+              subject: "✅ Your lost item report has been registered",
+              text,
+              html,
+            });
 
-          if (okUser) {
-            try {
-              await supabase.from("lost_items").update({ mail_sent: true }).eq("id", existing.id);
-              mail_sent = true;
-              console.log("✅ Confirmation email sent and mail_sent persisted for", existing.id);
-            } catch (e) {
-              console.warn("Could not persist mail_sent flag for existing row:", e);
+            if (okUser) {
+              try {
+                await supabase.from("lost_items").update({ mail_sent: true }).eq("id", existing.id);
+                mail_sent = true;
+                console.log("✅ Confirmation email sent and mail_sent persisted for", existing.id);
+              } catch (e) {
+                console.warn("Could not persist mail_sent flag for existing row:", e);
+              }
+            } else {
+              console.error("❌ Confirmation email sending failed for", existing.id);
             }
           } else {
-            console.error("❌ Confirmation email sending failed for", existing.id);
+            console.log("⏭️ Mail already sent earlier, skipping for", existing.id);
           }
         } catch (err) {
           console.error("❌ Email confirmation deposit failed for existing row:", err);
@@ -330,14 +354,16 @@ Contribution : ${other.contribution ?? 0}`;
         // NEW: trigger slug generation (non bloquant)
         await triggerSlugGeneration(clientProvidedId);
 
-        // send user confirmation if not already done
+        // send user confirmation if not already done (avec recheck)
         if (!existing.mail_sent && (other.email || email)) {
           try {
-            const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-            const contributeUrl = `${site}/report?go=contribute&rid=${clientProvidedId}`;
-            const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+            const shouldSend = await canSendUserMail(supabase, clientProvidedId);
+            if (shouldSend) {
+              const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+              const contributeUrl = `${site}/report?go=contribute&rid=${clientProvidedId}`;
+              const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
 
-            const text = `Hello ${other.first_name || ""},
+              const text = `Hello ${other.first_name || ""},
 
 We have received your lost item report on reportlost.org.
 
@@ -353,7 +379,7 @@ ${contributeUrl}
 
 Thank you for using ReportLost.`;
 
-            const html = `
+              const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
@@ -384,22 +410,25 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            const okUser = await sendMailViaApi({
-              to: other.email || email || "",
-              subject: "✅ Your lost item report has been registered",
-              text,
-              html,
-            });
+              const okUser = await sendMailViaApi({
+                to: other.email || email || "",
+                subject: "✅ Your lost item report has been registered",
+                text,
+                html,
+              });
 
-            if (okUser) {
-              try {
-                await supabase.from("lost_items").update({ mail_sent: true }).eq("id", clientProvidedId);
-                console.log("✅ Confirmation email sent and mail_sent persisted for", clientProvidedId);
-              } catch (e) {
-                console.warn("Could not persist mail_sent flag for clientProvidedId:", e);
+              if (okUser) {
+                try {
+                  await supabase.from("lost_items").update({ mail_sent: true }).eq("id", clientProvidedId);
+                  console.log("✅ Confirmation email sent and mail_sent persisted for", clientProvidedId);
+                } catch (e) {
+                  console.warn("Could not persist mail_sent flag for clientProvidedId:", e);
+                }
+              } else {
+                console.error("❌ Confirmation email sending failed for", clientProvidedId);
               }
             } else {
-              console.error("❌ Confirmation email sending failed for", clientProvidedId);
+              console.log("⏭️ Mail already sent earlier, skipping for", clientProvidedId);
             }
           } catch (err) {
             console.error("❌ Email confirmation deposit failed for clientProvidedId:", err);
@@ -514,14 +543,16 @@ Contribution : ${other.contribution ?? 0}`;
     // NEW: trigger slug generation (non bloquant)
     await triggerSlugGeneration(String(insData.id));
 
-    // send confirmation email once (user)
+    // send confirmation email once (user) — avec recheck
     if (other.email || email) {
       try {
-        const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-        const contributeUrl = `${site}/report?go=contribute&rid=${insData.id}`;
-        const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+        const shouldSend = await canSendUserMail(supabase, String(insData.id));
+        if (shouldSend) {
+          const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+          const contributeUrl = `${site}/report?go=contribute&rid=${insData.id}`;
+          const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
 
-        const text = `Hello ${other.first_name || ""},
+          const text = `Hello ${other.first_name || ""},
 
 We have received your lost item report on reportlost.org.
 
@@ -537,7 +568,7 @@ ${contributeUrl}
 
 Thank you for using ReportLost.`;
 
-        const html = `
+          const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
@@ -568,22 +599,25 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-        const okUser = await sendMailViaApi({
-          to: other.email || email || "",
-          subject: "✅ Your lost item report has been registered",
-          text,
-          html,
-        });
+          const okUser = await sendMailViaApi({
+            to: other.email || email || "",
+            subject: "✅ Your lost item report has been registered",
+            text,
+            html,
+          });
 
-        if (okUser) {
-          try {
-            await supabase.from("lost_items").update({ mail_sent: true }).eq("id", insData.id);
-            console.log("✅ Confirmation email sent and mail_sent persisted for", insData.id);
-          } catch (e) {
-            console.warn("Could not persist mail_sent flag for new insert:", e);
+          if (okUser) {
+            try {
+              await supabase.from("lost_items").update({ mail_sent: true }).eq("id", insData.id);
+              console.log("✅ Confirmation email sent and mail_sent persisted for", insData.id);
+            } catch (e) {
+              console.warn("Could not persist mail_sent flag for new insert:", e);
+            }
+          } else {
+            console.error("❌ Confirmation email sending failed for new insert", insData.id);
           }
         } else {
-          console.error("❌ Confirmation email sending failed for new insert", insData.id);
+          console.log("⏭️ Mail already sent earlier, skipping for", insData.id);
         }
       } catch (err) {
         console.error("❌ Email confirmation deposit failed for new insert:", err);
