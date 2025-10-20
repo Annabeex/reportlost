@@ -35,28 +35,23 @@ function normalizeDbResult(resData: any) {
 
 /**
  * Compute a stable fingerprint on client from canonicalized important fields.
- * Uses SubtleCrypto (browser). Returns hex SHA-256.
+ * Uses SubtleCrypto (browser). Returns hex SHA-1 (40 chars) to match server.
  */
 async function computeFingerprint(payload: Record<string, any>): Promise<string> {
-  try {
-    const s = [
-      payload.title || "",
-      payload.description || "",
-      payload.city || "",
-      payload.date || "",
-      payload.time_slot || "",
-      payload.phone || "",
-      (payload.email || "").toLowerCase(),
-    ].join("|").trim();
-
-    const enc = new TextEncoder().encode(s);
-    const hashBuf = await crypto.subtle.digest("SHA-256", enc);
-    const hashArr = Array.from(new Uint8Array(hashBuf));
-    return hashArr.map((b) => b.toString(16).padStart(2, "0")).join("");
-  } catch (e) {
-    console.warn("Fingerprint compute failed, falling back to timestamp:", e);
-    return `fallback-${Date.now()}`;
-  }
+  // mêmes champs/ordre que le serveur, mêmes normalisations
+  const parts = [
+    (payload.title ?? "").toString(),
+    (payload.description ?? "").toString(),
+    (payload.city ?? "").toString(),
+    (payload.state_id ?? "").toString().toUpperCase(),
+    (payload.date ?? "").toString(),
+    (payload.email ?? "").toString().toLowerCase(),
+  ];
+  const raw = parts.join("|");
+  // même algo que le serveur: SHA-1 (40 hex chars)
+  const enc = new TextEncoder().encode(raw);
+  const buf = await crypto.subtle.digest("SHA-1", enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 export default function ReportForm({
@@ -66,6 +61,8 @@ export default function ReportForm({
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ anti double-submit (état)
+  const submitLockRef = useRef(false); // ✅ anti double-submit (verrou mémoire)
   const formRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -85,7 +82,7 @@ export default function ReportForm({
       loss_neighborhood: "",
       loss_street: "",
       transport: false,
-      transport_answer: "",          // <-- ajouté
+      transport_answer: "",
       departure_place: "",
       arrival_place: "",
       departure_time: "",
@@ -102,15 +99,15 @@ export default function ReportForm({
       train_company: "",
       rideshare_platform: "",
       taxi_company: "",
-      circumstances: "",        // <-- ajouté
+      circumstances: "",
 
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       address: "",
-      preferred_contact_channel: "",   // <-- ajouté
-      research_report_opt_in: null,    // <-- ajouté (bool | null)
+      preferred_contact_channel: "",
+      research_report_opt_in: null,
 
       contribution: 0,
       isCellphone: false,
@@ -196,9 +193,13 @@ export default function ReportForm({
    * Save report using server endpoint /api/save-report
    * The server implements dedupe/fingerprint/update/insert and controls email sending.
    */
-  // Diagnostic-friendly save function (replaces older client-side DB writes)
   const saveReportToDatabase = async () => {
     try {
+      // ✅ anti double-submit (verrou local mémoire + état UI)
+      if (submitLockRef.current) return false;
+      submitLockRef.current = true;
+      setIsSubmitting(true);
+
       const phoneDescription = buildPhoneDescription();
       const object_photo = formData.object_photo || null;
 
@@ -286,6 +287,15 @@ export default function ReportForm({
       // compute fingerprint client-side so server and client fingerprint match
       const fingerprint = await computeFingerprint(cleaned);
 
+      // ✅ éviter plusieurs POST identiques dans la même session
+      try {
+        const prev = localStorage.getItem("rl_pending_fp");
+        if (prev === fingerprint) {
+          return true; // déjà en cours/traité côté client
+        }
+        localStorage.setItem("rl_pending_fp", fingerprint);
+      } catch {}
+
       // build body to POST to server endpoint
       const bodyToSend: Record<string, any> = {
         ...cleaned,
@@ -293,36 +303,53 @@ export default function ReportForm({
       };
 
       // include report_id if we already have one (update flow)
-      // ONLY send report_id if it *looks like a UUID* (to avoid sending random public_ids and
-      // thereby causing DB attempts to write a non-existent 'report_id' column).
+      // ONLY send report_id if it *looks like a UUID*
       if (formData.report_id) {
         const candidate = String(formData.report_id).trim();
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (uuidRegex.test(candidate)) {
           bodyToSend.report_id = candidate;
         } else if (formData.public_id) {
-          // if we have a short public id (and the stored report_id looks not like a uuid),
-          // send the public id instead so server can try to find by public id if needed.
           bodyToSend.report_public_id = String(formData.public_id);
         } else {
           console.warn("Not sending report_id because it is not a UUID:", candidate);
         }
       }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+   // — avant l'appel fetch —
+const controller = new AbortController();
+const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
+const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-      let res: Response;
-      try {
-        res = await fetch("/api/save-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyToSend),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
+let res: Response;
+try {
+  res = await fetch("/api/save-report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bodyToSend),
+    signal: controller.signal,
+  });
+} catch (e: any) {
+  // 🔁 petit retry si c’est un AbortError
+  if (e?.name === "AbortError") {
+    const controller2 = new AbortController();
+    const retryTimeout = setTimeout(() => controller2.abort(), 20000);
+    try {
+      res = await fetch("/api/save-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyToSend),
+        signal: controller2.signal,
+      });
+    } finally {
+      clearTimeout(retryTimeout);
+    }
+  } else {
+    throw e;
+  }
+} finally {
+  clearTimeout(timeout);
+}
 
       // Diagnostic: if non-ok, lire et afficher le body (json ou texte)
       if (!res.ok) {
@@ -381,7 +408,6 @@ export default function ReportForm({
       }
 
       // === NOTE: pas de génération/redirect de slug ici.
-      // Le slug sera géré côté admin/backoffice pour ne pas affecter le funnel.
 
       return true;
     } catch (err: any) {
@@ -393,10 +419,17 @@ export default function ReportForm({
       console.error("💥 Unexpected error while saving report (client):", err);
       alert(`Unexpected error. Voir la console pour plus d'infos: ${String(err?.message || err)}`);
       return false;
+    } finally {
+      // ✅ relâche le verrou après un court délai pour éviter les rafales
+      setTimeout(() => {
+        submitLockRef.current = false;
+        setIsSubmitting(false);
+        try { localStorage.removeItem("rl_pending_fp"); } catch {}
+      }, 3000);
     }
   };
 
-  // --- navigation / step logic (was missing, causing TS errors) ---
+  // --- navigation / step logic ---
   const handleNext = async () => {
     // Step 1 validation
     if (enforceValidation && step === 1) {
@@ -413,6 +446,8 @@ export default function ReportForm({
 
     // Step 2: personal info + submit to DB
     if (enforceValidation && step === 2) {
+      if (isSubmitting) return; // ✅ déjà en cours
+
       if (!formData.first_name?.trim()) {
         alert("Please enter your first name.");
         return;
@@ -464,6 +499,7 @@ export default function ReportForm({
           onChange={handleChange}
           onNext={handleNext}
           onBack={handleBack}
+          isSubmitting={isSubmitting}   // ✅ passe l’état à Step2
         />
       )}
 

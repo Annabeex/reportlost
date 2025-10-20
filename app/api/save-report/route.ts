@@ -7,6 +7,14 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/* small helper: promise timeout */
+async function withTimeout<T>(p: Promise<T>, ms = 4000): Promise<T> {
+  return await Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
+  ]);
+}
+
 /* compute fingerprint (server-side, should match client) */
 function computeFingerprint(obj: {
   title?: string | null;
@@ -38,11 +46,13 @@ async function sendMailViaApi(payload: {
 }) {
   try {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-    const res = await fetch(`${site}/api/send-mail`, {
+    const req = fetch(`${site}/api/send-mail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      keepalive: true, // ✅ ne coupe pas si la réponse HTTP se ferme vite
     });
+    const res = (await withTimeout(req, 4000)) as Response; // ⏱️ timeout dur de 4s
     return res.ok;
   } catch (e) {
     console.error("sendMailViaApi error", e);
@@ -54,11 +64,9 @@ async function sendMailViaApi(payload: {
 async function triggerSlugGeneration(id: string) {
   try {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-    await fetch(`${site}/api/generate-report-slug`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-      // on laisse le server répondre, mais on ignore toute erreur
+    await fetch(`${site}/api/generate-report-slug?id=${encodeURIComponent(id)}`, {
+      method: "GET",
+      keepalive: true,
     });
   } catch (e) {
     console.warn("generate-report-slug failed (ignored):", e);
@@ -104,8 +112,7 @@ export async function POST(req: NextRequest) {
     const email = (body.email ?? "").toLowerCase() || null;
 
     // === Ajout: whitelist & sanitation des champs, avec coercition bool ===
-    const toNull = (v: any) =>
-      v === "" || v === undefined ? null : v;
+    const toNull = (v: any) => (v === "" || v === undefined ? null : v);
 
     const toBoolOrNull = (v: any) => {
       if (v === true || v === false) return v;
@@ -116,19 +123,47 @@ export async function POST(req: NextRequest) {
 
     const allowedKeys = new Set<string>([
       // existants
-      "title","description","city","state_id","date","time_slot",
-      "loss_neighborhood","loss_street",
-      "departure_place","arrival_place","departure_time","arrival_time","travel_number",
-      "email","first_name","last_name","phone","address",
-      "contribution","consent","phone_description","object_photo",
+      "title",
+      "description",
+      "city",
+      "state_id",
+      "date",
+      "time_slot",
+      "loss_neighborhood",
+      "loss_street",
+      "departure_place",
+      "arrival_place",
+      "departure_time",
+      "arrival_time",
+      "travel_number",
+      "email",
+      "first_name",
+      "last_name",
+      "phone",
+      "address",
+      "contribution",
+      "consent",
+      "phone_description",
+      "object_photo",
       // NOUVEAUX champs
-      "transport_answer","transport_type","transport_type_other",
-      "place_type","place_type_other","airline_name",
-      "metro_line_known","metro_line","train_company",
-      "rideshare_platform","taxi_company","circumstances",
-      "preferred_contact_channel","research_report_opt_in",
+      "transport_answer",
+      "transport_type",
+      "transport_type_other",
+      "place_type",
+      "place_type_other",
+      "airline_name",
+      "metro_line_known",
+      "metro_line",
+      "train_company",
+      "rideshare_platform",
+      "taxi_company",
+      "circumstances",
+      "preferred_contact_channel",
+      "research_report_opt_in",
       // identifiants/fingerprint (gérés à part mais on les laisse passer si déjà présents)
-      "fingerprint","report_id","report_public_id",
+      "fingerprint",
+      "report_id",
+      "report_public_id",
     ]);
 
     // keep original payload for email templating but sanitize before DB operations
@@ -273,13 +308,14 @@ Thank you for using ReportLost.`;
         }
       }
 
-      // notify support about the (updated) report
-      try {
-        const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-        const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-        const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-        const reference = public_id || "N/A";
-        const bodyText = `Report: ${existing.id}
+      // --- Support notification (fire & forget robuste) ---
+      (() => {
+        try {
+          const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+          const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+          const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+          const reference = public_id || "N/A";
+          const bodyText = `Report: ${existing.id}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -294,29 +330,31 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-        const okSupport = await sendMailViaApi({
-          to: "support@reportlost.org",
-          subject,
-          text: bodyText,
-        });
-
-        if (!okSupport) {
-          console.error("❌ sendMailViaApi returned false when sending support notification for (existing)", existing.id);
-        } else {
-          console.log("✅ Support notification sent for existing report", existing.id);
+          sendMailViaApi({
+            to: "support@reportlost.org",
+            subject,
+            text: bodyText,
+          })
+            .then((ok) =>
+              console.log(ok ? "📨 Support email sent (existing)" : "❌ Support email failed (existing)"),
+            )
+            .catch((err) => console.error("❌ Support email throw (existing):", err));
+        } catch (err) {
+          console.error("❌ Email notification to support failed for existing row:", err);
         }
-      } catch (err) {
-        console.error("❌ Email notification to support failed for existing row:", err);
-      }
+      })();
 
-      return NextResponse.json({
-        ok: true,
-        action: "updated",
-        id: existing.id,
-        public_id,
-        mail_sent,
-        created_at: createdAt,
-      }, { status: 200 });
+      return NextResponse.json(
+        {
+          ok: true,
+          action: "updated",
+          id: existing.id,
+          public_id,
+          mail_sent,
+          created_at: createdAt,
+        },
+        { status: 200 },
+      );
     };
 
     const clientProvidedId = body.report_id ? String(body.report_id) : null;
@@ -435,14 +473,15 @@ Thank you for using ReportLost.`;
           }
         }
 
-        // support notification for update
-        try {
-          const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-          const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-          const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-          const reference = public_id || "N/A";
-          const createdAt = existing.created_at || new Date().toISOString();
-          const bodyText = `Report: ${clientProvidedId}
+        // --- Support notification (fire & forget robuste) ---
+        (() => {
+          try {
+            const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+            const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+            const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+            const reference = public_id || "N/A";
+            const createdAt = existing.created_at || new Date().toISOString();
+            const bodyText = `Report: ${clientProvidedId}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -457,16 +496,19 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-          await sendMailViaApi({
-            to: "support@reportlost.org",
-            subject,
-            text: bodyText,
-          });
-
-          console.log("✅ Support notification sent for updated report", clientProvidedId);
-        } catch (err) {
-          console.error("❌ Email notification to support failed for clientProvidedId:", err);
-        }
+            sendMailViaApi({
+              to: "support@reportlost.org",
+              subject,
+              text: bodyText,
+            })
+              .then((ok) =>
+                console.log(ok ? "📨 Support email sent (update by id)" : "❌ Support email failed (update by id)"),
+              )
+              .catch((err) => console.error("❌ Support email throw (update by id):", err));
+          } catch (err) {
+            console.error("❌ Email notification to support failed for clientProvidedId:", err);
+          }
+        })();
 
         return NextResponse.json({ ok: true, action: "updated", id: clientProvidedId, public_id }, { status: 200 });
       }
@@ -624,14 +666,15 @@ Thank you for using ReportLost.`;
       }
     }
 
-    // support notification (for new insert)
-    try {
-      const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-      const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-      const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-      const reference = public_id || "N/A";
-      const createdAt = (insData as any).created_at || new Date().toISOString();
-      const bodyText = `Report: ${insData.id}
+    // --- Support notification (fire & forget robuste) ---
+    (() => {
+      try {
+        const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+        const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+        const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+        const reference = public_id || "N/A";
+        const createdAt = (insData as any).created_at || new Date().toISOString();
+        const bodyText = `Report: ${insData.id}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -646,16 +689,19 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-      await sendMailViaApi({
-        to: "support@reportlost.org",
-        subject,
-        text: bodyText,
-      });
-
-      console.log("✅ Support notification sent for new report", insData.id);
-    } catch (err) {
-      console.error("❌ Email notification to support failed for new insert:", err);
-    }
+        sendMailViaApi({
+          to: "support@reportlost.org",
+          subject,
+          text: bodyText,
+        })
+          .then((ok) =>
+            console.log(ok ? "📨 Support email sent (insert)" : "❌ Support email failed (insert)"),
+          )
+          .catch((err) => console.error("❌ Support email throw (insert):", err));
+      } catch (err) {
+        console.error("❌ Email notification to support failed for new insert:", err);
+      }
+    })();
 
     return NextResponse.json({ ok: true, action: "inserted", id: insData.id, public_id }, { status: 200 });
   } catch (err: any) {

@@ -13,6 +13,7 @@ interface Props {
   onNext: () => void;
   onBack: () => void;
   setFormData: (updater: any) => void;
+  isSubmitting?: boolean; // ✅ NEW
 }
 
 /* Small icons */
@@ -84,6 +85,7 @@ export default function ReportFormStep2({
   onNext,
   onBack,
   setFormData,
+  isSubmitting = false, // ✅ NEW
 }: Props) {
   const [stage, setStage] = useState<"contact" | "prefs">("contact");
   const [confirmAll, setConfirmAll] = useState(
@@ -299,7 +301,12 @@ export default function ReportFormStep2({
             >
               ← Back
             </button>
-            <button className={btnGreen} onClick={goToPrefs}>
+            <button
+              className={`${btnGreen} ${isSubmitting ? "opacity-60 pointer-events-none" : ""}`} // ✅ disable visuel
+              onClick={goToPrefs}
+              disabled={isSubmitting} // ✅ NEW
+              aria-disabled={isSubmitting}
+            >
               Continue
             </button>
           </div>
@@ -316,7 +323,7 @@ export default function ReportFormStep2({
           </InfoSection>
 
           {/* Radios (hors encadré) */}
-          <div className="pl-8 space-y-2 text-[16px] mt-3">
+          <div className="pl-8 space-y-2 text[16px] mt-3">
             {[
               { key: "email", label: "E-mail" },
               { key: "call", label: "Phone call" },
@@ -377,8 +384,13 @@ export default function ReportFormStep2({
             >
               ← Back
             </button>
-            <button className={btnGreen} onClick={onNext}>
-              Continue
+            <button
+              className={`${btnGreen} ${isSubmitting ? "opacity-60 pointer-events-none" : ""}`} // ✅ disable visuel
+              onClick={onNext}
+              disabled={isSubmitting} // ✅ NEW
+              aria-disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting…" : "Continue"}
             </button>
           </div>
         </>
