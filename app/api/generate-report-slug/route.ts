@@ -71,7 +71,23 @@ export async function GET(req: NextRequest) {
       finalSlug = `${base}-${suffix}`.toLowerCase();
     }
 
-    // 4) Enregistrer le slug
+    // --- INSERT (fallback) : si la ligne n'avait pas encore de slug,
+    // on l'INSERT dans une table d'index de slugs (historisation) puis on met à jour la ligne principale.
+    // Si vous n'avez pas de table 'slug_index', vous pouvez ignorer ce bloc sans impacter le reste.
+  try {
+  await supabase
+    .from("slug_index")
+    .insert([
+      {
+        lost_item_id: item.id,
+        slug: finalSlug,
+      },
+    ]);
+} catch {
+  // table optionnelle absente -> on ignore l’erreur
+}
+
+    // 4) Enregistrer le slug sur la ligne principale
     const { error: upErr } = await supabase
       .from("lost_items")
       .update({ slug: finalSlug })
