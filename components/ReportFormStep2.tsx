@@ -1,6 +1,6 @@
 // components/ReportFormStep2.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
@@ -94,6 +94,23 @@ export default function ReportFormStep2({
   const [previewUrl, setPreviewUrl] = useState(formData.object_photo || "");
   const [uploading, setUploading] = useState(false);
 
+  // ✅ nouveau ref pour remonter en haut du composant
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // ✅ scroll auto en haut quand on change de sous-étape (notamment vers "prefs")
+  useEffect(() => {
+    // petite rafale pour laisser le layout se stabiliser avant scroll
+    const id = requestAnimationFrame(() => {
+      const el = topRef.current;
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [stage]);
+
   const btnGreen =
     "inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449] text-white font-semibold px-6 py-2.5 shadow";
   const fieldCls =
@@ -152,7 +169,7 @@ export default function ReportFormStep2({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" ref={topRef}>
       <h2 className="text-xl font-bold">
         {stage === "contact" ? "Step 3: Your contact details" : "Step 4: Preferences"}
       </h2>

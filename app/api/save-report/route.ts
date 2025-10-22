@@ -1,7 +1,6 @@
 // app/api/save-report/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { publicIdFromUuid } from "@/lib/reportId";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -13,6 +12,19 @@ async function withTimeout<T>(p: Promise<T>, ms = 4000): Promise<T> {
     p,
     new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
   ]);
+}
+
+/* 5 digits from uuid (fallback only) */
+function refCode5FromId(input: string): string {
+  const b = crypto.createHash("sha1").update(input).digest(); // 20 bytes
+  const n = b.readUInt32BE(0);
+  return String((n % 90000) + 10000).padStart(5, "0");
+}
+
+/* Prefer DB public_id if it's exactly 5 digits, else fallback from id */
+function getReferenceCode(public_id: string | null | undefined, id: string): string {
+  if (public_id && /^\d{5}$/.test(public_id)) return public_id;
+  return refCode5FromId(id);
 }
 
 /* compute fingerprint (server-side, should match client) */
@@ -209,19 +221,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: updErr.message }, { status: 500 });
       }
 
-      // ensure public_id
-      let public_id = existing.public_id;
-      if (!public_id) {
-        public_id = publicIdFromUuid(existing.id) || null;
-        if (public_id) {
-          try {
-            await supabase.from("lost_items").update({ public_id }).eq("id", existing.id);
-          } catch (e) {
-            console.warn("Could not persist computed public_id for existing row:", e);
-          }
-        }
-      }
-
       // NEW: trigger slug generation (non bloquant)
       await triggerSlugGeneration(existing.id);
 
@@ -233,58 +232,69 @@ export async function POST(req: NextRequest) {
           if (shouldSend) {
             const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
             const contributeUrl = `${site}/report?go=contribute&rid=${existing.id}`;
-            const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+
+            // reference code from DB public_id (5 digits) or fallback
+            const ref5 = getReferenceCode(existing.public_id, existing.id);
+            const referenceLine = `Reference code: ${ref5}\n`;
 
             const text = `Hello ${other.first_name || ""},
 
-We have received your lost item report on reportlost.org.
+We have saved your lost item report draft on reportlost.org.
 
-Your report is now published and automatic alerts are active.
-➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+To publish it and start the search, please complete the secure payment (you can choose your search level on the next page).
 
-Details of your report:
+Your report details:
 - Item: ${other.title || ""}
 - Date: ${other.date || ""}
 - City: ${other.city || ""}
 ${referenceLine}
 ${contributeUrl}
 
+Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+
 Thank you for using ReportLost.`;
 
             const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-  <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Publish your report to start the search</p>
   </div>
-  <div style="padding:20px;color:#111827;line-height:1.55">
+  <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have received your lost item report on
-      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      We have saved your lost item report <em>draft</em> on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      Your report is now published and automatic alerts are active.
-      <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+      To publish it and start the search, please complete the secure payment.
+      You will be able to choose your search level on the next page.
     </p>
-    <p style="margin:0 0 18px">
-      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
-        Upgrade with a contribution
-      </a>
-    </p>
-    <p style="margin:0 0 8px"><b>Details of your report</b></p>
-    <ul style="margin:0 0 16px;padding-left:18px">
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
       <li><b>Item:</b> ${other.title || ""}</li>
       <li><b>Date:</b> ${other.date || ""}</li>
       <li><b>City:</b> ${other.city || ""}</li>
-      ${public_id ? `<li><b>Reference code:</b> ${public_id}</li>` : ""}
+      <li><b>Reference code:</b> ${ref5}</li>
     </ul>
-    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+
+    <p style="margin:0 0 18px">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+        Proceed to secure payment
+      </a>
+    </p>
+
+    <p style="margin:0 0 8px;font-size:13px;color:#374151">
+      Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+    </p>
   </div>
 </div>`;
 
             const okUser = await sendMailViaApi({
               to: other.email || email || "",
-              subject: "✅ Your lost item report has been registered",
+              subject: "Publish your report to start the search",
               text,
               html,
             });
@@ -314,7 +324,7 @@ Thank you for using ReportLost.`;
           const subjectBase = `Lost item : ${other.title || "Untitled"}`;
           const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
           const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-          const reference = public_id || "N/A";
+          const reference = getReferenceCode(existing.public_id, existing.id);
           const bodyText = `Report: ${existing.id}
 City: ${other.city || ""}
 State: ${state_id || ""}
@@ -349,7 +359,7 @@ Contribution : ${other.contribution ?? 0}`;
           ok: true,
           action: "updated",
           id: existing.id,
-          public_id,
+          public_id: existing.public_id,
           mail_sent,
           created_at: createdAt,
         },
@@ -376,19 +386,6 @@ Contribution : ${other.contribution ?? 0}`;
           return NextResponse.json({ ok: false, error: upErr.message }, { status: 500 });
         }
 
-        // ensure public_id exists
-        let public_id = existing.public_id;
-        if (!public_id) {
-          public_id = publicIdFromUuid(clientProvidedId) || null;
-          if (public_id) {
-            try {
-              await supabase.from("lost_items").update({ public_id }).eq("id", clientProvidedId);
-            } catch (e) {
-              console.warn("Could not persist computed public_id for clientProvidedId:", e);
-            }
-          }
-        }
-
         // NEW: trigger slug generation (non bloquant)
         await triggerSlugGeneration(clientProvidedId);
 
@@ -399,58 +396,68 @@ Contribution : ${other.contribution ?? 0}`;
             if (shouldSend) {
               const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
               const contributeUrl = `${site}/report?go=contribute&rid=${clientProvidedId}`;
-              const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+
+              const ref5 = getReferenceCode(existing.public_id, clientProvidedId);
+              const referenceLine = `Reference code: ${ref5}\n`;
 
               const text = `Hello ${other.first_name || ""},
 
-We have received your lost item report on reportlost.org.
+We have saved your lost item report draft on reportlost.org.
 
-Your report is now published and automatic alerts are active.
-➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+To publish it and start the search, please complete the secure payment (you can choose your search level on the next page).
 
-Details of your report:
+Your report details:
 - Item: ${other.title || ""}
 - Date: ${other.date || ""}
 - City: ${other.city || ""}
 ${referenceLine}
 ${contributeUrl}
 
+Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+
 Thank you for using ReportLost.`;
 
               const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-  <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Publish your report to start the search</p>
   </div>
-  <div style="padding:20px;color:#111827;line-height:1.55">
+  <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have received your lost item report on
-      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      We have saved your lost item report <em>draft</em> on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      Your report is now published and automatic alerts are active.
-      <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+      To publish it and start the search, please complete the secure payment.
+      You will be able to choose your search level on the next page.
     </p>
-    <p style="margin:0 0 18px">
-      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
-        Upgrade with a contribution
-      </a>
-    </p>
-    <p style="margin:0 0 8px"><b>Details of your report</b></p>
-    <ul style="margin:0 0 16px;padding-left:18px">
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
       <li><b>Item:</b> ${other.title || ""}</li>
       <li><b>Date:</b> ${other.date || ""}</li>
       <li><b>City:</b> ${other.city || ""}</li>
-      ${public_id ? `<li><b>Reference code:</b> ${public_id}</li>` : ""}
+      <li><b>Reference code:</b> ${ref5}</li>
     </ul>
-    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+
+    <p style="margin:0 0 18px">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+        Proceed to secure payment
+      </a>
+    </p>
+
+    <p style="margin:0 0 8px;font-size:13px;color:#374151">
+      Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+    </p>
   </div>
 </div>`;
 
               const okUser = await sendMailViaApi({
                 to: other.email || email || "",
-                subject: "✅ Your lost item report has been registered",
+                subject: "✅ Publish your report to start the search",
                 text,
                 html,
               });
@@ -479,7 +486,7 @@ Thank you for using ReportLost.`;
             const subjectBase = `Lost item : ${other.title || "Untitled"}`;
             const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
             const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-            const reference = public_id || "N/A";
+            const reference = getReferenceCode(existing.public_id, clientProvidedId);
             const createdAt = existing.created_at || new Date().toISOString();
             const bodyText = `Report: ${clientProvidedId}
 City: ${other.city || ""}
@@ -510,7 +517,10 @@ Contribution : ${other.contribution ?? 0}`;
           }
         })();
 
-        return NextResponse.json({ ok: true, action: "updated", id: clientProvidedId, public_id }, { status: 200 });
+        return NextResponse.json(
+          { ok: true, action: "updated", id: clientProvidedId, public_id: existing.public_id },
+          { status: 200 },
+        );
       }
     }
 
@@ -569,19 +579,6 @@ Contribution : ${other.contribution ?? 0}`;
       return NextResponse.json({ ok: false, error: insErr?.message || "insert_failed" }, { status: 500 });
     }
 
-    // ensure public_id persisted
-    let public_id = insData.public_id;
-    if (!public_id) {
-      try {
-        public_id = publicIdFromUuid(String(insData.id)) || null;
-        if (public_id) {
-          await supabase.from("lost_items").update({ public_id }).eq("id", insData.id);
-        }
-      } catch (e) {
-        console.warn("Could not compute public_id:", e);
-      }
-    }
-
     // NEW: trigger slug generation (non bloquant)
     await triggerSlugGeneration(String(insData.id));
 
@@ -592,58 +589,68 @@ Contribution : ${other.contribution ?? 0}`;
         if (shouldSend) {
           const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
           const contributeUrl = `${site}/report?go=contribute&rid=${insData.id}`;
-          const referenceLine = public_id ? `Reference code: ${public_id}\n` : "";
+
+          const ref5 = getReferenceCode(insData.public_id, String(insData.id));
+          const referenceLine = `Reference code: ${ref5}\n`;
 
           const text = `Hello ${other.first_name || ""},
 
-We have received your lost item report on reportlost.org.
+We have saved your lost item report draft on reportlost.org.
 
-Your report is now published and automatic alerts are active.
-➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+To publish it and start the search, please complete the secure payment (you can choose your search level on the next page).
 
-Details of your report:
+Your report details:
 - Item: ${other.title || ""}
 - Date: ${other.date || ""}
 - City: ${other.city || ""}
 ${referenceLine}
 ${contributeUrl}
 
+Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+
 Thank you for using ReportLost.`;
 
           const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-  <div style="background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:18px 16px;text-align:center;">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Publish your report to start the search</p>
   </div>
-  <div style="padding:20px;color:#111827;line-height:1.55">
+  <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have received your lost item report on
-      <a href="\${site}" style="color:#0f766e;text-decoration:underline">reportlost.org</a>.
+      We have saved your lost item report <em>draft</em> on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      Your report is now published and automatic alerts are active.
-      <br/>➡️ To benefit from a 30-day manual follow-up, you can complete your contribution (10, 20 or 30 $).
+      To publish it and start the search, please complete the secure payment.
+      You will be able to choose your search level on the next page.
     </p>
-    <p style="margin:0 0 18px">
-      <a href="\${contributeUrl}" style="display:inline-block;background:linear-gradient(90deg,#0f766e,#065f46);color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
-        Upgrade with a contribution
-      </a>
-    </p>
-    <p style="margin:0 0 8px"><b>Details of your report</b></p>
-    <ul style="margin:0 0 16px;padding-left:18px">
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
       <li><b>Item:</b> ${other.title || ""}</li>
       <li><b>Date:</b> ${other.date || ""}</li>
       <li><b>City:</b> ${other.city || ""}</li>
-      ${public_id ? `<li><b>Reference code:</b> ${public_id}</li>` : ""}
+      <li><b>Reference code:</b> ${ref5}</li>
     </ul>
-    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+
+    <p style="margin:0 0 18px">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+        Proceed to secure payment
+      </a>
+    </p>
+
+    <p style="margin:0 0 8px;font-size:13px;color:#374151">
+      Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
+    </p>
   </div>
 </div>`;
 
           const okUser = await sendMailViaApi({
             to: other.email || email || "",
-            subject: "✅ Your lost item report has been registered",
+            subject: "Publish your report to start the search",
             text,
             html,
           });
@@ -672,7 +679,7 @@ Thank you for using ReportLost.`;
         const subjectBase = `Lost item : ${other.title || "Untitled"}`;
         const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
         const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-        const reference = public_id || "N/A";
+        const reference = getReferenceCode(insData.public_id, String(insData.id));
         const createdAt = (insData as any).created_at || new Date().toISOString();
         const bodyText = `Report: ${insData.id}
 City: ${other.city || ""}
@@ -699,11 +706,14 @@ Contribution : ${other.contribution ?? 0}`;
           )
           .catch((err) => console.error("❌ Support email throw (insert):", err));
       } catch (err) {
-        console.error("❌ Email notification to support failed for new insert:", err);
+        console.error("❌ Support email failed for new insert:", err);
       }
     })();
 
-    return NextResponse.json({ ok: true, action: "inserted", id: insData.id, public_id }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, action: "inserted", id: insData.id, public_id: insData.public_id },
+      { status: 200 },
+    );
   } catch (err: any) {
     console.error("save-report unexpected error:", err);
     return NextResponse.json({ ok: false, error: "unexpected" }, { status: 500 });

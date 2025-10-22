@@ -107,8 +107,8 @@ const CityMap = NextDynamic(() => import("@/components/MapClient").then(m => m.d
   ssr: false,
   loading: () => <div className="text-gray-400">Loading map...</div>,
 });
-const ClientReportForm = NextDynamic(
-  () => import("@/components/ClientReportForm").then(m => m.default),
+const CityLostFormBlock = NextDynamic(
+  () => import("@/components/CityLostFormBlock").then(m => m.default),
   { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
 );
 
@@ -216,7 +216,7 @@ export default async function Page({ params }: { params: { state: string; city: 
           id: (typeof el?.id === "number" || typeof el?.id === "string") ? String(el.id) : undefined,
           lat: typeof el?.lat === "number" ? el.lat : (typeof el?.center?.lat === "number" ? el.center.lat : null),
           lon: typeof el?.lon === "number" ? el.lon : (typeof el?.center?.lon === "number" ? el.center.lon : null),
-          name: typeof el?.tags?.name === "string" ? el.tags.name : null,
+          name: typeof el?.tags?.name === "string" ? el?.tags?.name : null,
         }));
       }
     } catch { policeStations = []; }
@@ -235,97 +235,104 @@ export default async function Page({ params }: { params: { state: string; city: 
       .replace(/\n\n+/g, "</p><p>")
       .replace(/\n/g, " ")}</p>`;
 
-    // 8) Render
+    // 8) Blocs réutilisés (passés au composant client pour masquage à l’étape 3)
+    const TitleSection = (
+      <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+          {title}
+        </h1>
+      </section>
+    );
+
+    const RecentAndMapSection = (
+      <section className="bg-white p-6 rounded-b-xl shadow -mt-px">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="lg:w-1/2 w-full prose text-gray-800">
+            <h2 className="text-xl font-semibold text-blue-900 mb-3 relative pl-6">
+              <span className="absolute left-0 top-0">🔍</span>
+              Recently reported lost items in {cityData.city_ascii} – updated this {today}
+            </h2>
+            <ul className="list-none space-y-2 pl-0">
+              {reports.map((r: string, i: number) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-blue-500">📍</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
+            <CityMap stations={policeStations} />
+          </div>
+        </div>
+      </section>
+    );
+
+    const ExtraBelowForm = (
+      <>
+        <section className="bg-white p-6 rounded-xl shadow">
+          <div
+            className="text-gray-800 leading-relaxed text-base [&>p]:mb-4"
+            dangerouslySetInnerHTML={{ __html: enrichedText }}
+          />
+        </section>
+
+        {nearbyCities.length > 0 && (
+          <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8 items-start">
+            <div className="lg:w-1/2 w-full">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
+              <ul className="list-disc list-inside text-gray-700">
+                {nearbyCities.map((c: any) => {
+                  const sidRaw = c.state_id ?? stateAbbr;
+                  const sidDisplay = typeof sidRaw === "string" ? sidRaw.toUpperCase() : stateAbbr;
+                  const sidForLink = typeof sidRaw === "string" ? sidRaw : stateAbbr;
+                  return (
+                    <li key={c.id ?? `${c.city_ascii}-${sidDisplay}`}>
+                      <Link
+                        prefetch={false}
+                        href={buildCityPath(sidForLink, c.city_ascii)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {c.city_ascii} ({sidDisplay})
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="lg:w-1/2 w-full">
+              {cityImage && (
+                <>
+                  <Image
+                    src={cityImage}
+                    alt={cityImageAlt}
+                    width={600}
+                    height={400}
+                    className="w-full h-[250px] object-cover rounded-lg shadow"
+                  />
+                  {cityImageCredit && (
+                    <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+        )}
+      </>
+    );
+
+    // 9) Render
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto space-y-16">
-          {/* 🔹 Nouveau groupage : section titre détachée mais collée */}
-          <div>
-            {/* Titre seul */}
-            <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
-              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-                {title}
-              </h1>
-            </section>
-
-            {/* Section “Recently + Map” collée (aucune marge) */}
-            <section className="bg-white p-6 rounded-b-xl shadow -mt-px">
-              <div className="flex flex-col lg:flex-row gap-8">
-                <div className="lg:w-1/2 w-full prose text-gray-800">
-                  <h2 className="text-xl font-semibold text-blue-900 mb-3 relative pl-6">
-                    {/* l’icône reste en absolu pour ne pas décaler le texte */}
-                    <span className="absolute left-0 top-0">🔍</span>
-                    Recently reported lost items in {cityData.city_ascii} – updated this {today}
-                  </h2>
-                  <ul className="list-none space-y-2 pl-0">
-                    {reports.map((r: string, i: number) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-blue-500">📍</span>
-                        <span>{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
-                  <CityMap stations={policeStations} />
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Formulaire LOST, sans wrapper bleu supplémentaire */}
-          <ClientReportForm defaultCity={cityData.city_ascii} initialTab="lost" />
-
-          <section className="bg-white p-6 rounded-xl shadow">
-            <div
-              className="text-gray-800 leading-relaxed text-base [&>p]:mb-4"
-              dangerouslySetInnerHTML={{ __html: enrichedText }}
-            />
-          </section>
-
-          {nearbyCities.length > 0 && (
-            <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8 items-start">
-              <div className="lg:w-1/2 w-full">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
-                <ul className="list-disc list-inside text-gray-700">
-                  {nearbyCities.map((c: any) => {
-                    const sidRaw = c.state_id ?? stateAbbr;
-                    const sidDisplay = typeof sidRaw === "string" ? sidRaw.toUpperCase() : stateAbbr;
-                    const sidForLink = typeof sidRaw === "string" ? sidRaw : stateAbbr;
-                    return (
-                      <li key={c.id ?? `${c.city_ascii}-${sidDisplay}`}>
-                        <Link
-                          prefetch={false}
-                          href={buildCityPath(sidForLink, c.city_ascii)}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {c.city_ascii} ({sidDisplay})
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-
-              <div className="lg:w-1/2 w-full">
-                {cityImage && (
-                  <>
-                    <Image
-                      src={cityImage}
-                      alt={cityImageAlt}
-                      width={600}
-                      height={400}
-                      className="w-full h-[250px] object-cover rounded-lg shadow"
-                    />
-                    {cityImageCredit && (
-                      <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
-                    )}
-                  </>
-                )}
-              </div>
-            </section>
-          )}
+          <CityLostFormBlock
+            defaultCity={cityData.city_ascii}
+            titleSection={TitleSection}
+            recentAndMapSection={RecentAndMapSection}
+            extraBelowForm={ExtraBelowForm}
+          />
         </div>
       </main>
     );

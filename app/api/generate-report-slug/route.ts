@@ -1,3 +1,4 @@
+// app/api/generate-report-slug/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { buildReportSlug } from "@/lib/slugify";
@@ -8,18 +9,13 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get("id");
-    if (!id)
-      return NextResponse.json(
-        { ok: false, error: "missing id" },
-        { status: 400 }
-      );
+    if (!id) {
+      return NextResponse.json({ ok: false, error: "missing id" }, { status: 400 });
+    }
 
     const supabase = getSupabaseAdmin();
     if (!supabase) {
-      return NextResponse.json(
-        { ok: false, error: "Missing Supabase env vars" },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: "Missing Supabase env vars" }, { status: 500 });
     }
 
     // 1) Récupérer les champs nécessaires pour générer le slug
@@ -33,10 +29,7 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (error || !item) {
-      return NextResponse.json(
-        { ok: false, error: error?.message || "not_found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ ok: false, error: error?.message || "not_found" }, { status: 404 });
     }
 
     // Si on a déjà un slug, on le renvoie tel quel
@@ -57,55 +50,37 @@ export async function GET(req: NextRequest) {
 
     let finalSlug = base;
 
-    // 3) Gérer collision : si le slug existe déjà, on suffixe
+    // 3) Gérer collision : si le slug existe déjà (chez un AUTRE enregistrement), on suffixe
     const { data: exists } = await supabase
       .from("lost_items")
       .select("id")
       .eq("slug", finalSlug)
+      .neq("id", item.id) // ← évite de se détecter soi-même
       .limit(1);
 
     if (exists && exists.length > 0) {
-      const suffix =
-        (item.public_id && String(item.public_id)) ||
-        String(item.id).replace(/[^a-f0-9]/gi, "").slice(0, 8);
+      // Préférer un public_id exactement à 5 chiffres si présent, sinon fallback sur un bout d'UUID
+      const pub = item.public_id && /^\d{5}$/.test(String(item.public_id)) ? String(item.public_id) : null;
+      const suffix = pub || String(item.id).replace(/[^a-f0-9]/gi, "").slice(0, 8);
       finalSlug = `${base}-${suffix}`.toLowerCase();
     }
 
-    // --- INSERT (fallback) : si la ligne n'avait pas encore de slug,
-    // on l'INSERT dans une table d'index de slugs (historisation) puis on met à jour la ligne principale.
-    // Si vous n'avez pas de table 'slug_index', vous pouvez ignorer ce bloc sans impacter le reste.
-  try {
-  await supabase
-    .from("slug_index")
-    .insert([
-      {
-        lost_item_id: item.id,
-        slug: finalSlug,
-      },
-    ]);
-} catch {
-  // table optionnelle absente -> on ignore l’erreur
-}
+    // (optionnel) Historisation dans slug_index si table présente
+    try {
+      await supabase.from("slug_index").insert([{ lost_item_id: item.id, slug: finalSlug }]);
+    } catch {
+      // table optionnelle absente -> on ignore l’erreur
+    }
 
     // 4) Enregistrer le slug sur la ligne principale
-    const { error: upErr } = await supabase
-      .from("lost_items")
-      .update({ slug: finalSlug })
-      .eq("id", item.id);
-
+    const { error: upErr } = await supabase.from("lost_items").update({ slug: finalSlug }).eq("id", item.id);
     if (upErr) {
-      return NextResponse.json(
-        { ok: false, error: upErr.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ ok: false, error: upErr.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, slug: finalSlug }, { status: 200 });
   } catch (e: any) {
     console.error("generate-report-slug error:", e);
-    return NextResponse.json(
-      { ok: false, error: "unexpected" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "unexpected" }, { status: 500 });
   }
 }

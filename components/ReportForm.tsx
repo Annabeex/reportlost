@@ -6,13 +6,12 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 // import { supabase } from "@/lib/supabaseClient"; // <= intentionally not used from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
-import { publicIdFromUuid } from "@/lib/reportId";
 import { useRouter } from "next/navigation";
 
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
 import WhatHappensNext from "./WhatHappensNext";
-import ReportContribution from "./ReportContribution";
+import ReportContribution from './ReportContribution';
 import CheckoutForm from "./CheckoutForm";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -21,6 +20,7 @@ type ReportFormProps = {
   defaultCity?: string;
   enforceValidation?: boolean;
   onBeforeSubmit?: (formData: any) => any;
+  onStepChange?: (step: number) => void; // ✅ NEW
 };
 
 type EventLike =
@@ -58,6 +58,7 @@ export default function ReportForm({
   defaultCity = "",
   enforceValidation = false,
   onBeforeSubmit,
+  onStepChange, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -140,6 +141,11 @@ export default function ReportForm({
       /* ignore */
     }
   }, []);
+
+  // ✅ notify parent on step change
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
@@ -356,12 +362,13 @@ try {
         const contentType = res.headers.get("content-type") || "";
         let bodyText = "";
         try {
-          if (contentType.includes("application/json")) {
-            const j = await res.json().catch(() => null);
-            bodyText = JSON.stringify(j, null, 2);
-          } else {
-            bodyText = await res.text().catch(() => "");
-          }
+      if (contentType.includes("application/json")) {
+  const j = await res.json().catch(() => null);
+  bodyText = JSON.stringify(j, null, 2);
+} else {
+  bodyText = await res.text().catch(() => "");
+}
+
         } catch (e) {
           bodyText = String(e);
         }
@@ -486,6 +493,10 @@ try {
 
   if (!isClient) return null;
 
+  // ✅ Montant pour Stripe Elements (en cents, min $1)
+  const contributionUsd = Number(formData.contribution || 0);
+  const amountCents = Math.max(100, Math.round(contributionUsd * 100));
+
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
       {step === 1 && (
@@ -508,27 +519,38 @@ try {
       )}
 
       {step === 4 && (
-        <ReportContribution
-          contribution={formData.contribution}
-          setFormData={setFormData}
-          onBack={handleBack}
-          onNext={handleNext}
-        />
+     <ReportContribution
+  amount={Number(formData.contribution ?? 0)}
+  setFormData={setFormData}
+  onBack={handleBack}
+  onNext={handleNext}
+/>
+
       )}
 
-      {step === 5 && (
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
-          <Elements stripe={stripePromise}>
-            <CheckoutForm
-              amount={formData.contribution}
-              reportId={String(formData.report_id || "")}
-              onSuccess={handleSuccessfulPayment}
-              onBack={handleBack}
-            />
-          </Elements>
-        </div>
-      )}
+{step === 5 && (
+  <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+    <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
+    <Elements stripe={stripePromise}>
+      <CheckoutForm
+        amount={Number(formData.contribution || 0)}
+        reportId={String(formData.report_id || "")}
+        onSuccess={handleSuccessfulPayment}
+        onBack={handleBack}
+        // Libellé exact selon le niveau
+        tierLabel={
+          Number(formData.contribution) === 12
+            ? "Standard search"
+            : Number(formData.contribution) === 20
+            ? "Extended search"
+            : "Maximum search"
+        }
+        key={`co-${formData.report_id}-${formData.contribution}`}
+      />
+    </Elements>
+  </section>
+)}
+
     </main>
   );
 }
