@@ -3,10 +3,9 @@
 import React from "react";
 import { redirect, notFound } from "next/navigation";
 import nextDynamic from "next/dynamic";
-import ReportDetailsPanel from "@/components/ReportDetailsPanel";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-// ✅ imports dynamiques (évite un crash si composants absents / différenciation SSR)
+// ✅ imports dynamiques
 const CaseFollowup = nextDynamic(
   () => import("@/components/CaseFollowup").then((m) => m.default || m),
   {
@@ -29,15 +28,14 @@ export const runtime = "nodejs";
 
 type SupabaseLostRow = {
   id: string;
-  public_id?: string | null;
-  report_public_id?: string | null;
+  public_id: string | null;
   created_at: string;
   description?: string | null;
-  object_photo?: string | null;
+  title?: string | null;       // ⬅️ pour le sous-titre
   city?: string | null;
   state_id?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
+  date?: string | null;        // ⬅️ pour le sous-titre
+  first_name?: string | null;  // pour le bouton Send (éditeur)
   email?: string | null;
   contribution?: number | null;
   case_followup?: any;
@@ -72,7 +70,7 @@ export default async function Page({
   const incoming = norm(params.public_id);
   const qs = toQS(searchParams);
 
-  // 0) client Supabase admin — ne pas throw : afficher un panneau d’erreur
+  // 0) Supabase admin
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return (
@@ -89,12 +87,12 @@ export default async function Page({
 
   let data: SupabaseLostRow | null = null;
 
-  // 1) public_id (string)
+  // 1) lookup par public_id (string)
   try {
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, report_public_id, created_at, description, city, state_id, email, contribution, case_followup"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, case_followup"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -106,7 +104,7 @@ export default async function Page({
     console.warn("lookup public_id(string) threw:", e);
   }
 
-  // 1.b) public_id (number) si colonne INTEGER
+  // 1.b) si la colonne public_id est INTEGER
   if (!data && DIGITS_ONLY.test(incoming)) {
     try {
       const num = Number(incoming);
@@ -114,9 +112,8 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, report_public_id, created_at, description, city, state_id, email, contribution, case_followup"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, case_followup"
           )
-        
           .eq("public_id", num)
           .limit(1)
           .maybeSingle();
@@ -129,27 +126,7 @@ export default async function Page({
     }
   }
 
-  // 2) fallback ancien report_public_id -> redirect
-  if (!data) {
-    try {
-      const r2 = await supabase
-        .from("lost_items")
-        .select("public_id")
-        .eq("report_public_id", incoming)
-        .limit(2);
-
-      if (!r2.error && Array.isArray(r2.data) && r2.data.length === 1) {
-        const pub = (r2.data[0] as { public_id?: string | number | null })?.public_id;
-        if (pub !== null && pub !== undefined && pub !== "") {
-          redirect(`/case/${String(pub)}${qs}`); // pas de "return"
-        }
-      }
-    } catch (e) {
-      console.warn("lookup report_public_id threw:", e);
-    }
-  }
-
-  // 3) fallback id(UUID) -> redirect
+  // 2) fallback : si on t’appelle par UUID, redirige vers /case/{public_id}
   if (!data && UUID_RE.test(incoming)) {
     try {
       const r3 = await supabase
@@ -159,33 +136,18 @@ export default async function Page({
         .limit(1)
         .maybeSingle();
 
-      if (!r3.error && r3.data?.public_id) {
-        const pub = (r3.data as { public_id?: string | number })?.public_id;
-        redirect(`/case/${String(pub)}${qs}`); // pas de "return"
+      const pub = (r3.data as { public_id?: string | number | null } | null)?.public_id;
+      if (!r3.error && pub != null && pub !== "") {
+        redirect(`/case/${String(pub)}${qs}`);
       }
     } catch (e) {
       console.warn("lookup id(UUID) threw:", e);
     }
   }
 
-  // si toujours rien
-  console.log("🔎 DEBUG CASE PAGE:", { incoming, data });
-
   if (!data) notFound();
 
-  const report = {
-    caseId: data.public_id || data.report_public_id || data.id,
-    dateReported: data.created_at,
-    itemTitle: data.description || "—",
-    itemType: undefined,
-    city: data.city || "—",
-    state: data.state_id || "—",
-    anonymousEmail: data.email || undefined,
-    notificationEmail: data.email || undefined,
-    supportPhone: undefined,
-  };
-
-  // mode édition via ?edit=1|true|yes
+  // Mode édition via ?edit=1|true|yes
   const isEdit =
     (typeof searchParams?.edit === "string" &&
       ["1", "true", "yes"].includes(String(searchParams.edit).toLowerCase())) ||
@@ -193,21 +155,39 @@ export default async function Page({
       ["1", "true", "yes"].includes(String(searchParams.edit[0] || "").toLowerCase()));
 
   const blocks = Array.isArray((data as any).case_followup) ? (data as any).case_followup : [];
+  const publicId = String(data.public_id || "");
+
+  // Sous-titre : "Item … • Location … • Date of loss …"
+  const subtitleParts = [
+    (data.title || data.description) ? `Item: ${data.title || data.description}` : null,
+    data.city || data.state_id ? `Location: ${[data.city, data.state_id].filter(Boolean).join(" (")}${data.state_id ? ")" : ""}` : null,
+    data.date ? `Date of loss: ${data.date}` : null,
+  ].filter(Boolean);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* En-tête */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">Report ID: {data.public_id}</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Report ID: {publicId}</h1>
+          {subtitleParts.length > 0 && (
+            <p className="mt-2 text-sm text-gray-600">
+              {subtitleParts.join(" • ")}
+            </p>
+          )}
         </div>
 
-        <ReportDetailsPanel report={report} />
-
+        {/* Suivi : lecture seule OU éditeur */}
         <section className="mt-4">
           {isEdit ? (
-            <CaseFollowupEditor publicId={String(data.public_id || "")} />
+            <CaseFollowupEditor
+              publicId={publicId}
+              firstName={data.first_name || ""}
+              userEmail={data.email || ""}
+            />
           ) : (
-            <CaseFollowup blocks={blocks} />
+            // ⬅️ cache le bouton Edit dans la page publique
+            <CaseFollowup blocks={blocks} publicId={publicId} hideEditButton />
           )}
         </section>
       </div>

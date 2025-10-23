@@ -1,259 +1,430 @@
 // components/CaseFollowupEditor.tsx
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import * as React from "react";
+import type { FollowupBlock } from "./CaseFollowup";
 
-type Block = {
-  title: string;
-  paragraphs: string[];
-  created_at?: string;
-  updated_at?: string;
-};
+type Block = FollowupBlock;
 
-type Props = { publicId: string | number };
-
-function isNonEmptyString(x: any) {
-  return typeof x === 'string' && x.trim().length > 0;
-}
-function normalizeBlocks(raw: any): Block[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((b: any) => ({
-      title: isNonEmptyString(b?.title) ? String(b.title).trim() : 'Bloc',
-      paragraphs: Array.isArray(b?.paragraphs)
-        ? b.paragraphs.map((p: any) => String(p ?? '')).filter((p: string) => p.length > 0)
-        : [],
-      created_at: b?.created_at || undefined,
-      updated_at: b?.updated_at || undefined,
-    }))
-    .filter((b: Block) => isNonEmptyString(b.title) || b.paragraphs.length > 0);
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
 }
 
-/* === GABARITS STANDARDS (reprennent tes blocs verts) === */
-const DEFAULT_BLOCKS: Block[] = [
-  {
-    title: "Recherches dans des bases de données",
-    paragraphs: [
-      "Recherche dans la base de données de la plateforme Objets-trouves.fr",
-      "Recherche dans la base de données de la plateforme Ilost.co",
-      "Recherche dans la base de données de la plateforme Sherlook.fr",
-      "Recherche dans la base de données de la plateforme Trouve-perdu.com",
-      "Résultat : aucune correspondance n'a été trouvée lors de ces recherches."
-    ],
-  },
-  {
-    title: "Notification locale",
-    paragraphs: [
-      "Nous vous invitons également à vérifier auprès de la mairie du 16ᵉ arrondissement de Paris si votre trousseau de clés y a été déposé. La mairie est joignable au 01 40 72 16 16. Vous pouvez aussi déclarer la perte de votre trousseau auprès du bureau des objets trouvés de la préfecture de police de Paris en cliquant ici."
-    ],
-  },
-  {
-    title: "Création d'une adresse e-mail anonyme",
-    paragraphs: [
-      "Une adresse e-mail anonyme dédiée à votre signalement a été mise en place pour que votre adresse e-mail ne soit pas diffusée publiquement.",
-      "Notre équipe s’assure de la véracité du contenu des messages reçus et filtre les e-mails non sollicités (publicité, spam, tentative d'arnaque, etc.)."
-    ],
-  },
-  {
-    title: "Diffusion en ligne",
-    paragraphs: [
-      "Votre signalement a été publié dans la base de données publique de la plateforme Objets-trouves.fr",
-      "Accessible via un ordinateur",
-      "Accessible via un smartphone",
-      "Accessible via une tablette numérique",
-      "Publication en ligne visible par tous"
-    ],
-  },
-];
+function defaults(publicId?: string): Block[] {
+  const anon = publicId ? `item${publicId}@reportlost.org` : "your case inbox";
+  return [
+    {
+      id: uid(),
+      title: "Database & Partners searches",
+      paragraphs: [
+        "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
+        [
+          "✅ Search in the Reportmyloss database",
+          "✅ Search in the foundrop database",
+          "✅ Search in the chargerback database",
+          "✅ Search in the iLost.co united states database",
+          "✅ Search in the Lost-and-found.org database",
+        ].join("\n"),
+        "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Local notifications & Authority outreach",
+      paragraphs: [
+        "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
+        "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office, or visit the office in person with proof of ownership if you have.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Anonymous Contact Address - Safety & Anti-Scam Measures",
+      paragraphs: [
+        `✅ We created a case-specific anonymous inbox: **${anon}** . Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly in the social media.`,
+        "Our team ensures the veracity of the content of the messages received and filters unsolicited emails (advertising, spam, scam attempts, etc.).",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Online publication & Accessibility",
+      paragraphs: [
+        "Your public report is live in our database and partners such as lost-found.org. Optimized for desktop, tablet and mobile. We publish structured metadata to help search engines find and index the listing.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Search Engines & Feed Distribution",
+      paragraphs: [
+        "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster, indexing timing is controlled by the search engines themselves.",
+        ["✅ Google", "✅ Bing", "✅ Yahoo!", "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask"].join("\n"),
+      ],
+    },
+    {
+      id: uid(),
+      title: "Social Media & Community Posting",
+      paragraphs: [
+        "We post the report to our public Facebook page and local groups, prepare a Nextdoor template, and publish short alerts on X and Instagram. Facebook and Nextdoor are typically the most effective for recoveries; Instagram and TikTok are supplementary.",
+        "Facebook wallets group, Facebook NY and lost and found groups",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Specialist Channels & Partners",
+      paragraphs: [
+        "When appropriate we push the listing to specialized networks (pet recovery platforms, resale marketplaces, institutional pages) and local classified boards.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Automated Monitoring & Human Verification",
+      paragraphs: [
+        "We combine automated scans, image-similarity checking, and human review. Active monitoring runs with multiple daily checks.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "What Happens If We Find a Match",
+      paragraphs: [
+        "We verify photos and identifying marks.",
+        "We request verification photos from the finder via the anonymous inbox.",
+        "We notify you immediately with instructions; we never publish your private data.",
+        "We advise a safe, public handoff and coordinate with police if needed.",
+      ],
+    },
+  ];
+}
 
-export default function CaseFollowupEditor({ publicId }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function CaseFollowupEditor({
+  publicId,
+  firstName = "",
+  userEmail = "",
+}: {
+  publicId: string;
+  firstName?: string;
+  userEmail?: string;
+}) {
+  const [blocks, setBlocks] = React.useState<Block[]>([]);
+  const [dirty, setDirty] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [dirty, setDirty] = useState(false);
+  // confirmation modal state
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+  const [sendError, setSendError] = React.useState<string | null>(null);
+  const [sendSuccess, setSendSuccess] = React.useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
+  // computed email preview
+  const site =
+    (typeof window !== "undefined" && window.location?.origin) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://reportlost.org";
+  const caseUrl = `${site}/case/${encodeURIComponent(publicId)}`;
+
+  const emailSubject = "Your case follow-up summary";
+  const emailText = `Hello ${firstName || ""},
+
+A summary of the actions we have taken for your lost item report is available online:
+${caseUrl}
+
+We will keep you updated as soon as we have any news or a potential match.
+
+— ReportLost.org`;
+
+  // Load from API, seed defaults if empty
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
       try {
-        const pid = String(publicId);
-        const { data, error } = await supabase
-          .from('lost_items')
-          .select('case_followup')
-          .eq('public_id', pid)
-          .maybeSingle();
+        const res = await fetch(`/api/case_followup/${encodeURIComponent(publicId)}`, { cache: "no-store" });
+        const j = await res.json().catch(() => null);
+        if (!mounted) return;
 
-        if (error) throw error;
-
-        const list = normalizeBlocks(data?.case_followup ?? []);
-        if (!cancelled) {
-          setBlocks(list);
-          setDirty(false);
-          setEditIndex(null);
+        const b = Array.isArray(j?.blocks) ? (j.blocks as Block[]) : [];
+        if (b.length > 0) {
+          setBlocks(b);
+        } else {
+          setBlocks(defaults(publicId));
+          setDirty(true);
         }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Load failed');
+      } catch {
+        setBlocks(defaults(publicId));
+        setDirty(true);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
-    }
-    load();
-    return () => { cancelled = true; };
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [publicId]);
 
-  async function save() {
-    setSaving(true);
-    setError(null);
-    try {
-      const now = new Date().toISOString();
-      const payload = blocks.map((b) => ({
-        ...b,
-        title: String(b.title || '').trim(),
-        paragraphs: (b.paragraphs || []).map((p) => String(p ?? '')),
-        updated_at: now,
-        created_at: b.created_at ?? now,
-      }));
-
-      const pid = String(publicId);
-      const { error } = await supabase
-        .from('lost_items')
-        .update({ case_followup: payload })
-        .eq('public_id', pid);
-
-      if (error) throw error;
-
-      setDirty(false);
-      setEditIndex(null);
-    } catch (e: any) {
-      setError(e?.message || 'Save failed');
-    } finally {
-      setSaving(false);
+  const save = async () => {
+    const res = await fetch(`/api/case_followup/${encodeURIComponent(publicId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocks }),
+    });
+    if (!res.ok) {
+      alert("Save failed");
+      return;
     }
-  }
+    setDirty(false);
+  };
 
-  // actions blocs
-  const addBlock = () => { setBlocks(p => [...p, { title: 'Nouveau bloc', paragraphs: ['Nouveau paragraphe…'] }]); setEditIndex(blocks.length); setDirty(true);};
-  const removeBlock = (i:number) => { setBlocks(p => p.filter((_,idx)=>idx!==i)); setEditIndex(null); setDirty(true);};
-  const moveUp = (i:number) => { if(i<=0) return; setBlocks(p=>{const n=[...p]; [n[i-1],n[i]]=[n[i],n[i-1]]; return n;}); setDirty(true);};
-  const moveDown = (i:number) => { if(i>=blocks.length-1) return; setBlocks(p=>{const n=[...p]; [n[i+1],n[i]]=[n[i],n[i+1]]; return n;}); setDirty(true);};
-  const startEdit = (i:number)=>setEditIndex(i);
-  const cancelEdit = ()=>setEditIndex(null);
+  const addBlock = () => {
+    setBlocks((prev) => [
+      ...prev,
+      { id: uid(), title: "New block", paragraphs: ["New paragraph…"] },
+    ]);
+    setDirty(true);
+  };
 
-  const updateTitle = (i:number, title:string)=>{ setBlocks(p=>{const n=[...p]; n[i]={...n[i], title}; return n;}); setDirty(true);};
-  const addParagraph = (i:number)=>{ setBlocks(p=>{const n=[...p]; n[i]={...n[i], paragraphs:[...(n[i].paragraphs||[]), '']}; return n;}); setDirty(true);};
-  const updateParagraph = (i:number, pIdx:number, val:string)=>{ setBlocks(p=>{const n=[...p]; const arr=[...(n[i].paragraphs||[])]; arr[pIdx]=val; n[i]={...n[i], paragraphs:arr}; return n;}); setDirty(true);};
-  const removeParagraph = (i:number, pIdx:number)=>{ setBlocks(p=>{const n=[...p]; const arr=[...(n[i].paragraphs||[])]; arr.splice(pIdx,1); n[i]={...n[i], paragraphs:arr}; return n;}); setDirty(true);};
+  const removeBlock = (id?: string) => {
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setDirty(true);
+  };
 
-  const canSave = useMemo(() => dirty && !saving, [dirty, saving]);
+  const move = (id: string | undefined, dir: -1 | 1) => {
+    if (!id) return;
+    setBlocks((prev) => {
+      const i = prev.findIndex((b) => b.id === id);
+      if (i < 0) return prev;
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const copy = prev.slice();
+      const [x] = copy.splice(i, 1);
+      copy.splice(j, 0, x);
+      return copy;
+    });
+    setDirty(true);
+  };
 
-  if (loading) return <div className="rounded-md border p-4 bg-white">Chargement…</div>;
+  const updateTitle = (id: string | undefined, title: string) => {
+    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, title } : b)));
+    setDirty(true);
+  };
+
+  const updateParagraph = (id: string | undefined, pi: number, val: string) => {
+    setBlocks((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, paragraphs: b.paragraphs.map((p, i) => (i === pi ? val : p)) } : b
+      )
+    );
+    setDirty(true);
+  };
+
+  const addParagraph = (id: string | undefined) => {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, paragraphs: [...b.paragraphs, "New paragraph…"] } : b))
+    );
+    setDirty(true);
+  };
+
+  const removeParagraph = (id: string | undefined, pi: number) => {
+    setBlocks((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, paragraphs: b.paragraphs.filter((_, i) => i !== pi) } : b
+      )
+    );
+    setDirty(true);
+  };
+
+  const openConfirm = () => {
+    setSendError(null);
+    setSendSuccess(false);
+    setConfirmOpen(true);
+  };
+
+  const doSend = async () => {
+    if (!userEmail) {
+      setSendError("No recipient email found for this case.");
+      return;
+    }
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch("/api/send-mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: userEmail,
+          subject: emailSubject,
+          text: emailText,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        throw new Error(j?.error || `HTTP ${res.status}`);
+      }
+      setSendSuccess(true);
+      setConfirmOpen(false);
+    } catch (e: any) {
+      setSendError(e?.message || "Unknown error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) return <div className="text-sm text-gray-500">Loading editor…</div>;
 
   return (
-    <div className="space-y-6">
-      {error && <div className="rounded-md border border-red-300 bg-red-50 text-red-800 px-4 py-2">{error}</div>}
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <a
+          href={`/case/${encodeURIComponent(publicId)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-md border border-emerald-600 text-emerald-700 px-3 py-1.5 text-sm font-semibold hover:bg-emerald-50"
+          title="Open the public page in a new tab"
+        >
+          Preview
+        </a>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={addBlock} className="rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110">+ Ajouter un bloc</button>
-
-        {/* ⬇️ bouton de PRÉ-REMPLISSAGE si vide */}
-        {blocks.length === 0 && (
-          <button
-            onClick={() => { setBlocks(DEFAULT_BLOCKS); setDirty(true); setEditIndex(0); }}
-            className="rounded-md bg-sky-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-          >
-            Pré-remplir avec les gabarits standards
-          </button>
-        )}
-
-        <button onClick={save} disabled={!canSave}
-          className={`rounded-md px-3 py-1.5 text-sm font-semibold ${canSave?'bg-indigo-600 text-white hover:brightness-110':'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
-          {saving ? 'Enregistrement…' : 'Enregistrer les changements'}
+        <button
+          className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
+          onClick={openConfirm}
+          disabled={!userEmail || sending}
+          title={userEmail ? "Send email to the user" : "No user email on file"}
+        >
+          {sending ? "Sending…" : "Send"}
         </button>
 
-        {dirty && !saving && <span className="text-xs text-amber-700">Modifications non enregistrées</span>}
+        <span className="mx-3 h-5 w-px bg-gray-300" />
+
+        <button
+          className="rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
+          onClick={save}
+          disabled={!dirty}
+          title={dirty ? "Save changes" : "No changes"}
+        >
+          Save
+        </button>
+
+        <button
+          className="rounded-md border px-3 py-1.5 text-sm"
+          onClick={addBlock}
+        >
+          + Add block
+        </button>
+
+        {sendSuccess && (
+          <span className="text-sm text-emerald-700">Email sent ✔︎</span>
+        )}
+        {sendError && (
+          <span className="text-sm text-rose-700">Send failed: {sendError}</span>
+        )}
       </div>
 
-      {blocks.length === 0 ? (
-        <div className="rounded-md border p-4 bg-white text-gray-700">
-          Aucun bloc pour le moment. Vous pouvez <b>pré-remplir</b> avec les gabarits ou <b>ajouter un bloc</b>.
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {blocks.map((b, i) => {
-            const isEditing = i === editIndex;
-            return (
-              <div key={i} className="rounded-xl border bg-white shadow-sm">
-                <div className="flex items-center justify-between bg-green-100 px-4 py-3 rounded-t-xl">
-                  {isEditing ? (
-                    <input value={b.title} onChange={(e)=>updateTitle(i,e.target.value)}
-                      className="w-full max-w-xl rounded-md border px-3 py-2 text-sm" placeholder="Titre du bloc"/>
-                  ) : (
-                    <h3 className="text-lg font-semibold">{b.title || 'Bloc'}</h3>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button onClick={()=>moveUp(i)} className="rounded-md border px-2 py-1 text-sm" title="Monter">↑</button>
-                    <button onClick={()=>moveDown(i)} className="rounded-md border px-2 py-1 text-sm" title="Descendre">↓</button>
-                    {!isEditing ? (
-                      <button onClick={()=>startEdit(i)} className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110">✏️ Modifier</button>
-                    ) : (
-                      <button onClick={cancelEdit} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110">Terminer</button>
-                    )}
-                    <button onClick={()=>removeBlock(i)} className="rounded-md bg-red-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110">Supprimer</button>
-                  </div>
-                </div>
+      {/* Blocks editor */}
+      {blocks.map((b, idx) => (
+        <div key={b.id ?? idx} className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex items-center gap-2">
+            <input
+              className="flex-1 bg-white/80 border rounded-md px-3 py-2"
+              value={b.title}
+              onChange={(e) => updateTitle(b.id, e.target.value)}
+            />
+            <button className="px-2 py-1 border rounded" onClick={() => move(b.id, -1)} title="Move up">↑</button>
+            <button className="px-2 py-1 border rounded" onClick={() => move(b.id, +1)} title="Move down">↓</button>
+            <button
+              className="px-3 py-1.5 rounded-md bg-red-600 text-white"
+              onClick={() => removeBlock(b.id)}
+              title="Delete block"
+            >
+              Delete
+            </button>
+          </div>
 
-                <div className="p-4">
-                  {!isEditing ? (
-                    <div className="space-y-2 text-[15px] leading-6 text-gray-800">
-                      {(b.paragraphs||[]).length ? b.paragraphs.map((p,idx)=>(
-                        <p key={idx} className="whitespace-pre-line">{p}</p>
-                      )) : <p className="italic text-gray-500">— Aucun contenu —</p>}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {(b.paragraphs||[]).map((p,pIdx)=>(
-                        <div key={pIdx} className="flex items-start gap-2">
-                          <textarea value={p} onChange={(e)=>updateParagraph(i,pIdx,e.target.value)}
-                            className="flex-1 min-h-[100px] rounded-md border px-3 py-2 text-sm" placeholder="Paragraphe…"/>
-                          <button onClick={()=>removeParagraph(i,pIdx)} className="rounded-md bg-red-50 border border-red-200 text-red-700 px-2 py-2">✖</button>
-                        </div>
-                      ))}
-                      <button onClick={()=>addParagraph(i)} className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-gray-50">+ Ajouter un paragraphe</button>
+          {b.paragraphs.map((p, i) => (
+            <div key={i} className="mt-3 relative">
+              <textarea
+                className="w-full min-h-[110px] bg-white/90 border rounded-md px-3 py-2"
+                value={p}
+                onChange={(e) => updateParagraph(b.id, i, e.target.value)}
+              />
+              <button
+                className="absolute top-2 right-2 bg-rose-100 text-rose-700 border border-rose-200 rounded px-2 py-1 text-xs"
+                onClick={() => removeParagraph(b.id, i)}
+                title="Remove paragraph"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
 
-                      <div className="mt-5 border-t pt-4">
-                        <div className="text-xs font-semibold text-gray-500 mb-2">APERÇU</div>
-                        <div className="bg-green-50 rounded-md p-4">
-                          <div className="text-base font-semibold mb-2">{b.title || 'Bloc'}</div>
-                          <div className="space-y-2 text-[15px] leading-6">
-                            {(b.paragraphs||[]).map((pp,k)=>(
-                              <p key={k} className="whitespace-pre-line">{pp}</p>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+          <div className="mt-3">
+            <button
+              className="rounded-md border px-3 py-1.5 text-sm"
+              onClick={() => addParagraph(b.id)}
+            >
+              + Add paragraph
+            </button>
+          </div>
+
+          <div className="mt-5 border-t pt-3 text-xs text-gray-500">PREVIEW</div>
+          <div className="mt-2 rounded-lg bg-emerald-50/60 p-4 space-y-2">
+            <div className="font-semibold text-emerald-900">{b.title}</div>
+            {b.paragraphs.map((p, i) => (
+              <div key={i} className="text-gray-800 whitespace-pre-line leading-relaxed">
+                {p}
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div className="flex items-center gap-3">
+        <button
+          className="rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
+          onClick={save}
+          disabled={!dirty}
+        >
+          Save
+        </button>
+        {dirty && <span className="text-sm text-amber-700">Unsaved changes</span>}
+      </div>
+
+      {/* Confirmation Modal */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => !sending && setConfirmOpen(false)} />
+          <div className="relative z-10 w-[560px] max-w-[92vw] rounded-xl bg-white shadow-xl border">
+            <div className="px-5 py-4 border-b">
+              <div className="text-lg font-semibold">Confirm send</div>
+              <div className="text-xs text-gray-500 mt-1">Email preview</div>
+            </div>
+
+            <div className="p-5 space-y-3">
+              <div><span className="font-semibold">To:</span> {userEmail || "—"}</div>
+              <div><span className="font-semibold">Subject:</span> {emailSubject}</div>
+              <div>
+                <span className="font-semibold">Message:</span>
+                <pre className="mt-2 whitespace-pre-wrap rounded-md border bg-gray-50 p-3 text-sm">
+{emailText}
+                </pre>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t flex items-center justify-end gap-2">
+              <button
+                className="rounded-md border px-3 py-1.5 text-sm"
+                onClick={() => setConfirmOpen(false)}
+                disabled={sending}
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110 disabled:opacity-60"
+                onClick={doSend}
+                disabled={sending}
+              >
+                {sending ? "Sending…" : "Send now"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="flex items-center gap-3 pt-2">
-        <button onClick={addBlock} className="rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110">+ Ajouter un bloc</button>
-        <button onClick={save} disabled={!canSave}
-          className={`rounded-md px-3 py-1.5 text-sm font-semibold ${canSave?'bg-indigo-600 text-white hover:brightness-110':'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
-          {saving ? 'Enregistrement…' : 'Enregistrer les changements'}
-        </button>
-        {dirty && !saving && <span className="text-xs text-amber-700">Modifications non enregistrées</span>}
-      </div>
     </div>
   );
 }

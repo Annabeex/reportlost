@@ -1,29 +1,156 @@
 // components/CaseFollowup.tsx
-'use client';
+// Server component (SSR OK)
 
-import React from 'react';
+export type FollowupBlock = {
+  id?: string;
+  title: string;
+  paragraphs: string[];
+};
 
-type Block = { title: string; paragraphs: string[] };
+function normalizeBlocks(input?: any[]): FollowupBlock[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((b) => {
+      const title =
+        typeof b?.title === "string" && b.title.trim() ? b.title.trim() : "Untitled";
+      const paragraphs =
+        Array.isArray(b?.paragraphs)
+          ? b.paragraphs
+              .map((p: any) => (typeof p === "string" ? p.trim() : ""))
+              .filter(Boolean)
+          : (typeof b?.content === "string" ? [b.content] : []);
+      return { id: b?.id, title, paragraphs };
+    })
+    .filter((b) => b.title || b.paragraphs.length);
+}
 
-export default function CaseFollowup({ blocks }: { blocks: Block[] }) {
-  if (!Array.isArray(blocks) || blocks.length === 0) {
-    return (
-      <div className="rounded-md border bg-white p-4 text-gray-600">
-        Aucun suivi pour le moment.
+/** Defaults if DB empty (inchangé) */
+const DEFAULT_BLOCKS: FollowupBlock[] = [
+  {
+    title: "Database & Partners searches",
+    paragraphs: [
+      "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
+      "✅ Search in the Reportmyloss database",
+      "✅ Search in the foundrop database",
+      "✅ Search in the chargerback database",
+      "✅ Search in the iLost.co united states database",
+      "✅ Search in the Lost-and-found.org database",
+      "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
+    ],
+  },
+  {
+    title: "Local notifications & Authority outreach",
+    paragraphs: [
+      "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
+      "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office or visit the office in person with proof of ownership if you have.",
+    ],
+  },
+  {
+    title: "Anonymous Contact Address - Safety & Anti-Scam Measures",
+    paragraphs: [
+      "✅ We created a case-specific anonymous inbox for this report. Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly or in social media.",
+      "Our team ensures the veracity of the content of the messages received and filters unsolicited emails (advertising, spam, scam attempts, etc.).",
+    ],
+  },
+  {
+    title: "Online publication & Accessibility",
+    paragraphs: [
+      "Your public report is live in our database and partners such as lost-found.org. Optimized for desktop, tablet and mobile. We publish structured metadata to help search engines find and index the listing.",
+    ],
+  },
+  {
+    title: "Search Engines & Feed Distribution",
+    paragraphs: [
+      "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster; indexing timing is controlled by the search engines themselves.",
+      "✅ Google",
+      "✅ Bing",
+      "✅ Yahoo!",
+      "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
+    ],
+  },
+  {
+    title: "Social Media & Community Posting",
+    paragraphs: [
+      "We post the report to our public Facebook page and local groups, prepare a Nextdoor template, and publish short alerts on X and Instagram. Facebook and Nextdoor are typically the most effective for recoveries; Instagram and TikTok are supplementary.",
+      "Facebook wallets group, Facebook NY and lost and found groups",
+    ],
+  },
+  {
+    title: "Specialist Channels & Partners",
+    paragraphs: [
+      "When appropriate we push the listing to specialized networks (pet recovery platforms, resale marketplaces, institutional pages) and local classified boards.",
+    ],
+  },
+  {
+    title: "Automated Monitoring & Human Verification",
+    paragraphs: [
+      "We combine automated scans, image-similarity checking, and human review. Active monitoring runs with multiple daily checks.",
+    ],
+  },
+  {
+    title: "What Happens If We Find a Match",
+    paragraphs: [
+      "We verify photos and identifying marks.",
+      "We request verification photos from the finder via the anonymous inbox.",
+      "We notify you immediately with instructions; we never publish your private data.",
+      "We advise a safe, public handoff and coordinate with police if needed.",
+    ],
+  },
+];
+
+function Header({ title }: { title: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-t-xl bg-emerald-50/80 border-b border-emerald-200 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+          <span className="h-2 w-2 rounded-full bg-emerald-700"></span>
+        </span>
+        <span className="font-semibold text-emerald-900">{title}</span>
       </div>
-    );
-  }
+      {/* ⬅️ demandé : libellé “Close” */}
+      <span className="text-sm text-emerald-700">Close</span>
+    </div>
+  );
+}
+
+export default function CaseFollowup({
+  blocks,
+  publicId,
+  hideEditButton,
+}: {
+  /** DB content; may be empty */
+  blocks?: any[];
+  /** used previously for edit link */
+  publicId?: string;
+  /** when true, hide the ✏️ button (public page) */
+  hideEditButton?: boolean;
+}) {
+  const normalized = normalizeBlocks(blocks);
+  const toRender = normalized.length ? normalized : DEFAULT_BLOCKS;
 
   return (
-    <div className="space-y-6">
-      {blocks.map((b, i) => (
-        <div key={i} className="rounded-xl border bg-white shadow-sm">
-          <div className="bg-green-100 px-4 py-3 rounded-t-xl">
-            <h3 className="text-lg font-semibold">{b.title || 'Bloc'}</h3>
-          </div>
-          <div className="p-4 space-y-2 text-[15px] leading-6 text-gray-800">
-            {(b.paragraphs || []).map((p, k) => (
-              <p key={k} className="whitespace-pre-line">
+    <div>
+      {/* Bouton modif (caché sur la page publique) */}
+      {!hideEditButton && publicId && (
+        <div className="flex justify-end mb-3">
+          <a
+            href={`/case/${publicId}?edit=1`}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+          >
+            ✏️ Modifier
+          </a>
+        </div>
+      )}
+
+      {toRender.map((b, i) => (
+        <div
+          key={b.id ?? `${b.title}-${i}`}
+          className="mb-4 rounded-xl border border-emerald-200 bg-white overflow-hidden"
+        >
+          <Header title={b.title} />
+          <div className="px-5 pb-5 pt-4 text-gray-800 leading-relaxed">
+            {b.paragraphs.map((p, idx) => (
+              <p key={idx} className="mb-3">
                 {p}
               </p>
             ))}
