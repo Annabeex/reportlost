@@ -16,25 +16,21 @@ function normalizeBlocks(input?: any[]): FollowupBlock[] {
       const paragraphs =
         Array.isArray(b?.paragraphs)
           ? b.paragraphs
-              .map((p: any) => (typeof p === "string" ? p.trim() : ""))
-              .filter(Boolean)
+              .map((p: any) => (typeof p === "string" ? p : ""))
+              .filter((p: string) => p !== "")
           : (typeof b?.content === "string" ? [b.content] : []);
       return { id: b?.id, title, paragraphs };
     })
     .filter((b) => b.title || b.paragraphs.length);
 }
 
-/** Defaults if DB empty (inchangé) */
+/** ✅ Defaults (affichés si DB vide) */
 const DEFAULT_BLOCKS: FollowupBlock[] = [
   {
     title: "Database & Partners searches",
     paragraphs: [
       "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
-      "✅ Search in the Reportmyloss database",
-      "✅ Search in the foundrop database",
-      "✅ Search in the chargerback database",
-      "✅ Search in the iLost.co united states database",
-      "✅ Search in the Lost-and-found.org database",
+      "✅ Search in the Reportmyloss database\n✅ Search in the foundrop database\n✅ Search in the chargerback database\n✅ Search in the iLost.co united states database\n✅ Search in the Lost-and-found.org database",
       "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
     ],
   },
@@ -62,10 +58,7 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
     title: "Search Engines & Feed Distribution",
     paragraphs: [
       "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster; indexing timing is controlled by the search engines themselves.",
-      "✅ Google",
-      "✅ Bing",
-      "✅ Yahoo!",
-      "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
+      "✅ Google\n✅ Bing\n✅ Yahoo!\n✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
     ],
   },
   {
@@ -98,31 +91,65 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
   },
 ];
 
-function Header({ title }: { title: string }) {
+/** Mini assainisseur : on échappe tout, puis on ré-autorise `<strong>` et on convertit les sauts de ligne en `<br>` ; on permet aussi `**gras**`. */
+function toSafeHTML(text: string): string {
+  let s = String(text ?? "");
+  // escape
+  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // markdown **bold**
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  // allow <strong> that were typed literally (unescape those only)
+  s = s.replace(/&lt;strong&gt;/g, "<strong>").replace(/&lt;\/strong&gt;/g, "</strong>");
+  // line breaks
+  s = s.replace(/\r?\n/g, "<br />");
+  return s;
+}
+
+function AccordionItem({
+  block,
+  defaultOpen = false,
+}: {
+  block: FollowupBlock;
+  defaultOpen?: boolean;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-t-xl bg-emerald-50/80 border-b border-emerald-200 px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-          <span className="h-2 w-2 rounded-full bg-emerald-700"></span>
-        </span>
-        <span className="font-semibold text-emerald-900">{title}</span>
+    <details
+      className="group rounded-2xl border border-emerald-200 bg-white mb-6 overflow-hidden"
+      {...(defaultOpen ? { open: true } : {})}
+    >
+      {/* Bandeau titre vert doux */}
+      <summary className="flex items-center justify-between cursor-pointer select-none px-5 py-4 bg-emerald-50 border-b border-emerald-200">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
+          </span>
+          <span className="font-semibold text-emerald-900 text-lg">{block.title}</span>
+        </div>
+        <span className="text-sm text-emerald-700 group-open:hidden">Close</span>
+        <span className="text-sm text-emerald-700 hidden group-open:inline">Open</span>
+      </summary>
+
+      {/* Corps sur fond blanc */}
+      <div className="px-6 py-5 leading-relaxed text-gray-900 bg-white">
+        {block.paragraphs.map((p, idx) => (
+          <div
+            key={idx}
+            className="mb-4"
+            dangerouslySetInnerHTML={{ __html: toSafeHTML(p) }}
+          />
+        ))}
       </div>
-      {/* ⬅️ demandé : libellé “Close” */}
-      <span className="text-sm text-emerald-700">Close</span>
-    </div>
+    </details>
   );
 }
 
 export default function CaseFollowup({
   blocks,
-  publicId,
   hideEditButton,
 }: {
-  /** DB content; may be empty */
+  /** Contenu DB (peut être vide) */
   blocks?: any[];
-  /** used previously for edit link */
-  publicId?: string;
-  /** when true, hide the ✏️ button (public page) */
+  /** Forcer à masquer le bouton éditer en mode public */
   hideEditButton?: boolean;
 }) {
   const normalized = normalizeBlocks(blocks);
@@ -130,32 +157,13 @@ export default function CaseFollowup({
 
   return (
     <div>
-      {/* Bouton modif (caché sur la page publique) */}
-      {!hideEditButton && publicId && (
-        <div className="flex justify-end mb-3">
-          <a
-            href={`/case/${publicId}?edit=1`}
-            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-          >
-            ✏️ Modifier
-          </a>
-        </div>
+      {/* aucun bouton "Modifier" en mode public */}
+      {!hideEditButton && (
+        <div className="hidden" />
       )}
 
       {toRender.map((b, i) => (
-        <div
-          key={b.id ?? `${b.title}-${i}`}
-          className="mb-4 rounded-xl border border-emerald-200 bg-white overflow-hidden"
-        >
-          <Header title={b.title} />
-          <div className="px-5 pb-5 pt-4 text-gray-800 leading-relaxed">
-            {b.paragraphs.map((p, idx) => (
-              <p key={idx} className="mb-3">
-                {p}
-              </p>
-            ))}
-          </div>
-        </div>
+        <AccordionItem key={b.id ?? `${b.title}-${i}`} block={b} defaultOpen={i === 0} />
       ))}
     </div>
   );

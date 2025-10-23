@@ -4,13 +4,24 @@
 import * as React from "react";
 import type { FollowupBlock } from "./CaseFollowup";
 
-type Block = FollowupBlock;
+type Block = FollowupBlock & { id: string };
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function defaults(publicId?: string): Block[] {
+/** Autorise **bold** ou <strong>…</strong> et garde les sauts de ligne */
+function toSafeHTML(text: string): string {
+  let s = String(text ?? "");
+  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/&lt;strong&gt;/g, "<strong>").replace(/&lt;\/strong&gt;/g, "</strong>");
+  s = s.replace(/\r?\n/g, "<br />");
+  return s;
+}
+
+/** Defaults initiaux (remplacés par localStorage si présents) */
+function baseDefaults(publicId?: string): Block[] {
   const anon = publicId ? `item${publicId}@reportlost.org` : "your case inbox";
   return [
     {
@@ -33,14 +44,14 @@ function defaults(publicId?: string): Block[] {
       title: "Local notifications & Authority outreach",
       paragraphs: [
         "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
-        "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office, or visit the office in person with proof of ownership if you have.",
+        "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office or visit the office in person with proof of ownership if you have.",
       ],
     },
     {
       id: uid(),
       title: "Anonymous Contact Address - Safety & Anti-Scam Measures",
       paragraphs: [
-        `✅ We created a case-specific anonymous inbox: **${anon}** . Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly in the social media.`,
+        `✅ We created a case-specific anonymous inbox: **${anon}**. Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly in the social media.`,
         "Our team ensures the veracity of the content of the messages received and filters unsolicited emails (advertising, spam, scam attempts, etc.).",
       ],
     },
@@ -94,10 +105,27 @@ function defaults(publicId?: string): Block[] {
   ];
 }
 
+/** Applique les modèles personnalisés (localStorage) par titre */
+function applyLocalDefaults(blocks: Block[]): Block[] {
+  if (typeof window === "undefined") return blocks;
+  try {
+    const raw = localStorage.getItem("rl_block_defaults_by_title");
+    if (!raw) return blocks;
+    const map = JSON.parse(raw) as Record<string, { title: string; paragraphs: string[] }>;
+    return blocks.map((b) =>
+      map[b.title]?.paragraphs?.length
+        ? { ...b, paragraphs: map[b.title].paragraphs.slice() }
+        : b
+    );
+  } catch {
+    return blocks;
+  }
+}
+
 export default function CaseFollowupEditor({
   publicId,
-  firstName = "",
-  userEmail = "",
+  firstName,
+  userEmail,
 }: {
   publicId: string;
   firstName?: string;
@@ -107,47 +135,34 @@ export default function CaseFollowupEditor({
   const [dirty, setDirty] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
 
-  // confirmation modal state
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [sending, setSending] = React.useState(false);
-  const [sendError, setSendError] = React.useState<string | null>(null);
-  const [sendSuccess, setSendSuccess] = React.useState(false);
+  // quels blocs sont en mode édition (par défaut: aucun)
+  const [editing, setEditing] = React.useState<Record<string, boolean>>({});
 
-  // computed email preview
-  const site =
-    (typeof window !== "undefined" && window.location?.origin) ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://reportlost.org";
-  const caseUrl = `${site}/case/${encodeURIComponent(publicId)}`;
-
-  const emailSubject = "Your case follow-up summary";
-  const emailText = `Hello ${firstName || ""},
-
-A summary of the actions we have taken for your lost item report is available online:
-${caseUrl}
-
-We will keep you updated as soon as we have any news or a potential match.
-
-— ReportLost.org`;
-
-  // Load from API, seed defaults if empty
+  // Chargement depuis DB + pré-remplissage
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const res = await fetch(`/api/case_followup/${encodeURIComponent(publicId)}`, { cache: "no-store" });
         const j = await res.json().catch(() => null);
-        if (!mounted) return;
 
+        if (!mounted) return;
         const b = Array.isArray(j?.blocks) ? (j.blocks as Block[]) : [];
+
         if (b.length > 0) {
-          setBlocks(b);
+          const withIds = b.map((x) => ({ ...x, id: x.id || uid() }));
+          setBlocks(withIds);
+          setEditing(Object.fromEntries(withIds.map((x) => [x.id, false])));
         } else {
-          setBlocks(defaults(publicId));
-          setDirty(true);
+          const d = applyLocalDefaults(baseDefaults(publicId));
+          setBlocks(d);
+          setEditing(Object.fromEntries(d.map((x) => [x.id, false])));
+          setDirty(true); // non enregistrées
         }
       } catch {
-        setBlocks(defaults(publicId));
+        const d = applyLocalDefaults(baseDefaults(publicId));
+        setBlocks(d);
+        setEditing(Object.fromEntries(d.map((x) => [x.id, false])));
         setDirty(true);
       } finally {
         setLoading(false);
@@ -169,23 +184,25 @@ We will keep you updated as soon as we have any news or a potential match.
       return;
     }
     setDirty(false);
+    alert("Saved.");
   };
 
+  // ——— Edits
   const addBlock = () => {
-    setBlocks((prev) => [
-      ...prev,
-      { id: uid(), title: "New block", paragraphs: ["New paragraph…"] },
-    ]);
+    const b: Block = { id: uid(), title: "New block", paragraphs: ["New paragraph…"] };
+    setBlocks((prev) => [...prev, b]);
+    setEditing((prev) => ({ ...prev, [b.id]: true })); // ouvre en édition
     setDirty(true);
   };
-
-  const removeBlock = (id?: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  const removeBlock = (id: string) => {
+    setBlocks((p) => p.filter((b) => b.id !== id));
+    setEditing((p) => {
+      const { [id]: _, ...rest } = p;
+      return rest;
+    });
     setDirty(true);
   };
-
-  const move = (id: string | undefined, dir: -1 | 1) => {
-    if (!id) return;
+  const move = (id: string, dir: -1 | 1) => {
     setBlocks((prev) => {
       const i = prev.findIndex((b) => b.id === id);
       if (i < 0) return prev;
@@ -198,13 +215,11 @@ We will keep you updated as soon as we have any news or a potential match.
     });
     setDirty(true);
   };
-
-  const updateTitle = (id: string | undefined, title: string) => {
+  const updateTitle = (id: string, title: string) => {
     setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, title } : b)));
     setDirty(true);
   };
-
-  const updateParagraph = (id: string | undefined, pi: number, val: string) => {
+  const updateParagraph = (id: string, pi: number, val: string) => {
     setBlocks((prev) =>
       prev.map((b) =>
         b.id === id ? { ...b, paragraphs: b.paragraphs.map((p, i) => (i === pi ? val : p)) } : b
@@ -212,15 +227,13 @@ We will keep you updated as soon as we have any news or a potential match.
     );
     setDirty(true);
   };
-
-  const addParagraph = (id: string | undefined) => {
+  const addParagraph = (id: string) => {
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, paragraphs: [...b.paragraphs, "New paragraph…"] } : b))
     );
     setDirty(true);
   };
-
-  const removeParagraph = (id: string | undefined, pi: number) => {
+  const removeParagraph = (id: string, pi: number) => {
     setBlocks((prev) =>
       prev.map((b) =>
         b.id === id ? { ...b, paragraphs: b.paragraphs.filter((_, i) => i !== pi) } : b
@@ -229,39 +242,72 @@ We will keep you updated as soon as we have any news or a potential match.
     setDirty(true);
   };
 
-  const openConfirm = () => {
-    setSendError(null);
-    setSendSuccess(false);
-    setConfirmOpen(true);
+  /** Wrap sélection avec **…** dans le textarea */
+  const boldSelection = (id: string, pi: number) => {
+    const area = document.getElementById(`para-${id}-${pi}`) as HTMLTextAreaElement | null;
+    if (!area) return;
+    const { selectionStart, selectionEnd, value } = area;
+    if (selectionStart == null || selectionEnd == null || selectionEnd <= selectionStart) return;
+    const before = value.slice(0, selectionStart);
+    const selected = value.slice(selectionStart, selectionEnd);
+    const after = value.slice(selectionEnd);
+    const next = `${before}**${selected}**${after}`;
+    updateParagraph(id, pi, next);
+    requestAnimationFrame(() => {
+      area.focus();
+      area.selectionStart = selectionStart + 2;
+      area.selectionEnd = selectionEnd + 2;
+    });
   };
 
-  const doSend = async () => {
-    if (!userEmail) {
-      setSendError("No recipient email found for this case.");
-      return;
+  /** ❤️ Définir ce bloc comme modèle par défaut (localStorage, par titre).
+   *  N'AFFECTE PAS le case en cours (ne touche pas `blocks` ni `dirty`). */
+  const makeDefaultForTitle = (block: Block) => {
+    try {
+      const raw = localStorage.getItem("rl_block_defaults_by_title");
+      const map = raw ? JSON.parse(raw) : {};
+      map[block.title] = { title: block.title, paragraphs: block.paragraphs };
+      localStorage.setItem("rl_block_defaults_by_title", JSON.stringify(map));
+      alert(`Saved “${block.title}” as the new default for future cases.`);
+    } catch {
+      alert("Could not save default locally.");
     }
-    setSending(true);
-    setSendError(null);
+  };
+
+  // ——— Preview button
+  const onPreview = () => {
+    window.open(`/case/${encodeURIComponent(publicId)}`, "_blank");
+  };
+
+  // ——— Send button (confirm)
+  const onSend = async () => {
+    const ok = window.confirm(
+      `Send the follow-up email to ${firstName ? firstName + " " : ""}${userEmail || ""} ?`
+    );
+    if (!ok) return;
+
+    const payload = {
+      to: userEmail,
+      subject: `Your lost item case update — ReportLost.org #${publicId}`,
+      text: `Hello ${firstName || ""},
+
+A summary of actions taken for your lost item report is available online:
+https://reportlost.org/case/${publicId}
+
+We will keep you informed as soon as we have any new information.`
+        .replace(/\n{2,}/g, "\n\n"),
+    };
+
     try {
       const res = await fetch("/api/send-mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: userEmail,
-          subject: emailSubject,
-          text: emailText,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => null);
-        throw new Error(j?.error || `HTTP ${res.status}`);
-      }
-      setSendSuccess(true);
-      setConfirmOpen(false);
-    } catch (e: any) {
-      setSendError(e?.message || "Unknown error");
-    } finally {
-      setSending(false);
+      if (!res.ok) throw new Error(String(res.status));
+      alert("Email sent.");
+    } catch {
+      alert("Failed to send email.");
     }
   };
 
@@ -269,162 +315,172 @@ We will keep you updated as soon as we have any news or a potential match.
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <a
-          href={`/case/${encodeURIComponent(publicId)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-md border border-emerald-600 text-emerald-700 px-3 py-1.5 text-sm font-semibold hover:bg-emerald-50"
-          title="Open the public page in a new tab"
-        >
+      {/* Barre d’actions globale */}
+      <div className="flex items-center gap-3">
+        <button className="rounded-md border px-3 py-1.5 text-sm" onClick={onPreview}>
           Preview
-        </a>
-
+        </button>
         <button
           className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
-          onClick={openConfirm}
-          disabled={!userEmail || sending}
-          title={userEmail ? "Send email to the user" : "No user email on file"}
+          onClick={onSend}
         >
-          {sending ? "Sending…" : "Send"}
+          Send
         </button>
-
-        <span className="mx-3 h-5 w-px bg-gray-300" />
-
+        {/* ✅ Save toujours cliquable */}
         <button
           className="rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
           onClick={save}
-          disabled={!dirty}
-          title={dirty ? "Save changes" : "No changes"}
         >
           Save
         </button>
-
-        <button
-          className="rounded-md border px-3 py-1.5 text-sm"
-          onClick={addBlock}
-        >
+        <button className="rounded-md border px-3 py-1.5 text-sm" onClick={addBlock}>
           + Add block
         </button>
-
-        {sendSuccess && (
-          <span className="text-sm text-emerald-700">Email sent ✔︎</span>
-        )}
-        {sendError && (
-          <span className="text-sm text-rose-700">Send failed: {sendError}</span>
-        )}
+        {dirty && <span className="text-sm text-amber-700">Unsaved changes</span>}
       </div>
 
-      {/* Blocks editor */}
-      {blocks.map((b, idx) => (
-        <div key={b.id ?? idx} className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-          <div className="flex items-center gap-2">
-            <input
-              className="flex-1 bg-white/80 border rounded-md px-3 py-2"
-              value={b.title}
-              onChange={(e) => updateTitle(b.id, e.target.value)}
-            />
-            <button className="px-2 py-1 border rounded" onClick={() => move(b.id, -1)} title="Move up">↑</button>
-            <button className="px-2 py-1 border rounded" onClick={() => move(b.id, +1)} title="Move down">↓</button>
-            <button
-              className="px-3 py-1.5 rounded-md bg-red-600 text-white"
-              onClick={() => removeBlock(b.id)}
-              title="Delete block"
-            >
-              Delete
-            </button>
-          </div>
+      {blocks.map((b, idx) => {
+        const isEditing = !!editing[b.id];
 
-          {b.paragraphs.map((p, i) => (
-            <div key={i} className="mt-3 relative">
-              <textarea
-                className="w-full min-h-[110px] bg-white/90 border rounded-md px-3 py-2"
-                value={p}
-                onChange={(e) => updateParagraph(b.id, i, e.target.value)}
+        // ——— Mode PREVIEW (par défaut)
+        if (!isEditing) {
+          return (
+            <div key={b.id} className="rounded-2xl border border-emerald-200 bg-white overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 bg-emerald-50 border-b border-emerald-200">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
+                  </span>
+                  <span className="font-semibold text-emerald-900 text-lg">{b.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                    onClick={() => setEditing((p) => ({ ...p, [b.id]: true }))}
+                  >
+                    ✏️ Modifier
+                  </button>
+                  {/* ❤️ ne touche PAS le case courant */}
+                  <button
+                    className="inline-flex items-center gap-2 rounded-md bg-pink-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                    onClick={() => makeDefaultForTitle(b)}
+                    title="Set as default template (for future cases)"
+                  >
+                    ❤️
+                  </button>
+                </div>
+              </div>
+              <div className="px-6 py-5 leading-relaxed text-gray-900 bg-white">
+                {b.paragraphs.map((p, i) => (
+                  <div
+                    key={i}
+                    className="mb-4"
+                    dangerouslySetInnerHTML={{ __html: toSafeHTML(p) }}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // ——— Mode EDIT (quand on clique sur ✏️)
+        return (
+          <div key={b.id} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+            <div className="flex items-center gap-2">
+              <input
+                className="flex-1 bg-white/80 border rounded-md px-3 py-2"
+                value={b.title}
+                onChange={(e) => updateTitle(b.id, e.target.value)}
               />
+              <button className="px-2 py-1 border rounded" onClick={() => move(b.id, -1)} title="Move up">
+                ↑
+              </button>
+              <button className="px-2 py-1 border rounded" onClick={() => move(b.id, +1)} title="Move down">
+                ↓
+              </button>
+              {/* ❤️ ici aussi, mais n'affecte pas le case courant */}
               <button
-                className="absolute top-2 right-2 bg-rose-100 text-rose-700 border border-rose-200 rounded px-2 py-1 text-xs"
-                onClick={() => removeParagraph(b.id, i)}
-                title="Remove paragraph"
+                className="px-3 py-1.5 rounded-md bg-pink-600 text-white"
+                onClick={() => makeDefaultForTitle(b)}
+                title="Set this block as new default template (by title)"
               >
-                ✕
+                ❤️
+              </button>
+              <button
+                className="px-3 py-1.5 rounded-md bg-red-600 text-white"
+                onClick={() => removeBlock(b.id)}
+                title="Delete block"
+              >
+                Delete
+              </button>
+              <button
+                className="ml-auto px-3 py-1.5 rounded-md border"
+                onClick={() => setEditing((p) => ({ ...p, [b.id]: false }))}
+                title="Done editing"
+              >
+                Terminer
               </button>
             </div>
-          ))}
 
-          <div className="mt-3">
-            <button
-              className="rounded-md border px-3 py-1.5 text-sm"
-              onClick={() => addParagraph(b.id)}
-            >
-              + Add paragraph
-            </button>
-          </div>
-
-          <div className="mt-5 border-t pt-3 text-xs text-gray-500">PREVIEW</div>
-          <div className="mt-2 rounded-lg bg-emerald-50/60 p-4 space-y-2">
-            <div className="font-semibold text-emerald-900">{b.title}</div>
             {b.paragraphs.map((p, i) => (
-              <div key={i} className="text-gray-800 whitespace-pre-line leading-relaxed">
-                {p}
+              <div key={i} className="mt-3">
+                {/* mini barre d’outils */}
+                <div className="mb-1 flex items-center gap-2">
+                  <button
+                    className="px-2 py-1 rounded border text-xs"
+                    onClick={() => boldSelection(b.id, i)}
+                    title="Bold selection (**…**)"
+                  >
+                    Bold
+                  </button>
+                </div>
+
+                <textarea
+                  id={`para-${b.id}-${i}`}
+                  className="w-full min-h-[110px] bg-white/90 border rounded-md px-3 py-2"
+                  value={p}
+                  onChange={(e) => updateParagraph(b.id, i, e.target.value)}
+                  placeholder="Paragraph… (use line breaks for lists; **bold** supported)"
+                />
+
+                <div className="mt-2 flex justify-between">
+                  <button className="rounded-md border px-3 py-1.5 text-sm" onClick={() => addParagraph(b.id)}>
+                    + Add paragraph
+                  </button>
+                  <button
+                    className="rounded-md border px-2 py-1 text-xs text-rose-700"
+                    onClick={() => removeParagraph(b.id, i)}
+                    title="Remove paragraph"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-      ))}
 
+            {/* APERÇU du bloc en cours d'édition */}
+            <div className="mt-5 border-t pt-3 text-xs text-gray-500">PREVIEW</div>
+            <div className="mt-2 rounded-lg bg-emerald-50/60 p-4 space-y-3">
+              <div className="font-semibold text-emerald-900">{b.title}</div>
+              {b.paragraphs.map((p, i) => (
+                <div key={i} className="text-gray-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: toSafeHTML(p) }} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Barre d’actions bas de page */}
       <div className="flex items-center gap-3">
+        {/* ✅ Save toujours cliquable */}
         <button
           className="rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110"
           onClick={save}
-          disabled={!dirty}
         >
           Save
         </button>
         {dirty && <span className="text-sm text-amber-700">Unsaved changes</span>}
       </div>
-
-      {/* Confirmation Modal */}
-      {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30" onClick={() => !sending && setConfirmOpen(false)} />
-          <div className="relative z-10 w-[560px] max-w-[92vw] rounded-xl bg-white shadow-xl border">
-            <div className="px-5 py-4 border-b">
-              <div className="text-lg font-semibold">Confirm send</div>
-              <div className="text-xs text-gray-500 mt-1">Email preview</div>
-            </div>
-
-            <div className="p-5 space-y-3">
-              <div><span className="font-semibold">To:</span> {userEmail || "—"}</div>
-              <div><span className="font-semibold">Subject:</span> {emailSubject}</div>
-              <div>
-                <span className="font-semibold">Message:</span>
-                <pre className="mt-2 whitespace-pre-wrap rounded-md border bg-gray-50 p-3 text-sm">
-{emailText}
-                </pre>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 border-t flex items-center justify-end gap-2">
-              <button
-                className="rounded-md border px-3 py-1.5 text-sm"
-                onClick={() => setConfirmOpen(false)}
-                disabled={sending}
-              >
-                Cancel
-              </button>
-              <button
-                className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-semibold hover:brightness-110 disabled:opacity-60"
-                onClick={doSend}
-                disabled={sending}
-              >
-                {sending ? "Sending…" : "Send now"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
