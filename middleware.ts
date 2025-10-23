@@ -2,9 +2,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
-  // On cible à la fois les pages villes ET l'admin
-  matcher: ["/lost-and-found/:path*", "/admin/:path*"],
+  // On cible les pages villes, l'admin et les fiches "case"
+  matcher: ["/lost-and-found/:path*", "/admin/:path*", "/case/:path*"],
 };
+
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

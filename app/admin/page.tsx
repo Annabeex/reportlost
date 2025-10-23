@@ -1,4 +1,3 @@
-// app/admin/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -20,8 +19,8 @@ type LostItem = {
   last_name?: string | null;
   email?: string | null;
   contribution?: number | null;
-  public_id?: string | null;
-  report_public_id?: string | null;
+  public_id?: string | null;        // ← on utilise UNIQUEMENT celui-ci comme référence
+  report_public_id?: string | null; // (gardé pour compat mais non affiché)
   title?: string | null;
   slug?: string | null;
 };
@@ -45,7 +44,7 @@ type FoundItem = {
 };
 
 // ------------------------------------------------
-// Helpers pour formatter les dates
+// Helpers
 function toUtcIsoPlus00(dateStr?: string | null) {
   if (!dateStr) return '—';
   try {
@@ -70,11 +69,15 @@ function formatInTimeZone(dateStr?: string | null, locale?: string, timeZone = '
   }
 }
 
-// ------------------------------------------------
 // Helper pour l’URL publique
 function getPublicUrlFromRow(row: any): string | null {
   if (!row?.slug) return null;
   return `/lost/${row.slug}`;
+}
+
+// Seule référence valide : 5 chiffres
+function isFiveDigits(v?: string | null) {
+  return typeof v === 'string' && /^[0-9]{5}$/.test(v);
 }
 
 // ------------------------------------------------
@@ -137,16 +140,16 @@ export default function AdminPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-12">
       <section>
-        <h1 className="text-3xl font-bold mb-4">📦 Objets perdus (Admin)</h1>
+        <h1 className="text-3xl font-bold mb-4">📦 Lost Items (Admin)</h1>
 
         {loading ? (
-          <div>Chargement…</div>
+          <div>Loading…</div>
         ) : lostItems.length === 0 ? (
-          <div>Aucun objet perdu enregistré.</div>
+          <div>No lost items recorded.</div>
         ) : (
           <div className="space-y-6">
             {lostItems.map((item) => {
-              const ref = item.public_id || item.report_public_id || 'N/A';
+              const ref = isFiveDigits(item.public_id || null) ? String(item.public_id) : null; // ✅ seulement 5 chiffres
               const createdUtc = toUtcIsoPlus00(item.created_at);
               const createdNY = formatInTimeZone(item.created_at, 'en-US', 'America/New_York');
               const createdLocal = formatInTimeZone(
@@ -159,80 +162,100 @@ export default function AdminPage() {
 
               return (
                 <div key={item.id} className="bg-white border rounded-xl p-6 shadow">
-                  {/* En-tête */}
-                  <div className="mb-3 text-sm text-gray-700">
-                    <div><strong>Report:</strong> {item.id}</div>
-                    <div><strong>City:</strong> {item.city || '—'}</div>
-                    <div><strong>State:</strong> {item.state_id || '—'}</div>
-                    <div><strong>Reference:</strong> {ref}</div>
+                  {/* Référence principale (5 chiffres uniquement) */}
+                  <div className="text-lg font-semibold mb-2">
+                    Reference:{' '}
+                    <span className="font-mono text-blue-700">{ref ?? '—'}</span>
                   </div>
 
-                  {/* Dates */}
-                  <div className="mb-4 text-gray-600">
-                    <span className="mr-2">🕒</span>
-                    <span className="font-mono">{createdUtc}</span>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {createdNY !== '—' && <div>America / New York: {createdNY}</div>}
-                      {createdLocal !== '—' && <div>Local: {createdLocal}</div>}
-                    </div>
-                  </div>
-
-                  {/* Détails */}
-                  <div className="mb-4">
-                    <div className="text-lg font-semibold mb-2">
-                      {item.title || item.description || 'Untitled'}
-                    </div>
-
-                    {item.description && (
-                      <div className="mb-2">
-                        <strong>Description :</strong> {item.description}
-                      </div>
-                    )}
-
-                    {(item.date || item.time_slot) && (
-                      <div className="mb-2">
-                        <strong>Date of lost :</strong> {item.date ? item.date : '—'}
-                        {item.time_slot ? ` ${item.time_slot}` : ''}
-                      </div>
-                    )}
-
-                    <div className="mt-4">
-                      If you think you found it, please contact:{' '}
-                      <a href="mailto:support@reportlost.org" className="text-blue-600 underline">
-                        support@reportlost.org
-                      </a>{' '}
-                      reference ({ref})
-                    </div>
-
-                    <div className="mt-4 flex items-center gap-3">
-                      <strong>Contribution :</strong> {item.contribution ?? 0}
-                      {publicUrl ? (
-                        <a
-                          href={publicUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center rounded-md bg-[#226638] text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                          title="Open public page"
-                        >
-                          View post
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => generateSlug(item.id)}
-                          className="inline-flex items-center rounded-md bg-gray-900 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                          title="Generate public URL"
-                        >
-                          Generate link
-                        </button>
+                  {/* Métadonnées */}
+                  <div className="text-sm text-gray-600 mb-3">
+                    <div>City: {item.city || '—'}</div>
+                    <div>State: {item.state_id || '—'}</div>
+                    <div>
+                      Created:{' '}
+                      <span className="font-mono">{createdUtc}</span>
+                      {createdNY !== '—' && (
+                        <span className="block text-xs text-gray-500">New York: {createdNY}</span>
+                      )}
+                      {createdLocal !== '—' && (
+                        <span className="block text-xs text-gray-500">Local: {createdLocal}</span>
                       )}
                     </div>
                   </div>
 
-                  {/* Submitter info */}
-                  <div className="text-sm text-gray-600 flex items-center gap-3">
+                  {/* Contenu */}
+                  <div className="mb-4">
+                    <div className="text-gray-800 font-medium">
+                      {item.title || item.description || 'Untitled'}
+                    </div>
+                    {item.description && (
+                      <div className="text-gray-700 mt-1 text-sm">{item.description}</div>
+                    )}
+                    {(item.date || item.time_slot) && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        <strong>Date of loss:</strong> {item.date || '—'}{' '}
+                        {item.time_slot ? `(${item.time_slot})` : ''}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Boutons */}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <strong>Contribution:</strong> {item.contribution ?? 0}
+
+                    {publicUrl ? (
+                      <a
+                        href={publicUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center rounded-md bg-[#226638] text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                        title="View public page"
+                      >
+                        View post
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => generateSlug(item.id)}
+                        className="inline-flex items-center rounded-md bg-gray-900 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                        title="Generate public URL"
+                      >
+                        Generate link
+                      </button>
+                    )}
+
+                    {/* ✅ Bouton Edit suivi — actif seulement si public_id 5 chiffres */}
+                    {ref ? (
+                      <a
+                        href={`/case/${encodeURIComponent(ref)}?edit=1`}
+                        className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                        title="Edit case follow-up"
+                      >
+                        Edit suivi
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center rounded-md bg-gray-300 text-gray-600 px-3 py-1.5 text-sm font-medium cursor-not-allowed"
+                        title="No public reference available"
+                      >
+                        Edit suivi
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Soumission */}
+                  <div className="text-sm text-gray-600 flex items-center gap-3 mt-4">
                     <div className="flex items-center gap-2">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="text-gray-400"
+                      >
                         <path
                           d="M12 12a5 5 0 100-10 5 5 0 000 10z"
                           stroke="currentColor"
@@ -249,13 +272,20 @@ export default function AdminPage() {
                         ></path>
                       </svg>
                       <span>
-                        {item.first_name || ''} {item.last_name || ''} {item.email ? `– ${item.email}` : ''}
+                        {item.first_name || ''} {item.last_name || ''}{' '}
+                        {item.email ? `– ${item.email}` : ''}
                       </span>
                     </div>
 
                     {item.object_photo && (
                       <div className="ml-auto">
-                        <Image src={item.object_photo} alt="photo" width={80} height={80} className="rounded" />
+                        <Image
+                          src={item.object_photo}
+                          alt="photo"
+                          width={80}
+                          height={80}
+                          className="rounded"
+                        />
                       </div>
                     )}
                   </div>
@@ -268,10 +298,10 @@ export default function AdminPage() {
 
       {/* Section Objets trouvés */}
       <section>
-        <h2 className="text-2xl font-bold mb-4">🧾 Objets trouvés</h2>
+        <h2 className="text-2xl font-bold mb-4">🧾 Found Items</h2>
 
         {foundItems.length === 0 ? (
-          <div>Aucun objet trouvé enregistré.</div>
+          <div>No found items recorded.</div>
         ) : (
           <div className="space-y-4">
             {foundItems.map((f) => (
@@ -280,11 +310,16 @@ export default function AdminPage() {
                   <div className="text-sm text-gray-500">🕒 {toUtcIsoPlus00(f.created_at)}</div>
                   <div className="font-semibold">{f.title || '—'}</div>
                   <div className="text-gray-700">{f.description || '—'}</div>
-                  <div className="text-sm text-gray-500 mt-2">Ville: {f.city || '—'}</div>
+                  <div className="text-sm text-gray-500 mt-2">City: {f.city || '—'}</div>
                 </div>
                 {f.image_url ? (
                   <div className="w-24 h-24 relative">
-                    <Image src={f.image_url} alt="found" fill style={{ objectFit: 'cover', borderRadius: 8 }} />
+                    <Image
+                      src={f.image_url}
+                      alt="found"
+                      fill
+                      style={{ objectFit: 'cover', borderRadius: 8 }}
+                    />
                   </div>
                 ) : null}
               </div>

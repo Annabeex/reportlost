@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 
 const ClientReportForm = dynamic(
-  () => import("@/components/ClientReportForm").then(m => m.default),
+  () => import("@/components/ClientReportForm").then((m) => m.default),
   { ssr: false }
 );
 
@@ -21,27 +21,62 @@ export default function CityLostFormBlock({
 }) {
   const [step, setStep] = useState(1);
 
-  const hideCityContent = step >= 3; // ⬅️ masque tout le reste dès WhatHappensNext
+  // À partir de l’étape 3 (« what happens next »), on masque visuellement.
+  const hideCityContent = step >= 3;
+
+  // Style d’occultation « accessible » : contenu toujours présent dans le DOM
+  const hiddenStyle = useMemo<React.CSSProperties>(
+    () =>
+      hideCityContent
+        ? {
+            position: "absolute",
+            left: "-10000px",
+            width: 1,
+            height: 1,
+            overflow: "hidden",
+          }
+        : {},
+    [hideCityContent]
+  );
 
   return (
     <>
-      {/* Sections ville au-dessus du formulaire */}
-      {!hideCityContent && (
-        <>
-          {titleSection}
-          {recentAndMapSection}
-        </>
-      )}
+      {/* Sections ville au-dessus du formulaire — TOUJOURS rendues (SSR) */}
+      <div
+        data-seo-top
+        aria-hidden={hideCityContent}
+        style={hiddenStyle}
+      >
+        {titleSection}
+        {recentAndMapSection}
+      </div>
 
-      {/* Le formulaire (inchangé) */}
+      {/* Le formulaire */}
       <ClientReportForm
         defaultCity={defaultCity}
         initialTab="lost"
-        onStepChangeExternal={setStep} // ⬅️ récupère le step
+        onStepChangeExternal={setStep} // récupère le step
       />
 
-      {/* Sections en-dessous (si tu en as) */}
-      {!hideCityContent && extraBelowForm}
+      {/* Sections en-dessous (optionnelles) — TOUJOURS rendues */}
+      {extraBelowForm && (
+        <div
+          data-seo-bottom
+          aria-hidden={hideCityContent}
+          style={hiddenStyle}
+        >
+          {extraBelowForm}
+        </div>
+      )}
+
+      {/* Fallback si JS désactivé : tout reste visible */}
+      <noscript>
+        <div>
+          {titleSection}
+          {recentAndMapSection}
+          {extraBelowForm}
+        </div>
+      </noscript>
     </>
   );
 }

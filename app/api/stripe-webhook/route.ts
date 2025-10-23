@@ -123,7 +123,14 @@ export async function POST(req: NextRequest) {
         // Send confirmation email once, with institutional tone + 5-digit reference
         try {
           if (!row.payment_email_sent && row.email) {
-            const base = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+            // >>> CHANGEMENT #1: base URL plus robuste
+            const base =
+              process.env.NEXT_PUBLIC_SITE_URL ||
+              process.env.NEXT_PUBLIC_BASE_URL ||
+              (() => {
+                try { return new URL(req.url).origin; } catch { return "https://reportlost.org"; }
+              })();
+
             const ref5 = getReferenceCode(row.public_id, reportId);
 
             const subject = "✅ Payment received — your report has been published";
@@ -178,8 +185,9 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
+            // >>> CHANGEMENT #2: timeout porté à 15s
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000); // max 8s
+            const timeout = setTimeout(() => controller.abort(), 15000);
 
             const res = await fetch(`${base}/api/send-mail`, {
               method: "POST",
