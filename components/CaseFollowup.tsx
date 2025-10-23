@@ -16,21 +16,25 @@ function normalizeBlocks(input?: any[]): FollowupBlock[] {
       const paragraphs =
         Array.isArray(b?.paragraphs)
           ? b.paragraphs
-              .map((p: any) => (typeof p === "string" ? p : ""))
-              .filter((p: string) => p !== "")
+              .map((p: any) => (typeof p === "string" ? p.trim() : ""))
+              .filter(Boolean)
           : (typeof b?.content === "string" ? [b.content] : []);
       return { id: b?.id, title, paragraphs };
     })
     .filter((b) => b.title || b.paragraphs.length);
 }
 
-/** ✅ Defaults (affichés si DB vide) */
+/** Defaults shown when DB is empty */
 const DEFAULT_BLOCKS: FollowupBlock[] = [
   {
     title: "Database & Partners searches",
     paragraphs: [
       "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
-      "✅ Search in the Reportmyloss database\n✅ Search in the foundrop database\n✅ Search in the chargerback database\n✅ Search in the iLost.co united states database\n✅ Search in the Lost-and-found.org database",
+      "✅ Search in the Reportmyloss database",
+      "✅ Search in the foundrop database",
+      "✅ Search in the chargerback database",
+      "✅ Search in the iLost.co united states database",
+      "✅ Search in the Lost-and-found.org database",
       "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
     ],
   },
@@ -58,7 +62,10 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
     title: "Search Engines & Feed Distribution",
     paragraphs: [
       "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster; indexing timing is controlled by the search engines themselves.",
-      "✅ Google\n✅ Bing\n✅ Yahoo!\n✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
+      "✅ Google",
+      "✅ Bing",
+      "✅ Yahoo!",
+      "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
     ],
   },
   {
@@ -91,79 +98,60 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
   },
 ];
 
-/** Mini assainisseur : on échappe tout, puis on ré-autorise `<strong>` et on convertit les sauts de ligne en `<br>` ; on permet aussi `**gras**`. */
-function toSafeHTML(text: string): string {
-  let s = String(text ?? "");
-  // escape
-  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  // markdown **bold**
-  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  // allow <strong> that were typed literally (unescape those only)
-  s = s.replace(/&lt;strong&gt;/g, "<strong>").replace(/&lt;\/strong&gt;/g, "</strong>");
-  // line breaks
-  s = s.replace(/\r?\n/g, "<br />");
-  return s;
-}
-
-function AccordionItem({
-  block,
-  defaultOpen = false,
-}: {
-  block: FollowupBlock;
-  defaultOpen?: boolean;
-}) {
-  return (
-    <details
-      className="group rounded-2xl border border-emerald-200 bg-white mb-6 overflow-hidden"
-      {...(defaultOpen ? { open: true } : {})}
-    >
-      {/* Bandeau titre vert doux */}
-      <summary className="flex items-center justify-between cursor-pointer select-none px-5 py-4 bg-emerald-50 border-b border-emerald-200">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
-          </span>
-          <span className="font-semibold text-emerald-900 text-lg">{block.title}</span>
-        </div>
-        <span className="text-sm text-emerald-700 group-open:hidden">Close</span>
-        <span className="text-sm text-emerald-700 hidden group-open:inline">Open</span>
-      </summary>
-
-      {/* Corps sur fond blanc */}
-      <div className="px-6 py-5 leading-relaxed text-gray-900 bg-white">
-        {block.paragraphs.map((p, idx) => (
-          <div
-            key={idx}
-            className="mb-4"
-            dangerouslySetInnerHTML={{ __html: toSafeHTML(p) }}
-          />
-        ))}
-      </div>
-    </details>
-  );
-}
-
 export default function CaseFollowup({
   blocks,
+  publicId,
   hideEditButton,
 }: {
-  /** Contenu DB (peut être vide) */
+  /** DB content; may be empty */
   blocks?: any[];
-  /** Forcer à masquer le bouton éditer en mode public */
+  /** used for the edit link (optional) */
+  publicId?: string;
+  /** when true, hides the edit button (use on public page) */
   hideEditButton?: boolean;
 }) {
   const normalized = normalizeBlocks(blocks);
   const toRender = normalized.length ? normalized : DEFAULT_BLOCKS;
 
   return (
-    <div>
-      {/* aucun bouton "Modifier" en mode public */}
-      {!hideEditButton && (
-        <div className="hidden" />
+    <div className="space-y-4">
+      {/* Bouton Edit caché si hideEditButton = true */}
+      {!hideEditButton && publicId && (
+        <div className="flex justify-end mb-1">
+          <a
+            href={`/case/${publicId}?edit=1`}
+            className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+          >
+            ✏️ Modifier
+          </a>
+        </div>
       )}
 
       {toRender.map((b, i) => (
-        <AccordionItem key={b.id ?? `${b.title}-${i}`} block={b} defaultOpen={i === 0} />
+        <div
+          key={b.id ?? `${b.title}-${i}`}
+          className="rounded-2xl border border-emerald-200 bg-white overflow-hidden"
+        >
+          {/* Header vert doux */}
+          <div className="flex items-center justify-between px-5 py-4 bg-emerald-50 border-b border-emerald-200">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-700" />
+              </span>
+              <span className="font-semibold text-emerald-900 text-lg">{b.title}</span>
+            </div>
+            <span className="text-sm text-emerald-700">Close</span>
+          </div>
+
+          {/* Corps blanc */}
+          <div className="px-6 py-5 leading-relaxed text-gray-900 bg-white">
+            {b.paragraphs.map((p, idx) => (
+              <p key={idx} className="mb-4 whitespace-pre-line">
+                {p}
+              </p>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
