@@ -18,7 +18,9 @@ function normalizeBlocks(input?: any[]): FollowupBlock[] {
           ? b.paragraphs
               .map((p: any) => (typeof p === "string" ? p.trim() : ""))
               .filter(Boolean)
-          : (typeof b?.content === "string" ? [b.content] : []);
+          : typeof b?.content === "string"
+          ? [b.content]
+          : [];
       return { id: b?.id, title, paragraphs };
     })
     .filter((b) => b.title || b.paragraphs.length);
@@ -30,12 +32,12 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
     title: "Database & Partners searches",
     paragraphs: [
       "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
-      "✅ Search in the Reportmyloss database",
-      "✅ Search in the foundrop database",
-      "✅ Search in the chargerback database",
-      "✅ Search in the iLost.co united states database",
-      "✅ Search in the Lost-and-found.org database",
-      "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
+    "✅ Search in the Reportmyloss database",
+    "✅ Search in the foundrop database",
+    "✅ Search in the chargerback database",
+    "✅ Search in the iLost.co united states database",
+    "✅ Search in the Lost-and-found.org database",
+    "**Current result:** No exact match found at time of publication.\nWe repeat these checks automatically and manually",
     ],
   },
   {
@@ -62,10 +64,7 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
     title: "Search Engines & Feed Distribution",
     paragraphs: [
       "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster; indexing timing is controlled by the search engines themselves.",
-      "✅ Google",
-      "✅ Bing",
-      "✅ Yahoo!",
-      "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
+      "✅ Google\n✅ Bing\n✅ Yahoo!\n✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
     ],
   },
   {
@@ -98,16 +97,42 @@ const DEFAULT_BLOCKS: FollowupBlock[] = [
   },
 ];
 
+/** Très petit rendu “markdown-safe”
+ * - échappe tout HTML
+ * - supporte **gras** et *italique*
+ * - autorise <strong>/<b> et <em>/<i> si l'utilisateur les a mis
+ * - convertit \n en <br />
+ */
+function toRichHtml(src: string) {
+  // normaliser retours
+  let s = String(src ?? "").replace(/\r\n?/g, "\n");
+
+  // échapper tout
+  s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // markdown **bold** / *em*
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  // autoriser explicitement <strong>/<b>/<em>/<i> écrits par l'éditeur
+  s = s
+    .replace(/&lt;(strong|b)&gt;/g, "<$1>")
+    .replace(/&lt;\/(strong|b)&gt;/g, "</$1>")
+    .replace(/&lt;(em|i)&gt;/g, "<$1>")
+    .replace(/&lt;\/(em|i)&gt;/g, "</$1>");
+
+  // retours à la ligne
+  s = s.replace(/\n/g, "<br />");
+  return s;
+}
+
 export default function CaseFollowup({
   blocks,
   publicId,
   hideEditButton,
 }: {
-  /** DB content; may be empty */
   blocks?: any[];
-  /** used for the edit link (optional) */
   publicId?: string;
-  /** when true, hides the edit button (use on public page) */
   hideEditButton?: boolean;
 }) {
   const normalized = normalizeBlocks(blocks);
@@ -115,7 +140,6 @@ export default function CaseFollowup({
 
   return (
     <div className="space-y-4">
-      {/* Bouton Edit caché si hideEditButton = true */}
       {!hideEditButton && publicId && (
         <div className="flex justify-end mb-1">
           <a
@@ -143,12 +167,14 @@ export default function CaseFollowup({
             <span className="text-sm text-emerald-700">Close</span>
           </div>
 
-          {/* Corps blanc */}
+          {/* Corps blanc avec rendu riche */}
           <div className="px-6 py-5 leading-relaxed text-gray-900 bg-white">
             {b.paragraphs.map((p, idx) => (
-              <p key={idx} className="mb-4 whitespace-pre-line">
-                {p}
-              </p>
+              <p
+                key={idx}
+                className="mb-4"
+                dangerouslySetInnerHTML={{ __html: toRichHtml(p) }}
+              />
             ))}
           </div>
         </div>
