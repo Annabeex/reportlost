@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Wanted Poster — Startup Style</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b1220; --card:#fff; --ink:#0f172a; --muted:#6b7280;
+    --brand:#3b82f6; --brand-2:#06b6d4; --ring:rgba(59,130,246,.35);
+  }
+  html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:12px}
+  .panel{width:1160px;max-width:100%;display:grid;grid-template-columns:480px 1fr;gap:28px}
+  .card{background:#fff;border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.08);padding:28px}
+  .controls{background:rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.25);border-radius:16px;padding:14px;color:#cbd5e1}
+  .controls .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .controls label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#9aa5b1;font-weight:700}
+  .controls input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.35);background:#0f172a;color:#e5e7eb;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;box-shadow:0 10px 24px var(--ring)}
+  .hint{color:#a3b3c4;font-size:12px;margin-top:6px}
+  svg{width:100%;height:auto;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <!-- Controls -->
+    <div class="controls">
+      <div class="grid">
+        <div><label>Item</label><input id="f-item" value="Wallet" /></div>
+        <div><label>Accent</label><input id="f-accent" value="Black" /></div>
+        <div><label>City</label><input id="f-city" value="Brookfield" /></div>
+        <div><label>State</label><input id="f-state" value="WI" /></div>
+        <div><label>When</label><input id="f-when" value="Oct 17, 2025 — 10 PM–12 AM" /></div>
+        <div><label>Place</label><input id="f-place" value="Bar" /></div>
+      </div>
+      <div style="margin-top:10px"><label>Details</label>
+        <input id="f-desc" value="Black coin purse/wallet, square-ish. Zipper worn out." />
+      </div>
+      <div style="margin-top:10px"><label>Contact (email)</label>
+        <input id="f-mail" value="item6674@reportlost.org" />
+      </div>
+      <button class="btn" id="apply">Update poster</button>
+      <div class="hint">Tip: right-click the poster → “Save image as…” (SVG export).</div>
+    </div>
+
+    <!-- Poster -->
+    <div class="card">
+      <svg id="poster" viewBox="0 0 960 1280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wanted poster">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+          <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="rgba(0,0,0,.18)"/>
+          </filter>
+        </defs>
+
+        <!-- Ribbon -->
+        <g filter="url(#soft)">
+          <rect x="40" y="44" rx="18" ry="18" width="280" height="60" fill="none" stroke="url(#g1)" stroke-width="3"/>
+          <text x="180" y="85" text-anchor="middle" font-family="Inter" font-weight="800" font-size="24" fill="url(#g1)" letter-spacing="4">WANTED</text>
+        </g>
+
+        <!-- Title -->
+        <text x="40" y="150" font-family="Inter" font-size="56" font-weight="800" fill="#0f172a">
+          <tspan id="t-item">Wallet</tspan> lost in <tspan id="t-city">Brookfield</tspan> (<tspan id="t-state">WI</tspan>) at <tspan id="t-place">Bar</tspan>
+        </text>
+
+        <!-- Subtitle -->
+        <text x="40" y="202" font-family="Inter" font-size="22" font-weight="700" fill="#111827">Lost item:</text>
+        <text id="t-desc" x="140" y="202" font-family="Inter" font-size="22" fill="#475569">
+          Black coin purse/wallet. Zipper worn out. Square-ish side.
+        </text>
+
+        <!-- Image placeholder -->
+        <rect x="40" y="240" width="540" height="540" rx="24" fill="#f1f5f9" stroke="#e5e7eb"/>
+        <text x="310" y="520" text-anchor="middle" font-family="Inter" font-weight="700" font-size="20" fill="#94a3b8">Drop photo here</text>
+
+        <!-- Info block -->
+        <g transform="translate(40,820)">
+          <g>
+            <rect x="0" y="0" width="880" height="70" rx="14" fill="#eef2ff" stroke="#e5e7eb"/>
+            <text x="20" y="45" font-family="Inter" font-size="22" font-weight="700" fill="#111827">Date of loss:</text>
+            <text id="t-when" x="160" y="45" font-family="Inter" font-size="22" fill="#0f172a">Oct 17, 2025 — 10 PM–12 AM</text>
+          </g>
+          <g transform="translate(0,92)">
+            <rect x="0" y="0" width="880" height="70" rx="14" fill="#f0fdfa" stroke="#e5e7eb"/>
+            <text x="20" y="45" font-family="Inter" font-size="22" font-weight="700" fill="#065f46">Item lost at</text>
+            <text id="t-place-2" x="160" y="45" font-family="Inter" font-size="22" fill="#065f46">Bar</text>
+          </g>
+          <g transform="translate(0,184)">
+            <rect x="0" y="0" width="880" height="120" rx="16" fill="#ecfdf5" stroke="#bbf7d0"/>
+            <text x="20" y="44" font-family="Inter" font-size="22" font-weight="800" fill="#065f46">If you found it, please send an email:</text>
+            <a id="t-mail-link" href="mailto:item6674@reportlost.org">
+              <text id="t-mail" x="20" y="84" font-family="Inter" font-size="26" font-weight="800" fill="#047857">item6674@reportlost.org</text>
+            </a>
+            <text x="20" y="112" font-family="Inter" font-size="16" fill="#065f46" opacity=".85">This email is unique to this report and forwards directly to the owner.</text>
+          </g>
+          <g transform="translate(0,324)">
+            <text x="0" y="0" font-family="Inter" font-size="22" font-weight="800" fill="#111827">City:</text>
+            <text id="t-city-2" x="60" y="0" font-family="Inter" font-size="22" fill="#111827">Brookfield</text>
+            <text x="280" y="0" font-family="Inter" font-size="22" font-weight="800" fill="#111827">ZIP code:</text>
+            <text x="372" y="0" font-family="Inter" font-size="22" fill="#111827">{53005}</text>
+            <text x="520" y="0" font-family="Inter" font-size="22" font-weight="800" fill="#111827">State:</text>
+            <text id="t-state-2" x="584" y="0" font-family="Inter" font-size="22" fill="#111827">WI</text>
+          </g>
+          <g transform="translate(0,370)">
+            <text x="0" y="0" font-family="Inter" font-size="22" font-weight="800" fill="#111827">Circumstances of loss:</text>
+            <foreignObject x="0" y="16" width="880" height="110">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="font:600 18px Inter;color:#334155;line-height:1.4;">
+                Was out with my parents; likely left on the bar counter while saying goodnight.
+              </div>
+            </foreignObject>
+          </g>
+        </g>
+
+        <g transform="translate(40,1210)">
+          <text font-family="Inter" font-weight="700" font-size="18" fill="#64748b">
+            reportlost.org • Lost & Found in the United States
+          </text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function apply(){
+    const item  = $('f-item').value || 'Item';
+    const city  = $('f-city').value || '—';
+    const state = $('f-state').value || '';
+    const place = $('f-place').value || 'unspecified place';
+    const when  = $('f-when').value || '—';
+    const desc  = $('f-desc').value || '';
+    const mail  = $('f-mail').value || '';
+
+    $('t-item').textContent = item;
+    $('t-city').textContent = city; $('t-city-2').textContent = city;
+    $('t-state').textContent = state; $('t-state-2').textContent = state;
+    $('t-place').textContent = place; $('t-place-2').textContent = place;
+    $('t-when').textContent = when;
+    $('t-desc').textContent = desc;
+    $('t-mail').textContent = mail;
+    $('t-mail-link').setAttribute('href', 'mailto:' + mail);
+  }
+  $('apply').addEventListener('click', apply);
+  apply();
+</script>
+</body>
+</html>

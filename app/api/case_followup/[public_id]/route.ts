@@ -19,12 +19,22 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("lost_items")
-    .select("case_followup")
+    .select("case_followup, followup_email_sent, followup_email_sent_at, followup_email_to")
+
     .eq("public_id", params.public_id)
     .maybeSingle();
 
   if (error) return json({ error: error.message }, { status: 500 });
-  return json({ ok: true, blocks: data?.case_followup ?? [] });
+  return json({
+  ok: true,
+  blocks: data?.case_followup ?? [],
+  followup: {
+    sent: !!data?.followup_email_sent,
+    sentAt: data?.followup_email_sent_at,
+    to: data?.followup_email_to || null,
+  },
+});
+
 }
 
 export async function PUT(

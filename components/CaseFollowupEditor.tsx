@@ -138,6 +138,13 @@ export default function CaseFollowupEditor({
   // quels blocs sont en mode édition (par défaut: aucun)
   const [editing, setEditing] = React.useState<Record<string, boolean>>({});
 
+  // 🏁 état visuel d’envoi de mail
+  const [followupInfo, setFollowupInfo] = React.useState<{
+    sent: boolean;
+    sentAt?: string;
+    to?: string | null;
+  }>({ sent: false });
+
   // Chargement depuis DB + pré-remplissage
   React.useEffect(() => {
     let mounted = true;
@@ -148,6 +155,9 @@ export default function CaseFollowupEditor({
 
         if (!mounted) return;
         const b = Array.isArray(j?.blocks) ? (j.blocks as Block[]) : [];
+
+        // ⬇️ renseigne le drapeau de suivi s’il vient de l’API
+        setFollowupInfo(j?.followup || { sent: false });
 
         if (b.length > 0) {
           const withIds = b.map((x) => ({ ...x, id: x.id || uid() }));
@@ -294,8 +304,8 @@ export default function CaseFollowupEditor({
 A summary of actions taken for your lost item report is available online:
 https://reportlost.org/case/${publicId}
 
-We will keep you informed as soon as we have any new information.`
-        .replace(/\n{2,}/g, "\n\n"),
+We will keep you informed as soon as we have any new information.`.replace(/\n{2,}/g, "\n\n"),
+      publicId, // ⬅️ nécessaire pour marquer l’envoi côté API
     };
 
     try {
@@ -305,6 +315,14 @@ We will keep you informed as soon as we have any new information.`
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(String(res.status));
+
+      // Mise à jour optimiste de l’indicateur
+      setFollowupInfo({
+        sent: true,
+        sentAt: new Date().toISOString(),
+        to: userEmail || null,
+      });
+
       alert("Email sent.");
     } catch {
       alert("Failed to send email.");
@@ -315,6 +333,25 @@ We will keep you informed as soon as we have any new information.`
 
   return (
     <div className="space-y-4">
+      {/* 🏁 État d’envoi de mail */}
+      {followupInfo.sent ? (
+        <div className="flex items-center gap-2 text-emerald-700 text-sm">
+          <span>✅ Follow-up email sent</span>
+          {followupInfo.sentAt && (
+            <span className="text-gray-500">
+              ({new Date(followupInfo.sentAt).toLocaleString()})
+            </span>
+          )}
+          {followupInfo.to && (
+            <span className="text-gray-500 italic">→ {followupInfo.to}</span>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-amber-700 text-sm">
+          <span>⚠️ No follow-up email sent yet</span>
+        </div>
+      )}
+
       {/* Barre d’actions globale */}
       <div className="flex items-center gap-3">
         <button className="rounded-md border px-3 py-1.5 text-sm" onClick={onPreview}>

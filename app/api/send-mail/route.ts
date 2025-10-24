@@ -1,6 +1,7 @@
 // app/api/send-mail/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer, { Transporter } from "nodemailer";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,9 @@ function sanitizeHeader(value: string) {
   return value.replace(/(\r|\n)/g, " ").trim();
 }
 
+// simple garde-fou : 5 chiffres
+const FIVE_DIGITS = /^[0-9]{5}$/;
+
 export async function POST(req: NextRequest) {
   try {
     const ct = req.headers.get("content-type") || "";
@@ -63,13 +67,14 @@ export async function POST(req: NextRequest) {
       return json({ error: "Content-Type must be application/json" }, { status: 415 });
     }
 
-    const body = await req.json().catch(() => null) as {
+    const body = (await req.json().catch(() => null)) as {
       to?: string | string[];
       subject?: string;
       text?: string;
       html?: string;
       replyTo?: string;
-      fromName?: string; // optionnel
+      fromName?: string;    // optionnel
+      publicId?: string;    // ⬅️ optionnel : référence à 5 chiffres pour marquer l’envoi en DB
     } | null;
 
     if (!body) return json({ error: "Invalid JSON body" }, { status: 400 });
@@ -104,8 +109,32 @@ export async function POST(req: NextRequest) {
       ...(replyTo ? { replyTo } : {}),
     });
 
+    // ⬇️ Mise à jour Supabase (optionnelle) si publicId fourni
+    let dbUpdated = false;
+    if (body.publicId && FIVE_DIGITS.test(body.publicId)) {
+      const supabase = getSupabaseAdmin();
+      if (supabase) {
+        const { error } = await supabase
+          .from("lost_items")
+          .update({
+            followup_email_sent: true,
+            followup_email_sent_at: new Date().toISOString(),
+            followup_email_to: toList.join(", "),
+          })
+          .eq("public_id", body.publicId);
+
+        if (!error) dbUpdated = true;
+        else console.warn("followup flags update error:", error);
+      } else {
+        console.warn("Supabase not configured, skip followup flags update");
+      }
+    }
+
     // 200 OK avec id de message
-    return json({ success: true, messageId: info.messageId }, { status: 200 });
+    return json(
+      { success: true, messageId: info.messageId, followupUpdated: dbUpdated },
+      { status: 200 }
+    );
   } catch (err: any) {
     // Erreurs SMTP = 502 (upstream)
     if (err?.code || err?.responseCode) {

@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WANTED — Poster Generator</title>
+<style>
+  :root{
+    --accent:#BDB2FF;      /* Couleur dynamique (palette) */
+    --bg-start:#bdb2ff20;  /* Fond léger dérivé de l’accent */
+    --bg-end:#ffffff;
+    --ink:#0b0f19;
+    --muted:#6b7280;
+
+    --feather: 0px;        /* intensité du bord adouci pour le mode cercle */
+    --avatar-size: 72vmin; /* taille max du cercle (réactif) */
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:24px;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    background: #f6f7fb;
+    color: var(--ink);
+  }
+
+  .app{
+    max-width:1120px; margin:0 auto; display:grid; grid-template-columns: 360px 1fr; gap:24px;
+  }
+  @media (max-width: 980px){ .app{ grid-template-columns: 1fr; } }
+
+  /* --------- Panneau de contrôle --------- */
+  .panel{
+    background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:18px;
+    box-shadow: 0 6px 18px rgba(17,24,39,.05);
+  }
+  .panel h2{ font-size:18px; margin:0 0 10px }
+  .controls-row{ margin:12px 0 }
+  .control-label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+  .text-input, .file-input{
+    width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:14px;
+  }
+  .radio-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:14px; color:#111827 }
+  .range{ width:100% }
+
+  .palette{ display:flex; flex-wrap:wrap; gap:8px; margin-top:4px }
+  .swatch{
+    display:inline-block;
+    width:28px; height:28px;
+    border-radius:8px;
+    border:1px solid rgba(0,0,0,.12);
+    box-shadow:0 0 0 2px rgba(255,255,255,.9) inset;
+    cursor:pointer;
+    transition:transform .08s, box-shadow .2s;
+    appearance:none;          /* ✅ supprime le style natif bouton (Safari/Firefox) */
+    padding:0;
+    background: transparent;  /* remplacé dynamiquement */
+  }
+  .swatch:hover{ transform:scale(1.06) }
+  .swatch.is-active{ outline:2px solid #111; outline-offset:2px }
+
+  .actions{ display:flex; gap:8px; margin-top:12px }
+  .btn{
+    padding:10px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-weight:600;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; border-color:transparent }
+
+  /* --------- Poster --------- */
+  .stage-wrap{
+    background: #fff; border:1px solid #e5e7eb; border-radius:20px; padding:22px;
+    box-shadow: 0 20px 40px rgba(2,6,23,.06);
+  }
+  .poster{
+    width:100%; max-width:800px; margin:0 auto; aspect-ratio: 3/4;
+    background: linear-gradient(180deg, var(--bg-start), var(--bg-end));
+    border: 1px solid #edf0f3; border-radius:18px;
+    padding:28px; display:flex; flex-direction:column; gap:18px;
+  }
+
+  /* En-tête */
+  .brand-row{ display:flex; align-items:center; justify-content:space-between }
+  .badge{
+    font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:#fff; background:var(--accent); padding:6px 10px; border-radius:999px;
+  }
+
+  /* TITRE WANTED — plus grand que le titre d’article */
+  .wanted{
+    font-weight:900;
+    font-size: clamp(44px, 6vw, 72px);   /* >>> plus gros */
+    line-height: .95;
+    letter-spacing: .02em;
+    margin: 6px 0 2px;
+  }
+
+  /* titre d’article (plus petit) */
+  .headline{
+    font-weight:800;
+    font-size: clamp(22px, 3.2vw, 32px);
+    line-height: 1.05;
+    margin: 0;
+  }
+
+  .sub{
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ===== Zone image : deux modes ===== */
+
+  /* Mode rectangle */
+  .poster-image{
+    width:100%; flex:0 0 auto; aspect-ratio: 16/9;
+    border-radius:18px;
+    border:1px solid #e5e7eb;
+    background:#f4f6fa center/cover no-repeat;
+    overflow:hidden;
+  }
+
+  /* Mode cercle (avatar géant) */
+  .poster-avatar{
+    width: min(520px, 85%);
+    aspect-ratio: 1 / 1;
+    border-radius: 9999px;
+    border: 8px solid #ffffff;
+    box-shadow: 0 8px 24px rgba(2,6,23,.10), 0 2px 8px rgba(2,6,23,.04);
+    background:#f4f6fa center/cover no-repeat;
+    overflow: hidden;
+    align-self: center;
+    position: relative;
+  }
+  .poster-avatar img, .poster-image img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+
+  /* Feather (adouci) pour le cercle */
+  .poster-avatar.feather::after{
+    content:"";
+    position:absolute; inset:0;
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000  calc(50% - var(--feather)), transparent 50%);
+            mask-image: radial-gradient(circle at 50% 50%, #000  calc(50% - var(--feather)), transparent 50%);
+    background: #fff;
+    opacity:.9;
+    pointer-events:none;
+    border-radius:9999px;
+  }
+
+  /* Infos */
+  .facts{
+    display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;
+  }
+  @media (max-width: 720px){ .facts{ grid-template-columns: 1fr; } }
+  .fact{
+    border:1px solid #e5e7eb; background:#fff; border-radius:14px; padding:12px;
+  }
+  .fact .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  .fact .v{ font-weight:700; margin-top:2px }
+
+  .footer-note{
+    margin-top:auto; padding-top:10px; color:var(--muted); font-size:12px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+  }
+  .chip{
+    background:#fff; border:1px dashed #e5e7eb; border-radius:999px; padding:6px 10px; font-size:12px;
+  }
+  .link{ color:var(--accent); text-decoration:none; font-weight:700 }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- ========= Panneau ========= -->
+    <aside class="panel">
+      <h2>Controls</h2>
+
+      <div class="controls-row">
+        <label class="control-label">Article title</label>
+        <input id="inp-title" class="text-input" placeholder="Wallet lost in Brookfield (WI) at Bar" />
+      </div>
+
+      <div class="controls-row">
+        <label class="control-label">Short description</label>
+        <input id="inp-desc" class="text-input" placeholder="Black coin purse • zipper worn • square-ish" />
+      </div>
+
+      <div class="controls-row">
+        <label class="control-label">Location</label>
+        <input id="inp-loc" class="text-input" placeholder="Brookfield, WI" />
+      </div>
+
+      <div class="controls-row">
+        <label class="control-label">Contact / Alias</label>
+        <input id="inp-contact" class="text-input" placeholder="item6674@reportlost.org" />
+      </div>
+
+      <div class="controls-row">
+        <label class="control-label">Photo</label>
+        <input id="inp-file" type="file" accept="image/*" class="file-input" />
+      </div>
+
+      <!-- Palette Coolors -->
+      <div class="controls-row">
+        <label class="control-label">Palette</label>
+        <div id="palette" class="palette"></div>
+      </div>
+
+      <!-- Choix de forme : rectangle vs cercle -->
+      <div class="controls-row">
+        <label class="control-label">Photo shape</label>
+        <div class="radio-row">
+          <label><input type="radio" name="shape" value="rect" checked /> Rectangle</label>
+          <label><input type="radio" name="shape" value="circle" /> Circle (avatar)</label>
+        </div>
+      </div>
+
+      <!-- Feather pour le mode cercle -->
+      <div class="controls-row" id="feather-row" style="display:none">
+        <label class="control-label">Feather (soft edge)</label>
+        <input id="inp-feather" class="range" type="range" min="0" max="40" value="0" />
+      </div>
+
+      <div class="actions">
+        <button id="btn-download" class="btn btn-primary">Download PNG</button>
+        <button id="btn-reset" class="btn">Reset</button>
+      </div>
+    </aside>
+
+    <!-- ========= Poster ========= -->
+    <main class="stage-wrap">
+      <div id="poster" class="poster">
+        <div class="brand-row">
+          <span class="badge">ReportLost</span>
+          <span class="sub" id="sub-date">Auto-generated poster</span>
+        </div>
+
+        <!-- GRAND titre WANTED -->
+        <div class="wanted">WANTED</div>
+
+        <!-- Titre d’article (plus petit) -->
+        <h1 id="out-title" class="headline">Wallet lost in Brookfield (WI) at Bar</h1>
+        <div id="out-desc" class="sub">Black coin purse • zipper worn • square-ish</div>
+
+        <!-- Zone photo : on bascule de .poster-image (rectangle) à .poster-avatar (cercle) -->
+        <div id="imageHolder" class="poster-image"></div>
+
+        <section class="facts">
+          <div class="fact">
+            <div class="k">Location</div>
+            <div class="v" id="out-loc">Brookfield, WI</div>
+          </div>
+          <div class="fact">
+            <div class="k">Contact</div>
+            <div class="v"><a id="out-contact" class="link" href="mailto:item6674@reportlost.org">item6674@reportlost.org</a></div>
+          </div>
+        </section>
+
+        <div class="footer-note">
+          <span class="chip">This template is meant for modern, clean “startup” style notices.</span>
+          <a class="link" href="https://reportlost.org" target="_blank" rel="noopener">reportlost.org</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- html2canvas pour l’export PNG (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+
+    // ---- Palette Coolors (ordre d’origine) ----
+    const COOLORS = [
+      "#FFADAD","#FFD6A5","#FDFFB6","#CAFFBF","#9BF6FF",
+      "#A0C4FF","#BDB2FF","#FFC6FF","#FFFFFC"
+    ];
+
+    const el = {
+      titleIn: document.getElementById('inp-title'),
+      descIn: document.getElementById('inp-desc'),
+      locIn: document.getElementById('inp-loc'),
+      contactIn: document.getElementById('inp-contact'),
+      fileIn: document.getElementById('inp-file'),
+      featherIn: document.getElementById('inp-feather'),
+      featherRow: document.getElementById('feather-row'),
+
+      titleOut: document.getElementById('out-title'),
+      descOut: document.getElementById('out-desc'),
+      locOut: document.getElementById('out-loc'),
+      contactOut: document.getElementById('out-contact'),
+      imageHolder: document.getElementById('imageHolder'),
+      subDate: document.getElementById('sub-date'),
+      btnDownload: document.getElementById('btn-download'),
+      btnReset: document.getElementById('btn-reset'),
+      palette: document.getElementById('palette'),
+      poster: document.getElementById('poster'),
+    };
+
+    // Date courte
+    el.subDate.textContent = new Date().toLocaleString([], {year:'numeric', month:'short', day:'2-digit'});
+
+    // Mise à jour texte
+    const bind = (input, cb) => input.addEventListener('input', () => cb(input.value.trim()));
+    bind(el.titleIn, v => el.titleOut.textContent = v || 'Untitled item');
+    bind(el.descIn, v => el.descOut.textContent = v || '');
+    bind(el.locIn, v => el.locOut.textContent = v || '—');
+    bind(el.contactIn, v => {
+      el.contactOut.textContent = v || '—';
+      el.contactOut.href = v ? (v.includes('@') ? `mailto:${v}` : v) : '#';
+    });
+
+    // Image loader
+    el.fileIn.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      el.imageHolder.innerHTML = '';
+      const img = new Image();
+      img.onload = () => {
+        el.imageHolder.appendChild(img);
+        URL.revokeObjectURL(url);
+      };
+      img.alt = 'Uploaded item';
+      img.src = url;
+    });
+
+    // Palette UI
+    COOLORS.forEach((hex) => {
+      const b = document.createElement('button');
+      b.className = 'swatch';
+      b.style.background = hex;
+      b.dataset.hex = hex;
+      b.title = hex;
+      el.palette.appendChild(b);
+    });
+
+    function applyTheme(hex){
+      document.documentElement.style.setProperty('--accent', hex);
+      document.documentElement.style.setProperty('--bg-start', hex + '20'); // ~12% alpha
+      document.documentElement.style.setProperty('--bg-end', '#ffffff');
+      el.palette.querySelectorAll('.swatch').forEach(s=>s.classList.remove('is-active'));
+      const active = [...el.palette.children].find(s=>s.dataset.hex===hex);
+      if (active) active.classList.add('is-active');
+    }
+
+    // Couleur par défaut si rien n’est encore appliqué
+    if (!document.documentElement.style.getPropertyValue('--accent')) {
+      document.documentElement.style.setProperty('--accent', '#BDB2FF');
+      document.documentElement.style.setProperty('--bg-start', '#BDB2FF20');
+      document.documentElement.style.setProperty('--bg-end', '#ffffff');
+    }
+    applyTheme(COOLORS[6]); // BDB2FF par défaut
+
+    // Forme : rectangle vs cercle
+    const shapeRadios = document.querySelectorAll('input[name="shape"]');
+    shapeRadios.forEach(r => r.addEventListener('change', () => {
+      const val = document.querySelector('input[name="shape"]:checked').value;
+      if (val === 'circle') {
+        el.imageHolder.classList.remove('poster-image');
+        el.imageHolder.classList.add('poster-avatar');
+        // active le feather UI
+        el.featherRow.style.display = '';
+        // applique l’état feather si > 0
+        updateFeather(+el.featherIn.value || 0);
+      } else {
+        el.imageHolder.classList.remove('poster-avatar', 'feather');
+        el.imageHolder.classList.add('poster-image');
+        el.featherRow.style.display = 'none';
+      }
+    }));
+
+    function updateFeather(px){
+      const v = Math.min(40, Math.max(0, px|0));
+      document.documentElement.style.setProperty('--feather', v + 'px');
+      if (v > 0) el.imageHolder.classList.add('feather');
+      else el.imageHolder.classList.remove('feather');
+    }
+    el.featherIn.addEventListener('input', (e)=> updateFeather(e.target.value));
+
+    // Reset
+    el.btnReset.addEventListener('click', ()=>{
+      el.titleIn.value = '';
+      el.descIn.value = '';
+      el.locIn.value = '';
+      el.contactIn.value = '';
+      el.imageHolder.innerHTML = '';
+      el.titleOut.textContent = 'Untitled item';
+      el.descOut.textContent = '';
+      el.locOut.textContent = '—';
+      el.contactOut.textContent = '—';
+      el.contactOut.href = '#';
+      applyTheme(COOLORS[6]);
+
+      // remet en rectangle
+      document.querySelector('input[name="shape"][value="rect"]').checked = true;
+      el.imageHolder.className = 'poster-image';
+      el.featherRow.style.display = 'none';
+      updateFeather(0);
+    });
+
+    // Export PNG
+    el.btnDownload.addEventListener('click', async ()=>{
+      const posterNode = el.poster;
+      const canvas = await html2canvas(posterNode, {
+        backgroundColor: null,
+        scale: 2
+      });
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'wanted-poster.png';
+      a.click();
+    });
+
+    // Click palette (délégué)
+    el.palette.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.swatch'); if (!btn) return;
+      applyTheme(btn.dataset.hex);
+    });
+
+  });
+  </script>
+</body>
+</html>
