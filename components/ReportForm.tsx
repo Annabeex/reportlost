@@ -1,4 +1,3 @@
-// components/ReportForm.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -162,14 +161,6 @@ export default function ReportForm({
   useEffect(() => {
     onStepChange?.(step);
   }, [step, onStepChange]);
-
-  // Always jump to top when the step changes (helps on mobile)
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-}, [step]);
-
 
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
@@ -515,30 +506,30 @@ useEffect(() => {
   };
 
   // ✅ envoi email “free submission” une seule fois
-const [freeEmailSent, setFreeEmailSent] = useState(false);
-useEffect(() => {
-  const shouldSend =
-    isClient &&
-    step === 5 &&
-    Number(formData.contribution) <= 0 &&
-    !freeEmailSent &&
-    formData?.email;
+  const [freeEmailSent, setFreeEmailSent] = useState(false);
+  useEffect(() => {
+    const shouldSend =
+      isClient &&
+      step === 5 &&
+      Number(formData.contribution) <= 0 &&
+      !freeEmailSent &&
+      formData?.email;
 
-  if (!shouldSend) return;
+    if (!shouldSend) return;
 
-  (async () => {
-    try {
-      const base =
-        process.env.NEXT_PUBLIC_SITE_URL ||
-        (typeof window !== "undefined" ? window.location.origin : "https://reportlost.org");
+    (async () => {
+      try {
+        const base =
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          (typeof window !== "undefined" ? window.location.origin : "https://reportlost.org");
 
-      const ref5 = await getReferenceCode(
-        String(formData.report_public_id || formData.public_id || ""),
-        String(formData.report_id || "")
-      );
+        const ref5 = await getReferenceCode(
+          String(formData.report_public_id || formData.public_id || ""),
+          String(formData.report_id || "")
+        );
 
-      const subject = "✅ Your report is published — upgrade anytime";
-      const text = `Hello ${formData.first_name || ""},
+        const subject = "✅ Your report is published — upgrade anytime";
+        const text = `Hello ${formData.first_name || ""},
 
 Your lost item report has been published on reportlost.org.
 
@@ -555,7 +546,12 @@ Your report details:
 
 To upgrade later, open the confirmation email and click “Activate my search”.`;
 
-      const html = `
+        // ✅ CTA remonté au-dessus de la liste + lien direct vers la page contribution avec rid
+        const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
+          String(formData.report_id || "")
+        )}`;
+
+        const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
@@ -565,10 +561,18 @@ To upgrade later, open the confirmation email and click “Activate my search”
   <div style="padding:20px;color:#111827;line-height:1.6">
     <p style="margin:0 0 12px">Hello <b>${formData.first_name || ""}</b>,</p>
 
-    <p style="margin:0 0 12px">
+    <p style="margin:0 14px 16px">
       Your lost item report has been published on
       <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
+
+    <!-- CTA remonté juste ici -->
+    <div style="margin:18px 0 22px;text-align:center">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
+        Activate my search
+      </a>
+    </div>
 
     <p style="margin:0 0 10px"><b>What’s next</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
@@ -585,59 +589,54 @@ To upgrade later, open the confirmation email and click “Activate my search”
       <li><b>Reference code:</b> ${ref5}</li>
     </ul>
 
-    <div style="margin:20px 0 0">
-      <a href="${base}?go=contribute" style="display:inline-block;background:#2C7A4A;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600">Activate my search</a>
-    </div>
-
     <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
   </div>
 </div>`;
 
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 15000);
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 15000);
 
-      await fetch(`${base}/api/send-mail`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: formData.email,
-          subject,
-          text,
-          html,
-          fromName: "ReportLost",
-          // ✅ clé supplémentaire pour que ta route mette à jour lost_items (followup_email_sent*)
-          publicId: ref5,
-        }),
-        signal: controller.signal,
-      }).catch(() => { /* on ne bloque pas l’UX si l’envoi échoue */ });
+        await fetch(`${base}/api/send-mail`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: formData.email,
+            subject,
+            text,
+            html,
+            fromName: "ReportLost",
+            // ✅ pour marquer followup_email_sent* en DB (via /api/send-mail)
+            publicId: ref5,
+          }),
+          signal: controller.signal,
+        }).catch(() => { /* on ne bloque pas l’UX si l’envoi échoue */ });
 
-      clearTimeout(t);
-      setFreeEmailSent(true);
-    } catch {
-      // soft-fail
-    }
-  })();
-}, [
-  isClient,
-  step,
-  formData.contribution,
-  formData.email,
-  formData.first_name,
-  formData.title,
-  formData.date,
-  formData.city,
-  formData.report_id,
-  formData.report_public_id,
-  freeEmailSent,
-]);
-
+        clearTimeout(t);
+        setFreeEmailSent(true);
+      } catch {
+        // soft-fail
+      }
+    })();
+  }, [
+    isClient,
+    step,
+    formData.contribution,
+    formData.email,
+    formData.first_name,
+    formData.title,
+    formData.date,
+    formData.city,
+    formData.report_id,
+    formData.report_public_id,
+    freeEmailSent,
+  ]);
 
   // ✅ Montant pour Stripe Elements (en cents, min $1)
   const contributionUsd = Number(formData.contribution || 0);
   const amountCents = Math.max(100, Math.round(contributionUsd * 100));
 
   return (
-    <main ref={formRef} className="w-full min-h-screen px-3 py-4 sm:px-4 sm:py-6 space-y-4">
+    <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
       {step === 1 && (
         <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
       )}
@@ -668,7 +667,7 @@ To upgrade later, open the confirmation email and click “Activate my search”
 
       {step === 5 && (
         Number(formData.contribution) <= 0 || formData?.paymentRequired === false ? (
-          // ✅ Pas de paiement si 0 : message de confirmation + (email envoyé par l'effet au-dessus)
+          // ✅ Pas de paiement si 0 : message de confirmation + (email envoyé par l’effet au-dessus)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-2xl font-bold mb-4">Your report is published</h2>
             <p className="text-gray-700 mb-4">

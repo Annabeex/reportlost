@@ -4,17 +4,6 @@ import { useMemo, useState, useEffect, useRef } from "react";
 
 /**
  * ReportContribution.tsx — 3 Plans + Optional Tip (English version)
- *
- * Flow:
- * 1) User selects a plan (card visually highlighted).
- * 2) User clicks “Continue” to proceed.
- *    - If Free (plan 1) → goes to Tip step.
- *    - If Paid (plans 2/3) → sets fixed contribution and triggers onNext().
- *
- * Tip step levels by amount:
- * - $0–14  → Level 1 message (possible but not guaranteed manual research)
- * - $15–24 → Level 2 message (manual research + dissemination to authorities & local groups)
- * - $25–50 → Level 3 message (full human follow-up, priority visibility & extended visibility campaign)
  */
 
 type Props = {
@@ -123,9 +112,6 @@ function TipGauge({
       </div>
 
       <div className="px-5 py-4">
-        {/* (Texte d'intro supprimé sur demande plus tard — on le laisse vide ici) */}
-
-        {/* Dynamic message (dans le fond blanc) */}
         <div className="text-sm text-gray-700">
           <strong className="text-green-800">
             Level {level} {level === 1 ? "(Standard)" : level === 2 ? "(Extended)" : "(Complete)"}:
@@ -133,7 +119,6 @@ function TipGauge({
           {message}
         </div>
 
-        {/* Gauge */}
         <div className="mt-5">
           <div
             ref={trackRef}
@@ -183,7 +168,6 @@ function TipGauge({
             </div>
           </div>
 
-          {/* Numeric field + presets */}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <label className="text-sm text-gray-700">Amount:</label>
             <div className="flex items-center gap-1">
@@ -250,17 +234,16 @@ export default function ReportContribution({
     [amount, contribution]
   );
 
-  // 🔧 PRICES updated: 0 / 15 / 30
+  // Prices: 0 / 15 / 30
   const PRICE = { 1: 0, 2: 15, 3: 30 } as const;
 
-  // ✅ Par défaut, pré-sélectionner le plan 2 (Extended)
+  // Default: preselect plan 2
   const [step, setStep] = useState<"plans" | "tip">(initialStep ?? "plans");
   const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3>(initialPlan ?? 2);
   const [tip, setTip] = useState<number>(
     Math.max(0, Math.min(MAX_TIP, Math.round(initialTip ?? 0)))
   );
 
-  // ✅ Adapter la sélection si un montant est déjà présent, sinon rester sur 2
   useEffect(() => {
     if (initialPlan || initialStep) return;
     if (effectiveAmount === PRICE[1]) setSelectedPlan(1);
@@ -269,7 +252,6 @@ export default function ReportContribution({
     else setSelectedPlan(2);
   }, [effectiveAmount, initialPlan, initialStep]);
 
-  // ✅ Scroll top à l’ouverture et à chaque changement d’étape (mobile)
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
@@ -302,7 +284,7 @@ export default function ReportContribution({
   const selectCard = (plan: 1 | 2 | 3) => setSelectedPlan(plan);
 
   return (
-    <section className="px-3 sm:px-4 md:px-6"> {/* ✅ Marges réduites sur mobile */}
+    <section className="px-3 sm:px-4 md:px-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
           <img
@@ -322,7 +304,7 @@ export default function ReportContribution({
         </div>
 
         <div className="rounded-2xl border border-green-200 overflow-hidden mb-4 bg-white">
-          <div className="px-5 py-4 bg-white text-center"> {/* ✅ texte centré */}
+          <div className="px-5 py-4 bg-white text-center">
             <p className="text-[15px] text-gray-700">
               Start for free because every reports count <span aria-hidden>💚</span>
               <br />
@@ -334,19 +316,19 @@ export default function ReportContribution({
         {/* Step: Plans */}
         {step === "plans" && (
           <div className="grid gap-4">
-            {/* Plan 1 */}
-            <div className={cardClass(selectedPlan === 1)} onClick={() => selectCard(1)}>
+            {/* Plan 3 — Complete assistance (TOP) */}
+            <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
                 <img
-                  src={`/images/icons/search.svg?v=${ASSET_VER}`}
-                  alt="Standard"
+                  src={`/images/icons/max.svg?v=${ASSET_VER}`}
+                  alt="Complete assistance"
                   className="w-5 h-5"
                 />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                  Standard (Free)
+                  Complete assistance
                 </h3>
               </div>
               <div className="px-5 py-4">
@@ -354,17 +336,17 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      Public publication in our open database
+                      We take care of it for you. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution. <em>It’s the option chosen by those who want to maximize their chances without missing anything.</em>
                     </span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$0</span>
+                  <span className="text-gray-700 font-medium">$30</span>
                 </div>
               </div>
             </div>
 
-            {/* Plan 2 */}
+            {/* Plan 2 — Extended search (MIDDLE, preselected) */}
             <div className={cardClass(selectedPlan === 2)} onClick={() => selectCard(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -394,19 +376,19 @@ export default function ReportContribution({
               </div>
             </div>
 
-            {/* Plan 3 */}
-            <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
+            {/* Plan 1 — Standard (BOTTOM) */}
+            <div className={cardClass(selectedPlan === 1)} onClick={() => selectCard(1)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
                 <img
-                  src={`/images/icons/max.svg?v=${ASSET_VER}`}
-                  alt="Complete assistance"
+                  src={`/images/icons/search.svg?v=${ASSET_VER}`}
+                  alt="Standard"
                   className="w-5 h-5"
                 />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                  Complete assistance
+                  Standard (Free)
                 </h3>
               </div>
               <div className="px-5 py-4">
@@ -414,12 +396,12 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      We take care of it for you. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution. <em>It’s the option chosen by those who want to maximize their chances without missing anything.</em>
+                      Public publication in our open database
                     </span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$30</span>
+                  <span className="text-gray-700 font-medium">$0</span>
                 </div>
               </div>
             </div>
@@ -469,7 +451,6 @@ export default function ReportContribution({
                 type="button"
                 onClick={() => {
                   const contribution = Math.max(0, Math.min(MAX_TIP, Math.round(tip)));
-                  // Derive final level (for backend processing if needed)
                   let level: 1 | 2 | 3 = 1;
                   if (contribution >= 15 && contribution < 25) level = 2;
                   else if (contribution >= 25) level = 3;
@@ -477,7 +458,7 @@ export default function ReportContribution({
                     ...prev,
                     contribution,
                     level,
-                    paymentRequired: contribution > 0, // 0 => no checkout
+                    paymentRequired: contribution > 0,
                   }));
                   onNext();
                 }}
