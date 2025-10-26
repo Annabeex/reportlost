@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
 import WhatHappensNext from "./WhatHappensNext";
-import ReportContribution from './ReportContribution';
+import ReportContribution from "./ReportContribution";
 import CheckoutForm from "./CheckoutForm";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -33,12 +33,32 @@ function normalizeDbResult(resData: any) {
   return resData;
 }
 
+/** SHA-1 util (browser SubtleCrypto) -> hex */
+async function sha1Hex(input: string): Promise<string> {
+  const enc = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-1", enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Ref à 5 chiffres à partir d’un id (même logique modulo que côté serveur) */
+async function refCode5FromId(input: string): Promise<string> {
+  const hex = await sha1Hex(input);
+  // prendre les 8 premiers hex (32 bits) -> modulo pour rester aligné
+  const n = parseInt(hex.slice(0, 8), 16);
+  return String((n % 90000) + 10000).padStart(5, "0");
+}
+
+/** Priorité au public_id si 5 chiffres, sinon fallback depuis id */
+async function getReferenceCode(public_id: string | null | undefined, id: string): Promise<string> {
+  if (public_id && /^\d{5}$/.test(public_id)) return public_id;
+  return await refCode5FromId(id);
+}
+
 /**
  * Compute a stable fingerprint on client from canonicalized important fields.
  * Uses SubtleCrypto (browser). Returns hex SHA-1 (40 chars) to match server.
  */
 async function computeFingerprint(payload: Record<string, any>): Promise<string> {
-  // mêmes champs/ordre que le serveur, mêmes normalisations
   const parts = [
     (payload.title ?? "").toString(),
     (payload.description ?? "").toString(),
@@ -47,11 +67,7 @@ async function computeFingerprint(payload: Record<string, any>): Promise<string>
     (payload.date ?? "").toString(),
     (payload.email ?? "").toString().toLowerCase(),
   ];
-  const raw = parts.join("|");
-  // même algo que le serveur: SHA-1 (40 hex chars)
-  const enc = new TextEncoder().encode(raw);
-  const buf = await crypto.subtle.digest("SHA-1", enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return sha1Hex(parts.join("|"));
 }
 
 export default function ReportForm({
@@ -322,55 +338,54 @@ export default function ReportForm({
         }
       }
 
-   // — avant l'appel fetch —
-const controller = new AbortController();
-const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
-const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      // — avant l'appel fetch —
+      const controller = new AbortController();
+      const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-let res: Response;
-try {
-  res = await fetch("/api/save-report", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyToSend),
-    signal: controller.signal,
-  });
-} catch (e: any) {
-  // 🔁 petit retry si c’est un AbortError
-  if (e?.name === "AbortError") {
-    const controller2 = new AbortController();
-    const retryTimeout = setTimeout(() => controller2.abort(), 20000);
-    try {
-      res = await fetch("/api/save-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyToSend),
-        signal: controller2.signal,
-      });
-    } finally {
-      clearTimeout(retryTimeout);
-    }
-  } else {
-    throw e;
-  }
-} finally {
-  clearTimeout(timeout);
-}
+      let res: Response;
+      try {
+        res = await fetch("/api/save-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyToSend),
+          signal: controller.signal,
+        });
+      } catch (e: any) {
+        // 🔁 petit retry si c’est un AbortError
+        if (e?.name === "AbortError") {
+          const controller2 = new AbortController();
+          const retryTimeout = setTimeout(() => controller2.abort(), 20000);
+          try {
+            res = await fetch("/api/save-report", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(bodyToSend),
+              signal: controller2.signal,
+            });
+          } finally {
+            clearTimeout(retryTimeout);
+          }
+        } else {
+          throw e;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
 
       // Diagnostic: if non-ok, lire et afficher le body (json ou texte)
       if (!res.ok) {
         const contentType = res.headers.get("content-type") || "";
         let bodyText = "";
         try {
-      if (contentType.includes("application/json")) {
-  const j = await res.json().catch(() => null);
-  bodyText = JSON.stringify(j, null, 2);
-} else {
-  bodyText = await res.text().catch(() => "");
-}
-
+          if (contentType.includes("application/json")) {
+            const j = await res.json().catch(() => null);
+            bodyText = JSON.stringify(j, null, 2);
+          } else {
+            bodyText = await res.text().catch(() => "");
+          }
         } catch (e) {
-          bodyText = String(e);
+        bodyText = String(e);
         }
         console.error("❌ /api/save-report non-ok:", res.status, bodyText);
         alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
@@ -491,7 +506,123 @@ try {
     alert("✅ Payment successful. Thank you for your contribution!");
   };
 
-  if (!isClient) return null;
+  // ✅ envoi email “free submission” une seule fois
+const [freeEmailSent, setFreeEmailSent] = useState(false);
+useEffect(() => {
+  const shouldSend =
+    isClient &&
+    step === 5 &&
+    Number(formData.contribution) <= 0 &&
+    !freeEmailSent &&
+    formData?.email;
+
+  if (!shouldSend) return;
+
+  (async () => {
+    try {
+      const base =
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        (typeof window !== "undefined" ? window.location.origin : "https://reportlost.org");
+
+      const ref5 = await getReferenceCode(
+        String(formData.report_public_id || formData.public_id || ""),
+        String(formData.report_id || "")
+      );
+
+      const subject = "✅ Your report is published — upgrade anytime";
+      const text = `Hello ${formData.first_name || ""},
+
+Your lost item report has been published on reportlost.org.
+
+What’s next:
+• Your report is now visible in our public database.
+• You can upgrade anytime to activate manual research and extended outreach.
+• Use the link in this email to manage your report.
+
+Your report details:
+- Item: ${formData.title || ""}
+- Date: ${formData.date || ""}
+- City: ${formData.city || ""}
+- Reference code: ${ref5}
+
+To upgrade later, open the confirmation email and click “Activate my search”.`;
+
+      const html = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Your report is published — upgrade anytime</p>
+  </div>
+
+  <div style="padding:20px;color:#111827;line-height:1.6">
+    <p style="margin:0 0 12px">Hello <b>${formData.first_name || ""}</b>,</p>
+
+    <p style="margin:0 0 12px">
+      Your lost item report has been published on
+      <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
+    </p>
+
+    <p style="margin:0 0 10px"><b>What’s next</b></p>
+    <ul style="margin:0 0 16px;padding-left:18px">
+      <li>Your report is now visible in our public database.</li>
+      <li>You can upgrade anytime to activate manual research and outreach.</li>
+      <li>Use the link in this email to manage your report.</li>
+    </ul>
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
+      <li><b>Item:</b> ${formData.title || ""}</li>
+      <li><b>Date:</b> ${formData.date || ""}</li>
+      <li><b>City:</b> ${formData.city || ""}</li>
+      <li><b>Reference code:</b> ${ref5}</li>
+    </ul>
+
+    <div style="margin:20px 0 0">
+      <a href="${base}?go=contribute" style="display:inline-block;background:#2C7A4A;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600">Activate my search</a>
+    </div>
+
+    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+  </div>
+</div>`;
+
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 15000);
+
+      await fetch(`${base}/api/send-mail`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: formData.email,
+          subject,
+          text,
+          html,
+          fromName: "ReportLost",
+          // ✅ clé supplémentaire pour que ta route mette à jour lost_items (followup_email_sent*)
+          publicId: ref5,
+        }),
+        signal: controller.signal,
+      }).catch(() => { /* on ne bloque pas l’UX si l’envoi échoue */ });
+
+      clearTimeout(t);
+      setFreeEmailSent(true);
+    } catch {
+      // soft-fail
+    }
+  })();
+}, [
+  isClient,
+  step,
+  formData.contribution,
+  formData.email,
+  formData.first_name,
+  formData.title,
+  formData.date,
+  formData.city,
+  formData.report_id,
+  formData.report_public_id,
+  freeEmailSent,
+]);
+
 
   // ✅ Montant pour Stripe Elements (en cents, min $1)
   const contributionUsd = Number(formData.contribution || 0);
@@ -519,38 +650,55 @@ try {
       )}
 
       {step === 4 && (
-     <ReportContribution
-  amount={Number(formData.contribution ?? 0)}
-  setFormData={setFormData}
-  onBack={handleBack}
-  onNext={handleNext}
-/>
-
+        <ReportContribution
+          amount={Number(formData.contribution ?? 0)}
+          setFormData={setFormData}
+          onBack={handleBack}
+          onNext={handleNext}
+        />
       )}
 
-{step === 5 && (
-  <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-    <h2 className="text-2xl font-bold mb-4">Secure Payment</h2>
-    <Elements stripe={stripePromise}>
-      <CheckoutForm
-        amount={Number(formData.contribution || 0)}
-        reportId={String(formData.report_id || "")}
-        onSuccess={handleSuccessfulPayment}
-        onBack={handleBack}
-        // Libellé exact selon le niveau
-        tierLabel={
-          Number(formData.contribution) === 12
-            ? "Standard search"
-            : Number(formData.contribution) === 20
-            ? "Extended search"
-            : "Maximum search"
-        }
-        key={`co-${formData.report_id}-${formData.contribution}`}
-      />
-    </Elements>
-  </section>
-)}
-
+      {step === 5 && (
+        Number(formData.contribution) <= 0 || formData?.paymentRequired === false ? (
+          // ✅ Pas de paiement si 0 : message de confirmation + (email envoyé par l'effet au-dessus)
+          <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+            <h2 className="text-2xl font-bold mb-4">Your report is published</h2>
+            <p className="text-gray-700 mb-4">
+              Thanks! Your report has been saved and published in our public database.
+              You can upgrade to a higher assistance level anytime via the confirmation email we sent.
+            </p>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+            >
+              ← Back
+            </button>
+          </section>
+        ) : (
+          // ✅ Paiement si contribution > 0
+          <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+            <h2 className="text-2xl font-bold mb-4">Activate your search</h2>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm
+                amount={Number(formData.contribution || 0)}
+                reportId={String(formData.report_id || "")}
+                onSuccess={handleSuccessfulPayment}
+                onBack={handleBack}
+                // Libellé exact selon le niveau (15 / 30)
+                tierLabel={
+                  Number(formData.contribution) >= 30
+                    ? "Complete assistance"
+                    : Number(formData.contribution) >= 15
+                    ? "Extended search"
+                    : "Standard search"
+                }
+                key={`co-${formData.report_id}-${formData.contribution}`}
+              />
+            </Elements>
+          </section>
+        )
+      )}
     </main>
   );
 }

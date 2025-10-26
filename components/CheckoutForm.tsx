@@ -199,16 +199,16 @@ export default function CheckoutForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Colonne gauche : résumé / total avec fond vert clair */}
         <aside className="bg-[#eaf8ef] rounded-xl p-6 md:p-8 border border-green-200">
-          <p className="text-sm text-[#1f6b3a] opacity-90 mb-2">Pay ReportLost.org</p>
+          {/* ⬇️ wording modifié */}
+          <p className="text-sm text-[#1f6b3a] opacity-90 mb-2">Your contribution to ReportLost.org</p>
           <div className="text-4xl font-bold text-[#1f6b3a] mb-6">
             {fmtUSD(total)}
           </div>
 
           <div className="space-y-3 text-sm text-[#0f2b1c]">
             <div className="flex items-center justify-between">
-              <span className="opacity-90">
-                {tierLabel || 'Standard search'}
-              </span>
+              {/* ⬇️ wording modifié (affichage): Search activation */}
+              <span className="opacity-90">Search activation</span>
               <span className="font-medium">{fmtUSD(total)}</span>
             </div>
             {/* Pas de TVA aux US */}
@@ -217,7 +217,8 @@ export default function CheckoutForm({
 
         {/* Colonne droite : formulaire de paiement */}
         <section className="bg-white rounded-xl p-6 md:p-8 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Payment details</h3>
+          {/* ⬇️ wording modifié */}
+          <h3 className="text-lg font-semibold mb-4">Billing information</h3>
 
           {/* Apple/Google Pay si dispo */}
           {paymentRequestReady && paymentRequest && (
@@ -279,12 +280,13 @@ export default function CheckoutForm({
                 </button>
               )}
 
+              {/* ⬇️ wording modifié */}
               <button
                 type="submit"
                 disabled={!stripe || loading}
                 className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449] text-white font-semibold px-6 py-2.5 shadow disabled:opacity-60"
               >
-                {loading ? 'Processing…' : `Pay ${fmtUSD(total)}`}
+                {loading ? 'Processing…' : 'Confirm contribution'}
               </button>
             </div>
 
