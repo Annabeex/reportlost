@@ -36,9 +36,9 @@ export default function ClientReportForm({
 
   // Rendu avec les marges “comme avant”.
   return (
-    <section className="bg-transparent sm:bg-blue-100 py-6 sm:py-12 px-2 sm:px-6 lg:px-8 rounded-none sm:rounded-xl">
+<section className="bg-transparent sm:bg-blue-100 py-4 sm:py-10 px-1 sm:px-5 lg:px-8 rounded-none sm:rounded-xl">
       <div className={compact ? "max-w-4xl mx-auto" : "max-w-5xl mx-auto"}>
-        <div className="bg-white rounded-xl shadow-md p-4 sm:p-10 lg:p-12">
+        <div className="bg-white rounded-xl shadow-md p-3 sm:p-8 lg:p-10">
           {activeTab === "lost" ? (
             <ReportForm
               defaultCity={defaultCity}

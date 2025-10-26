@@ -163,6 +163,14 @@ export default function ReportForm({
     onStepChange?.(step);
   }, [step, onStepChange]);
 
+  // Always jump to top when the step changes (helps on mobile)
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}, [step]);
+
+
   const handleChange = (e: EventLike) => {
     if (!e?.target?.name) return;
     const { name, value, type, checked } = (e as any).target;
@@ -629,7 +637,7 @@ To upgrade later, open the confirmation email and click “Activate my search”
   const amountCents = Math.max(100, Math.round(contributionUsd * 100));
 
   return (
-    <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
+    <main ref={formRef} className="w-full min-h-screen px-3 py-4 sm:px-4 sm:py-6 space-y-4">
       {step === 1 && (
         <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
       )}
