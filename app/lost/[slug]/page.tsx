@@ -1,6 +1,6 @@
 // app/lost/[slug]/page.tsx — modern & trustworthy design
 // - Bandeau LOST placé dans l'encadré (au-dessus du titre) + City/State à droite du bandeau
-// - Bouton Facebook share prérempli
+// - Bouton Facebook share prérempli (ShareButton rendu sans SSR pour éviter window côté serveur)
 // - generateMetadata() pour Open Graph / Twitter
 // - Fonctionnalités et contenu conservés
 
@@ -11,7 +11,16 @@ export const revalidate = 0;
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import ShareButton from "@/components/ShareButton";
+// ShareButton sans SSR (évite "window is not defined" côté crawler Facebook)
+// avant
+// import dynamic from "next/dynamic";
+// const ShareButtonNoSSR = dynamic(() => import("@/components/ShareButton"), { ssr: false });
+
+// après
+import NextDynamic from "next/dynamic";
+const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), { ssr: false });
+
+
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
 import { MapPin } from "lucide-react";
 
@@ -169,6 +178,7 @@ export async function generateMetadata(
     data.place_type?.trim?.() ||
     undefined;
 
+  // Titre/desc pour les aperçus
   const title = data.title
     ? `Lost: ${data.title}${city ? ` in ${city}` : ""}${data.state_id ? ` (${data.state_id})` : ""}`
     : `Lost report${city ? ` in ${city}` : ""}`;
@@ -179,7 +189,7 @@ export async function generateMetadata(
   ].filter(Boolean);
   const description = descParts.join(" — ") || "Lost item report";
 
-  // Image OG (tu peux basculer sur l'image dynamique /api/og/lost/[slug] une fois en prod)
+  // Image OG dynamique (endpoint /api/og/lost/[slug])
   const image = `${baseUrl}/api/og/lost/${params.slug}`;
 
   return {
@@ -251,12 +261,13 @@ export default async function LostReportPage({ params }: PageProps) {
   // 3) Canonical redirect if slug differs
   if (data.slug !== wantedSlug) redirect(`/lost/${data.slug}`);
 
-  // 4) ZIP lookup kept (not displayed)
+  // 4) ZIP lookup from us_cities.main_zip (robust matching) — conservé même si non affiché
   let effectiveZip: string | null = null;
   if (data.city && data.state_id) {
     const raw = String(data.city || "");
-    const cityKey = raw.replace(/\s*\([A-Z]{2}\)\s*$/i, "").trim();
+    const cityKey = raw.replace(/\s*\([A-Z]{2}\)\s*$/i, "").trim(); // strip "(XX)"
 
+    // 1) exact on city_ascii
     const q1 = await supabase
       .from("us_cities")
       .select("main_zip")
@@ -265,6 +276,7 @@ export default async function LostReportPage({ params }: PageProps) {
       .maybeSingle();
     effectiveZip = q1.data?.main_zip ?? null;
 
+    // 2) ILIKE on city_ascii
     if (!effectiveZip) {
       const q2 = await supabase
         .from("us_cities")
@@ -274,6 +286,8 @@ export default async function LostReportPage({ params }: PageProps) {
         .maybeSingle();
       effectiveZip = q2.data?.main_zip ?? null;
     }
+
+    // 3) exact on city (if dataset has it)
     if (!effectiveZip) {
       const q3 = await supabase
         .from("us_cities")
@@ -283,6 +297,8 @@ export default async function LostReportPage({ params }: PageProps) {
         .maybeSingle();
       effectiveZip = q3.data?.main_zip ?? null;
     }
+
+    // 4) ILIKE on city
     if (!effectiveZip) {
       const q4 = await supabase
         .from("us_cities")
@@ -306,7 +322,7 @@ export default async function LostReportPage({ params }: PageProps) {
   const fullTitle = data.title ?? "Item";
   const description = data.description ?? "";
   const cityRaw = data.city ?? "";
-  const city = stripStateFromCity(cityRaw);
+  const city = stripStateFromCity(cityRaw); // avoid “(OR) (OR)”
   const stateId = data.state_id ?? "";
   const date = data.date ?? "";
   const timeSlot = data.time_slot ?? "";
@@ -322,7 +338,7 @@ export default async function LostReportPage({ params }: PageProps) {
 
   return (
     <main className="bg-white">
-      {/* Top bar sobre */}
+      {/* Top bar sobre (ZIP non affiché) */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 text-slate-800">
@@ -434,7 +450,7 @@ export default async function LostReportPage({ params }: PageProps) {
                 >
                   Share on Facebook
                 </a>
-                <ShareButton title={fullTitle} />
+                <ShareButtonNoSSR title={fullTitle} />
               </div>
             </div>
           </div>

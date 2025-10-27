@@ -1,3 +1,4 @@
+// app/api/og/lost/[slug]/route.tsx
 import { ImageResponse } from "next/og";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -9,22 +10,22 @@ export async function GET(
 ) {
   const supabase = getSupabaseAdmin();
 
-  // ✅ Guard pour TypeScript (évite l'union null)
+  // Guard si l'admin client n'est pas dispo
   if (!supabase) {
     return new ImageResponse(
       (
         <div
           style={{
-            fontSize: 56,
-            background: "#f8fafc",
-            color: "#0f172a",
             width: "100%",
             height: "100%",
+            background: "#f8fafc",
+            color: "#0f172a",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontFamily:
               "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+            fontSize: 48,
           }}
         >
           Service unavailable
@@ -34,28 +35,30 @@ export async function GET(
     );
   }
 
-  // ✅ Maintenant TS sait que 'supabase' n'est plus null
   const { data } = await supabase
     .from("lost_items")
-    .select("title, description, city, state_id, object_photo, public_id")
+    .select(
+      "title, description, city, state_id, object_photo, public_id"
+    )
     .eq("slug", params.slug)
     .maybeSingle();
 
-  // Fallback minimal si le report n'existe pas
+  // Fallback si pas de data
   if (!data) {
     return new ImageResponse(
       (
         <div
           style={{
-            fontSize: 56,
-            background: "#f8fafc",
-            color: "#0f172a",
             width: "100%",
             height: "100%",
+            background: "#ffffff",
+            color: "#0f172a",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+            fontFamily:
+              "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+            fontSize: 56,
           }}
         >
           Lost item not found
@@ -67,11 +70,11 @@ export async function GET(
 
   const title = data.title || "Lost item";
   const description = data.description || "";
-  const city = data.city || "";
-  const state = data.state_id ? ` (${data.state_id})` : "";
+  const city = data.city || "—";
+  const state = data.state_id || "—";
   const email = `item${data.public_id || "?????"}@reportlost.org`;
 
-  // Visuel proche de ta carte (bandeau LOST, titre, lignes d’info, encart email vert)
+  // Carte OG inspirée de ta page (sobre, lisible)
   return new ImageResponse(
     (
       <div
@@ -83,10 +86,10 @@ export async function GET(
           display: "flex",
           padding: "48px 56px",
           boxSizing: "border-box",
-          fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+          fontFamily:
+            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
         }}
       >
-        {/* Carte */}
         <div
           style={{
             borderRadius: 24,
@@ -100,20 +103,64 @@ export async function GET(
             gap: 24,
           }}
         >
-          {/* Bandeau LOST */}
+          {/* Ligne bandeau + badges à droite */}
           <div
             style={{
-              background: "#f97316",
-              color: "#fff",
-              padding: "8px 14px",
-              borderRadius: 8,
-              fontSize: 20,
-              fontWeight: 800,
-              width: "fit-content",
-              letterSpacing: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
             }}
           >
-            LOST
+            {/* Bandeau LOST */}
+            <div
+              style={{
+                background: "#f97316",
+                color: "#fff",
+                padding: "8px 14px",
+                borderRadius: 8,
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: 1,
+                display: "inline-block", // remplace fit-content
+              }}
+            >
+              LOST
+            </div>
+
+            {/* Badges City / State */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  color: "#0f172a",
+                  borderRadius: 10,
+                  padding: "8px 14px",
+                  fontSize: 18,
+                }}
+              >
+                <span style={{ fontWeight: 700 }}>City:</span> {city}
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  color: "#0f172a",
+                  borderRadius: 10,
+                  padding: "8px 14px",
+                  fontSize: 18,
+                }}
+              >
+                <span style={{ fontWeight: 700 }}>State:</span> {state}
+              </div>
+            </div>
           </div>
 
           {/* Titre */}
@@ -122,64 +169,22 @@ export async function GET(
               fontSize: 60,
               fontWeight: 800,
               lineHeight: 1.1,
+              maxWidth: 1030,
             }}
           >
-            {title} lost in {city}
-            {state ? ` ${state}` : ""}
+            {title} lost in {city} {state !== "—" ? `(${state})` : ""}
           </div>
 
-          {/* Sous-ligne “Lost item” */}
-          <div style={{ fontSize: 26, color: "#334155", maxWidth: 1000 }}>
+          {/* Ligne "Lost item:" */}
+          <div style={{ fontSize: 26, color: "#334155", maxWidth: 1030 }}>
             <span style={{ fontWeight: 700 }}>Lost item:</span>{" "}
             {description || "—"}
-          </div>
-
-          {/* Lignes d’info */}
-          <div
-            style={{
-              display: "flex",
-              gap: 22,
-              alignItems: "center",
-              flexWrap: "wrap",
-              marginTop: 6,
-            }}
-          >
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                background: "#f1f5f9",
-                border: "1px solid #e2e8f0",
-                color: "#0f172a",
-                borderRadius: 10,
-                padding: "10px 16px",
-                fontSize: 22,
-              }}
-            >
-              <span style={{ opacity: 0.8 }}>City:</span> {city || "—"}
-            </div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                background: "#f1f5f9",
-                border: "1px solid #e2e8f0",
-                color: "#0f172a",
-                borderRadius: 10,
-                padding: "10px 16px",
-                fontSize: 22,
-              }}
-            >
-              <span style={{ opacity: 0.8 }}>State:</span> {data.state_id || "—"}
-            </div>
           </div>
 
           {/* Encadré email vert */}
           <div
             style={{
-              marginTop: 18,
+              marginTop: 6,
               background: "#ecfdf5",
               border: "1px solid #bbf7d0",
               borderRadius: 16,
@@ -192,7 +197,8 @@ export async function GET(
             </div>
             <div
               style={{
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
                 fontSize: 30,
                 textDecoration: "underline",
               }}
