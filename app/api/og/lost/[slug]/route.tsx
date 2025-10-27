@@ -37,13 +37,10 @@ export async function GET(
 
   const { data } = await supabase
     .from("lost_items")
-    .select(
-      "title, description, city, state_id, object_photo, public_id"
-    )
+    .select("title, description, city, state_id, object_photo, public_id")
     .eq("slug", params.slug)
     .maybeSingle();
 
-  // Fallback si pas de data
   if (!data) {
     return new ImageResponse(
       (
@@ -74,7 +71,6 @@ export async function GET(
   const state = data.state_id || "—";
   const email = `item${data.public_id || "?????"}@reportlost.org`;
 
-  // Carte OG inspirée de ta page (sobre, lisible)
   return new ImageResponse(
     (
       <div
@@ -90,6 +86,7 @@ export async function GET(
             "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
         }}
       >
+        {/* Carte */}
         <div
           style={{
             borderRadius: 24,
@@ -112,9 +109,11 @@ export async function GET(
               gap: 16,
             }}
           >
-            {/* Bandeau LOST */}
+            {/* Bandeau LOST (flex + alignSelf pour largeur au contenu) */}
             <div
               style={{
+                display: "flex",
+                alignSelf: "flex-start",
                 background: "#f97316",
                 color: "#fff",
                 padding: "8px 14px",
@@ -122,17 +121,16 @@ export async function GET(
                 fontSize: 20,
                 fontWeight: 800,
                 letterSpacing: 1,
-                display: "inline-block", // remplace fit-content
               }}
             >
               LOST
             </div>
 
-            {/* Badges City / State */}
+            {/* Badges City / State (flex) */}
             <div style={{ display: "flex", gap: 10 }}>
               <div
                 style={{
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
                   gap: 8,
                   background: "#f1f5f9",
@@ -147,7 +145,7 @@ export async function GET(
               </div>
               <div
                 style={{
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
                   gap: 8,
                   background: "#f1f5f9",
@@ -177,8 +175,7 @@ export async function GET(
 
           {/* Ligne "Lost item:" */}
           <div style={{ fontSize: 26, color: "#334155", maxWidth: 1030 }}>
-            <span style={{ fontWeight: 700 }}>Lost item:</span>{" "}
-            {description || "—"}
+            <span style={{ fontWeight: 700 }}>Lost item:</span> {description || "—"}
           </div>
 
           {/* Encadré email vert */}
@@ -190,6 +187,7 @@ export async function GET(
               borderRadius: 16,
               padding: "22px 24px",
               color: "#064e3b",
+              display: "block",
             }}
           >
             <div style={{ fontSize: 26, marginBottom: 8, fontWeight: 700 }}>
