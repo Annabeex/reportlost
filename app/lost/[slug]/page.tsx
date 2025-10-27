@@ -1,13 +1,19 @@
-// app/lost/[slug]/page.tsx
+// app/lost/[slug]/page.tsx — modern & trustworthy design
+// - Bandeau LOST placé dans l'encadré (au-dessus du titre) + City/State à droite du bandeau
+// - Bouton Facebook share prérempli
+// - generateMetadata() pour Open Graph / Twitter
+// - Fonctionnalités et contenu conservés
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import ShareButton from "@/components/ShareButton";
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
-import { MapPin } from "lucide-react"; // ✅ icône MapPin verte
+import { MapPin } from "lucide-react";
 
 type PageProps = { params: { slug: string } };
 
@@ -133,6 +139,70 @@ function shortenTitleForDisplay(title: string): string {
   return pretty.charAt(0).toUpperCase() + pretty.slice(1);
 }
 
+// ---------------- Metadata (OG/Twitter) ----------------
+
+export async function generateMetadata(
+  { params }: PageProps
+): Promise<Metadata> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return {};
+
+  const { data } = await supabase
+    .from("lost_items")
+    .select(`
+      slug, title, description, city, state_id, object_photo, place_type, place_type_other,
+      transport_type, transport_type_other
+    `)
+    .eq("slug", params.slug)
+    .maybeSingle();
+
+  if (!data) return {};
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+  const url = `${baseUrl}/lost/${params.slug}`;
+
+  const city = stripStateFromCity(data.city ?? "");
+  const place =
+    data.transport_type_other?.trim?.() ||
+    data.transport_type?.trim?.() ||
+    data.place_type_other?.trim?.() ||
+    data.place_type?.trim?.() ||
+    undefined;
+
+  const title = data.title
+    ? `Lost: ${data.title}${city ? ` in ${city}` : ""}${data.state_id ? ` (${data.state_id})` : ""}`
+    : `Lost report${city ? ` in ${city}` : ""}`;
+
+  const descParts = [
+    place ? `Possible location: ${place}` : null,
+    data.description ? data.description : null,
+  ].filter(Boolean);
+  const description = descParts.join(" — ") || "Lost item report";
+
+  // Image OG (tu peux basculer sur l'image dynamique /api/og/lost/[slug] une fois en prod)
+  const image = `${baseUrl}/api/og/lost/${params.slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      url,
+      title,
+      description,
+      siteName: "ReportLost",
+      images: [{ url: image, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
 // ---------------- Page ----------------
 
 export default async function LostReportPage({ params }: PageProps) {
@@ -181,13 +251,12 @@ export default async function LostReportPage({ params }: PageProps) {
   // 3) Canonical redirect if slug differs
   if (data.slug !== wantedSlug) redirect(`/lost/${data.slug}`);
 
-  // 4) ZIP lookup from us_cities.main_zip (robust matching)
+  // 4) ZIP lookup kept (not displayed)
   let effectiveZip: string | null = null;
   if (data.city && data.state_id) {
     const raw = String(data.city || "");
-    const cityKey = raw.replace(/\s*\([A-Z]{2}\)\s*$/i, "").trim(); // strip "(XX)"
+    const cityKey = raw.replace(/\s*\([A-Z]{2}\)\s*$/i, "").trim();
 
-    // 1) exact on city_ascii
     const q1 = await supabase
       .from("us_cities")
       .select("main_zip")
@@ -196,7 +265,6 @@ export default async function LostReportPage({ params }: PageProps) {
       .maybeSingle();
     effectiveZip = q1.data?.main_zip ?? null;
 
-    // 2) ILIKE on city_ascii
     if (!effectiveZip) {
       const q2 = await supabase
         .from("us_cities")
@@ -206,8 +274,6 @@ export default async function LostReportPage({ params }: PageProps) {
         .maybeSingle();
       effectiveZip = q2.data?.main_zip ?? null;
     }
-
-    // 3) exact on city (if dataset has it)
     if (!effectiveZip) {
       const q3 = await supabase
         .from("us_cities")
@@ -217,8 +283,6 @@ export default async function LostReportPage({ params }: PageProps) {
         .maybeSingle();
       effectiveZip = q3.data?.main_zip ?? null;
     }
-
-    // 4) ILIKE on city
     if (!effectiveZip) {
       const q4 = await supabase
         .from("us_cities")
@@ -242,7 +306,7 @@ export default async function LostReportPage({ params }: PageProps) {
   const fullTitle = data.title ?? "Item";
   const description = data.description ?? "";
   const cityRaw = data.city ?? "";
-  const city = stripStateFromCity(cityRaw); // avoid “(OR) (OR)”
+  const city = stripStateFromCity(cityRaw);
   const stateId = data.state_id ?? "";
   const date = data.date ?? "";
   const timeSlot = data.time_slot ?? "";
@@ -252,70 +316,130 @@ export default async function LostReportPage({ params }: PageProps) {
   // Short title for H1 + icon line
   const displayTitle = shortenTitleForDisplay(fullTitle);
 
+  // Canonical URL pour partage Facebook
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+  const pageUrl = `${baseUrl}/lost/${data.slug}`;
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8 text-gray-800">
-      {/* H1 — short title */}
-      <h1 className="text-2xl md:text-3xl font-bold mb-2">
-        {displayTitle} lost in {city}
-        {stateId ? ` (${stateId})` : ""}{" "}
-        {placeLabel && placeLabel !== "unspecified place" ? `at ${placeLabel}` : ""}
-      </h1>
-
-      {/* Lead — keep FULL title */}
-      <p className="text-lg mb-6">
-        <strong>Lost item:</strong> {fullTitle}. {description}
-      </p>
-
-      {/* Info block */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 space-y-3">
-        <p>
-          <span className="font-bold">📅 Date of loss:</span>{" "}
-          {date ? `${date}${timeSlot ? ` (estimated time: ${timeSlot})` : ""}` : "Not specified"}
-        </p>
-
-        {/* ✅ MapPin verte à la place de l’emoji */}
-        <p className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-green-700" />
-          <span className="font-bold">{displayTitle} lost at</span> {placeLabel}
-        </p>
-
-        {/* Public email box */}
-        <div className="mt-2 p-3 rounded-lg bg-green-50 border border-green-200">
-          <p className="font-bold mb-1">✅ If you found it, please send an email:</p>
-          <a href={`mailto:${publicAlias}`} className="text-green-700 underline font-mono text-lg">
-            {publicAlias}
-          </a>
-          {/* ✅ nouvelle ligne d’explication */}
-          <p className="text-sm text-green-900/80 mt-1">
-            This email is unique to this report and forwards directly to the owner.
-          </p>
+    <main className="bg-white">
+      {/* Top bar sobre */}
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2 text-slate-800">
+            <MapPin className="h-5 w-5 text-emerald-700" />
+            <span className="text-sm font-medium text-slate-700">
+              {city || "—"}{stateId ? `, ${stateId}` : ""}
+            </span>
+          </div>
+          <div className="text-xs text-slate-500">Report ID · {shortId}</div>
         </div>
+      </header>
 
-        {/* ✅ sans emojis pour ces lignes */}
-        <p className="mt-2">
-          <span className="font-bold">City:</span> {city || "—"} <br />
-          <span className="font-bold">ZIP code:</span> {effectiveZip || "—"} <br />
-          <span className="font-bold">State:</span> {stateId || "—"}
-        </p>
+      <section className="mx-auto max-w-4xl px-4 py-10">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="px-6 pb-2 pt-7 md:px-8">
+            {/* Ligne bandeau LOST + badges City/State à droite */}
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="inline-flex items-center rounded-md bg-orange-500/95 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+                LOST
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-800">
+                  <span className="font-medium">City:</span> {city || "—"}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-800">
+                  <span className="font-medium">State:</span> {stateId || "—"}
+                </span>
+              </div>
+            </div>
 
-        {Boolean(circumstances) && (
-          <p>
-            <span className="font-bold">ℹ️ Circumstances of loss:</span> {circumstances}
-          </p>
-        )}
-      </div>
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+              {displayTitle} lost in {city}
+              {stateId ? ` (${stateId})` : ""}{" "}
+              {placeLabel && placeLabel !== "unspecified place" ? `at ${placeLabel}` : ""}
+            </h1>
 
-      {/* Photo */}
-      {objectPhoto && (
-        <div className="mt-6">
-          <img src={objectPhoto} alt={fullTitle} className="rounded-lg border shadow-sm" />
+            {/* Lead — conserve le titre complet */}
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">
+              <strong>Lost item:</strong> {fullTitle}. {description}
+            </p>
+          </div>
+
+          <hr className="border-slate-200/80" />
+
+          <div className="px-6 py-6 md:px-8">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">📅</div>
+                  <p className="text-slate-800">
+                    <span className="font-medium">Date of loss:</span>{" "}
+                    {date ? `${date}${timeSlot ? ` (estimated time: ${timeSlot})` : ""}` : "Not specified"}
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">
+                    <MapPin className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <p className="text-slate-800">
+                    <span className="font-medium">{displayTitle} lost at</span> {placeLabel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-sm text-slate-800"><span className="font-medium">City:</span> {city || "—"}</span>
+                  <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-sm text-slate-800"><span className="font-medium">State:</span> {stateId || "—"}</span>
+                </div>
+                {Boolean(circumstances) && (
+                  <p className="text-slate-800"><span className="font-medium">ℹ️ Circumstances of loss:</span> {circumstances}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Public email box */}
+            <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="mb-1 font-medium text-slate-900">✅ If you found it, please send an email:</p>
+              <a
+                href={`mailto:${publicAlias}`}
+                className="font-mono text-lg text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
+              >
+                {publicAlias}
+              </a>
+              <p className="mt-1 text-sm text-emerald-900/80">
+                This email is unique to this report and forwards directly to the owner.
+              </p>
+            </div>
+
+            {/* Photo */}
+            {objectPhoto && (
+              <div className="mt-6">
+                <figure className="overflow-hidden rounded-xl border border-slate-200">
+                  <img src={objectPhoto} alt={fullTitle} className="block max-h-[520px] w-full object-cover" />
+                </figure>
+              </div>
+            )}
+
+            {/* Share */}
+            <div className="mt-8 flex items-center justify-between gap-3">
+              <div className="text-xs text-slate-500">Public report</div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}&quote=${encodeURIComponent(fullTitle)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Share on Facebook
+                </a>
+                <ShareButton title={fullTitle} />
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-
-      {/* Share */}
-      <div className="mt-8">
-        <ShareButton title={fullTitle} />
-      </div>
+      </section>
     </main>
   );
 }
