@@ -76,10 +76,13 @@ function TipGauge({
   // --- Determine level and dynamic message ---
   let level = 1 as 1 | 2 | 3;
   let message = "";
+  let messageIntro = "";
   if (value < 15) {
     level = 1;
+    // (7) mettre cette phrase en gras sur la page suivante (Tip)
+    messageIntro = "Your report will be published and visible in our public database. ";
     message =
-      "Your report will be published and visible in our public database. It may, depending on our team’s availability, receive occasional manual research (not guaranteed).";
+      "It may, depending on our team’s availability, receive occasional manual research (not guaranteed).";
   } else if (value < 25) {
     level = 2;
     message =
@@ -116,7 +119,14 @@ function TipGauge({
           <strong className="text-green-800">
             Level {level} {level === 1 ? "(Standard)" : level === 2 ? "(Extended)" : "(Complete)"}:
           </strong>{" "}
-          {message}
+          {level === 1 ? (
+            <>
+              {messageIntro}
+              <strong>{message}</strong>
+            </>
+          ) : (
+            message
+          )}
         </div>
 
         <div className="mt-5">
@@ -246,8 +256,7 @@ export default function ReportContribution({
 
   useEffect(() => {
     if (initialPlan || initialStep) return;
-    if (effectiveAmount === PRICE[1]) setSelectedPlan(1);
-    else if (effectiveAmount === PRICE[2]) setSelectedPlan(2);
+    if (effectiveAmount === PRICE[2]) setSelectedPlan(2);
     else if (effectiveAmount === PRICE[3]) setSelectedPlan(3);
     else setSelectedPlan(2);
   }, [effectiveAmount, initialPlan, initialStep]);
@@ -303,12 +312,11 @@ export default function ReportContribution({
           </h2>
         </div>
 
+        {/* (5) Remplacer le titre / intro par ce texte */}
         <div className="rounded-2xl border border-green-200 overflow-hidden mb-4 bg-white">
           <div className="px-5 py-4 bg-white text-center">
             <p className="text-[15px] text-gray-700">
-              Start for free because every reports count <span aria-hidden>💚</span>
-              <br />
-              Two levels of human assistance are available if you wish to go further.
+              Your contribution finances the <b>verification</b>, <b>distribution</b> and <b>search</b> of your report by a team member.
             </p>
           </div>
         </div>
@@ -336,12 +344,19 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      We take care of it for you. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution. <em>It’s the option chosen by those who want to maximize their chances without missing anything.</em>
+                      We take care of it for you. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution.
+          
                     </span>
+                  </li>
+                       {/* (2) Ajouter cette ligne */}
+                  <li className="flex items-start gap-3">
+                    <BulletIcon />
+                    <span className="text-gray-800">Recommended for all types of lost items</span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$30</span>
+                  {/* (4) Ajouter "Search fee" devant les montants */}
+                  <span className="text-gray-700 font-medium">Search fee: $30</span>
                 </div>
               </div>
             </div>
@@ -362,6 +377,32 @@ export default function ReportContribution({
                 </h3>
               </div>
               <div className="px-5 py-4">
+                {/* liste d’icônes (déjà en place) */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {[
+                    "meta.svg",
+                    "lostfoundservice.svg",
+                    "manual-search.svg",
+                    "web.svg",
+                    "informations.svg",
+                    "google-maps.svg",
+                    "ai-search.svg",
+                    "contact.svg",
+                    "safari.png",
+                    "telegramme.svg",
+                    "yahoo.svg",
+                    "datasearch.svg",
+                    "facebook.svg",
+                  ].map((icon) => (
+                    <img
+                      key={icon}
+                      src={`/images/icons/level2/${icon}?v=${ASSET_VER}`}
+                      alt={icon.replace(/\.(svg|png)$/i, "")}
+                      className="w-4 h-4 object-contain"
+                    />
+                  ))}
+                </div>
+
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <BulletIcon />
@@ -369,9 +410,15 @@ export default function ReportContribution({
                       AI and Manual research, dissemination to authorities and local groups
                     </span>
                   </li>
+                  {/* (2) Ajouter cette ligne */}
+                  <li className="flex items-start gap-3">
+                    <BulletIcon />
+                    <span className="text-gray-800">Recommended for all types of lost items</span>
+                  </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$15</span>
+                  {/* (4) Ajouter "Search fee" devant les montants */}
+                  <span className="text-gray-700 font-medium">Search fee: $15</span>
                 </div>
               </div>
             </div>
@@ -392,16 +439,30 @@ export default function ReportContribution({
                 </h3>
               </div>
               <div className="px-5 py-4">
+                {/* (3) Ne laisser que l’icône dossier et Google */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {["information.svg", "google.svg"].map((icon) => (
+                    <img
+                      key={icon}
+                      src={`/images/icons/level1/${icon}?v=${ASSET_VER}`}
+                      alt={icon.replace(/\.(svg|png)$/i, "")}
+                      className="w-4 h-4 object-contain"
+                    />
+                  ))}
+                </div>
+
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      Public publication in our open database
+                      {/* (6) Ajouter la suite de phrase */}
+                      Public publication in our open database, because every report count.
                     </span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$0</span>
+                  {/* (4) Ajouter "Search fee" devant les montants */}
+                  <span className="text-gray-700 font-medium">Search fee: $0</span>
                 </div>
               </div>
             </div>

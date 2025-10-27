@@ -57,7 +57,6 @@ export default function WhatHappensNext({
         {/* Header */}
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-bold text-gray-900">What happens next?</h2>
-
           {/*
           --------------------------------------------------------------------
           CODE BROUILLON — PARAGRAPHE INTRO (masqué temporairement)
@@ -67,6 +66,16 @@ export default function WhatHappensNext({
             confirm your request.
           </p>
           */}
+        </div>
+
+        {/* ✅ Bandeau d’état ajouté */}
+        <div
+          className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900"
+          role="status"
+          aria-live="polite"
+        >
+          <strong>Step saved.</strong> Your report is not finalized yet — please review this page and
+          continue to confirm.
         </div>
 
         {/*
@@ -201,8 +210,9 @@ export default function WhatHappensNext({
           >
             Back
           </button>
+          {/* ✅ libellé ajusté */}
           <button onClick={handleContinue} className={btnGreen}>
-            Continue →
+            Confirm & continue →
           </button>
         </div>
       </div>

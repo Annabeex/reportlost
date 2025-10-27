@@ -401,15 +401,22 @@ export default function ReportFormStep2({
             >
               ← Back
             </button>
+            {/* ✅ CHANGEMENT UNIQUEMENT ICI */}
             <button
               className={`${btnGreen} ${isSubmitting ? "opacity-60 pointer-events-none" : ""}`} // ✅ disable visuel
               onClick={onNext}
               disabled={isSubmitting} // ✅ NEW
               aria-disabled={isSubmitting}
+              aria-busy={isSubmitting}
             >
-              {isSubmitting ? "Submitting…" : "Continue"}
+              {isSubmitting ? "Saving…" : "Save & continue"}
             </button>
           </div>
+
+          {/* ✅ Texte d’aide sous le bouton */}
+          <p className="text-sm text-gray-600 mt-2 text-right" aria-live="polite">
+            This saves your details — your request isn’t finalized yet.
+          </p>
         </>
       )}
     </div>
