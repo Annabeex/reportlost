@@ -3,7 +3,6 @@ import { ImageResponse } from "next/og";
 
 // ✅ Edge en prod, Node en local (évite les “failed to pipe response” en dev)
 export const runtime = process.env.VERCEL ? "edge" : "nodejs";
-export const contentType = "image/png";
 
 type Row = {
   title: string | null;
@@ -76,7 +75,6 @@ export async function GET(
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) {
-      // En local sans env → texte brut, jamais vide
       return new Response("Supabase env missing", {
         status: 500,
         headers: { "content-type": "text/plain" },
@@ -103,7 +101,6 @@ export async function GET(
     }).finally(() => clearTimeout(timer));
 
     if (!resp.ok) {
-      // Mode texte si on te teste dans le navigateur
       if (urlObj.searchParams.get("text") === "1") {
         return new Response(`Data fetch error (${resp.status})`, {
           status: 500,
@@ -116,7 +113,7 @@ export async function GET(
     const rows = (await resp.json()) as Row[];
     const row = rows?.[0];
 
-    // 🔎 2) Mode RAW JSON pour valider la donnée
+    // 🔎 2) Mode RAW JSON
     if (urlObj.searchParams.get("raw") === "1") {
       return new Response(JSON.stringify(row ?? null, null, 2), {
         headers: { "content-type": "application/json" },
@@ -140,7 +137,7 @@ export async function GET(
     const state = safe(row.state_id || "—", 6);
     const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
-    // 🔤 3) Forcer un rendu texte si demandé (isoler les soucis de piping ImageResponse)
+    // 🔤 3) Forcer un rendu texte si demandé
     if (urlObj.searchParams.get("text") === "1") {
       return new Response(
         `LOST · ${title} · ${city}${state !== "—" ? ` (${state})` : ""}\n${description}\n${email}`,
@@ -148,7 +145,7 @@ export async function GET(
       );
     }
 
-    // 🖼️ Rendu image OG
+    // 🖼️ Image OG
     return new ImageResponse(
       (
         <div
@@ -314,7 +311,6 @@ export async function GET(
       { width: 1200, height: 630 }
     );
   } catch (e: any) {
-    // Dernier filet : pas de réponse vide
     return new Response(`OG render error: ${e?.message || String(e)}`, {
       headers: { "content-type": "text/plain" },
       status: 500,
