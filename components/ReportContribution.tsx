@@ -45,9 +45,11 @@ function BulletIcon() {
 function TipGauge({
   value,
   setValue,
+  useHeartIcon = false, // ✅ icône 💚 si plan 1 (zéro)
 }: {
   value: number;
   setValue: (n: number) => void;
+  useHeartIcon?: boolean;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const clamp = (n: number) => Math.max(0, Math.min(MAX_TIP, Math.round(n)));
@@ -79,7 +81,6 @@ function TipGauge({
   let messageIntro = "";
   if (value < 15) {
     level = 1;
-    // (7) mettre cette phrase en gras sur la page suivante (Tip)
     messageIntro = "Your report will be published and visible in our public database. ";
     message =
       "It may, depending on our team’s availability, receive occasional manual research (not guaranteed).";
@@ -99,16 +100,23 @@ function TipGauge({
         className="flex items-center gap-3 px-5 py-3"
         style={{ backgroundColor: LIGHT_GREEN_BG }}
       >
-        <img
-          src={`/images/levels.svg?v=${ASSET_VER}`}
-          alt="Levels"
-          width={20}
-          height={20}
-          style={{
-            filter:
-              "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
-          }}
-        />
+        {/* ✅ cœur vert si plan 1, sinon icône levels */}
+        {useHeartIcon ? (
+          <span className="text-xl" aria-hidden>
+            💚
+          </span>
+        ) : (
+          <img
+            src={`/images/levels.svg?v=${ASSET_VER}`}
+            alt="Levels"
+            width={20}
+            height={20}
+            style={{
+              filter:
+                "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
+            }}
+          />
+        )}
         <h3 className="text-lg font-semibold" style={{ color: DARK_GREEN }}>
           Support the community (optional)
         </h3>
@@ -119,7 +127,7 @@ function TipGauge({
           <strong className="text-green-800">
             Level {level} {level === 1 ? "(Standard)" : level === 2 ? "(Extended)" : "(Complete)"}:
           </strong>{" "}
-          {level === 1 ? (
+        {level === 1 ? (
             <>
               {messageIntro}
               <strong>{message}</strong>
@@ -244,8 +252,8 @@ export default function ReportContribution({
     [amount, contribution]
   );
 
-  // Prices: 0 / 15 / 30
-  const PRICE = { 1: 0, 2: 15, 3: 30 } as const;
+  // ✅ Prices updated to requested values: 0 / 12 / 25
+  const PRICE = { 1: 0, 2: 12, 3: 25 } as const;
 
   // Default: preselect plan 2
   const [step, setStep] = useState<"plans" | "tip">(initialStep ?? "plans");
@@ -292,39 +300,50 @@ export default function ReportContribution({
 
   const selectCard = (plan: 1 | 2 | 3) => setSelectedPlan(plan);
 
+  const showPlanHeader = selectedPlan !== 1; // ✅ cacher le titre si plan 1
+
   return (
     <section className="px-3 sm:px-4 md:px-6">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
-          <img
-            src={`/images/levels.svg?v=${ASSET_VER}`}
-            alt="Levels icon"
-            width={26}
-            height={26}
-            className="opacity-90"
-            style={{
-              filter:
-                "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
-            }}
-          />
-          <h2 className="text-2xl font-bold text-gray-700 text-center">
-            Choose your plan
-          </h2>
-        </div>
+        {showPlanHeader && (
+          <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
+            <img
+              src={`/images/levels.svg?v=${ASSET_VER}`}
+              alt="Levels icon"
+              width={26}
+              height={26}
+              className="opacity-90"
+              style={{
+                filter:
+                  "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
+              }}
+            />
+            <h2 className="text-2xl font-bold text-gray-700 text-center">
+              Choose your plan
+            </h2>
+          </div>
+        )}
 
-        {/* (5) Remplacer le titre / intro par ce texte */}
+        {/* Intro box */}
         <div className="rounded-2xl border border-green-200 overflow-hidden mb-4 bg-white">
           <div className="px-5 py-4 bg-white text-center">
-            <p className="text-[15px] text-gray-700">
-              Your contribution finances the <b>verification</b>, <b>distribution</b> and <b>search</b> of your report by a team member.
-            </p>
+            {selectedPlan === 1 ? (
+              // ✅ phrase spécifique avec cœur si plan 1 (zéro)
+              <p className="text-[15px] text-gray-700">
+                Help us process every report with a small contribution <span aria-hidden>💚</span>
+              </p>
+            ) : (
+              <p className="text-[15px] text-gray-700">
+                Your contribution finances the <b>verification</b>, <b>distribution</b> and <b>search</b> of your report by a team member.
+              </p>
+            )}
           </div>
         </div>
 
         {/* Step: Plans */}
         {step === "plans" && (
           <div className="grid gap-4">
-            {/* Plan 3 — Complete assistance (TOP) */}
+            {/* Plan 3 — Maximum search (TOP) */}
             <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -332,31 +351,70 @@ export default function ReportContribution({
               >
                 <img
                   src={`/images/icons/max.svg?v=${ASSET_VER}`}
-                  alt="Complete assistance"
+                  alt="Maximum search"
                   className="w-5 h-5"
                 />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                  Complete assistance
+                  Maximum search
                 </h3>
               </div>
               <div className="px-5 py-4">
+                {/* ✅ liste d’icônes level 3 (corrigée) */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {[
+                    "information.svg",
+                    "ai-search.svg",
+                    "map-us.svg",
+                    "contact.svg",
+                    "database.svg",
+                    "megaphone.svg",
+                    "phone.svg",
+                    "report.svg",
+                    "facebook.svg",
+                    "file.svg",
+                    "globalsearch.svg",
+                    "gmail.svg",
+                    "google-maps.svg",
+                    "checkplateform.svg",
+                    "locations.svg",
+                    "x.svg",
+                    "lostfoundservice.svg",
+                    "pinterest.svg",
+                    "safari.png",
+                    "big-data.svg",
+                    "feedback.svg",
+                    "telegramme.svg",
+                    "tiktok.svg",
+                    "twitter.png",
+                    "yahoo.svg",
+                    "contacts.png",
+                    "localisation.svg",
+                    "mail-anonyme.svg",
+                    "manualcheck.svg",
+                    "datasearch.svg",
+                    "web.svg",
+                    "geolocalisation.svg",
+                  ].map((icon) => (
+                    <img
+                      key={icon}
+                      src={`/images/icons/level3/${icon}?v=${ASSET_VER}`}
+                      alt={icon.replace(/\.(svg|png)$/i, "")}
+                      className="w-4 h-4 object-contain"
+                    />
+                  ))}
+                </div>
+
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      We take care of it for you. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution.
-          
+                      {/* ✅ remplacer le début de la phrase */}
+                      complete assistance. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution.
                     </span>
-                  </li>
-                       {/* (2) Ajouter cette ligne */}
-                  <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">Recommended for all types of lost items</span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  {/* (4) Ajouter "Search fee" devant les montants */}
-                  <span className="text-gray-700 font-medium">Search fee: $30</span>
+                  <span className="text-gray-700 font-medium">Search fee: $25</span>
                 </div>
               </div>
             </div>
@@ -377,7 +435,7 @@ export default function ReportContribution({
                 </h3>
               </div>
               <div className="px-5 py-4">
-                {/* liste d’icônes (déjà en place) */}
+                {/* liste d’icônes (inchangée) */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {[
                     "meta.svg",
@@ -410,15 +468,13 @@ export default function ReportContribution({
                       AI and Manual research, dissemination to authorities and local groups
                     </span>
                   </li>
-                  {/* (2) Ajouter cette ligne */}
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">Recommended for all types of lost items</span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  {/* (4) Ajouter "Search fee" devant les montants */}
-                  <span className="text-gray-700 font-medium">Search fee: $15</span>
+                  <span className="text-gray-700 font-medium">Search fee: $12</span>
                 </div>
               </div>
             </div>
@@ -439,7 +495,6 @@ export default function ReportContribution({
                 </h3>
               </div>
               <div className="px-5 py-4">
-                {/* (3) Ne laisser que l’icône dossier et Google */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {["information.svg", "google.svg"].map((icon) => (
                     <img
@@ -455,13 +510,11 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      {/* (6) Ajouter la suite de phrase */}
                       Public publication in our open database, because every report count.
                     </span>
                   </li>
                 </ul>
                 <div className="mt-4 flex items-center justify-between">
-                  {/* (4) Ajouter "Search fee" devant les montants */}
                   <span className="text-gray-700 font-medium">Search fee: $0</span>
                 </div>
               </div>
@@ -495,7 +548,8 @@ export default function ReportContribution({
         {/* Step: Tip */}
         {step === "tip" && (
           <div className="grid gap-4">
-            <TipGauge value={tip} setValue={setTip} />
+            {/* ✅ cœur seulement si plan 1 */}
+            <TipGauge value={tip} setValue={setTip} useHeartIcon={selectedPlan === 1} />
             <p className="flex items-center gap-2 text-sm text-gray-600 mt-1 ml-1">
               <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="Secure" className="w-4 h-4" />
               Payments are processed securely by Stripe.com — PCI DSS v4.0 certified.

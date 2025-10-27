@@ -20,9 +20,9 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import NextDynamic from "next/dynamic";
 const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), { ssr: false });
 
-
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
 import { MapPin } from "lucide-react";
+import { headers } from "next/headers";
 
 type PageProps = { params: { slug: string } };
 
@@ -167,7 +167,15 @@ export async function generateMetadata(
 
   if (!data) return {};
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+  // ✅ URL absolue fiable (prod & preview) via headers
+  const h = headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? "localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : `${proto}://${host}`;
+
   const url = `${baseUrl}/lost/${params.slug}`;
 
   const city = stripStateFromCity(data.city ?? "");
@@ -295,7 +303,7 @@ export default async function LostReportPage({ params }: PageProps) {
         .eq("state_id", data.state_id)
         .eq("city", cityKey)
         .maybeSingle();
-      effectiveZip = q3.data?.main_zip ?? null;
+    effectiveZip = q3.data?.main_zip ?? null;
     }
 
     // 4) ILIKE on city
@@ -333,7 +341,13 @@ export default async function LostReportPage({ params }: PageProps) {
   const displayTitle = shortenTitleForDisplay(fullTitle);
 
   // Canonical URL pour partage Facebook
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
+  const h = headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? "localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.startsWith("http")
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : `${proto}://${host}`;
   const pageUrl = `${baseUrl}/lost/${data.slug}`;
 
   return (
