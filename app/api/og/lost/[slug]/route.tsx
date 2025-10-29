@@ -34,7 +34,14 @@ function errorImage(msg: string) {
           fontFamily: FONT_STACK,
         }}
       >
-        <div style={{ display: "block", fontSize: 44, textAlign: "center", maxWidth: 1000 }}>
+        <div
+          style={{
+            display: "block",
+            fontSize: 44,
+            textAlign: "center",
+            maxWidth: 1000,
+          }}
+        >
           {msg}
         </div>
       </div>
@@ -46,6 +53,7 @@ function errorImage(msg: string) {
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const q = new URL(req.url).searchParams;
 
+  // debug ping
   if (q.get("debug") === "1") {
     return new Response(
       JSON.stringify({
@@ -61,7 +69,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     );
   }
 
-  // Garde le mode simple si besoin de vérifier rapidement le pipeline
+  // mode simple (test visuel)
   if (q.get("simple") === "1") {
     return new ImageResponse(
       (
@@ -129,6 +137,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     const state = safe(row.state_id || "—", 6);
     const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
+    // ---- Rendu “riche” sans gap/alignSelf/raccourcis border ----
     return new ImageResponse(
       (
         <div
@@ -162,7 +171,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
-              gap: 24,
             }}
           >
             {/* Ligne bandeau + badges */}
@@ -171,14 +179,12 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: 16,
               }}
             >
               {/* Bandeau LOST */}
               <div
                 style={{
                   display: "flex",
-                  alignSelf: "flex-start",
                   background: "#f97316",
                   color: "#ffffff",
                   paddingTop: 8,
@@ -195,12 +201,11 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               </div>
 
               {/* Badges City/State */}
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex" }}>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
                     background: "#f1f5f9",
                     borderWidth: 1,
                     borderColor: "#e2e8f0",
@@ -212,15 +217,18 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                     paddingLeft: 14,
                     paddingRight: 14,
                     fontSize: 18,
+                    marginRight: 10, // remplace gap
                   }}
                 >
-                  <span style={{ fontWeight: 700, display: "block" }}>City:</span> {city}
+                  <span style={{ fontWeight: 700, display: "block", marginRight: 6 }}>
+                    City:
+                  </span>
+                  {city}
                 </div>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
                     background: "#f1f5f9",
                     borderWidth: 1,
                     borderColor: "#e2e8f0",
@@ -234,10 +242,16 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                     fontSize: 18,
                   }}
                 >
-                  <span style={{ fontWeight: 700, display: "block" }}>State:</span> {state}
+                  <span style={{ fontWeight: 700, display: "block", marginRight: 6 }}>
+                    State:
+                  </span>
+                  {state}
                 </div>
               </div>
             </div>
+
+            {/* Espacement entre sections (au lieu de gap) */}
+            <div style={{ display: "block", height: 24 }} />
 
             {/* Titre */}
             <div
@@ -252,6 +266,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               {title} lost in {city} {state !== "—" ? `(${state})` : ""}
             </div>
 
+            <div style={{ display: "block", height: 18 }} />
+
             {/* Ligne "Lost item:" */}
             <div
               style={{
@@ -261,14 +277,16 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 maxWidth: 1030,
               }}
             >
-              <span style={{ fontWeight: 700, display: "inline" }}>Lost item:</span> {description}
+              <span style={{ fontWeight: 700, display: "inline" }}>Lost item:</span>{" "}
+              {description}
             </div>
+
+            <div style={{ display: "block", height: 18 }} />
 
             {/* Encadré email vert */}
             <div
               style={{
                 display: "block",
-                marginTop: 6,
                 background: "#ecfdf5",
                 borderWidth: 1,
                 borderColor: "#bbf7d0",
