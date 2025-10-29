@@ -1,7 +1,8 @@
 // app/api/og/lost/[slug]/route.tsx
 import { ImageResponse } from "next/og";
 
-export const runtime = process.env.VERCEL ? "edge" : "nodejs";
+// ✅ Forcer Node.js (plus tolérant que Edge pour @vercel/og)
+export const runtime = "nodejs";
 
 type Row = {
   title: string | null;
@@ -19,9 +20,9 @@ function safe(v: unknown, max = 140) {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
-function textFallback(msg: string, status = 500) {
-  return new Response(`OG render error: ${msg}`, {
-    headers: { "content-type": "text/plain" },
+function text(msg: string, status = 500) {
+  return new Response(msg, {
+    headers: { "content-type": "text/plain; charset=utf-8" },
     status,
   });
 }
@@ -29,62 +30,70 @@ function textFallback(msg: string, status = 500) {
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const q = new URL(req.url).searchParams;
 
-  // Debug ping
+  // Debug ping rapide
   if (q.get("debug") === "1") {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        slug: params.slug,
-        env: {
-          hasURL: !!process.env.SUPABASE_URL,
-          hasKEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-          runtime,
+    return text(
+      JSON.stringify(
+        {
+          ok: true,
+          slug: params.slug,
+          env: {
+            hasURL: !!process.env.SUPABASE_URL,
+            hasKEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            runtime,
+          },
         },
-      }),
-      { headers: { "content-type": "application/json" } }
+        null,
+        2
+      ),
+      200
     );
   }
 
-  try {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) return textFallback("Supabase env missing");
+  // 1) Récup data via REST Supabase (pas supabase-js → plus simple/fiable ici)
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return text("OG error: Supabase env missing");
 
+  let row: Row | undefined;
+  try {
     const qs =
       "select=title,description,city,state_id,public_id&slug=eq." +
       encodeURIComponent(params.slug) +
       "&limit=1";
 
-    // Timeout sécurisé
+    // petit timeout défensif
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 6000);
 
     const resp = await fetch(`${url}/rest/v1/lost_items?${qs}`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: "application/json",
+      },
       cache: "no-store",
       signal: ctrl.signal,
     }).finally(() => clearTimeout(timer));
 
-    if (!resp.ok) return textFallback(`Data fetch error (${resp.status})`, 502);
+    if (!resp.ok) return text(`OG error: fetch ${resp.status}`, 502);
 
-    const row = (await resp.json())?.[0] as Row | undefined;
-    if (!row) return textFallback("Lost item not found", 404);
+    const arr = (await resp.json()) as Row[];
+    row = arr?.[0];
+    if (!row) return text("OG error: Lost item not found", 404);
+  } catch (e: any) {
+    return text(`OG error: fetch failed (${e?.message || e})`);
+  }
 
-    const title = safe(row.title || "Lost item", 90);
-    const description = safe(row.description || "—", 160);
-    const city = safe(row.city || "—", 40);
-    const state = safe(row.state_id || "—", 6);
-    const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
+  // 2) Normalisation champs
+  const title = safe(row.title || "Lost item", 90);
+  const description = safe(row.description || "—", 160);
+  const city = safe(row.city || "—", 40);
+  const state = safe(row.state_id || "—", 6);
+  const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
-    // ⛑️ Mode texte forcé si demandé
-    if (q.get("text") === "1") {
-      return new Response(
-        `LOST · ${title} · ${city}${state !== "—" ? ` (${state})` : ""}\n${description}\n${email}`,
-        { headers: { "content-type": "text/plain" } }
-      );
-    }
-
-    // 🖼️ Rendu image — version "simple+" ultra-compat
+  // 3) Rendu image **safe** : uniquement flex/block + padding/radius
+  try {
     return new ImageResponse(
       (
         <div
@@ -99,15 +108,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
             fontFamily: FONT_STACK,
           }}
         >
-          {/* Conteneur central */}
-          <div
-            style={{
-              display: "block",
-              width: 1060,
-              // Pas de bordures, pas de shadows : tout simple
-            }}
-          >
-            {/* Header : LOST + City/State (flex sans gap) */}
+          {/* Conteneur central (aucune border/shadow/gap) */}
+          <div style={{ display: "block", width: 1060 }}>
+            {/* Ligne bandeau + City/State */}
             <div
               style={{
                 display: "flex",
@@ -134,7 +137,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 LOST
               </div>
 
-              {/* City/State à droite */}
+              {/* City / State (pas de gap → marges) */}
               <div style={{ display: "flex" }}>
                 <div
                   style={{
@@ -178,10 +181,10 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               </div>
             </div>
 
-            {/* Spacer */}
+            {/* Espacement */}
             <div style={{ display: "block", height: 26 }} />
 
-            {/* Titre */}
+            {/* Titre principal */}
             <div
               style={{
                 display: "block",
@@ -193,10 +196,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               {title} lost in {city} {state !== "—" ? `(${state})` : ""}
             </div>
 
-            {/* Spacer */}
             <div style={{ display: "block", height: 16 }} />
 
-            {/* Description (courte) */}
+            {/* Description courte */}
             <div
               style={{
                 display: "block",
@@ -209,10 +211,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               {description}
             </div>
 
-            {/* Spacer */}
             <div style={{ display: "block", height: 22 }} />
 
-            {/* Email box (simple, pas de border/shadow) */}
+            {/* Email box simple (sans border/shadow) */}
             <div
               style={{
                 display: "block",
@@ -263,6 +264,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       { width: 1200, height: 630 }
     );
   } catch (e: any) {
-    return textFallback(e?.message || String(e));
+    // ✅ Si le moteur OG jette malgré tout, on renvoie un texte clair (pas une page blanche)
+    return text(`OG render error: ${e?.message || String(e)}`);
   }
 }
