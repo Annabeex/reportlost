@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
-import { supabase } from '@/lib/supabaseClient'; // ✅ ajout
 
 // ✅ Import dynamique de la carte, sans SSR
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
@@ -70,16 +69,14 @@ export default function HomePage() {
     const fetchRecent = async () => {
       setLoadingRecent(true);
       try {
-        const { data, error } = await supabase
-          .from('lost_items')
-          .select('id, slug, title, city, state_id, created_at')
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (!error && Array.isArray(data)) setRecent(data as HomeLostItem[]);
-        else if (error) console.warn('supabase recent lost error', error);
+        // ⬇️ Remplace l'appel direct à supabase par l’API serveur
+        const res = await fetch('/api/recent-lost', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setRecent(Array.isArray(json.items) ? (json.items as HomeLostItem[]) : []);
       } catch (e) {
         console.warn('fetch recent lost failed', e);
+        setRecent([]);
       } finally {
         setLoadingRecent(false);
       }
@@ -259,39 +256,38 @@ export default function HomePage() {
             <div className="text-center text-gray-500">No reports yet.</div>
           ) : (
             <div className="space-y-4">
-          {recent.map((item) => {
-  const slug = item.slug || '';
-  let city = item.city || '—';
-  const state = item.state_id || '';
-  const title = item.title || 'Item';
-  const dateYmd = toYmd(item.created_at);
+              {recent.map((item) => {
+                const slug = item.slug || '';
+                let city = item.city || '—';
+                const state = item.state_id || '';
+                const title = item.title || 'Item';
+                const dateYmd = toYmd(item.created_at);
 
-  // ✅ Supprime le doublon de l’État si déjà dans le nom de la ville
-  const normalizedCity = city.replace(/\s*\(([A-Z]{2})\)\s*/g, '').trim();
-  const showState = normalizedCity.toLowerCase().includes(state.toLowerCase())
-    ? ''
-    : ` (${state})`;
+                // ✅ Supprime le doublon de l’État si déjà dans le nom de la ville
+                const normalizedCity = city.replace(/\s*\(([A-Z]{2})\)\s*/g, '').trim();
+                const showState = normalizedCity.toLowerCase().includes(state.toLowerCase())
+                  ? ''
+                  : ` (${state})`;
 
-  return (
-    <Link
-      key={item.id}
-      href={slug ? `/lost/${slug}` : '#'}
-      prefetch={false}
-      className="block rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 hover:border-blue-300 hover:bg-blue-100 transition"
-    >
-      <div className="text-base md:text-lg font-semibold text-blue-800">
-        {title}{' '}
-        <span className="font-normal text-gray-700">lost in</span>{' '}
-        {normalizedCity}
-        {showState}
-      </div>
-      <div className="text-sm text-gray-600 mt-1">
-        Date of report: {dateYmd}
-      </div>
-    </Link>
-  );
-})}
-
+                return (
+                  <Link
+                    key={item.id}
+                    href={slug ? `/lost/${slug}` : '#'}
+                    prefetch={false}
+                    className="block rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 hover:border-blue-300 hover:bg-blue-100 transition"
+                  >
+                    <div className="text-base md:text-lg font-semibold text-blue-800">
+                      {title}{' '}
+                      <span className="font-normal text-gray-700">lost in</span>{' '}
+                      {normalizedCity}
+                      {showState}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      Date of report: {dateYmd}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
