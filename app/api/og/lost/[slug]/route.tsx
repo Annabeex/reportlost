@@ -1,7 +1,6 @@
 // app/api/og/lost/[slug]/route.tsx
 import { ImageResponse } from "next/og";
 
-// ✅ Edge en prod, Node en local (évite les “failed to pipe response” en dev)
 export const runtime = process.env.VERCEL ? "edge" : "nodejs";
 
 type Row = {
@@ -12,8 +11,11 @@ type Row = {
   public_id: string | null;
 };
 
-function safe(text: unknown, max = 140) {
-  const s = String(text ?? "").replace(/\s+/g, " ").trim();
+const FONT_STACK =
+  "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
+
+function safe(v: unknown, max = 140) {
+  const s = String(v ?? "").replace(/\s+/g, " ").trim();
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
@@ -29,18 +31,10 @@ function errorImage(msg: string) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily:
-            "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+          fontFamily: FONT_STACK,
         }}
       >
-        <div
-          style={{
-            display: "block",
-            fontSize: 44,
-            textAlign: "center",
-            maxWidth: 1000,
-          }}
-        >
+        <div style={{ display: "block", fontSize: 44, textAlign: "center", maxWidth: 1000 }}>
           {msg}
         </div>
       </div>
@@ -49,14 +43,11 @@ function errorImage(msg: string) {
   );
 }
 
-export async function GET(
-  req: Request,
-  { params }: { params: { slug: string } }
-) {
-  const urlObj = new URL(req.url);
+export async function GET(req: Request, { params }: { params: { slug: string } }) {
+  const q = new URL(req.url).searchParams;
 
-  // 🔧 1) Ping debug
-  if (urlObj.searchParams.get("debug") === "1") {
+  // debug ping
+  if (q.get("debug") === "1") {
     return new Response(
       JSON.stringify({
         ok: true,
@@ -71,81 +62,73 @@ export async function GET(
     );
   }
 
+  // mode simple (test visuel)
+  if (q.get("simple") === "1") {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: 1200,
+            height: 630,
+            background: "#f8fafc",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: FONT_STACK,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              background: "#f97316",
+              color: "#fff",
+              borderRadius: 20,
+              padding: "24px 48px",
+              fontSize: 80,
+              fontWeight: 900,
+              letterSpacing: 2,
+            }}
+          >
+            LOST
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630 }
+    );
+  }
+
   try {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      return new Response("Supabase env missing", {
-        status: 500,
-        headers: { "content-type": "text/plain" },
-      });
-    }
+    if (!url || !key) return new Response("Supabase env missing", { status: 500 });
 
     const qs =
       "select=title,description,city,state_id,public_id&slug=eq." +
       encodeURIComponent(params.slug) +
       "&limit=1";
 
-    // ⏱️ Timeout pour éviter les pendages
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const timer = setTimeout(() => ctrl.abort(), 6000);
 
     const resp = await fetch(`${url}/rest/v1/lost_items?${qs}`, {
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        Accept: "application/json",
-      },
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
       cache: "no-store",
       signal: ctrl.signal,
     }).finally(() => clearTimeout(timer));
 
-    if (!resp.ok) {
-      if (urlObj.searchParams.get("text") === "1") {
-        return new Response(`Data fetch error (${resp.status})`, {
-          status: 500,
-          headers: { "content-type": "text/plain" },
-        });
-      }
-      return errorImage("Data fetch error");
-    }
+    if (!resp.ok) return errorImage("Data fetch error");
 
-    const rows = (await resp.json()) as Row[];
-    const row = rows?.[0];
+    const row = (await resp.json())?.[0] as Row | undefined;
+    if (!row) return errorImage("Lost item not found");
 
-    // 🔎 2) Mode RAW JSON
-    if (urlObj.searchParams.get("raw") === "1") {
-      return new Response(JSON.stringify(row ?? null, null, 2), {
-        headers: { "content-type": "application/json" },
-        status: row ? 200 : 404,
-      });
-    }
-
-    if (!row) {
-      if (urlObj.searchParams.get("text") === "1") {
-        return new Response("Lost item not found", {
-          status: 404,
-          headers: { "content-type": "text/plain" },
-        });
-      }
-      return errorImage("Lost item not found");
-    }
-
+    // données nettoyées (sans emoji dans l’image OG)
     const title = safe(row.title || "Lost item", 90);
     const description = safe(row.description || "—", 180);
     const city = safe(row.city || "—", 40);
     const state = safe(row.state_id || "—", 6);
     const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
-    // 🔤 3) Forcer un rendu texte si demandé
-    if (urlObj.searchParams.get("text") === "1") {
-      return new Response(
-        `LOST · ${title} · ${city}${state !== "—" ? ` (${state})` : ""}\n${description}\n${email}`,
-        { headers: { "content-type": "text/plain" } }
-      );
-    }
-
-    // 🖼️ Image OG
+    // rendu riche (sans aucun emoji, tout en flex/block explicite)
     return new ImageResponse(
       (
         <div
@@ -157,11 +140,9 @@ export async function GET(
             display: "flex",
             padding: "48px 56px",
             boxSizing: "border-box",
-            fontFamily:
-              "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+            fontFamily: FONT_STACK,
           }}
         >
-          {/* Carte */}
           <div
             style={{
               borderRadius: 24,
@@ -175,7 +156,6 @@ export async function GET(
               gap: 24,
             }}
           >
-            {/* Ligne bandeau + badges */}
             <div
               style={{
                 display: "flex",
@@ -184,7 +164,6 @@ export async function GET(
                 gap: 16,
               }}
             >
-              {/* Bandeau LOST */}
               <div
                 style={{
                   display: "flex",
@@ -201,7 +180,6 @@ export async function GET(
                 LOST
               </div>
 
-              {/* Badges City/State */}
               <div style={{ display: "flex", gap: 10 }}>
                 <div
                   style={{
@@ -236,7 +214,6 @@ export async function GET(
               </div>
             </div>
 
-            {/* Titre */}
             <div
               style={{
                 display: "block",
@@ -249,7 +226,6 @@ export async function GET(
               {title} lost in {city} {state !== "—" ? `(${state})` : ""}
             </div>
 
-            {/* Ligne "Lost item:" */}
             <div
               style={{
                 display: "block",
@@ -261,16 +237,15 @@ export async function GET(
               <span style={{ fontWeight: 700 }}>Lost item:</span> {description}
             </div>
 
-            {/* Encadré email vert */}
             <div
               style={{
+                display: "block",
                 marginTop: 6,
                 background: "#ecfdf5",
                 border: "1px solid #bbf7d0",
                 borderRadius: 16,
                 padding: "22px 24px",
                 color: "#064e3b",
-                display: "block",
               }}
             >
               <div
@@ -281,7 +256,7 @@ export async function GET(
                   fontWeight: 700,
                 }}
               >
-                ✅ If you found it, please send an email:
+                If you found it, please send an email:
               </div>
               <div
                 style={{
