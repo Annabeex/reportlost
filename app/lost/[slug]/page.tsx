@@ -197,8 +197,8 @@ export async function generateMetadata(
   ].filter(Boolean);
   const description = descParts.join(" — ") || "Lost item report";
 
-  // Image OG dynamique (endpoint /api/og/lost/[slug])
-  const image = `${baseUrl}/api/og/lost/${params.slug}`;
+  // ✅ Image OG dynamique (nouveau endpoint SVG robuste)
+  const image = `${baseUrl}/api/og-svg/lost/${params.slug}.svg?v=${Date.now()}`;
 
   return {
     title,
@@ -303,7 +303,7 @@ export default async function LostReportPage({ params }: PageProps) {
         .eq("state_id", data.state_id)
         .eq("city", cityKey)
         .maybeSingle();
-    effectiveZip = q3.data?.main_zip ?? null;
+      effectiveZip = q3.data?.main_zip ?? null;
     }
 
     // 4) ILIKE on city
