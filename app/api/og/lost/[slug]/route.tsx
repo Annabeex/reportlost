@@ -19,41 +19,17 @@ function safe(v: unknown, max = 140) {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
-function errorImage(msg: string) {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: 1200,
-          height: 630,
-          background: "#ffffff",
-          color: "#0f172a",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: FONT_STACK,
-        }}
-      >
-        <div
-          style={{
-            display: "block",
-            fontSize: 44,
-            textAlign: "center",
-            maxWidth: 1000,
-          }}
-        >
-          {msg}
-        </div>
-      </div>
-    ),
-    { width: 1200, height: 630 }
-  );
+function textFallback(msg: string, status = 500) {
+  return new Response(`OG render error: ${msg}`, {
+    headers: { "content-type": "text/plain" },
+    status,
+  });
 }
 
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const q = new URL(req.url).searchParams;
 
-  // debug ping
+  // Debug ping
   if (q.get("debug") === "1") {
     return new Response(
       JSON.stringify({
@@ -69,54 +45,17 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     );
   }
 
-  // mode simple (test visuel)
-  if (q.get("simple") === "1") {
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: 1200,
-            height: 630,
-            background: "#f8fafc",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: FONT_STACK,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              background: "#f97316",
-              color: "#ffffff",
-              borderRadius: 20,
-              paddingTop: 24,
-              paddingBottom: 24,
-              paddingLeft: 48,
-              paddingRight: 48,
-              fontSize: 80,
-              fontWeight: 900,
-              letterSpacing: 2,
-            }}
-          >
-            LOST
-          </div>
-        </div>
-      ),
-      { width: 1200, height: 630 }
-    );
-  }
-
   try {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) return new Response("Supabase env missing", { status: 500 });
+    if (!url || !key) return textFallback("Supabase env missing");
 
     const qs =
       "select=title,description,city,state_id,public_id&slug=eq." +
       encodeURIComponent(params.slug) +
       "&limit=1";
 
+    // Timeout sécurisé
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 6000);
 
@@ -126,18 +65,26 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       signal: ctrl.signal,
     }).finally(() => clearTimeout(timer));
 
-    if (!resp.ok) return errorImage("Data fetch error");
+    if (!resp.ok) return textFallback(`Data fetch error (${resp.status})`, 502);
 
     const row = (await resp.json())?.[0] as Row | undefined;
-    if (!row) return errorImage("Lost item not found");
+    if (!row) return textFallback("Lost item not found", 404);
 
     const title = safe(row.title || "Lost item", 90);
-    const description = safe(row.description || "—", 180);
+    const description = safe(row.description || "—", 160);
     const city = safe(row.city || "—", 40);
     const state = safe(row.state_id || "—", 6);
     const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
-    // ---- Rendu “riche” sans gap/alignSelf/raccourcis border ----
+    // ⛑️ Mode texte forcé si demandé
+    if (q.get("text") === "1") {
+      return new Response(
+        `LOST · ${title} · ${city}${state !== "—" ? ` (${state})` : ""}\n${description}\n${email}`,
+        { headers: { "content-type": "text/plain" } }
+      );
+    }
+
+    // 🖼️ Rendu image — version "simple+" ultra-compat
     return new ImageResponse(
       (
         <div
@@ -147,33 +94,20 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
             background: "#ffffff",
             color: "#0f172a",
             display: "flex",
-            paddingTop: 48,
-            paddingBottom: 48,
-            paddingLeft: 56,
-            paddingRight: 56,
-            boxSizing: "border-box",
+            alignItems: "center",
+            justifyContent: "center",
             fontFamily: FONT_STACK,
           }}
         >
-          {/* Carte */}
+          {/* Conteneur central */}
           <div
             style={{
-              borderRadius: 24,
-              borderWidth: 2,
-              borderColor: "#e2e8f0",
-              borderStyle: "solid",
-              width: "100%",
-              height: "100%",
-              paddingTop: 42,
-              paddingBottom: 42,
-              paddingLeft: 46,
-              paddingRight: 46,
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
+              display: "block",
+              width: 1060,
+              // Pas de bordures, pas de shadows : tout simple
             }}
           >
-            {/* Ligne bandeau + badges */}
+            {/* Header : LOST + City/State (flex sans gap) */}
             <div
               style={{
                 display: "flex",
@@ -181,35 +115,32 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 justifyContent: "space-between",
               }}
             >
-              {/* Bandeau LOST */}
+              {/* Badge LOST */}
               <div
                 style={{
                   display: "flex",
                   background: "#f97316",
                   color: "#ffffff",
-                  paddingTop: 8,
-                  paddingBottom: 8,
-                  paddingLeft: 14,
-                  paddingRight: 14,
-                  borderRadius: 8,
-                  fontSize: 20,
-                  fontWeight: 800,
+                  borderRadius: 10,
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                  paddingLeft: 16,
+                  paddingRight: 16,
+                  fontSize: 22,
+                  fontWeight: 900,
                   letterSpacing: 1,
                 }}
               >
                 LOST
               </div>
 
-              {/* Badges City/State */}
+              {/* City/State à droite */}
               <div style={{ display: "flex" }}>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     background: "#f1f5f9",
-                    borderWidth: 1,
-                    borderColor: "#e2e8f0",
-                    borderStyle: "solid",
                     color: "#0f172a",
                     borderRadius: 10,
                     paddingTop: 8,
@@ -217,10 +148,10 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                     paddingLeft: 14,
                     paddingRight: 14,
                     fontSize: 18,
-                    marginRight: 10, // remplace gap
+                    marginRight: 10,
                   }}
                 >
-                  <span style={{ fontWeight: 700, display: "block", marginRight: 6 }}>
+                  <span style={{ display: "block", fontWeight: 700, marginRight: 6 }}>
                     City:
                   </span>
                   {city}
@@ -230,9 +161,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                     display: "flex",
                     alignItems: "center",
                     background: "#f1f5f9",
-                    borderWidth: 1,
-                    borderColor: "#e2e8f0",
-                    borderStyle: "solid",
                     color: "#0f172a",
                     borderRadius: 10,
                     paddingTop: 8,
@@ -242,7 +170,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                     fontSize: 18,
                   }}
                 >
-                  <span style={{ fontWeight: 700, display: "block", marginRight: 6 }}>
+                  <span style={{ display: "block", fontWeight: 700, marginRight: 6 }}>
                     State:
                   </span>
                   {state}
@@ -250,61 +178,59 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               </div>
             </div>
 
-            {/* Espacement entre sections (au lieu de gap) */}
-            <div style={{ display: "block", height: 24 }} />
+            {/* Spacer */}
+            <div style={{ display: "block", height: 26 }} />
 
             {/* Titre */}
             <div
               style={{
                 display: "block",
-                fontSize: 60,
+                fontSize: 56,
                 fontWeight: 800,
-                lineHeight: 1.1,
-                maxWidth: 1030,
+                lineHeight: 1.12,
               }}
             >
               {title} lost in {city} {state !== "—" ? `(${state})` : ""}
             </div>
 
-            <div style={{ display: "block", height: 18 }} />
+            {/* Spacer */}
+            <div style={{ display: "block", height: 16 }} />
 
-            {/* Ligne "Lost item:" */}
+            {/* Description (courte) */}
             <div
               style={{
                 display: "block",
                 fontSize: 26,
+                lineHeight: 1.35,
                 color: "#334155",
-                maxWidth: 1030,
               }}
             >
-              <span style={{ fontWeight: 700, display: "inline" }}>Lost item:</span>{" "}
+              <span style={{ display: "inline", fontWeight: 700 }}>Lost item:</span>{" "}
               {description}
             </div>
 
-            <div style={{ display: "block", height: 18 }} />
+            {/* Spacer */}
+            <div style={{ display: "block", height: 22 }} />
 
-            {/* Encadré email vert */}
+            {/* Email box (simple, pas de border/shadow) */}
             <div
               style={{
                 display: "block",
                 background: "#ecfdf5",
-                borderWidth: 1,
-                borderColor: "#bbf7d0",
-                borderStyle: "solid",
-                borderRadius: 16,
-                paddingTop: 22,
-                paddingBottom: 22,
-                paddingLeft: 24,
-                paddingRight: 24,
+                borderRadius: 14,
+                paddingTop: 18,
+                paddingBottom: 18,
+                paddingLeft: 20,
+                paddingRight: 20,
                 color: "#064e3b",
               }}
             >
               <div
                 style={{
                   display: "block",
-                  fontSize: 26,
-                  marginBottom: 8,
+                  fontSize: 24,
                   fontWeight: 700,
+                  marginBottom: 8,
                 }}
               >
                 If you found it, please send an email:
@@ -314,7 +240,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                   display: "block",
                   fontFamily:
                     "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas",
-                  fontSize: 30,
+                  fontSize: 28,
                   textDecoration: "underline",
                 }}
               >
@@ -323,7 +249,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               <div
                 style={{
                   display: "block",
-                  fontSize: 20,
+                  fontSize: 18,
                   opacity: 0.9,
                   marginTop: 6,
                 }}
@@ -337,9 +263,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       { width: 1200, height: 630 }
     );
   } catch (e: any) {
-    return new Response(`OG render error: ${e?.message || String(e)}`, {
-      headers: { "content-type": "text/plain" },
-      status: 500,
-    });
+    return textFallback(e?.message || String(e));
   }
 }
