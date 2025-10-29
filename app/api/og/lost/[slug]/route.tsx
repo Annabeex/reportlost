@@ -1,8 +1,7 @@
 // app/api/og/lost/[slug]/route.tsx
 import { ImageResponse } from "next/og";
 
-// ✅ Forcer Node.js (plus tolérant que Edge pour @vercel/og)
-export const runtime = "nodejs";
+export const runtime = "nodejs"; // ✅ plus tolérant que Edge
 
 type Row = {
   title: string | null;
@@ -12,7 +11,7 @@ type Row = {
   public_id: string | null;
 };
 
-const FONT_STACK =
+const FONT =
   "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
 
 function safe(v: unknown, max = 140) {
@@ -27,10 +26,39 @@ function text(msg: string, status = 500) {
   });
 }
 
+function blankImage(title = "ReportLost", subtitle = "Open Graph ready") {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          display: "flex",
+          width: 1200,
+          height: 630,
+          background: "#ffffff",
+          color: "#0f172a",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: FONT,
+        }}
+      >
+        <div style={{ display: "block", textAlign: "center" }}>
+          <div style={{ display: "block", fontSize: 64, fontWeight: 800 }}>
+            {title}
+          </div>
+          <div style={{ display: "block", fontSize: 28, color: "#475569" }}>
+            {subtitle}
+          </div>
+        </div>
+      </div>
+    ),
+    { width: 1200, height: 630 }
+  );
+}
+
 export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const q = new URL(req.url).searchParams;
 
-  // Debug ping rapide
+  // 🔧 Diagnostics rapides
   if (q.get("debug") === "1") {
     return text(
       JSON.stringify(
@@ -50,7 +78,12 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     );
   }
 
-  // 1) Récup data via REST Supabase (pas supabase-js → plus simple/fiable ici)
+  // 🔁 Mode secours : image blanche garantie
+  if (q.get("blank") === "1") {
+    return blankImage("ReportLost", "Fallback image");
+  }
+
+  // 1) Fetch via REST Supabase (edge-safe & simple)
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return text("OG error: Supabase env missing");
@@ -62,9 +95,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       encodeURIComponent(params.slug) +
       "&limit=1";
 
-    // petit timeout défensif
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const t = setTimeout(() => ctrl.abort(), 6000);
 
     const resp = await fetch(`${url}/rest/v1/lost_items?${qs}`, {
       headers: {
@@ -74,7 +106,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       },
       cache: "no-store",
       signal: ctrl.signal,
-    }).finally(() => clearTimeout(timer));
+    }).finally(() => clearTimeout(t));
 
     if (!resp.ok) return text(`OG error: fetch ${resp.status}`, 502);
 
@@ -82,35 +114,35 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
     row = arr?.[0];
     if (!row) return text("OG error: Lost item not found", 404);
   } catch (e: any) {
-    return text(`OG error: fetch failed (${e?.message || e})`);
+    // Si fetch plante, on renvoie une image “blank” pour éviter 500
+    return blankImage("ReportLost", `Fetch failed: ${e?.message || e}`);
   }
 
-  // 2) Normalisation champs
+  // 2) Normalisation
   const title = safe(row.title || "Lost item", 90);
   const description = safe(row.description || "—", 160);
   const city = safe(row.city || "—", 40);
   const state = safe(row.state_id || "—", 6);
   const email = `item${safe(row.public_id || "?????", 12)}@reportlost.org`;
 
-  // 3) Rendu image **safe** : uniquement flex/block + padding/radius
+  // 3) Rendu “safe” (display explicite partout, pas de border/shadow/gap)
   try {
     return new ImageResponse(
       (
         <div
           style={{
+            display: "flex",
             width: 1200,
             height: 630,
             background: "#ffffff",
             color: "#0f172a",
-            display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: FONT_STACK,
+            fontFamily: FONT,
           }}
         >
-          {/* Conteneur central (aucune border/shadow/gap) */}
           <div style={{ display: "block", width: 1060 }}>
-            {/* Ligne bandeau + City/State */}
+            {/* Ligne top */}
             <div
               style={{
                 display: "flex",
@@ -118,7 +150,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 justifyContent: "space-between",
               }}
             >
-              {/* Badge LOST */}
               <div
                 style={{
                   display: "flex",
@@ -137,7 +168,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
                 LOST
               </div>
 
-              {/* City / State (pas de gap → marges) */}
               <div style={{ display: "flex" }}>
                 <div
                   style={{
@@ -181,10 +211,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
               </div>
             </div>
 
-            {/* Espacement */}
             <div style={{ display: "block", height: 26 }} />
 
-            {/* Titre principal */}
             <div
               style={{
                 display: "block",
@@ -198,7 +226,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
             <div style={{ display: "block", height: 16 }} />
 
-            {/* Description courte */}
             <div
               style={{
                 display: "block",
@@ -213,7 +240,6 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
             <div style={{ display: "block", height: 22 }} />
 
-            {/* Email box simple (sans border/shadow) */}
             <div
               style={{
                 display: "block",
@@ -264,7 +290,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
       { width: 1200, height: 630 }
     );
   } catch (e: any) {
-    // ✅ Si le moteur OG jette malgré tout, on renvoie un texte clair (pas une page blanche)
-    return text(`OG render error: ${e?.message || String(e)}`);
+    // Dernier filet de sécurité → image “blank”
+    return blankImage("ReportLost", `Render failed: ${e?.message || e}`);
   }
 }
