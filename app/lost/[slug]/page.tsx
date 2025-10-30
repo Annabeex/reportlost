@@ -22,7 +22,7 @@ const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), {
 
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
 import { MapPin } from "lucide-react";
-import { headers } from "next/headers";
+import { headers as nextHeaders } from "next/headers";
 
 type PageProps = { params: { slug: string } };
 
@@ -167,8 +167,8 @@ export async function generateMetadata(
 
   if (!data) return {};
 
-  // ✅ URL absolue fiable (prod & preview) via headers
-  const h = headers();
+  // ✅ URL absolue fiable (prod & preview) via headers aliasé
+  const h = nextHeaders();
   const proto = h.get("x-forwarded-proto") ?? "https";
   const host = h.get("host") ?? "localhost:3000";
   const baseUrl =
@@ -197,8 +197,8 @@ export async function generateMetadata(
   ].filter(Boolean);
   const description = descParts.join(" — ") || "Lost item report";
 
-  // ✅ Image OG dynamique (nouveau endpoint SVG robuste)
-  const image = `${baseUrl}/api/og-svg/lost/${params.slug}.svg?v=${Date.now()}`;
+  // Image OG dynamique (endpoint /api/og/lost/[slug])
+  const image = `${baseUrl}/api/og/lost/${params.slug}`;
 
   return {
     title,
@@ -340,8 +340,8 @@ export default async function LostReportPage({ params }: PageProps) {
   // Short title for H1 + icon line
   const displayTitle = shortenTitleForDisplay(fullTitle);
 
-  // Canonical URL pour partage Facebook
-  const h = headers();
+  // Canonical URL pour partage Facebook (via headers aliasé)
+  const h = nextHeaders();
   const proto = h.get("x-forwarded-proto") ?? "https";
   const host = h.get("host") ?? "localhost:3000";
   const baseUrl =
