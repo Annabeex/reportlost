@@ -12,13 +12,15 @@ export default function Footer() {
             <li><Link href="/about">About us</Link></li>
           </ul>
         </div>
+
         <div>
           <h4 className="font-semibold mb-2">Support</h4>
           <ul className="space-y-1">
-            <li><Link href="/help">Help center</Link></li>
+            <li><Link href="/helpcenter">Help Center</Link></li>
             <li><Link href="/contact">Contact us</Link></li>
           </ul>
         </div>
+
         <div>
           <h4 className="font-semibold mb-2">Legal</h4>
           <ul className="space-y-1">
@@ -28,18 +30,47 @@ export default function Footer() {
             <li><Link href="/cookies">Cookie Policy</Link></li>
           </ul>
         </div>
+
         <div>
           <h4 className="font-semibold mb-2">Follow</h4>
           <ul className="space-y-1">
-            <li><a href="#">Twitter</a></li>
-            <li><a href="#">Facebook</a></li>
-            <li><a href="#">Instagram</a></li>
+            <li>
+              <a
+                href="https://x.com/ReportlostUs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-800"
+              >
+                X (Twitter)
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.facebook.com/profile.php?id=61581471865057"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-800"
+              >
+                Facebook
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.instagram.com/reportlost_us/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-800"
+              >
+                Instagram
+              </a>
+            </li>
           </ul>
         </div>
       </div>
+
       <div className="flex items-center justify-center h-16 text-xs text-gray-500">
-  © {new Date().getFullYear()} ReportLost. All rights reserved.
-</div>
+        © {new Date().getFullYear()} ReportLost. All rights reserved.
+      </div>
     </footer>
   );
 }

@@ -3,12 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
 
-// ✅ Import dynamique de la carte, sans SSR
+// --- IMPORTANT: carte interactive chargée à la demande, pas au-dessus du fold
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
 // helper: slug catégorie
@@ -60,6 +60,65 @@ function toYmd(dateStr?: string | null) {
   }
 }
 
+/** Composant qui remplace la carte par une image statique et ne monte la carte
+ * interactive que si la zone est visible ET quand le thread est au repos.
+ * -> Réduction massive du LCP.
+ */
+function LazyInteractiveMap() {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [shouldMountMap, setShouldMountMap] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let timeoutId: any;
+
+    const mountWhenIdle = () => {
+      // @ts-ignore
+      const idle = window.requestIdleCallback || ((cb: any) => setTimeout(cb, 300));
+      idle(() => setShouldMountMap(true));
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          mountWhenIdle();
+          io.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="w-full">
+      {!shouldMountMap ? (
+        // ✅ Image statique ultra-légère (webp/png) — remplace par ton asset
+        <Image
+          src="/images/map-usa-static.webp"
+          alt="United States map"
+          width={800}
+          height={500}
+          className="rounded-md border"
+          priority={false}
+          loading="lazy"
+          sizes="(max-width: 768px) 100vw, 48vw"
+        />
+      ) : (
+        <UsaMap />
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   // --- état pour les 10 derniers signalements
   const [recent, setRecent] = useState<HomeLostItem[]>([]);
@@ -69,7 +128,7 @@ export default function HomePage() {
     const fetchRecent = async () => {
       setLoadingRecent(true);
       try {
-        // ⬇️ Remplace l'appel direct à supabase par l’API serveur
+        // ⬇️ API serveur => pas de bloqueur LCP (sous le fold)
         const res = await fetch('/api/recent-lost', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
@@ -87,14 +146,12 @@ export default function HomePage() {
 
   return (
     <>
-      {/* --- Hero section --- */}
-      <section
-        className="w-full bg-white px-4 py-8 animate-fade-in"
-        style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
-      >
+      {/* --- Hero section (pas d'animation sur l'above-the-fold) --- */}
+      <section className="w-full bg-white px-4 py-8">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="w-full md:w-[48%]">
-            <UsaMap />
+            {/* ⬇️ Remplace <UsaMap/> par une image + montage paresseux */}
+            <LazyInteractiveMap />
           </div>
           <div className="w-full md:w-[48%] text-center md:text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
@@ -116,10 +173,7 @@ export default function HomePage() {
       </section>
 
       {/* --- Section villes majeures --- */}
-      <section
-        className="bg-white w-full px-8 py-10 mx-auto animate-fade-in"
-        style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
-      >
+      <section className="bg-white w-full px-8 py-10 mx-auto">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
             Explore Lost & Found Services in Major U.S. Cities
@@ -138,6 +192,8 @@ export default function HomePage() {
                   width={120}
                   height={120}
                   className="rounded-full object-cover mx-auto shadow w-[120px] h-[120px]"
+                  loading="lazy"
+                  sizes="(max-width: 768px) 120px, 120px"
                 />
                 <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
                   {city.name}
@@ -149,10 +205,7 @@ export default function HomePage() {
       </section>
 
       {/* --- Section informations --- */}
-      <section
-        className="bg-gradient-to-r from-blue-50 to-yellow-50 w-full px-8 py-16 mx-auto animate-fade-in"
-        style={{ animationDelay: '0.5s', animationFillMode: 'both' }}
-      >
+      <section className="bg-gradient-to-r from-blue-50 to-yellow-50 w-full px-8 py-16 mx-auto">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-sm text-gray-700">
             <div className="bg-white shadow p-6 rounded-lg hover:shadow-lg transition">
@@ -170,7 +223,7 @@ export default function HomePage() {
                   <span className="text-blue-500">→</span> Your report is shared with appropriate authorities and relevant services.
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-blue-500">→</span> Receive real-time updates and connect with the team if your item is found.
+                  <span className="text-blue-500">→</span> Receive updates if there’s a credible match.
                 </li>
               </ul>
             </div>
@@ -204,10 +257,7 @@ export default function HomePage() {
       </section>
 
       {/* --- Section catégories --- */}
-      <section
-        className="bg-gray-50 w-full px-8 py-16 mx-auto animate-fade-in"
-        style={{ animationDelay: '0.7s', animationFillMode: 'both' }}
-      >
+      <section className="bg-gray-50 w-full px-8 py-16 mx-auto">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
             Most Frequently Lost Items
@@ -229,6 +279,8 @@ export default function HomePage() {
                     width={120}
                     height={120}
                     className="rounded-full object-cover mx-auto shadow"
+                    loading="lazy"
+                    sizes="(max-width: 768px) 120px, 120px"
                   />
                   <p className="text-sm font-medium mt-2 text-gray-700 group-hover:text-blue-600">
                     {category.name}
@@ -240,11 +292,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* --- NOUVELLE SECTION : 10 derniers signalements --- */}
-      <section
-        className="bg-white w-full px-8 py-16 mx-auto animate-fade-in"
-        style={{ animationDelay: '0.9s', animationFillMode: 'both' }}
-      >
+      {/* --- 10 derniers signalements (sous le fold) --- */}
+      <section className="bg-white w-full px-8 py-16 mx-auto">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-center text-xl font-bold text-gray-800 mb-6">
             Recent lost reports

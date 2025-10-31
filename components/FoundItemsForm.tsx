@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { uploadImageAndAnalyze, VisionResult } from "@/lib/Apivision";
 import AutoCompleteCitySelect from "@/components/AutoCompleteCitySelect";
-import generateContent from "@/lib/generatecontent";
 
 const MIN_CITY_CHARS = 1;
 const CITY_STATE_REGEX = /^(.*?)(?:\s*\(([A-Za-z]{2})\))?$/;
@@ -16,6 +15,30 @@ function extractCityAndState(raw: string): { city: string; stateId: string } {
   const cityPart = (match[1] || "").trim();
   const statePart = (match[2] || "").toUpperCase();
   return { city: cityPart, stateId: statePart };
+}
+
+/** Déduit un titre d'objet à partir de la vision/description (sans SEO). */
+function deriveItemTitle(opts: {
+  description?: string;
+  labels?: string;   // visionLabels (comma-separated)
+  objects?: string;  // visionObjects (comma-separated)
+}) {
+  const pickFirst = (s?: string) =>
+    (s || "")
+      .split(",")[0]
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const fromObjects = pickFirst(opts.objects);
+  const fromLabels = pickFirst(opts.labels);
+  const fromDesc = (opts.description || "").split(/[—–\-,.:;|]/)[0].trim();
+
+  const chosen =
+    fromObjects ||
+    fromLabels ||
+    (fromDesc ? (fromDesc.length > 60 ? fromDesc.slice(0, 57) + "…" : fromDesc) : "");
+
+  return chosen || "Found item";
 }
 
 export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: string }) {
@@ -135,10 +158,13 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
         }
       }
 
-      // 2) Auto title (reuse helper)
-      const fakeCityData = { city: normalizedCity || city, malls: [], parks: [], tourism_sites: [] };
-      const { title } = generateContent(fakeCityData);
-      setFixedTitle(title);
+      // 2) Item title (depuis description/vision, pas SEO)
+      const itemTitle = deriveItemTitle({
+        description,
+        labels: visionLabels,
+        objects: visionObjects,
+      });
+      setFixedTitle(itemTitle);
 
       // 3) Submit
       const payload = {
@@ -151,7 +177,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
         logos: visionLogos ?? "",
         objects: visionObjects ?? "",
         ocr_text: visionOcrText ?? "",
-        title: title ?? "",
+        title: itemTitle || null,
         email: email ?? "",
         phone: phone ?? "",
         dropoff_location: dropoffLocation ?? "",
@@ -340,7 +366,7 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
           <p>Your report has been successfully submitted.</p>
           <div className="bg-gray-50 p-4 rounded border text-left space-y-1">
             <p>
-              <strong>📝 Title:</strong> {fixedTitle}
+              <strong>📝 Item:</strong> {fixedTitle}
             </p>
             <p>
               <strong>📍 City:</strong> {city}
