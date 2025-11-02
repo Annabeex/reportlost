@@ -8,23 +8,39 @@ import Link from "next/link";
 import phrasesRaw from "@/lib/category-phrases.json";
 import { categoryContent } from "@/lib/category-content";
 import { buildCityPath } from "@/lib/slugify";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Props = { params: { category: string } };
 type Report = {
   id: string;
   title: string;
-  category: string; // category slug of the page (for local image)
+  category: string;        // category slug of the page (for local image)
   city?: string | null;
   state_id?: string | null;
-  image?: string | null; // absolute URL if present
+  image?: string | null;   // absolute URL if present
   status: "lost" | "found";
+  // ➕ champs utiles pour popup mail + date
+  public_id?: string | number | null;
+  created_at?: string | null;
+  date?: string | null;
+  isFake?: boolean;        // pour distinguer les seeds
 };
 
 // ---------- Supabase ----------
 function getSupabase(): SupabaseClient {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+  // 1) Essaie le client admin (service role) si dispo — lecture sans RLS bloquants
+  const admin = getSupabaseAdmin();
+  if (admin) return admin as unknown as SupabaseClient;
+
+  // 2) Sinon, fallback sur les variables publiques
+  const url =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) throw new Error("Missing SUPABASE_URL/_ANON_KEY (or NEXT_PUBLIC_*)");
   return createClient(url, key);
 }
 
@@ -40,14 +56,40 @@ function slugify(s: string) {
     .replace(/^-|-$/g, "");
 }
 
+function formatMonthDayYear(d: Date) {
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+// --- aliases pour les sacs/valises (bag/purse/handbag/backpack/luggage) ---
+const BAG_ALIASES = new Set([
+  "bag-or-suitcase","bag","purse","handbag",
+  "backpack","backpack-or-suitcase","luggage","suitcase"
+]);
+function normalizeCategory(cat: string) {
+  const s = (cat || "").toLowerCase();
+  return BAG_ALIASES.has(s) ? "bag" : s;
+}
+
 // Local category images
 const KNOWN = new Set([
-  "pets","glasses","bag","keys","jewelry","wallet",
+  "pets","glasses","bag","bag-suitcase","keys","jewelry","wallet",
   "electronics","documents","clothes","other",
 ]);
+
+// 🔧 Slugs alternatifs “bag-like” → image bag-suitcase.jpg
+const CATEGORY_IMAGE_ALIAS: Record<string, string> = {
+  "bag": "bag-suitcase",
+  "bag-or-suitcase": "bag-suitcase",
+  "backpack-or-suitcase": "bag-suitcase",
+  "purse-handbag": "bag-suitcase",
+  "handbag": "bag-suitcase",
+  "backpack": "bag-suitcase",
+  "suitcase": "bag-suitcase",
+};
 function categoryImage(categorySlug: string) {
-  return KNOWN.has(categorySlug)
-    ? `/images/categories/${categorySlug}.jpg`
+  const key = CATEGORY_IMAGE_ALIAS[categorySlug] || categorySlug;
+  return KNOWN.has(key)
+    ? `/images/categories/${key}.jpg`
     : "/images/categories/default.jpg";
 }
 function computeReportImage(r: Report) {
@@ -105,6 +147,7 @@ function buildOrFilter(keywords: string[], cols: string[]) {
 }
 
 // ---------- DB search (title/description only, no tags) ----------
+// ➕ filtre 30 jours et récupère public_id/date/created_at
 async function searchTable(
   sb: SupabaseClient,
   table: "lost_items" | "found_items",
@@ -113,19 +156,32 @@ async function searchTable(
 ) {
   const cols1 = ["title","description"];
   const or1 = buildOrFilter(keywords, cols1);
+
   const sel =
     table === "lost_items"
-      ? "id,title,city,state_id,object_photo"
-      : "id,title,city,state_id,image_url";
+      ? "id,title,city,state_id,object_photo,public_id,date,created_at"
+      : "id,title,city,state_id,image_url,date,created_at";
 
-  // try title+description
-  let q = sb.from(table).select(sel).or(or1).order("created_at", { ascending: false }).limit(limit);
+  const thirtyDaysAgoIso = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+
+  let q = sb.from(table)
+    .select(sel)
+    .or(or1)
+    .gte("created_at", thirtyDaysAgoIso) // ← vrais items (30 jours)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
   let { data, error } = await q;
 
-  // fallback if description column doesn't exist
+  // fallback si la colonne description n'existe pas
   if (error) {
     const or2 = buildOrFilter(keywords, ["title"]);
-    q = sb.from(table).select(sel).or(or2).order("created_at", { ascending: false }).limit(limit);
+    q = sb.from(table)
+      .select(sel)
+      .or(or2)
+      .gte("created_at", thirtyDaysAgoIso)
+      .order("created_at", { ascending: false })
+      .limit(limit);
     ({ data, error } = await q);
   }
   if (error) return [];
@@ -136,6 +192,10 @@ async function searchTable(
       title: r.title || (table === "lost_items" ? "Lost item" : "Found item"),
       city: r.city ?? null,
       state_id: r.state_id ?? null,
+      created_at: r.created_at ?? null,
+      date: r.date ?? null,
+      public_id: r.public_id ?? null,
+      isFake: false,
     };
     return table === "lost_items"
       ? { ...base, image: r.object_photo || null, status: "lost" as const }
@@ -162,7 +222,8 @@ function isPetReportLike(r: Report): boolean {
 
 async function fetchReportsByKeyword(categorySlug: string): Promise<{ lost: Report[]; found: Report[] }> {
   const sb = getSupabase();
-  const kws = KEYWORDS[categorySlug] ?? [categorySlug];
+  const base = normalizeCategory(categorySlug);
+  const kws = KEYWORDS[base] ?? [base];
 
   const [lostRaw, foundRaw] = await Promise.all([
     searchTable(sb, "lost_items", kws, 10),
@@ -243,20 +304,24 @@ function seedPets(count: number, status: "lost" | "found") {
       state_id: loc.state_id,
       image: null,
       status,
+      isFake: true,
     } as Report;
   });
 }
 
+// ---------- ✅ dates pour les faux items + banque basée sur la catégorie normalisée ----------
 function seedReports(categorySlug: string, status: "lost" | "found", count: number): Report[] {
   if (count <= 0) return [];
   if (categorySlug === "pets") return seedPets(count, status);
 
-  const bank = SEED_TITLES[categorySlug] || SEED_TITLES.other;
+  const base = normalizeCategory(categorySlug);
+  const bank = SEED_TITLES[base] || SEED_TITLES.other;
   const titles = bank[status] as string[];
   const items: Report[] = [];
   for (let i = 0; i < count; i++) {
     const t = titles[i % titles.length] || `${status === "lost" ? "Lost" : "Found"} item`;
     const loc = pick(DEMO_CITIES);
+    const iso = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(); // ← date synthétique récente
     items.push({
       id: `seed-${status}-${categorySlug}-${i}`,
       title: t,
@@ -265,6 +330,10 @@ function seedReports(categorySlug: string, status: "lost" | "found", count: numb
       state_id: loc.state_id,
       image: null,
       status,
+      isFake: true,
+      // ➕ pour afficher la date sur les faux items
+      created_at: iso,
+      date: iso,
     });
   }
   return items;
@@ -301,7 +370,7 @@ export default async function CategoryPage({ params }: Props) {
   const phrase = phrasePool.length ? phrasePool[Math.floor(Math.random() * phrasePool.length)] : "";
   const staticPhrase = categoryContent[categorySlug] ?? "";
 
-  // fetch by EN-only keywords (title/description)
+  // fetch by EN-only keywords (title/description) sur 30 jours
   const { lost, found } = await fetchReportsByKeyword(categorySlug);
   const filled = ensureTwenty(lost, found, categorySlug);
 
@@ -315,9 +384,14 @@ export default async function CategoryPage({ params }: Props) {
       {staticPhrase && <p className="text-center text-gray-700 mb-8 max-w-2xl mx-auto">{staticPhrase}</p>}
 
       <div className="flex justify-center mb-8">
-        <button disabled className="bg-blue-400 text-white px-6 py-3 rounded-md font-semibold cursor-not-allowed opacity-70">
+        <Link
+          prefetch={false}
+          href={`https://reportlost.org/report?tab=lost&category=${encodeURIComponent(categorySlug)}`}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold transition"
+          aria-label={`Report a lost ${categorySlug}`}
+        >
           Report a Lost {categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1)}
-        </button>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -343,12 +417,54 @@ export default async function CategoryPage({ params }: Props) {
 }
 
 // ---------- Card ----------
+
+// ✅ formate l’emplacement sans doublonner l’état (p.ex. “Manhattan (NY), NY” → “Manhattan, NY”)
+function formatLocation(city?: string | null, state?: string | null) {
+  const cleanCity = (city || "").replace(/\s*\(([A-Z]{2})\)\s*$/i, "").trim();
+  if (cleanCity && state) return `${cleanCity}, ${state}`;
+  return cleanCity || "—";
+}
+
+// ✅ formate la date : priorité à "date" (si fournie), sinon "created_at"
+function formatLossDate(report: Report) {
+  const d =
+    (report.date && new Date(report.date)) ||
+    (report.created_at && new Date(report.created_at)) ||
+    null;
+  return d ? formatMonthDayYear(d) : "—";
+}
+
+// ✅ email pour contact (vrai = item{public_id}@..., faux = item94351@...)
+function emailForReport(r: Report) {
+  if (!r.isFake && r.public_id != null && String(r.public_id).trim() !== "") {
+    return `item${String(r.public_id)}@reportlost.org`;
+  }
+  return "item94351@reportlost.org";
+}
+
+// ✅ construit un lien mailto avec subject/body préremplis (owner claim)
+function mailtoHref(r: Report) {
+  const email = emailForReport(r);
+  const subject = encodeURIComponent(`Possible owner — ${r.title || "ReportLost.org"}`);
+  const loc = formatLocation(r.city, r.state_id);
+  const when = formatLossDate(r);
+  const body =
+    `Hello,%0D%0A%0D%0AI believe this item may be mine.%0D%0A` +
+    `Title: ${encodeURIComponent(r.title || "—")}%0D%0A` +
+    (loc !== "—" ? `Location: ${encodeURIComponent(loc)}%0D%0A` : "") +
+    (when !== "—" ? `Date: ${encodeURIComponent(when)}%0D%0A` : "") +
+    (r.public_id ? `Reference: ${encodeURIComponent(String(r.public_id))}%0D%0A` : "") +
+    `%0D%0ATo help verify ownership, I can provide evidence (photos, unique identifiers/serial numbers, distinguishing marks, or the last known location). Please let me know what proof you require and how to proceed.%0D%0A%0D%0AThank you.`;
+  return `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
 function ReportCard({ report }: { report: Report }) {
   const imgSrc = computeReportImage(report);
-  const location = report.city && report.state_id ? `${report.city}, ${report.state_id}` : report.city || "—";
+  const location = formatLocation(report.city, report.state_id);
+  const when = formatLossDate(report);
 
-  const card = (
-    <div className="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition">
+  const cardInner = (
+    <div className="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200 group-hover:shadow-md transition">
       <div className="relative w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100">
         <Image src={imgSrc} alt={report.title} fill className="object-cover" />
       </div>
@@ -363,16 +479,22 @@ function ReportCard({ report }: { report: Report }) {
               <span aria-hidden>📍</span>{location}
             </span>
           )}
+          {/* ⤵️ Retour à la ligne systématique avant la date */}
+          {when !== "—" && <span className="basis-full" aria-hidden></span>}
+          {when !== "—" && (
+            <span className="inline-flex items-center gap-1 text-gray-500">
+              <span aria-hidden>🗓️</span>{when}
+            </span>
+          )}
         </div>
       </div>
     </div>
   );
 
-  return report.city && report.state_id ? (
-    <Link prefetch={false} href={buildCityPath(report.state_id, report.city)} className="block group">
-      {card}
-    </Link>
-  ) : (
-    card
+  // 🔗 lien mailto (réel) plutôt qu’une 404 ou un alert
+  return (
+    <a href={mailtoHref(report)} className="block group" title="Contact by email">
+      {cardInner}
+    </a>
   );
 }

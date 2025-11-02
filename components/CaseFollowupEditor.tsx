@@ -1,4 +1,3 @@
-// components/CaseFollowupEditor.tsx
 "use client";
 
 import * as React from "react";
@@ -306,6 +305,7 @@ https://reportlost.org/case/${publicId}
 
 We will keep you informed as soon as we have any new information.`.replace(/\n{2,}/g, "\n\n"),
       publicId, // ⬅️ nécessaire pour marquer l’envoi côté API
+      kind: "followup", // ✅ ajouté : marque explicitement l’envoi manuel
     };
 
     try {

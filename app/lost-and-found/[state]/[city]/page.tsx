@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { fromCitySlug, buildCityPath } from "@/lib/slugify";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin"; // ← NEW (pour contourner RLS sur lost_items)
 
 // --- Metadata inline hotfix (force Next à l'exécuter) -----------------------
 const CANONICAL_BASE = "https://reportlost.org";
@@ -118,6 +119,10 @@ function toTitleCase(str: string) {
 function formatDate(d: Date) {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
+// ➕ petit helper Month Day (sans année), pour rester homogène avec les exemples
+function formatMonthDay(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
 
 type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
 
@@ -172,7 +177,46 @@ export default async function Page({ params }: { params: { state: string; city: 
     const title = cityData.static_title || `Lost something in ${cityData.city_ascii}?`;
     const text = cityData.static_content || "";
     const today = formatDate(new Date());
-    const reports = exampleReports(cityData);
+
+    // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
+let realReports: string[] = [];
+try {
+  const admin = getSupabaseAdmin(); // peut être null si les vars d'env manquent
+  if (admin) {
+    const threeDaysAgoIso = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: recentLost, error: realErr } = await admin
+      .from("lost_items")
+      .select("title, city, state_id, created_at")
+      .eq("state_id", stateAbbr)
+      .ilike("city", `%${cityData.city_ascii}%`)
+      .gte("created_at", threeDaysAgoIso)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (!realErr && Array.isArray(recentLost) && recentLost.length) {
+      realReports = recentLost.map((r) => {
+        const label = (r?.title && String(r.title).trim()) || "Lost item";
+        const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : formatMonthDay(new Date());
+        const where =
+          (r?.city && r?.state_id) ? `${r.city}, ${r.state_id}` :
+          (r?.city ? String(r.city) : cityData.city_ascii);
+        return ` ${label} lost in ${where}, ${when}.`;
+      });
+    }
+  }
+} catch {
+  /* soft-fail */
+}
+// ===========================================================================
+
+
+    // Exemples “fallback”
+    const fakeReports = exampleReports(cityData);
+
+    // Compose: on place les vrais d’abord, puis on complète avec des faux (max 3)
+    const reports = (realReports.length ? [...realReports, ...fakeReports] : fakeReports).slice(0, 3);
+    // ===========================================================================
 
     // 4) Nearby
     let nearbyCities: any[] = [];
@@ -203,6 +247,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     }
 
     // 6) Overpass → objets plats pour le composant client
+    type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
     let policeStations: PoliceStation[] = [];
     try {
       const overpassUrl =

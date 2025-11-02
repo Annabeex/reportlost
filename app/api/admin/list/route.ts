@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const limit = Math.min(Number(searchParams.get("limit") || 200), 500);
 
-    // LOST ITEMS — champs réellement présents
+    // LOST ITEMS — on inclut les colonnes de suivi pour afficher le drapeau
     const { data: lost, error: lostErr } = await supabase
       .from("lost_items")
       .select(
@@ -35,6 +35,10 @@ export async function GET(req: Request) {
           "report_public_id",
           "title",
           "slug",
+          // ✅ champs nécessaires au drapeau "follow-up sent"
+          "followup_email_sent",
+          "followup_email_sent_at",
+          "followup_email_to",
         ].join(",")
       )
       .order("created_at", { ascending: false })
@@ -44,7 +48,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: `lost_items: ${lostErr.message}` }, { status: 500 });
     }
 
-    // FOUND ITEMS — **ne pas** sélectionner la colonne inexistante `has_item_with_you`
+    // FOUND ITEMS — ne pas sélectionner de colonne inexistante
     const { data: found, error: foundErr } = await supabase
       .from("found_items")
       .select(
@@ -63,7 +67,6 @@ export async function GET(req: Request) {
           "email",
           "phone",
           "dropoff_location",
-          // "has_item_with_you", // <- retiré car n'existe pas dans le schéma actuel
         ].join(",")
       )
       .order("created_at", { ascending: false })

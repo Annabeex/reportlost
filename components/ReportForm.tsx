@@ -1,3 +1,4 @@
+// components/ReportForm.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +21,8 @@ type ReportFormProps = {
   enforceValidation?: boolean;
   onBeforeSubmit?: (formData: any) => any;
   onStepChange?: (step: number) => void; // ✅ NEW
+  /** ⬅️ NEW: permet de pré-remplir la catégorie (ex: "wallet") */
+  initialCategory?: string;
 };
 
 type EventLike =
@@ -74,6 +77,7 @@ export default function ReportForm({
   enforceValidation = false,
   onBeforeSubmit,
   onStepChange, // ✅ NEW
+  initialCategory,          // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -89,6 +93,9 @@ export default function ReportForm({
       report_id: "",
       public_id: "",
       report_public_id: "",
+      // ✅ NEW: champ catégorie (pré-rempli si fourni)
+      category: (initialCategory || "").toString().trim().toLowerCase(),
+
       title: "",
       description: "",
       city: normalizedCity.label,
@@ -152,9 +159,16 @@ export default function ReportForm({
       if (params.get("go") === "contribute") setStep(4);
       const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
+
+      // ✅ Bonus safe: si ?category=... dans l'URL et que le champ est vide, on le pose
+      const catParam = (params.get("category") || "").trim().toLowerCase();
+      if (catParam && !formData.category) {
+        setFormData((p: any) => ({ ...p, category: catParam }));
+      }
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ✅ notify parent on step change
@@ -186,6 +200,7 @@ export default function ReportForm({
         };
       }
 
+      // ✅ ça couvrira aussi "category"
       return { ...prev, [name]: nextValue };
     });
   };
@@ -256,6 +271,11 @@ export default function ReportForm({
       const toNull = (v: any) => (v === "" || v === undefined ? null : v);
 
       const payload = {
+        // ✅ on envoie aussi la catégorie
+        category: toNull(
+          (formData.category || "").toString().trim().toLowerCase()
+        ),
+
         title: toNull(formData.title),
         description: toNull(formData.description),
         city: cityDisplay || null,
@@ -384,7 +404,7 @@ export default function ReportForm({
             bodyText = await res.text().catch(() => "");
           }
         } catch (e) {
-        bodyText = String(e);
+          bodyText = String(e);
         }
         console.error("❌ /api/save-report non-ok:", res.status, bodyText);
         alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
@@ -607,6 +627,7 @@ To upgrade later, open the confirmation email and click “Activate my search”
             fromName: "ReportLost",
             // ✅ pour marquer followup_email_sent* en DB (via /api/send-mail)
             publicId: ref5,
+            kind: "publication", // ✅ explicite : ce n’est PAS un follow-up manuel
           }),
           signal: controller.signal,
         }).catch(() => { /* on ne bloque pas l’UX si l’envoi échoue */ });

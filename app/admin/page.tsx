@@ -23,6 +23,15 @@ interface LostItem {
   report_public_id?: string | null; // compat, non utilisé
   title?: string | null;
   slug?: string | null;
+
+  // ✅ pour le drapeau de suivi (colonnes déjà présentes en base)
+  followup_email_sent?: boolean | null;
+  followup_email_sent_at?: string | null;
+  followup_email_to?: string | null;
+
+  // ✅ catégories (ajouté)
+  primary_category?: string | null;
+  categories?: string[] | null;
 }
 
 interface FoundItem {
@@ -56,7 +65,7 @@ function toUtcIsoPlus00(dateStr?: string | null) {
   }
 }
 
-function formatInTimeZone(dateStr?: string | null, locale?: string, timeZone = 'America/New_York') {
+function formatInTimeZone(dateStr?: string | null, timeZone = 'America/New_York', locale?: string) {
   if (!dateStr) return '—';
   try {
     const d = new Date(dateStr);
@@ -79,6 +88,105 @@ function isFiveDigits(v?: string | null) {
   return typeof v === 'string' && /^[0-9]{5}$/.test(v);
 }
 
+// ✅ Mapping simple “state → timezone” (par défaut: New_York)
+const STATE_TZ: Record<string, string> = {
+  // Pacific
+  CA: 'America/Los_Angeles', WA: 'America/Los_Angeles', OR: 'America/Los_Angeles', NV: 'America/Los_Angeles',
+  // Mountain (AZ sans DST)
+  AZ: 'America/Phoenix', CO: 'America/Denver', UT: 'America/Denver', NM: 'America/Denver', ID: 'America/Boise', MT: 'America/Denver', WY: 'America/Denver',
+  // Central
+  TX: 'America/Chicago', OK: 'America/Chicago', KS: 'America/Chicago', NE: 'America/Chicago', SD: 'America/Chicago', ND: 'America/Chicago',
+  MN: 'America/Chicago', IA: 'America/Chicago', MO: 'America/Chicago', AR: 'America/Chicago', LA: 'America/Chicago', WI: 'America/Chicago', IL: 'America/Chicago',
+  // Eastern
+  NY: 'America/New_York', NJ: 'America/New_York', PA: 'America/New_York', MA: 'America/New_York', CT: 'America/New_York', RI: 'America/New_York',
+  VT: 'America/New_York', NH: 'America/New_York', ME: 'America/New_York', FL: 'America/New_York', GA: 'America/New_York', SC: 'America/New_York',
+  NC: 'America/New_York', VA: 'America/New_York', WV: 'America/New_York', DC: 'America/New_York', MD: 'America/New_York', DE: 'America/New_York',
+  MI: 'America/Detroit', IN: 'America/Indiana/Indianapolis', OH: 'America/New_York', KY: 'America/New_York', TN: 'America/Chicago', AL: 'America/Chicago',
+  MS: 'America/Chicago',
+  // Alaska / Hawaii
+  AK: 'America/Anchorage', HI: 'Pacific/Honolulu',
+};
+
+function tzForState(stateId?: string | null) {
+  const s = (stateId || '').trim().toUpperCase();
+  return STATE_TZ[s] || 'America/New_York';
+}
+
+// ✅ Liste de catégories (pour le picker)
+const ALL_CATEGORIES = [
+  "keys","wallet","electronics","glasses","documents",
+  "jewelry","clothes","bag","pets","other"
+];
+
+// ✅ Sélecteur de catégories (bouton "Category")
+function CategoryPicker({
+  current,
+  selected,
+  onChange,
+  onSave,
+}: {
+  current?: string | null;
+  selected: string[];
+  onChange: (next: string[]) => void;
+  onSave: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center rounded-md border px-2.5 py-1.5 text-sm hover:bg-gray-50"
+        title="View / edit categories"
+      >
+        Category{current ? `: ${current}` : ""}
+        <svg width="14" height="14" viewBox="0 0 24 24" className="ml-1 opacity-70"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2"/></svg>
+      </button>
+
+      {open && (
+        <div className="absolute z-10 mt-2 w-56 rounded-md border bg-white shadow">
+          <div className="max-h-64 overflow-auto p-2 space-y-1">
+            {ALL_CATEGORIES.map(cat => {
+              const checked = selected.includes(cat);
+              return (
+                <label key={cat} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? Array.from(new Set([...selected, cat]))
+                        : selected.filter(c => c !== cat);
+                      onChange(next);
+                    }}
+                  />
+                  <span className="capitalize">{cat.replace(/-/g, " ")}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2 p-2 border-t">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="px-2 py-1 text-sm rounded border"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onSave(); }}
+              className="px-2 py-1 text-sm rounded bg-emerald-600 text-white"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ——————————————————————————————
 // Page
 // ——————————————————————————————
@@ -88,10 +196,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // UI state: search + paid filter + pagination
+  // UI state: search + paid filter + pagination + view mode
   const [query, setQuery] = useState('');
   const [paidOnly, setPaidOnly] = useState(false);
   const [page, setPage] = useState(1);
+  const [view, setView] = useState<'lost' | 'found'>('lost'); // ← NEW
   const PAGE_SIZE = 10;
 
   // Génération de slug via API interne
@@ -139,8 +248,12 @@ export default function AdminPage() {
     () => lostItems.filter(it => Number(it.contribution || 0) > 0).length,
     [lostItems],
   );
+  const conversionRate = useMemo(() => {
+    if (!lostCount) return 0;
+    return Math.round((paidCount / lostCount) * 1000) / 10; // 1 décimale
+  }, [lostCount, paidCount]);
 
-  // ——— Filtrage (query + paid)
+  // ——— Filtrage (query + paid) pour LOST uniquement
   const filteredLost = useMemo(() => {
     const q = query.trim().toLowerCase();
     const base = paidOnly
@@ -165,7 +278,7 @@ export default function AdminPage() {
     });
   }, [lostItems, query, paidOnly]);
 
-  // ——— Pagination
+  // ——— Pagination (LOST)
   const totalPages = Math.max(1, Math.ceil(filteredLost.length / PAGE_SIZE));
   const paginatedLost = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -175,7 +288,7 @@ export default function AdminPage() {
   // reset page on filters
   useEffect(() => {
     setPage(1);
-  }, [query, paidOnly, lostItems]);
+  }, [query, paidOnly, lostItems, view]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-12">
@@ -184,37 +297,57 @@ export default function AdminPage() {
 
         {/* Controls row: search + stats */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {/* Search bar */}
+          {/* Search bar (affichée seulement en vue LOST, car elle ne filtre que les lost) */}
           <div className="w-full md:max-w-md">
-            <input
-              type="search"
-              placeholder="Search by title, description, city, email or reference…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
+            {view === 'lost' && (
+              <input
+                type="search"
+                placeholder="Search by title, description, city, email or reference…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            )}
           </div>
 
-          {/* Mini-summary table */}
+          {/* Mini-summary table (cliquer pour filtrer la vue) */}
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <div className="grid grid-cols-3 divide-x divide-gray-200 text-sm">
-              <div className="px-4 py-2">
-                <div className="text-gray-500">Lost reports</div>
-                <div className="font-semibold">{lostCount}</div>
-              </div>
-              <div className="px-4 py-2">
-                <div className="text-gray-500">Found items</div>
-                <div className="font-semibold">{foundCount}</div>
-              </div>
+            <div className="grid grid-cols-4 divide-x divide-gray-200 text-sm">
+              {/* Lost reports (bouton) */}
               <button
                 type="button"
-                onClick={() => setPaidOnly((v) => !v)}
+                onClick={() => setView('lost')}
+                className={`px-4 py-2 text-left hover:bg-emerald-50 transition ${view === 'lost' ? 'bg-emerald-50' : ''}`}
+                title="Show lost reports"
+              >
+                <div className="text-gray-500">Lost reports</div>
+                <div className="font-semibold">{lostCount}</div>
+              </button>
+
+              {/* Found items (bouton) */}
+              <button
+                type="button"
+                onClick={() => setView('found')}
+                className={`px-4 py-2 text-left hover:bg-emerald-50 transition ${view === 'found' ? 'bg-emerald-50' : ''}`}
+                title="Show found items"
+              >
+                <div className="text-gray-500">Found items</div>
+                <div className="font-semibold">{foundCount}</div>
+              </button>
+
+              {/* Paid customers (toggle) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setView('lost'); // la logique "paid" n'a de sens que sur les lost
+                  setPaidOnly((v) => !v);
+                }}
                 title="Show only paid customers"
                 className="px-4 py-2 text-left hover:bg-emerald-50 transition"
               >
                 <div className="text-gray-500 flex items-center gap-2">
                   Paid customers
-                  {paidOnly && (
+                  {paidOnly && view === 'lost' && (
                     <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                       filter
                     </span>
@@ -222,12 +355,18 @@ export default function AdminPage() {
                 </div>
                 <div className="font-semibold text-emerald-700">{paidCount}</div>
               </button>
+
+              {/* TC (taux de conversion) */}
+              <div className="px-4 py-2">
+                <div className="text-gray-500">TC</div>
+                <div className="font-semibold">{lostCount ? `${conversionRate}%` : '—'}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Filter hint */}
-        {paidOnly && (
+        {/* Hint paid filter */}
+        {paidOnly && view === 'lost' && (
           <div className="text-sm">
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 border border-emerald-200">
               Showing paid customers only
@@ -249,7 +388,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {!loading && !err && (
+        {!loading && !err && view === 'lost' && (
           <>
             {filteredLost.length === 0 ? (
               <div>No lost items match your search.</div>
@@ -258,32 +397,38 @@ export default function AdminPage() {
                 <div className="space-y-6">
                   {paginatedLost.map((item) => {
                     const ref = isFiveDigits(item.public_id || null) ? String(item.public_id) : null;
-                    const createdUtc = toUtcIsoPlus00(item.created_at);
-                    const createdNY = formatInTimeZone(item.created_at, 'en-US', 'America/New_York');
-                    const createdLocal = formatInTimeZone(
-                      item.created_at,
-                      undefined,
-                      Intl.DateTimeFormat().resolvedOptions().timeZone
-                    );
+                    const tzState = tzForState(item.state_id);
+                    const createdUtcIso = toUtcIsoPlus00(item.created_at); // ← conservé mais non affiché
+                    const createdLocalState = formatInTimeZone(item.created_at, tzState);
+                    const createdFrance = formatInTimeZone(item.created_at, 'Europe/Paris');
                     const publicUrl = getPublicUrlFromRow(item);
 
+                    const followupSent = !!item.followup_email_sent;
+
                     return (
-                      <div key={item.id} className="bg-white border rounded-xl p-6 shadow">
+                      <div key={item.id} className="bg-white border rounded-xl p-6 shadow relative">
+                        {/* ✅ Drapeau “follow-up sent” à gauche */}
+                        {followupSent && (
+                          <div
+                            className="absolute -left-3 top-4 rotate-[-6deg] rounded-md bg-emerald-600 text-white text-xs px-2 py-1 shadow"
+                            title={`Follow-up sent${item.followup_email_sent_at ? ` • ${new Date(item.followup_email_sent_at).toLocaleString()}` : ''}${item.followup_email_to ? ` → ${item.followup_email_to}` : ''}`}
+                          >
+                            Follow-up sent
+                          </div>
+                        )}
+
                         <div className="text-lg font-semibold mb-2">
                           Reference: <span className="font-mono text-blue-700">{ref ?? '—'}</span>
                         </div>
 
                         <div className="text-sm text-gray-600 mb-3">
-                          <div>City: {item.city || '—'}</div>
-                          <div>State: {item.state_id || '—'}</div>
-                          <div>
-                            Created: <span className="font-mono">{createdUtc}</span>
-                            {createdNY !== '—' && (
-                              <span className="block text-xs text-gray-500">New York: {createdNY}</span>
-                            )}
-                            {createdLocal !== '—' && (
-                              <span className="block text-xs text-gray-500">Local: {createdLocal}</span>
-                            )}
+                          <div>City: {item.city || '—'}{item.state_id ? ` (${item.state_id})` : ''}</div>
+
+                          {/* ✅ Bloc horaires normalisé — sans la première date ISO */}
+                          <div className="mt-1 space-y-0.5">
+                            <div><strong>Created at:</strong></div>
+                            <div><strong>Local time (state):</strong> {createdLocalState}</div>
+                            <div><strong>France time:</strong> {createdFrance}</div>
                           </div>
                         </div>
 
@@ -343,6 +488,49 @@ export default function AdminPage() {
                               Edit suivi
                             </button>
                           )}
+
+                          {/* ✅ Category selector (ajouté) */}
+                          <CategoryPicker
+                            current={item.primary_category || null}
+                            selected={Array.isArray(item.categories) ? item.categories : (item.primary_category ? [item.primary_category] : [])}
+                            onChange={(next) => {
+                              setLostItems(prev => prev.map(it =>
+                                it.id === item.id ? { ...it, categories: next } : it
+                              ));
+                            }}
+                            onSave={async () => {
+                              try {
+                                const body = {
+                                  id: item.id,
+                                  categories: Array.isArray(item.categories) && item.categories.length ? item.categories
+                                    : (item.primary_category ? [item.primary_category] : []),
+                                  primary: (Array.isArray(item.categories) && item.categories[0])
+                                    || item.primary_category
+                                    || null,
+                                };
+                                const res = await fetch('/api/admin/set-categories', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(body),
+                                });
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                                const j = await res.json().catch(() => null);
+                                if (j?.ok) {
+                                  setLostItems(prev => prev.map(it =>
+                                    it.id === item.id ? {
+                                      ...it,
+                                      primary_category: body.primary,
+                                      categories: body.categories
+                                    } : it
+                                  ));
+                                } else {
+                                  alert(`Save failed: ${j?.error || 'unknown error'}`);
+                                }
+                              } catch (e: any) {
+                                alert(`Save failed: ${String(e?.message || e)}`);
+                              }
+                            }}
+                          />
                         </div>
 
                         <div className="text-sm text-gray-600 flex items-center gap-3 mt-4">
@@ -397,31 +585,34 @@ export default function AdminPage() {
         )}
       </section>
 
-      <section>
-        <h2 className="text-2xl font-bold mb-4">🧾 Found Items</h2>
+      {/* FOUND SECTION — affichée uniquement en vue "found" */}
+      {view === 'found' && (
+        <section>
+          <h2 className="text-2xl font-bold mb-4">🧾 Found Items</h2>
 
-        {foundItems.length === 0 ? (
-          <div>No found items recorded.</div>
-        ) : (
-          <div className="space-y-4">
-            {foundItems.map((f) => (
-              <div key={f.id} className="bg-white border rounded-xl p-4 shadow flex gap-4">
-                <div className="flex-1">
-                  <div className="text-sm text-gray-500">🕒 {toUtcIsoPlus00(f.created_at)}</div>
-                  <div className="font-semibold">{f.title || '—'}</div>
-                  <div className="text-gray-700">{f.description || '—'}</div>
-                  <div className="text-sm text-gray-500 mt-2">City: {f.city || '—'}</div>
-                </div>
-                {f.image_url ? (
-                  <div className="w-24 h-24 relative">
-                    <Image src={f.image_url} alt="found" fill style={{ objectFit: 'cover', borderRadius: 8 }} />
+          {foundItems.length === 0 ? (
+            <div>No found items recorded.</div>
+          ) : (
+            <div className="space-y-4">
+              {foundItems.map((f) => (
+                <div key={f.id} className="bg-white border rounded-xl p-4 shadow flex gap-4">
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500">🕒 {toUtcIsoPlus00(f.created_at)}</div>
+                    <div className="font-semibold">{f.title || '—'}</div>
+                    <div className="text-gray-700">{f.description || '—'}</div>
+                    <div className="text-sm text-gray-500 mt-2">City: {f.city || '—'}</div>
                   </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+                  {f.image_url ? (
+                    <div className="w-24 h-24 relative">
+                      <Image src={f.image_url} alt="found" fill style={{ objectFit: 'cover', borderRadius: 8 }} />
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

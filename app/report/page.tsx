@@ -9,15 +9,23 @@ export const metadata: Metadata = {
 export default function ReportPage({
   searchParams,
 }: {
-  searchParams?: { tab?: string };
+  searchParams?: { tab?: string; category?: string };
 }) {
   const tabParam = (searchParams?.tab || '').toLowerCase();
   const initialTab = tabParam === 'found' ? 'found' : 'lost';
 
-  // Laisse ClientReportForm gérer le visuel, mais on active le mode compact ici
+  // Récupère la catégorie à pré-remplir (ex: wallet, keys, phone…)
+  const initialCategory = (searchParams?.category || '').trim().toLowerCase() || undefined;
+
   return (
     <main className="w-full">
-      <ClientReportForm defaultCity="" initialTab={initialTab} compact />
+      <ClientReportForm
+        defaultCity=""
+        initialTab={initialTab}
+        compact
+        // ⬇️ nouveau prop (optionnel) pour pré-remplir la catégorie
+        initialCategory={initialCategory}
+      />
     </main>
   );
 }

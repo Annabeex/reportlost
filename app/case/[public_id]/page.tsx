@@ -1,5 +1,4 @@
 // app/case/[public_id]/page.tsx
-
 import React from "react";
 import { redirect, notFound } from "next/navigation";
 import nextDynamic from "next/dynamic";
@@ -166,6 +165,25 @@ export default async function Page({
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
+      {/* ← Grosse flèche triangulaire dans un rond — visible UNIQUEMENT en mode édition */}
+      {isEdit && (
+        <div className="max-w-4xl mx-auto mb-2">
+          <a
+            href="/admin"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition"
+            title="Back to admin"
+            aria-label="Back to admin"
+          >
+            {/* cercle + triangle gauche */}
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" className="text-gray-500" />
+              {/* triangle pointant à gauche */}
+              <path d="M14.8 7.6L9.5 12l5.3 4.4V7.6z" fill="currentColor" className="text-gray-700" />
+            </svg>
+          </a>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto space-y-6">
         {/* En-tête */}
         <div className="text-center">

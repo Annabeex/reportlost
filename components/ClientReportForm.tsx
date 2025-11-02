@@ -12,8 +12,10 @@ type Props = {
   initialTab?: "lost" | "found";
   /** relaie le step courant au parent (utile pour masquer le reste de la page ville) */
   onStepChangeExternal?: (step: number) => void;
-  /** NEW: version plus étroite (pour la page /report uniquement) */
+  /** version plus étroite (pour la page /report uniquement) */
   compact?: boolean;
+  /** ⬅️ nouvelle prop pour pré-remplir la catégorie */
+  initialCategory?: string;
 };
 
 export default function ClientReportForm({
@@ -21,6 +23,7 @@ export default function ClientReportForm({
   initialTab = "lost",
   onStepChangeExternal,
   compact = false,
+  initialCategory, // ⬅️ ajouté
 }: Props) {
   const [activeTab, setActiveTab] = useState<"lost" | "found">(initialTab);
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -34,9 +37,8 @@ export default function ClientReportForm({
     onStepChangeExternal?.(currentStep);
   }, [currentStep, onStepChangeExternal]);
 
-  // Rendu avec les marges “comme avant”.
   return (
-<section className="bg-transparent sm:bg-blue-100 py-4 sm:py-10 px-1 sm:px-5 lg:px-8 rounded-none sm:rounded-xl">
+    <section className="bg-transparent sm:bg-blue-100 py-4 sm:py-10 px-1 sm:px-5 lg:px-8 rounded-none sm:rounded-xl">
       <div className={compact ? "max-w-4xl mx-auto" : "max-w-5xl mx-auto"}>
         <div className="bg-white rounded-xl shadow-md p-3 sm:p-8 lg:p-10">
           {activeTab === "lost" ? (
@@ -44,6 +46,8 @@ export default function ClientReportForm({
               defaultCity={defaultCity}
               enforceValidation
               onStepChange={setCurrentStep}
+              // ⬅️ on passe la catégorie au formulaire
+              initialCategory={initialCategory}
             />
           ) : (
             <FoundItemsForm defaultCity={defaultCity} />
