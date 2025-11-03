@@ -121,6 +121,12 @@ function applyLocalDefaults(blocks: Block[]): Block[] {
   }
 }
 
+// ✅ simple validation d’email (suffisant pour éviter les 400)
+function looksLikeEmail(s?: string | null) {
+  if (!s) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim());
+}
+
 export default function CaseFollowupEditor({
   publicId,
   firstName,
@@ -288,15 +294,21 @@ export default function CaseFollowupEditor({
     window.open(`/case/${encodeURIComponent(publicId)}`, "_blank");
   };
 
-  // ——— Send button (confirm)
+  // ——— Send button (confirm) ——— ✅ garde-fou email + erreurs lisibles
   const onSend = async () => {
+    const email = (userEmail || "").trim();
+    if (!looksLikeEmail(email)) {
+      alert("Missing or invalid recipient email for this case.");
+      return;
+    }
+
     const ok = window.confirm(
-      `Send the follow-up email to ${firstName ? firstName + " " : ""}${userEmail || ""} ?`
+      `Send the follow-up email to ${firstName ? firstName + " " : ""}${email} ?`
     );
     if (!ok) return;
 
     const payload = {
-      to: userEmail,
+      to: email,
       subject: `Your lost item case update — ReportLost.org #${publicId}`,
       text: `Hello ${firstName || ""},
 
@@ -305,7 +317,7 @@ https://reportlost.org/case/${publicId}
 
 We will keep you informed as soon as we have any new information.`.replace(/\n{2,}/g, "\n\n"),
       publicId, // ⬅️ nécessaire pour marquer l’envoi côté API
-      kind: "followup", // ✅ ajouté : marque explicitement l’envoi manuel
+      kind: "followup", // ✅ marque explicitement l’envoi manuel
     };
 
     try {
@@ -314,18 +326,26 @@ We will keep you informed as soon as we have any new information.`.replace(/\n{2
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(String(res.status));
+
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const j = await res.json();
+          if (j && (j.error || j.code)) msg = `${msg} — ${j.error || ""} ${j.code ? `(code ${j.code})` : ""}`.trim();
+        } catch {}
+        throw new Error(msg);
+      }
 
       // Mise à jour optimiste de l’indicateur
       setFollowupInfo({
         sent: true,
         sentAt: new Date().toISOString(),
-        to: userEmail || null,
+        to: email,
       });
 
       alert("Email sent.");
-    } catch {
-      alert("Failed to send email.");
+    } catch (e: any) {
+      alert(`Failed to send email. ${e?.message ? `\n${e.message}` : ""}`);
     }
   };
 
@@ -420,7 +440,7 @@ We will keep you informed as soon as we have any new information.`.replace(/\n{2
           );
         }
 
-        // ——— Mode EDIT (quand on clique sur ✏️)
+        // ——— Mode EDIT
         return (
           <div key={b.id} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
             <div className="flex items-center gap-2">
@@ -435,7 +455,7 @@ We will keep you informed as soon as we have any new information.`.replace(/\n{2
               <button className="px-2 py-1 border rounded" onClick={() => move(b.id, +1)} title="Move down">
                 ↓
               </button>
-              {/* ❤️ ici aussi, mais n'affecte pas le case courant */}
+              {/* ❤️ ici aussi */}
               <button
                 className="px-3 py-1.5 rounded-md bg-pink-600 text-white"
                 onClick={() => makeDefaultForTitle(b)}

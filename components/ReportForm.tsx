@@ -95,6 +95,8 @@ export default function ReportForm({
       report_public_id: "",
       // ✅ NEW: champ catégorie (pré-rempli si fourni)
       category: (initialCategory || "").toString().trim().toLowerCase(),
+      // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
+      source_station: "",
 
       title: "",
       description: "",
@@ -113,8 +115,6 @@ export default function ReportForm({
       travel_number: "",
       transport_type: "",
       transport_type_other: "",
-      place_type: "",
-      place_type_other: "",
 
       airline_name: "",
       metro_line_known: null,   // boolean | null
@@ -165,6 +165,12 @@ export default function ReportForm({
       if (catParam && !formData.category) {
         setFormData((p: any) => ({ ...p, category: catParam }));
       }
+
+      // ✅ NEW: récupérer ?station=xxxx depuis l'URL du QR
+      const st = (params.get("station") || "").trim().toLowerCase();
+      if (st) {
+        setFormData((p: any) => ({ ...p, source_station: st }));
+      }
     } catch {
       /* ignore */
     }
@@ -200,7 +206,7 @@ export default function ReportForm({
         };
       }
 
-      // ✅ ça couvrira aussi "category"
+      // ✅ ça couvrira aussi "category" et "source_station"
       return { ...prev, [name]: nextValue };
     });
   };
@@ -268,190 +274,195 @@ export default function ReportForm({
       const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
       // utilitaire léger pour convertir "" -> null
-      const toNull = (v: any) => (v === "" || v === undefined ? null : v);
+const toNull = (v: any) => (v === "" || v === undefined ? null : v);
 
-      const payload = {
-        // ✅ on envoie aussi la catégorie
-        category: toNull(
-          (formData.category || "").toString().trim().toLowerCase()
-        ),
+const payload = {
+  // ✅ on envoie aussi la catégorie
+  category: toNull(
+    (formData.category || "").toString().trim().toLowerCase()
+  ),
+  // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
+  source_station: toNull(
+    (formData.source_station || "").toString().trim().toLowerCase()
+  ),
 
-        title: toNull(formData.title),
-        description: toNull(formData.description),
-        city: cityDisplay || null,
-        state_id: finalStateId,
-        date: toNull(formData.date),
-        time_slot: toNull(formData.time_slot),
-        loss_neighborhood: toNull(formData.loss_neighborhood),
-        loss_street: toNull(formData.loss_street),
+  title: toNull(formData.title),
+  description: toNull(formData.description),
+  city: cityDisplay || null,
+  state_id: finalStateId,
+  date: toNull(formData.date),
+  time_slot: toNull(formData.time_slot),
+  loss_neighborhood: toNull(formData.loss_neighborhood),
+  loss_street: toNull(formData.loss_street),
 
-        // === Nouveaux champs: contexte / transport / lieu ===
-        transport_answer: toNull(formData.transport_answer),
-        transport_type: toNull(formData.transport_type),
-        transport_type_other: toNull(formData.transport_type_other),
-        place_type: toNull(formData.place_type),
-        place_type_other: toNull(formData.place_type_other),
-        airline_name: toNull(formData.airline_name),
-        metro_line_known: formData.metro_line_known ?? null,
-        metro_line: toNull(formData.metro_line),
-        train_company: toNull(formData.train_company),
-        rideshare_platform: toNull(formData.rideshare_platform),
-        taxi_company: toNull(formData.taxi_company),
-        circumstances: toNull(formData.circumstances),
+  // === Nouveaux champs: contexte / transport / lieu ===
+  transport_answer: toNull(formData.transport_answer),
+  transport_type: toNull(formData.transport_type),
+  transport_type_other: toNull(formData.transport_type_other),
+  place_type: toNull(formData.place_type),
+  place_type_other: toNull(formData.place_type_other),
+  airline_name: toNull(formData.airline_name),
+  metro_line_known: formData.metro_line_known ?? null,
+  metro_line: toNull(formData.metro_line),
+  train_company: toNull(formData.train_company),
+  rideshare_platform: toNull(formData.rideshare_platform),
+  taxi_company: toNull(formData.taxi_company),
+  circumstances: toNull(formData.circumstances),
 
-        // === Trajet ===
-        departure_place: toNull(formData.departure_place),
-        arrival_place: toNull(formData.arrival_place),
-        departure_time: toNull(formData.departure_time),
-        arrival_time: toNull(formData.arrival_time),
-        travel_number: toNull(formData.travel_number),
+  // === Trajet ===
+  departure_place: toNull(formData.departure_place),
+  arrival_place: toNull(formData.arrival_place),
+  departure_time: toNull(formData.departure_time),
+  arrival_time: toNull(formData.arrival_time),
+  travel_number: toNull(formData.travel_number),
 
-        // === Contact ===
-        email: String(formData.email || ""),
-        first_name: String(formData.first_name || ""),
-        last_name: String(formData.last_name || ""),
-        phone: toNull(formData.phone),
-        address: toNull(formData.address),
+  // === Contact ===
+  email: String(formData.email || ""),
+  first_name: String(formData.first_name || ""),
+  last_name: String(formData.last_name || ""),
+  phone: toNull(formData.phone),
+  address: toNull(formData.address),
 
-        // === Préférences ===
-        preferred_contact_channel: toNull(formData.preferred_contact_channel),
-        research_report_opt_in: formData.research_report_opt_in ?? null,
+  // === Préférences ===
+  preferred_contact_channel: toNull(formData.preferred_contact_channel),
+  research_report_opt_in: formData.research_report_opt_in ?? null,
 
-        contribution: formData.contribution ?? 0,
-        consent: consentOK,
-        phone_description: toNull(phoneDescription),
-        object_photo,
-      };
+  contribution: formData.contribution ?? 0,
+  consent: consentOK,
+  phone_description: toNull(phoneDescription),
+  object_photo,
+};
 
-      const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
+const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-      // compute fingerprint client-side so server and client fingerprint match
-      const fingerprint = await computeFingerprint(cleaned);
+// compute fingerprint client-side so server and client fingerprint match
+const fingerprint = await computeFingerprint(cleaned);
 
-      // ✅ éviter plusieurs POST identiques dans la même session
-      try {
-        const prev = localStorage.getItem("rl_pending_fp");
-        if (prev === fingerprint) {
-          return true; // déjà en cours/traité côté client
-        }
-        localStorage.setItem("rl_pending_fp", fingerprint);
-      } catch {}
+// ✅ éviter plusieurs POST identiques dans la même session
+try {
+  const prev = localStorage.getItem("rl_pending_fp");
+  if (prev === fingerprint) {
+    return true; // déjà en cours/traité côté client
+  }
+  localStorage.setItem("rl_pending_fp", fingerprint);
+} catch {}
 
-      // build body to POST to server endpoint
-      const bodyToSend: Record<string, any> = {
-        ...cleaned,
-        fingerprint,
-      };
+// build body to POST to server endpoint
+const bodyToSend: Record<string, any> = {
+  ...cleaned,
+  fingerprint,
+};
 
-      // include report_id if we already have one (update flow)
-      // ONLY send report_id if it *looks like a UUID*
-      if (formData.report_id) {
-        const candidate = String(formData.report_id).trim();
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(candidate)) {
-          bodyToSend.report_id = candidate;
-        } else if (formData.public_id) {
-          bodyToSend.report_public_id = String(formData.public_id);
-        } else {
-          console.warn("Not sending report_id because it is not a UUID:", candidate);
-        }
-      }
+// include report_id if we already have one (update flow)
+// ONLY send report_id if it *looks like a UUID*
+if (formData.report_id) {
+  const candidate = String(formData.report_id).trim();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(candidate)) {
+    bodyToSend.report_id = candidate;
+  } else if (formData.public_id) {
+    bodyToSend.report_public_id = String(formData.public_id);
+  } else {
+    console.warn("Not sending report_id because it is not a UUID:", candidate);
+  }
+}
 
-      // — avant l'appel fetch —
-      const controller = new AbortController();
-      const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+// — avant l'appel fetch —
+const controller = new AbortController();
+const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
+const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-      let res: Response;
-      try {
-        res = await fetch("/api/save-report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyToSend),
-          signal: controller.signal,
-        });
-      } catch (e: any) {
-        // 🔁 petit retry si c’est un AbortError
-        if (e?.name === "AbortError") {
-          const controller2 = new AbortController();
-          const retryTimeout = setTimeout(() => controller2.abort(), 20000);
-          try {
-            res = await fetch("/api/save-report", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(bodyToSend),
-              signal: controller2.signal,
-            });
-          } finally {
-            clearTimeout(retryTimeout);
-          }
-        } else {
-          throw e;
-        }
-      } finally {
-        clearTimeout(timeout);
-      }
+let res: Response;
+try {
+  res = await fetch("/api/save-report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bodyToSend),
+    signal: controller.signal,
+  });
+} catch (e: any) {
+  // 🔁 petit retry si c’est un AbortError
+  if (e?.name === "AbortError") {
+    const controller2 = new AbortController();
+    const retryTimeout = setTimeout(() => controller2.abort(), 20000);
+    try {
+      res = await fetch("/api/save-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyToSend),
+        signal: controller2.signal,
+      });
+    } finally {
+      clearTimeout(retryTimeout);
+    }
+  } else {
+    throw e;
+  }
+} finally {
+  clearTimeout(timeout);
+}
 
-      // Diagnostic: if non-ok, lire et afficher le body (json ou texte)
-      if (!res.ok) {
-        const contentType = res.headers.get("content-type") || "";
-        let bodyText = "";
-        try {
-          if (contentType.includes("application/json")) {
-            const j = await res.json().catch(() => null);
-            bodyText = JSON.stringify(j, null, 2);
-          } else {
-            bodyText = await res.text().catch(() => "");
-          }
-        } catch (e) {
-          bodyText = String(e);
-        }
-        console.error("❌ /api/save-report non-ok:", res.status, bodyText);
-        alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
-        return false;
-      }
+// Diagnostic: if non-ok, lire et afficher le body (json ou texte)
+if (!res.ok) {
+  const contentType = res.headers.get("content-type") || "";
+  let bodyText = "";
+  try {
+    if (contentType.includes("application/json")) {
+      const j = await res.json().catch(() => null);
+      bodyText = JSON.stringify(j, null, 2);
+    } else {
+      bodyText = await res.text().catch(() => "");
+    }
+  } catch (e) {
+    bodyText = String(e);
+  }
+  console.error("❌ /api/save-report non-ok:", res.status, bodyText);
+  alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
+  return false;
+}
 
-      // Parse successful response; guard against invalid JSON
-      let jsonRes: any = null;
-      try {
-        jsonRes = await res.json();
-      } catch (e) {
-        const txt = await res.text().catch(() => "");
-        console.error("❌ /api/save-report returned invalid JSON:", txt, e);
-        alert("Server returned invalid response. Voir console pour détails.");
-        return false;
-      }
+// Parse successful response; guard against invalid JSON
+let jsonRes: any = null;
+try {
+  jsonRes = await res.json();
+} catch (e) {
+  const txt = await res.text().catch(() => "");
+  console.error("❌ /api/save-report returned invalid JSON:", txt, e);
+  alert("Server returned invalid response. Voir console pour détails.");
+  return false;
+}
 
-      if (!jsonRes || !jsonRes.ok) {
-        console.error("❌ /api/save-report error payload:", jsonRes);
-        alert(`Unexpected database error: ${jsonRes?.error || "unknown"}`);
-        return false;
-      }
+if (!jsonRes || !jsonRes.ok) {
+  console.error("❌ /api/save-report error payload:", jsonRes);
+  alert(`Unexpected database error: ${jsonRes?.error || "unknown"}`);
+  return false;
+}
 
-      const returnedId = jsonRes.id?.toString?.() || "";
-      const returnedPublicId = jsonRes.public_id || "";
+const returnedId = jsonRes.id?.toString?.() || "";
+const returnedPublicId = jsonRes.public_id || "";
 
-      // persist to client state + localStorage
-      setFormData((p: any) => ({
-        ...p,
-        report_id: returnedId || p.report_id,
-        public_id: returnedPublicId || p.public_id,
-        report_public_id: returnedPublicId || p.report_public_id,
-        city: cityDisplay,
-        state_id: finalStateId,
-      }));
+// persist to client state + localStorage
+setFormData((p: any) => ({
+  ...p,
+  report_id: returnedId || p.report_id,
+  public_id: returnedPublicId || p.public_id,
+  report_public_id: returnedPublicId || p.report_public_id,
+  city: cityDisplay,
+  state_id: finalStateId,
+}));
 
-      try {
-        if (returnedId) localStorage.setItem("reportlost_rid", returnedId);
-        if (returnedPublicId) localStorage.setItem("reportlost_public_id", returnedPublicId);
-      } catch {
-        /* ignore */
-      }
+try {
+  if (returnedId) localStorage.setItem("reportlost_rid", returnedId);
+  if (returnedPublicId) localStorage.setItem("reportlost_public_id", returnedPublicId);
+} catch {
+  /* ignore */
+}
 
-      // === NOTE: pas de génération/redirect de slug ici.
+// === NOTE: pas de génération/redirect de slug ici.
 
-      return true;
-    } catch (err: any) {
+return true;
+
+       } catch (err: any) {
       if (err?.name === "AbortError") {
         console.error("❌ /api/save-report timed out");
         alert("Request timed out. Please try again.");
@@ -469,6 +480,7 @@ export default function ReportForm({
       }, 3000);
     }
   };
+
 
   // --- navigation / step logic ---
   const handleNext = async () => {

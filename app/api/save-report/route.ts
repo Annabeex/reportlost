@@ -6,8 +6,8 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* small helper: promise timeout */
-async function withTimeout<T>(p: Promise<T>, ms = 4000): Promise<T> {
+/* small helper: promise timeout (10s) */
+async function withTimeout<T>(p: Promise<T>, ms = 10_000): Promise<T> {
   return await Promise.race([
     p,
     new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
@@ -48,23 +48,40 @@ function computeFingerprint(obj: {
   return crypto.createHash("sha1").update(raw).digest("hex");
 }
 
-async function sendMailViaApi(payload: {
-  to: string | string[];
-  subject: string;
-  text: string;
-  html?: string;
-  fromName?: string;
-  replyTo?: string;
-}) {
+/* --- base URL helper (works in local / preview / prod) --- */
+function getBaseUrl(req: NextRequest): string {
+  const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (env) return env;
+  const proto = req.headers.get("x-forwarded-proto") || "http";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "127.0.0.1:3000";
+  return `${proto}://${host}`;
+}
+
+/* call /api/send-mail on the same deployment */
+async function sendMailViaApi(
+  req: NextRequest,
+  payload: {
+    to: string | string[];
+    subject: string;
+    text: string;
+    html?: string;
+    fromName?: string;
+    replyTo?: string;
+  },
+) {
   try {
-    const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-    const req = fetch(`${site}/api/send-mail`, {
+    const base = getBaseUrl(req);
+    const reqFetch = fetch(`${base}/api/send-mail`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      keepalive: true, // ✅ ne coupe pas si la réponse HTTP se ferme vite
+      keepalive: true,
     });
-    const res = (await withTimeout(req, 4000)) as Response; // ⏱️ timeout dur de 4s
+    const res = (await withTimeout(reqFetch, 10_000)) as Response; // ⏱️ timeout dur 10s
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error("sendMailViaApi non-ok:", res.status, body);
+    }
     return res.ok;
   } catch (e) {
     console.error("sendMailViaApi error", e);
@@ -72,11 +89,11 @@ async function sendMailViaApi(payload: {
   }
 }
 
-/** NEW: déclenche la génération/maj du slug pour un report donné (fire & forget) */
-async function triggerSlugGeneration(id: string) {
+/** déclenche la génération/maj du slug pour un report donné (fire & forget) */
+async function triggerSlugGeneration(req: NextRequest, id: string) {
   try {
-    const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-    await fetch(`${site}/api/generate-report-slug?id=${encodeURIComponent(id)}`, {
+    const base = getBaseUrl(req);
+    await fetch(`${base}/api/generate-report-slug?id=${encodeURIComponent(id)}`, {
       method: "GET",
       keepalive: true,
     });
@@ -104,10 +121,66 @@ async function canSendUserMail(supabase: any, id: string): Promise<boolean> {
   }
 }
 
+/* ---------- Auto-categorization (EN keywords + quelques alias FR) ---------- */
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  keys: ["keys","key","keychain","fob","car key","house key","apartment key","office key"],
+  wallet: ["wallet","cardholder","card holder","billfold"],
+  electronics: [
+    "phone","iphone","android","tablet","ipad","laptop","macbook","notebook pc",
+    "earbuds","airpods","headphones","charger","power bank","smartwatch","apple watch"
+  ],
+  glasses: ["glasses","sunglasses","spectacles","eyeglasses","shades","frame","goggles","ray-ban"],
+  documents: ["passport","id","id card","driver license","license","permit","document","paperwork","papers","envelope","visa"],
+  jewelry: ["ring","bracelet","necklace","earring","earrings","watch","pendant","wedding band","bague"],
+  clothes: ["jacket","coat","hoodie","sweater","jumper","scarf","cap","hat","beanie","gloves","raincoat","vest","t-shirt","shirt","jeans","pull"],
+  bag: ["bag","backpack","rucksack","suitcase","carry-on","handbag","tote","duffel","messenger bag","purse","briefcase"],
+  pets: ["cat","dog","kitten","puppy","bird","parrot","tortoise","rabbit","bunny","hamster","ferret"],
+  other: ["umbrella","bottle","water bottle","notebook","book","sketchbook","tripod","speaker","camera strap","accessory"]
+};
+
+const BAG_ALIASES = new Set([
+  "bag-or-suitcase","bag","purse","handbag","backpack","backpack-or-suitcase","luggage","suitcase"
+]);
+
+function normalizeCategorySlug(s: string) {
+  const x = (s || "").toLowerCase();
+  return BAG_ALIASES.has(x) ? "bag" : x;
+}
+
+function autoCategorize(title?: string | null, description?: string | null) {
+  const hay = `${title ?? ""} ${description ?? ""}`.toLowerCase();
+  if (!hay.trim()) return { primary: null as string | null, list: null as string[] | null };
+
+  const scores: Record<string, number> = {};
+  for (const cat of Object.keys(CATEGORY_KEYWORDS)) {
+    let score = 0;
+    for (const kwRaw of CATEGORY_KEYWORDS[cat]) {
+      const kw = kwRaw.toLowerCase();
+      if (hay.includes(kw)) score++;
+    }
+    if (score > 0) scores[cat] = score;
+  }
+
+  const list = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+  if (!list.length) return { primary: null, list: null };
+
+  const primary = normalizeCategorySlug(list[0]);
+  const unique = Array.from(new Set(list.map(normalizeCategorySlug)));
+  return {
+    primary,
+    list: unique.slice(0, 3)
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => null);
     if (!body) return NextResponse.json({ ok: false, error: "invalid json" }, { status: 400 });
+
+    // ✅ compat: si le client envoie source_station, on le mappe vers station_slug (référence DB)
+    if (body?.source_station && !body?.station_slug) {
+      body.station_slug = String(body.source_station);
+    }
 
     // supabase admin client (centralisé)
     const supabase = getSupabaseAdmin();
@@ -157,7 +230,7 @@ export async function POST(req: NextRequest) {
       "consent",
       "phone_description",
       "object_photo",
-      // NOUVEAUX champs
+      // NOUVEAUX champs (déjà utilisés côté client)
       "transport_answer",
       "transport_type",
       "transport_type_other",
@@ -172,7 +245,15 @@ export async function POST(req: NextRequest) {
       "circumstances",
       "preferred_contact_channel",
       "research_report_opt_in",
-      // identifiants/fingerprint (gérés à part mais on les laisse passer si déjà présents)
+
+      // ✅ référence partenaire (DB)
+      "station_slug",
+
+      // ✅ Catégorisation (schéma actuel)
+      "primary_category",   // text
+      "categories",         // text[]
+
+      // identifiants/fingerprint
       "fingerprint",
       "report_id",
       "report_public_id",
@@ -189,6 +270,22 @@ export async function POST(req: NextRequest) {
 
       if (k === "metro_line_known" || k === "research_report_opt_in") {
         val = toBoolOrNull(val);
+      } else if (k === "categories") {
+        // accepte string | string[]
+        if (Array.isArray(val)) {
+          val = val
+            .map((s: any) => String(s ?? "").trim().toLowerCase())
+            .filter(Boolean);
+          if (!val.length) val = null;
+        } else if (typeof val === "string") {
+          const arr = val
+            .split(",")
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+          val = arr.length ? arr : null;
+        } else {
+          val = null;
+        }
       } else if (
         typeof val === "string" &&
         !["email", "state_id", "time_slot", "preferred_contact_channel"].includes(k)
@@ -201,12 +298,30 @@ export async function POST(req: NextRequest) {
     // valeur par défaut pour respecter NOT NULL
     if (!other.preferred_contact_channel) other.preferred_contact_channel = "email";
 
+    // sécurité: ne jamais remonter ces champs vers l'update payload
     delete other.report_id;
     delete other.report_public_id;
+    delete (other as any).category; // si un vieux client envoie "category", on l'ignore
 
-    const fingerprint = computeFingerprint({ title, description, city, state_id, date, email });
+    // Catégorisation automatique si aucune info n'est fournie par le client/admin
+    if (!other.primary_category && !other.categories) {
+      const auto = autoCategorize(title, description);
+      if (auto.primary) {
+        other.primary_category = auto.primary;
+      }
+      if (auto.list && auto.list.length) {
+        other.categories = auto.list;
+      }
+    }
+    // Si on a une primary mais pas de tableau, on alimente categories
+    if (!other.categories && other.primary_category) {
+      other.categories = [other.primary_category];
+    }
 
-    const updatePayload = { ...other, fingerprint, state_id };
+// --- fingerprint + payload DB ---
+const fingerprint = computeFingerprint({ title, description, city, state_id, date, email });
+const updatePayload = { ...other, fingerprint, state_id };
+
 
     // helper for an existing row (shared for found & lost)
     const handleExistingRow = async (
@@ -222,7 +337,7 @@ export async function POST(req: NextRequest) {
       }
 
       // NEW: trigger slug generation (non bloquant)
-      await triggerSlugGeneration(existing.id);
+      await triggerSlugGeneration(req, existing.id);
 
       // send confirmation to user only once (avec recheck)
       let mail_sent = !!existing.mail_sent;
@@ -230,12 +345,13 @@ export async function POST(req: NextRequest) {
         try {
           const shouldSend = await canSendUserMail(supabase, existing.id);
           if (shouldSend) {
-            const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-            const contributeUrl = `${site}/report?go=contribute&rid=${existing.id}`;
+            const base = getBaseUrl(req);
+            const contributeUrl = `${base}/report?go=contribute&rid=${existing.id}`;
 
             // reference code from DB public_id (5 digits) or fallback
             const ref5 = getReferenceCode(existing.public_id, existing.id);
             const referenceLine = `Reference code: ${ref5}\n`;
+            const stationLine = other.station_slug ? `- Submitted via: ${other.station_slug}\n` : "";
 
             const text = `Hello ${other.first_name || ""},
 
@@ -247,13 +363,14 @@ Your report details:
 - Item: ${other.title || ""}
 - Date: ${other.date || ""}
 - City: ${other.city || ""}
-${referenceLine}
+${stationLine}${referenceLine}
 ${contributeUrl}
 
 Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is confirmed, your report will be published and alerts will be activated.
 
 Thank you for using ReportLost.`;
 
+            const site = getBaseUrl(req);
             const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
@@ -276,6 +393,7 @@ Thank you for using ReportLost.`;
       <li><b>Item:</b> ${other.title || ""}</li>
       <li><b>Date:</b> ${other.date || ""}</li>
       <li><b>City:</b> ${other.city || ""}</li>
+      ${other.station_slug ? `<li><b>Submitted via:</b> ${other.station_slug}</li>` : ""}
       <li><b>Reference code:</b> ${ref5}</li>
     </ul>
 
@@ -292,7 +410,7 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            const okUser = await sendMailViaApi({
+            const okUser = await sendMailViaApi(req, {
               to: other.email || email || "",
               subject: "Publish your report to start the search",
               text,
@@ -340,7 +458,7 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-          sendMailViaApi({
+          sendMailViaApi(req, {
             to: "support@reportlost.org",
             subject,
             text: bodyText,
@@ -387,15 +505,15 @@ Contribution : ${other.contribution ?? 0}`;
         }
 
         // NEW: trigger slug generation (non bloquant)
-        await triggerSlugGeneration(clientProvidedId);
+        await triggerSlugGeneration(req, clientProvidedId);
 
         // send user confirmation if not already done (avec recheck)
         if (!existing.mail_sent && (other.email || email)) {
           try {
             const shouldSend = await canSendUserMail(supabase, clientProvidedId);
             if (shouldSend) {
-              const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-              const contributeUrl = `${site}/report?go=contribute&rid=${clientProvidedId}`;
+              const base = getBaseUrl(req);
+              const contributeUrl = `${base}/report?go=contribute&rid=${clientProvidedId}`;
 
               const ref5 = getReferenceCode(existing.public_id, clientProvidedId);
               const referenceLine = `Reference code: ${ref5}\n`;
@@ -417,6 +535,7 @@ Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is co
 
 Thank you for using ReportLost.`;
 
+              const site = getBaseUrl(req);
               const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
@@ -455,7 +574,7 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-              const okUser = await sendMailViaApi({
+              const okUser = await sendMailViaApi(req, {
                 to: other.email || email || "",
                 subject: "✅ Publish your report to start the search",
                 text,
@@ -503,7 +622,7 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-            sendMailViaApi({
+            sendMailViaApi(req, {
               to: "support@reportlost.org",
               subject,
               text: bodyText,
@@ -524,13 +643,14 @@ Contribution : ${other.contribution ?? 0}`;
       }
     }
 
-    // 2) Try to find existing by fingerprint
-    const { data: foundRows, error: findErr } = await supabase
-      .from("lost_items")
-      .select("id, public_id, mail_sent, created_at")
-      .eq("fingerprint", fingerprint)
-      .order("created_at", { ascending: false })
-      .limit(1);
+   // 2) Try to find existing by fingerprint
+const { data: foundRows, error: findErr } = await supabase
+  .from("lost_items")
+  .select("id, public_id, mail_sent, created_at")
+  .eq("fingerprint", fingerprint) // ← réutilise la variable déjà définie
+  .order("created_at", { ascending: false })
+  .limit(1);
+
 
     if (findErr) {
       console.error("Supabase lookup error:", findErr);
@@ -580,15 +700,15 @@ Contribution : ${other.contribution ?? 0}`;
     }
 
     // NEW: trigger slug generation (non bloquant)
-    await triggerSlugGeneration(String(insData.id));
+    await triggerSlugGeneration(req, String(insData.id));
 
     // send confirmation email once (user) — avec recheck
     if (other.email || email) {
       try {
         const shouldSend = await canSendUserMail(supabase, String(insData.id));
         if (shouldSend) {
-          const site = process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org";
-          const contributeUrl = `${site}/report?go=contribute&rid=${insData.id}`;
+          const base = getBaseUrl(req);
+          const contributeUrl = `${base}/report?go=contribute&rid=${insData.id}`;
 
           const ref5 = getReferenceCode(insData.public_id, String(insData.id));
           const referenceLine = `Reference code: ${ref5}\n`;
@@ -610,6 +730,7 @@ Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is co
 
 Thank you for using ReportLost.`;
 
+          const site = getBaseUrl(req);
           const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
@@ -648,7 +769,7 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-          const okUser = await sendMailViaApi({
+          const okUser = await sendMailViaApi(req, {
             to: other.email || email || "",
             subject: "Publish your report to start the search",
             text,
@@ -696,7 +817,7 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-        sendMailViaApi({
+        sendMailViaApi(req, {
           to: "support@reportlost.org",
           subject,
           text: bodyText,
