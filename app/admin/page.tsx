@@ -203,6 +203,34 @@ export default function AdminPage() {
   const [view, setView] = useState<'lost' | 'found'>('lost'); // ← NEW
   const PAGE_SIZE = 10;
 
+  // ——— AJOUT : état & handlers pour Get QR
+  const [qrPreview, setQrPreview] = useState<{ id: string; dataUrl: string; scanUrl: string; fileName: string } | null>(null);
+  const [qrLoadingId, setQrLoadingId] = useState<string | null>(null);
+
+  async function handleGetQr(reportId: string) {
+    try {
+      setQrLoadingId(reportId);
+      const res = await fetch(`/api/admin/qr?id=${encodeURIComponent(reportId)}&format=svg`, { cache: 'no-store' });
+      const j = await res.json();
+      if (!res.ok || !j?.ok || !j?.dataUrl) throw new Error(j?.error || `HTTP ${res.status}`);
+      setQrPreview({ id: reportId, dataUrl: j.dataUrl, scanUrl: j.scanUrl, fileName: j.fileName });
+    } catch (e: any) {
+      alert(`QR error: ${String(e?.message || e)}`);
+    } finally {
+      setQrLoadingId(null);
+    }
+  }
+
+  function downloadDataUrl(dataUrl: string, fileName: string) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  // ——— fin AJOUT
+
   // Génération de slug via API interne
   const generateSlug = async (reportId: string) => {
     try {
@@ -531,6 +559,20 @@ export default function AdminPage() {
                               }
                             }}
                           />
+
+                          {/* ——— AJOUT : bouton Get QR (paid only) */}
+                          {Number(item.contribution || 0) > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleGetQr(item.id)}
+                              className="inline-flex items-center rounded-md bg-orange-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                              title="Generate / view unique QR"
+                              disabled={qrLoadingId === item.id}
+                            >
+                              {qrLoadingId === item.id ? 'Generating…' : 'Get QR'}
+                            </button>
+                          ) : null}
+                          {/* ——— fin AJOUT */}
                         </div>
 
                         <div className="text-sm text-gray-600 flex items-center gap-3 mt-4">
@@ -613,6 +655,46 @@ export default function AdminPage() {
           )}
         </section>
       )}
+
+      {/* ——— AJOUT : Modal d’aperçu QR */}
+      {qrPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-3">Unique QR code</h3>
+            <div className="rounded-lg border p-4 grid place-items-center">
+              {/* Aperçu */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrPreview.dataUrl} alt="QR code" className="max-h-64" />
+            </div>
+            <div className="mt-3 text-sm text-gray-600 break-all">
+              Scan URL: <a href={qrPreview.scanUrl} className="underline" target="_blank" rel="noreferrer">{qrPreview.scanUrl}</a>
+            </div>
+            <div className="mt-4 flex gap-2 justify-end">
+              <button
+                className="px-3 py-1.5 rounded border"
+                onClick={() => {
+                  navigator.clipboard.writeText(qrPreview.scanUrl).catch(() => {});
+                }}
+              >
+                Copy link
+              </button>
+              <button
+                className="px-3 py-1.5 rounded bg-emerald-600 text-white"
+                onClick={() => downloadDataUrl(qrPreview.dataUrl, qrPreview.fileName)}
+              >
+                Download SVG
+              </button>
+              <button
+                className="px-3 py-1.5 rounded border"
+                onClick={() => setQrPreview(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ——— fin Modal */}
     </div>
   );
 }
