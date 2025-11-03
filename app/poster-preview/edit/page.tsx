@@ -1,7 +1,7 @@
-// app/poster-preview/page.tsx
+// app/poster-preview/edit/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ReportLostPoster from "@/components/ReportLostPoster";
 
@@ -24,7 +24,7 @@ const FALLBACK: StationRow = {
   brand_green: "#12A150",
 };
 
-export default function PosterPreviewPage() {
+function PosterPreviewInner() {
   const sp = useSearchParams();
   const slug = sp.get("station") || "chicago-north";
 
@@ -194,5 +194,13 @@ export default function PosterPreviewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PosterPreviewPage() {
+  return (
+    <Suspense fallback={null}>
+      <PosterPreviewInner />
+    </Suspense>
   );
 }
