@@ -20,14 +20,17 @@ function getBaseUrl(req: NextRequest): string {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "reportlost.org";
   return `${proto}://${host}`;
 }
-async function sendMailViaApi(req: NextRequest, payload: {
-  to: string | string[];
-  subject: string;
-  text: string;
-  html?: string;
-  fromName?: string;
-  replyTo?: string;
-}) {
+async function sendMailViaApi(
+  req: NextRequest,
+  payload: {
+    to: string | string[];
+    subject: string;
+    text: string;
+    html?: string;
+    fromName?: string;
+    replyTo?: string;
+  },
+) {
   try {
     const base = getBaseUrl(req);
     const res = await fetch(`${base}/api/send-mail`, {
@@ -37,7 +40,9 @@ async function sendMailViaApi(req: NextRequest, payload: {
       keepalive: true,
     });
     return res.ok;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 export const dynamic = "force-dynamic";
@@ -62,7 +67,9 @@ export async function POST(req: NextRequest) {
     // Récupère les infos nécessaires
     const { data: row, error } = await sb
       .from("lost_items")
-      .select("id, public_id, mail_sent, title, date, city, state_id, first_name, email, station_slug")
+      .select(
+        "id, public_id, mail_sent, title, date, city, state_id, first_name, email, station_slug",
+      )
       .eq("id", rid)
       .maybeSingle();
 
