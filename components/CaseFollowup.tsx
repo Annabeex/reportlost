@@ -16,7 +16,7 @@ function normalizeBlocks(input?: any[]): FollowupBlock[] {
       const paragraphs =
         Array.isArray(b?.paragraphs)
           ? b.paragraphs
-              .map((p: any) => (typeof p === "string" ? p.trim() : ""))
+              .map((p: unknown) => (typeof p === "string" ? p.trim() : ""))
               .filter(Boolean)
           : typeof b?.content === "string"
           ? [b.content]
@@ -25,77 +25,6 @@ function normalizeBlocks(input?: any[]): FollowupBlock[] {
     })
     .filter((b) => b.title || b.paragraphs.length);
 }
-
-/** Defaults shown when DB is empty */
-const DEFAULT_BLOCKS: FollowupBlock[] = [
-  {
-    title: "Database & Partners searches",
-    paragraphs: [
-      "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
-    "✅ Search in the Reportmyloss database",
-    "✅ Search in the foundrop database",
-    "✅ Search in the chargerback database",
-    "✅ Search in the iLost.co united states database",
-    "✅ Search in the Lost-and-found.org database",
-    "**Current result:** No exact match found at time of publication.\nWe repeat these checks automatically and manually",
-    ],
-  },
-  {
-    title: "Local notifications & Authority outreach",
-    paragraphs: [
-      "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
-      "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office or visit the office in person with proof of ownership if you have.",
-    ],
-  },
-  {
-    title: "Anonymous Contact Address - Safety & Anti-Scam Measures",
-    paragraphs: [
-      "✅ We created a case-specific anonymous inbox for this report. Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly or in social media.",
-      "Our team ensures the veracity of the content of the messages received and filters unsolicited emails (advertising, spam, scam attempts, etc.).",
-    ],
-  },
-  {
-    title: "Online publication & Accessibility",
-    paragraphs: [
-      "Your public report is live in our database and partners such as lost-found.org. Optimized for desktop, tablet and mobile. We publish structured metadata to help search engines find and index the listing.",
-    ],
-  },
-  {
-    title: "Search Engines & Feed Distribution",
-    paragraphs: [
-      "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster; indexing timing is controlled by the search engines themselves.",
-      "✅ Google\n✅ Bing\n✅ Yahoo!\n✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask",
-    ],
-  },
-  {
-    title: "Social Media & Community Posting",
-    paragraphs: [
-      "We post the report to our public Facebook page and local groups, prepare a Nextdoor template, and publish short alerts on X and Instagram. Facebook and Nextdoor are typically the most effective for recoveries; Instagram and TikTok are supplementary.",
-      "Facebook wallets group, Facebook NY and lost and found groups",
-    ],
-  },
-  {
-    title: "Specialist Channels & Partners",
-    paragraphs: [
-      "When appropriate we push the listing to specialized networks (pet recovery platforms, resale marketplaces, institutional pages) and local classified boards.",
-    ],
-  },
-  {
-    title: "Automated Monitoring & Human Verification",
-    paragraphs: [
-      "We combine automated scans, image-similarity checking, and human review. Active monitoring runs with multiple daily checks.",
-    ],
-  },
-  {
-    title: "What Happens If We Find a Match",
-    paragraphs: [
-      "We verify photos and identifying marks.",
-      "We request verification photos from the finder via the anonymous inbox.",
-      "We notify you immediately with instructions; we never publish your private data.",
-      "We advise a safe, public handoff and coordinate with police if needed.",
-    ],
-  },
-];
 
 /** Très petit rendu “markdown-safe”
  * - échappe tout HTML
@@ -136,7 +65,29 @@ export default function CaseFollowup({
   hideEditButton?: boolean;
 }) {
   const normalized = normalizeBlocks(blocks);
-  const toRender = normalized.length ? normalized : DEFAULT_BLOCKS;
+
+  // ⛔️ Pas de defaults en public : si vide, on affiche un encart d'information.
+  if (!normalized.length) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <div className="font-semibold mb-1">No public update yet</div>
+        <p className="text-sm">
+          This case doesn’t have a public follow-up published yet. If you are the owner,
+          open the admin editor to add or publish an update.
+        </p>
+        {!hideEditButton && publicId && (
+          <div className="mt-3">
+            <a
+              href={`/case/${publicId}?edit=1`}
+              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+            >
+              ✏️ Open editor
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -151,7 +102,7 @@ export default function CaseFollowup({
         </div>
       )}
 
-      {toRender.map((b, i) => (
+      {normalized.map((b, i) => (
         <div
           key={b.id ?? `${b.title}-${i}`}
           className="rounded-2xl border border-emerald-200 bg-white overflow-hidden"

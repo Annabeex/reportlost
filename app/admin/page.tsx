@@ -210,8 +210,22 @@ export default function AdminPage() {
   async function handleGetQr(reportId: string) {
     try {
       setQrLoadingId(reportId);
-      const res = await fetch(`/api/admin/qr?id=${encodeURIComponent(reportId)}&format=svg`, { cache: 'no-store' });
-      const j = await res.json();
+
+      const url = `/api/admin/qr?id=${encodeURIComponent(reportId)}&format=svg&aliasMode=scan`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+      });
+
+      const txt = await res.text();
+      let j: any = null;
+      try {
+        j = JSON.parse(txt);
+      } catch {
+        throw new Error(`Invalid JSON from QR endpoint: ${txt.slice(0, 180)}…`);
+      }
+
       if (!res.ok || !j?.ok || !j?.dataUrl) throw new Error(j?.error || `HTTP ${res.status}`);
       setQrPreview({ id: reportId, dataUrl: j.dataUrl, scanUrl: j.scanUrl, fileName: j.fileName });
     } catch (e: any) {
@@ -291,7 +305,7 @@ export default function AdminPage() {
     if (!q) return base;
 
     return base.filter(it => {
-      const ref = isFiveDigits(it.public_id || null) ? String(it.public_id) : '';
+const ref = isFiveDigits(it.public_id || null) ? String(it.public_id) : '';
       const hay = [
         it.title || '',
         it.description || '',
@@ -536,7 +550,8 @@ export default function AdminPage() {
                                     || item.primary_category
                                     || null,
                                 };
-                                const res = await fetch('/api/admin/set-categories', {
+                                // ⭐️ FIX: endpoint correct (évite HTTP 405)
+                                const res = await fetch('/api/admin/set-category', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify(body),
