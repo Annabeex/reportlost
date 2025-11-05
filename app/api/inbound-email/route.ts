@@ -63,14 +63,14 @@ function extractPublicId(recipientLower: string): string | null {
 }
 
 function buildTransport() {
+  // ✅ Zoho Europe = smtp.zoho.eu:465 (TLS implicite)
   return nodemailer.createTransport({
-    host: "smtp.zoho.com",
-    port: 587,         // STARTTLS
-    secure: false,     // false pour 587 (STARTTLS)
-    requireTLS: true,  // force l’upgrade TLS
+    host: "smtp.zoho.eu",
+    port: 465,
+    secure: true,
     auth: {
-      user: process.env.ZOHO_USER!,
-      pass: process.env.ZOHO_PASS!, // idéalement un app password
+      user: process.env.ZOHO_USER!,        // ex: support@reportlost.org
+      pass: process.env.ZOHO_PASS!,        // idéalement un App Password
     },
     connectionTimeout: 15000,
     greetingTimeout: 10000,
