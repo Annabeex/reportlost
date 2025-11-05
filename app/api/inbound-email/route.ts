@@ -80,8 +80,18 @@ function buildTransport() {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("[scan] HIT /api/inbound-email");
+    console.log("[scan] env:", {
+      supaUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      supaKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      zohoUser: !!process.env.ZOHO_USER,
+      zohoPass: !!process.env.ZOHO_PASS,
+      mgSignKey: !!process.env.MAILGUN_SIGNING_KEY,
+    });
+
     // Mailgun → “store(notify=…)” envoie en multipart/form-data
     const form = await req.formData();
+    console.log("[scan] form keys:", Array.from(form.keys()));
 
     // Champs Mailgun fréquents
     const recipient = String(form.get("recipient") || "").trim(); // ex: 30860@scan.reportlost.org
@@ -90,34 +100,50 @@ export async function POST(req: NextRequest) {
     const text = String(form.get("stripped-text") || form.get("body-plain") || "");
     const html = String(form.get("stripped-html") || form.get("body-html") || "");
 
+    console.log("[scan] inbound fields:", {
+      recipient,
+      from,
+      subjectPreview: subject.slice(0, 80),
+      hasText: !!text,
+      hasHtml: !!html,
+    });
+
     // Signature
     const ts = String(form.get("timestamp") || "");
     const token = String(form.get("token") || "");
     const signature = String(form.get("signature") || "");
-    if (!verifyMailgunSignature(ts, token, signature)) {
+    const sigOk = verifyMailgunSignature(ts, token, signature);
+    console.log("[scan] signature ok:", sigOk, "hasKey:", !!process.env.MAILGUN_SIGNING_KEY);
+    if (!sigOk) {
       return json({ ok: false, error: "Bad signature" }, 403);
     }
 
     const recipientLower = recipient.toLowerCase();
     const publicId = extractPublicId(recipientLower); // ne renvoie quelque chose QUE pour 5 chiffres @scan
+    console.log("[scan] parsed publicId:", publicId, "from:", recipientLower);
 
     if (!publicId) {
-      // Alias non géré → on envoie un rapport au support pour ne rien perdre
+      console.warn("[scan] Unhandled alias, routing to support:", recipient);
       const tr = buildTransport();
-      await tr.sendMail({
-        from: `Reportlost Router <${SUPPORT_EMAIL}>`,
-        to: SUPPORT_EMAIL,
-        subject: `[Router] Unhandled recipient: ${recipient}`,
-        text:
-          `Recipient: ${recipient}\n\n` +
-          `Subject: ${subject}\nFrom: ${from}\n\n` +
-          (text || "(no text)"),
-        html:
-          html ||
-          `<pre>${escapeHtml(
-            `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n${text || "(no text)"}`
-          )}</pre>`,
-      });
+      try {
+        await tr.sendMail({
+          from: `Reportlost Router <${SUPPORT_EMAIL}>`,
+          to: SUPPORT_EMAIL,
+          subject: `[Router] Unhandled recipient: ${recipient}`,
+          text:
+            `Recipient: ${recipient}\n\n` +
+            `Subject: ${subject}\nFrom: ${from}\n\n` +
+            (text || "(no text)"),
+          html:
+            html ||
+            `<pre>${escapeHtml(
+              `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n${text || "(no text)"}`
+            )}</pre>`,
+        });
+        console.log("[scan] Support mail sent for unhandled alias");
+      } catch (e) {
+        console.error("[scan] SMTP error while notifying support (unhandled alias):", e);
+      }
       return json({ ok: true, routed: "support-only (unhandled alias)" });
     }
 
@@ -128,22 +154,29 @@ export async function POST(req: NextRequest) {
       .eq("public_id", publicId)
       .maybeSingle();
 
+    console.log("[scan] supabase found:", !!item, "error:", error?.message, "email:", item?.email);
+
     if (error || !item?.email) {
-      // Pas trouvé → copie au support
+      console.warn("[scan] No owner found for publicId:", publicId, "-> routing to support");
       const tr = buildTransport();
-      await tr.sendMail({
-        from: `Reportlost Router <${SUPPORT_EMAIL}>`,
-        to: SUPPORT_EMAIL,
-        subject: `[Router] No owner for ID ${publicId}`,
-        text:
-          `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n` +
-          (text || "(no text)"),
-        html:
-          html ||
-          `<pre>${escapeHtml(
-            `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n${text || "(no text)"}`
-          )}</pre>`,
-      });
+      try {
+        await tr.sendMail({
+          from: `Reportlost Router <${SUPPORT_EMAIL}>`,
+          to: SUPPORT_EMAIL,
+          subject: `[Router] No owner for ID ${publicId}`,
+          text:
+            `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n` +
+            (text || "(no text)"),
+          html:
+            html ||
+            `<pre>${escapeHtml(
+              `Recipient: ${recipient}\n\nSubject: ${subject}\nFrom: ${from}\n\n${text || "(no text)"}`
+            )}</pre>`,
+        });
+        console.log("[scan] Support mail sent (no owner)");
+      } catch (e) {
+        console.error("[scan] SMTP error while notifying support (no owner):", e);
+      }
       return json({ ok: true, routed: "support-only (no owner)" });
     }
 
@@ -170,17 +203,25 @@ export async function POST(req: NextRequest) {
       `<p>You can reply directly to this email to contact the finder while keeping your address private.</p>` +
       `<p>— Reportlost</p>`;
 
-    await tr.sendMail({
-      from: `Reportlost Relay <${process.env.ZOHO_USER!}>`,
-      to: item.email!,
-      replyTo: recipient, // ← IMPORTANT : le client répond à l’alias, donc retour via Mailgun
-      subject: subject || `New message about your QR-tagged item (ID ${publicId})`,
-      text: introText,
-      html: introHtml,
-    });
+    console.log("[scan] SMTP sending to:", item.email, "replyTo:", recipient);
+    try {
+      await tr.sendMail({
+        from: `Reportlost Relay <${process.env.ZOHO_USER!}>`,
+        to: item.email!,
+        replyTo: recipient, // ← IMPORTANT : le client répond à l’alias, donc retour via Mailgun
+        subject: subject || `New message about your QR-tagged item (ID ${publicId})`,
+        text: introText,
+        html: introHtml,
+      });
+      console.log("[scan] SMTP OK →", item.email);
+    } catch (e) {
+      console.error("[scan] SMTP ERROR while sending to owner:", e);
+      throw e; // on relance pour garder le même comportement (500)
+    }
 
     return json({ ok: true, routed: "owner", publicId, owner: item.email });
   } catch (e: any) {
+    console.error("[scan] FATAL:", e);
     return json({ ok: false, error: String(e?.message || e) }, 500);
   }
 }
