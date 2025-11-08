@@ -12,28 +12,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // ———————————————————————————————————————
-// Réglages
+// Vérif ref publique (5 chiffres)
 // ———————————————————————————————————————
-
-// Essais de noms de modèle dans /public
-const TEMPLATE_CANDIDATES = [
-  "planche-QR-code -v3 (1).pdf",
-  "planche-QR-code-v3.pdf",
-];
-
-// Vérifie ref publique (5 chiffres)
 function isFiveDigits(v: unknown): v is string {
   return typeof v === "string" && /^[0-9]{5}$/.test(v);
 }
 
-/**
- * Génère un PNG Buffer de QR via qr-image
- * @param text    contenu encodé dans le QR
- * @param scale   facteur d’échelle (pixels par “module”)
- */
-function generateQrPngBuffer(text: string, scale = 6): Buffer {
-  // margin: 0 pour que le QR occupe vraiment la case blanche
-  // ec_level: 'M' = compromis robuste
+// ———————————————————————————————————————
+// Génération QR PNG buffer via qr-image
+// ———————————————————————————————————————
+function generateQrPngBuffer(text: string, scale = 8): Buffer {
   return qrImage.imageSync(text, {
     type: "png",
     ec_level: "M",
@@ -42,27 +30,39 @@ function generateQrPngBuffer(text: string, scale = 6): Buffer {
   }) as Buffer;
 }
 
-/**
- * ⚠️ Positions mesurées pour ta planche (origine bas-gauche, en points PDF).
- * Chaque slot = coin bas-gauche (x,y) + taille (carré).
- * FIT_RATIO laisse un léger liseré pour ne pas toucher les traits des cadres.
- */
+// ———————————————————————————————————————
+// Liste des fichiers possibles du template PDF
+// ———————————————————————————————————————
+const TEMPLATE_CANDIDATES = [
+  "planche-QR-code -v3 (1).pdf",
+  "planche-QR-code-v3.pdf",
+  "planche.pdf",
+];
+
+// ———————————————————————————————————————
+// ✅ Positions EXACTES DES CADRES (mesurées sur ton PDF)
+// origine = bas-gauche, unités = points PDF
+// ———————————————————————————————————————
 const SLOT_POSITIONS: Array<{ x: number; y: number; size: number }> = [
   { x: 378.254, y: 590.814, size: 113.386 },
   { x: 447.791, y: 704.655, size: 113.386 },
-  { x:  33.532, y: 704.524, size: 113.386 },
+  { x: 33.532,  y: 704.524, size: 113.386 },
   { x: 171.524, y: 704.524, size: 113.386 },
   { x: 309.658, y: 704.655, size: 113.386 },
   { x: 188.057, y: 513.999, size: 115.126 },
-  { x: 276.750, y:  33.127, size: 116.220 },
-  { x: 433.744, y:  20.371, size: 141.732 },
+  { x: 276.750, y: 33.127,  size: 116.220 },
+  { x: 433.744, y: 20.371,  size: 141.732 },
   { x: 174.817, y: 302.352, size: 141.732 },
-  { x:  19.217, y: 302.352, size: 141.732 },
+  { x: 19.217,  y: 302.352, size: 141.732 },
 ];
 
+// léger retrait pour ne pas toucher les bords
 const FIT_RATIO = 0.94;
 const CENTER_IN_CELL = true;
 
+// ———————————————————————————————————————
+// ✅ ROUTE GET
+// ———————————————————————————————————————
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -75,11 +75,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // URL cible encodée dans le QR — à adapter si besoin
+    // URL que le QR renvoie
     const origin = req.nextUrl.origin;
     const targetUrl = `${origin}/case/${publicId}`;
 
-    // Cherche le template dans /public
+    // ——————————————————————————
+    // Recherche du template PDF dans /public
+    // ——————————————————————————
     let templatePath: string | null = null;
     for (const name of TEMPLATE_CANDIDATES) {
       const p = path.join(process.cwd(), "public", name);
@@ -87,10 +89,9 @@ export async function GET(req: NextRequest) {
         await fs.access(p);
         templatePath = p;
         break;
-      } catch {
-        /* continue */
-      }
+      } catch {}
     }
+
     if (!templatePath) {
       return NextResponse.json(
         { ok: false, error: "Template PDF introuvable dans /public" },
@@ -98,16 +99,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Charge PDF template
     const templateBytes = await fs.readFile(templatePath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const page = pdfDoc.getPage(0);
 
-    // 1) Génère un seul PNG de QR (on le réutilise pour tous les slots)
-    //    Tu peux ajuster "scale" si jamais le rendu est trop flou (6–10)
+    // Génération d'un seul QR PNG qu'on réutilise
     const qrPngBuffer = generateQrPngBuffer(targetUrl, 10);
     const qrImg = await pdfDoc.embedPng(qrPngBuffer);
 
-    // 2) Dessine le QR dans chaque encadré blanc
+    // ——————————————————————————
+    // Placement de chaque QR
+    // ——————————————————————————
     for (const slot of SLOT_POSITIONS) {
       const size = slot.size * FIT_RATIO;
       const dx = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
@@ -121,7 +124,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 3) Petite légende discrète (facultatif)
+    // Légende discrète (optionnelle)
     page.drawText(`Ref: ${publicId}`, {
       x: 16,
       y: 16,
@@ -129,8 +132,15 @@ export async function GET(req: NextRequest) {
       color: rgb(0.2, 0.2, 0.2),
     });
 
+    // ——————————————————————————
+    // Sauvegarde et réponse HTTP
+    // ——————————————————————————
     const pdfBytes = await pdfDoc.save();
-    return new NextResponse(pdfBytes, {
+
+    // ✅ Fix Vercel / TypeScript — emballer dans un Blob
+    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+
+    return new NextResponse(pdfBlob, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
