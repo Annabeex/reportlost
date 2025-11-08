@@ -537,15 +537,15 @@ export default function AdminPage() {
 
                           {/* ——— MODIF : lien “Sticker sheet (PDF)” (paid only) */}
                           {Number(item.contribution || 0) > 0 && ref ? (
-                            <a
-                              href={`/api/qr-sheet?publicId=${encodeURIComponent(ref)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center rounded-md bg-orange-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                              title="Open sticker sheet (PDF)"
-                            >
-                              Sticker sheet (PDF)
-                            </a>
+                        <a
+  href={`/api/sticker-sheet?public_id=${encodeURIComponent(ref)}`}
+  target="_blank"
+  rel="noreferrer"
+  className="inline-flex items-center rounded-md bg-orange-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+  title="Open sticker sheet (PDF)"
+>
+  Sticker sheet (PDF)
+</a>
                           ) : null}
                           {/* ——— fin MODIF */}
                         </div>
