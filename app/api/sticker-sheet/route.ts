@@ -1,73 +1,58 @@
 // app/api/sticker-sheet/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument } from "pdf-lib";
-const qrImage = require("qr-image"); // CJS ok sur Node/Next API routes
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const qrImage: { imageSync: (data: string, opts: any) => Buffer } = require("qr-image");
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Helpers mm → points (pdf-lib travaille en points à 72 dpi) */
-const mm = (n: number) => (n / 25.4) * 72;
+// ---------------------------
+// Helpers
+// ---------------------------
+const mm = (n: number) => (n / 25.4) * 72; // pdf-lib en points (72 dpi)
 
-/** A4 = 210 × 297 mm */
-const A4_W = mm(210);
-const A4_H = mm(297);
-
-/**
- * SLOTS = coordonnées (en mm) où coller les QR sur ta planche.
- * ⚠️ Valeurs de départ raisonnables à ajuster une fois : imprime 1 page de test.
- * Tu peux ajouter/retirer des emplacements à volonté.
- *
- * Chaque slot : { x_mm, y_mm, size_mm }
- *  - x_mm, y_mm = coin BAS-GAUCHE du QR sur la page (origine en bas à gauche)
- *  - size_mm     = largeur = hauteur du QR
- */
+// Coordonnées (en mm) des QR à poser sur TA planche PDF.
+// 👉 Ajuste-les 1 fois si besoin, puis c’est terminé.
 const SLOTS: Array<{ x_mm: number; y_mm: number; size_mm: number; note?: string }> = [
-  // — EXEMPLES (à ajuster à ta planche finale) —
+  // Exemple de maquette (3 rangées). Ajuste sans scrupule après un tirage test.
   // Rangée du haut
-  { x_mm: 15,  y_mm: 255, size_mm: 40, note: "Format rond" },
-  { x_mm: 75,  y_mm: 255, size_mm: 40, note: "Format carré" },
-  { x_mm: 135, y_mm: 255, size_mm: 40, note: "Rect. horizontal" },
+  { x_mm: 18,  y_mm: 255, size_mm: 38, note: "rond" },
+  { x_mm: 78,  y_mm: 255, size_mm: 38, note: "carré" },
+  { x_mm: 138, y_mm: 255, size_mm: 38, note: "rect. horizontal" },
 
-  // Rangée du milieu
-  { x_mm: 15,  y_mm: 175, size_mm: 60, note: "Rect. vertical (grand)" },
-  { x_mm: 95,  y_mm: 175, size_mm: 50, note: "Carré moyen" },
-  { x_mm: 155, y_mm: 175, size_mm: 35, note: "Mini 35 mm" },
+  // Rangée milieu
+  { x_mm: 18,  y_mm: 175, size_mm: 58, note: "rect. vertical (grand)" },
+  { x_mm: 98,  y_mm: 175, size_mm: 48, note: "carré moyen" },
+  { x_mm: 158, y_mm: 175, size_mm: 34, note: "mini" },
 
-  // Rangée du bas
-  { x_mm: 15,  y_mm: 95,  size_mm: 40, note: "Rond" },
-  { x_mm: 75,  y_mm: 95,  size_mm: 40, note: "Carré" },
-  { x_mm: 135, y_mm: 95,  size_mm: 40, note: "Rect. horizontal" },
+  // Rangée bas
+  { x_mm: 18,  y_mm: 95,  size_mm: 38, note: "rond" },
+  { x_mm: 78,  y_mm: 95,  size_mm: 38, note: "carré" },
+  { x_mm: 138, y_mm: 95,  size_mm: 38, note: "rect. horizontal" },
 ];
 
-/** Génère un PNG QR (sans marge) */
+// QR PNG sans marge (le fond crème/contour est déjà sur la planche)
 function makeQrPng(url: string): Buffer {
-  return qrImage.imageSync(url, {
-    type: "png",
-    ec_level: "M",
-    margin: 0,
-  }) as Buffer;
+  return qrImage.imageSync(url, { type: "png", ec_level: "M", margin: 0 }) as Buffer;
 }
 
-/** Récupère l’URL de base (prod/préprod/dev) */
+// URL de base (prod/préprod/dev)
 function getBaseUrl(req: NextRequest) {
   const fixed = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
   if (fixed) return fixed.replace(/\/+$/, "");
   const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host =
-    req.headers.get("x-forwarded-host") ||
-    req.headers.get("host") ||
-    "localhost:3000";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
   return `${proto}://${host}`;
 }
 
-/** Charge la planche-modèle depuis /public/templates/planche-QR-code.pdf */
+// Charge le PDF modèle depuis /public/templates/planche-QR-code.pdf
 async function loadTemplate(req: NextRequest): Promise<Uint8Array> {
   const base = getBaseUrl(req);
-  const url = `${base}/templates/planche-QR-code.pdf`; // ← place ton PDF ici : /public/templates/planche-QR-code.pdf
+  const url = `${base}/templates/planche-QR-code.pdf`;
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Template introuvable (${res.status})`);
+  if (!res.ok) throw new Error(`Template introuvable (${res.status}) à ${url}`);
   return new Uint8Array(await res.arrayBuffer());
 }
 
@@ -82,7 +67,7 @@ export async function GET(req: NextRequest) {
     const id = url.searchParams.get("id");
     const publicIdParam = url.searchParams.get("public_id");
 
-    // 1) public_id (5 chiffres) depuis ?public_id=xxxxx ou via lost_items.id
+    // 1) Récupération du public_id (5 chiffres)
     let public_id: string | null = publicIdParam;
     if (!public_id) {
       if (!id) {
@@ -102,30 +87,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
     }
 
-    // 2) URL scannée (page message anonyme)
+    // 2) URL de scan (page message anonyme)
     const base = getBaseUrl(req);
     const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
 
-    // 3) Charger la planche PDF modèle
+    // 3) Charger la planche PDF
     const templateBytes = await loadTemplate(req);
     const pdf = await PDFDocument.load(templateBytes);
-
-    // Sanity : s’assurer A4 (sinon on pose quand même aux coords fournies)
     const [page] = pdf.getPages();
-    const { width: pw, height: ph } = page.getSize();
-    // Optionnel : si ton PDF n’est pas exactement A4, pas grave :
-    // tu ajusteras SLOTS pour coller visuellement à TON fond.
 
-    // 4) Générer + embed le QR
+    // 4) Générer + embarquer le QR
     const qrPng = makeQrPng(scanUrl);
     const qrImg = await pdf.embedPng(qrPng);
 
-    // 5) Poser les QR sur tous les emplacements
+    // 5) Poser le même QR sur chaque emplacement de la planche
     for (const s of SLOTS) {
-      const x = mm(s.x_mm);
-      const y = mm(s.y_mm);
-      const size = mm(s.size_mm);
-      page.drawImage(qrImg, { x, y, width: size, height: size });
+      page.drawImage(qrImg, {
+        x: mm(s.x_mm),
+        y: mm(s.y_mm),
+        width: mm(s.size_mm),
+        height: mm(s.size_mm),
+      });
     }
 
     // 6) Retour PDF
