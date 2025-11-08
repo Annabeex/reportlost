@@ -4,24 +4,34 @@ import { PDFDocument, rgb } from "pdf-lib";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-// ✅ CJS require pour éviter les erreurs d’import ESM
+// ✅ CJS require pour éviter les soucis ESM/typages avec qr-image
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrImage = require("qr-image") as any;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ———————————————————————————————————————
-// Vérif ref publique (5 chiffres)
-// ———————————————————————————————————————
+// ------------------------------------------------------------------
+// Réglages
+// ------------------------------------------------------------------
+
+// Noms possibles du modèle placé dans /public (garde les deux si tu renomme)
+const TEMPLATE_CANDIDATES = [
+  "planche-QR-code -v3 (1).pdf",
+  "planche-QR-code-v3.pdf",
+];
+
+// Vérifie une ref publique sur 5 chiffres
 function isFiveDigits(v: unknown): v is string {
   return typeof v === "string" && /^[0-9]{5}$/.test(v);
 }
 
-// ———————————————————————————————————————
-// Génération QR PNG buffer via qr-image
-// ———————————————————————————————————————
-function generateQrPngBuffer(text: string, scale = 8): Buffer {
+/**
+ * Génère un PNG Buffer de QR via qr-image.
+ * @param text  contenu du QR
+ * @param scale taille (6–12 recommandé)
+ */
+function generateQrPngBuffer(text: string, scale = 10): Buffer {
   return qrImage.imageSync(text, {
     type: "png",
     ec_level: "M",
@@ -30,39 +40,26 @@ function generateQrPngBuffer(text: string, scale = 8): Buffer {
   }) as Buffer;
 }
 
-// ———————————————————————————————————————
-// Liste des fichiers possibles du template PDF
-// ———————————————————————————————————————
-const TEMPLATE_CANDIDATES = [
-  "planche-QR-code -v3 (1).pdf",
-  "planche-QR-code-v3.pdf",
-  "planche.pdf",
-];
-
-// ———————————————————————————————————————
-// ✅ Positions EXACTES DES CADRES (mesurées sur ton PDF)
-// origine = bas-gauche, unités = points PDF
-// ———————————————————————————————————————
+/**
+ * 🔒 Positions mesurées sur ta planche (origine en bas-gauche, points PDF).
+ * Chaque slot = coin bas-gauche (x,y) + taille (carré).
+ */
 const SLOT_POSITIONS: Array<{ x: number; y: number; size: number }> = [
   { x: 378.254, y: 590.814, size: 113.386 },
   { x: 447.791, y: 704.655, size: 113.386 },
-  { x: 33.532,  y: 704.524, size: 113.386 },
+  { x:  33.532, y: 704.524, size: 113.386 },
   { x: 171.524, y: 704.524, size: 113.386 },
   { x: 309.658, y: 704.655, size: 113.386 },
   { x: 188.057, y: 513.999, size: 115.126 },
-  { x: 276.750, y: 33.127,  size: 116.220 },
-  { x: 433.744, y: 20.371,  size: 141.732 },
+  { x: 276.750, y:  33.127, size: 116.220 },
+  { x: 433.744, y:  20.371, size: 141.732 },
   { x: 174.817, y: 302.352, size: 141.732 },
-  { x: 19.217,  y: 302.352, size: 141.732 },
+  { x:  19.217, y: 302.352, size: 141.732 },
 ];
 
-// léger retrait pour ne pas toucher les bords
-const FIT_RATIO = 0.94;
-const CENTER_IN_CELL = true;
+const FIT_RATIO = 0.94;       // léger retrait pour un liseré blanc propre
+const CENTER_IN_CELL = true;  // centre le QR dans chaque case
 
-// ———————————————————————————————————————
-// ✅ ROUTE GET
-// ———————————————————————————————————————
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -70,18 +67,16 @@ export async function GET(req: NextRequest) {
 
     if (!isFiveDigits(publicId)) {
       return NextResponse.json(
-        { ok: false, error: "publicId doit être 5 chiffres" },
+        { ok: false, error: "publicId doit être 5 chiffres (ex: 12345)" },
         { status: 400 }
       );
     }
 
-    // URL que le QR renvoie
+    // URL encodée dans le QR — adapte si besoin (ex: /lost/{slug})
     const origin = req.nextUrl.origin;
     const targetUrl = `${origin}/case/${publicId}`;
 
-    // ——————————————————————————
-    // Recherche du template PDF dans /public
-    // ——————————————————————————
+    // Cherche le template dans /public
     let templatePath: string | null = null;
     for (const name of TEMPLATE_CANDIDATES) {
       const p = path.join(process.cwd(), "public", name);
@@ -89,9 +84,10 @@ export async function GET(req: NextRequest) {
         await fs.access(p);
         templatePath = p;
         break;
-      } catch {}
+      } catch {
+        /* continue */
+      }
     }
-
     if (!templatePath) {
       return NextResponse.json(
         { ok: false, error: "Template PDF introuvable dans /public" },
@@ -99,18 +95,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Charge PDF template
+    // Charge le modèle PDF
     const templateBytes = await fs.readFile(templatePath);
     const pdfDoc = await PDFDocument.load(templateBytes);
     const page = pdfDoc.getPage(0);
 
-    // Génération d'un seul QR PNG qu'on réutilise
+    // Génère et embarque un seul QR réutilisé pour tous les slots
     const qrPngBuffer = generateQrPngBuffer(targetUrl, 10);
     const qrImg = await pdfDoc.embedPng(qrPngBuffer);
 
-    // ——————————————————————————
-    // Placement de chaque QR
-    // ——————————————————————————
+    // Dessine le QR dans chaque encadré
     for (const slot of SLOT_POSITIONS) {
       const size = slot.size * FIT_RATIO;
       const dx = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
@@ -132,15 +126,18 @@ export async function GET(req: NextRequest) {
       color: rgb(0.2, 0.2, 0.2),
     });
 
-    // ——————————————————————————
-    // Sauvegarde et réponse HTTP
-    // ——————————————————————————
+    // Sauvegarde du PDF → Uint8Array
     const pdfBytes = await pdfDoc.save();
 
-    // ✅ Fix Vercel / TypeScript — emballer dans un Blob
-    const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+    // ✅ CORRECTION DE TYPE : convertir en ArrayBuffer "propre"
+    // (évite l’erreur BlobPart/SharedArrayBuffer des toolings)
+    const ab = pdfBytes.buffer.slice(
+      pdfBytes.byteOffset,
+      pdfBytes.byteOffset + pdfBytes.byteLength
+    );
 
-    return new NextResponse(pdfBlob, {
+    // Réponse en tant qu'ArrayBuffer (BodyInit compatible)
+    return new NextResponse(ab, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
