@@ -1,84 +1,146 @@
 // app/api/sticker-sheet/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
-const qrImage = require("qr-image"); // CJS ok en route API Next.js
+const qrImage = require("qr-image");
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* ===========================
-   Helpers
-=========================== */
-const mm = (n: number) => (n / 25.4) * 72; // pdf-lib travaille en points (72 dpi)
+// unit helpers
+const mm = (n: number) => (n / 25.4) * 72;
+const cm = (n: number) => mm(n * 10);
 
-/** A4 = 210 × 297 mm (info seulement) */
+// A4
 const A4_W = mm(210);
 const A4_H = mm(297);
 
-/** 
- * Mode debug : dessine des cadres rouges à l’emplacement prévu du QR.
- * Mets false quand c’est calé.
- */
-const DEBUG_OUTLINES = true;
+// types
+type SlotTL = {
+  left_mm: number;
+  top_mm: number;
+  width_mm: number;
+  height_mm: number;
+  eraseUnder?: boolean;
+  nudge_left_mm?: number;
+  nudge_top_mm?: number;
+};
 
-/**
- * Emplacements (en mm) du coin bas-gauche + taille du QR.
- * ⚠️ Ce sont des valeurs de base : imprime une page de test et ajuste.
- * Tu peux ajouter / retirer des entrées librement.
- */
-const SLOTS: Array<{ x_mm: number; y_mm: number; size_mm: number; note?: string }> = [
-  // --- Rangée du haut (exemple) ---
-  { x_mm: 13,  y_mm: 255, size_mm: 42, note: "Rond" },
-  { x_mm: 73,  y_mm: 255, size_mm: 42, note: "Carré" },
-  { x_mm: 133, y_mm: 255, size_mm: 42, note: "Rond" },
-  { x_mm: 193, y_mm: 255, size_mm: 42, note: "Rond" },
+type Frame = {
+  x_mm: number;
+  y_mm: number;
+  width_mm: number;
+  height_mm: number;
+  slots: SlotTL[];
+};
 
-  // --- Rangée du milieu (exemple) ---
-  { x_mm: 24,  y_mm: 171, size_mm: 62, note: "Rect. vertical" },
-  { x_mm: 104, y_mm: 171, size_mm: 62, note: "Rect. vertical" },
-  { x_mm: 172, y_mm: 166, size_mm: 72, note: "Grand rect. vertical (droite)" },
+// ============================================================================
+// ✅ COORDONNÉES ABSOLUES
+// ============================================================================
+const FRAMES: Frame[] = [
+  // ========================================================================
+  // ✅ FRAME 1 — GRAND BLOC DU HAUT
+  // ========================================================================
+  {
+    x_mm: cm(0.45),
+    y_mm: cm(0.66),
+    width_mm: cm(20.28),
+    height_mm: cm(22.66),
+    slots: [
+      { left_mm: mm(22.5),  top_mm: mm(19.4), width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_top_mm: -7 },
+      { left_mm: mm(71.1),  top_mm: mm(19.2), width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_top_mm: -7 },
+      { left_mm: mm(121.4), top_mm: mm(20.7), width_mm: mm(16.4), height_mm: mm(16.1), eraseUnder: true, nudge_top_mm: -7 },
+      { left_mm: mm(169.9), top_mm: mm(20.1), width_mm: mm(16.9), height_mm: mm(16.6), eraseUnder: true, nudge_top_mm: -7 },
 
-  // --- Rangée du bas (exemple) ---
-  { x_mm: 40,  y_mm: 86,  size_mm: 60, note: "Rect. vertical bas gauche" },
-  { x_mm: 120, y_mm: 86,  size_mm: 60, note: "Rect. vertical bas centre" },
-  { x_mm: 180, y_mm: 98,  size_mm: 52, note: "Grand rect. vertical bas droite" },
+      // 2ᵉ ligne : rond
+      { left_mm: mm(144.4), top_mm: mm(59.4), width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_top_mm: -7 },
 
-  // --- Bandeau horizontal (tout en bas) ---
-  { x_mm: 40,  y_mm: 26,  size_mm: 38, note: "Bandeau horizontal" },
-  { x_mm: 120, y_mm: 26,  size_mm: 38, note: "Bandeau horizontal" },
+      // 2ᵉ ligne : rect #1
+      { left_mm: mm(18), top_mm: mm(81.7), width_mm: mm(27.4), height_mm: mm(27.0), eraseUnder: true, nudge_top_mm: -7 },
+
+      // 2ᵉ ligne : rect #2
+      { left_mm: mm(75), top_mm: mm(84.1), width_mm: mm(23.3), height_mm: mm(22.9), eraseUnder: true, nudge_top_mm: -7 },
+
+      // 3ᵉ ligne : rect gauche
+      { left_mm: mm(18), top_mm: mm(151.9), width_mm: mm(27.4), height_mm: mm(27.0), eraseUnder: true, nudge_top_mm: -7 },
+
+      // 3ᵉ ligne : rect droite
+      { left_mm: mm(77.2), top_mm: mm(156.1), width_mm: mm(19.9), height_mm: mm(19.6), eraseUnder: true, nudge_top_mm: -7 },
+
+      // 3ᵉ ligne : grand sticker droite
+      { left_mm: mm(131.8), top_mm: mm(136), width_mm: mm(55.5), height_mm: mm(54.7), eraseUnder: true, nudge_top_mm: -7 },
+
+      // 4ᵉ ligne : petit rectangle
+      { left_mm: mm(82.7), top_mm: mm(203.7), width_mm: mm(22.3), height_mm: mm(22.0), eraseUnder: true, nudge_top_mm: -7 },
+    ],
+  },
+
+  // ========================================================================
+  // ✅ FRAME 2 — 5ᵉ ligne : Sticker gauche
+  // ========================================================================
+  {
+    x_mm: cm(0), y_mm: cm(0), width_mm: cm(0), height_mm: cm(0),
+    slots: [
+      { 
+  left_mm: mm(103.1), 
+  top_mm: mm(249.8), 
+  width_mm: mm(30.5), 
+  height_mm: mm(30.0), 
+  eraseUnder: true, 
+  nudge_left_mm: 1.5, 
+  nudge_top_mm: -7 
+},
+    ],
+  },
+
+  // ========================================================================
+  // ✅ FRAME 3 — 5ᵉ ligne : Sticker droit
+  // ========================================================================
+  {
+    x_mm: cm(0), y_mm: cm(0), width_mm: cm(0), height_mm: cm(0),
+    slots: [
+      { 
+  left_mm: mm(166.0), 
+  top_mm: mm(253.9), 
+  width_mm: mm(22.9), 
+  height_mm: mm(22.5), 
+  eraseUnder: true, 
+  nudge_left_mm: 1.5, 
+  nudge_top_mm: -7 
+},
+    ],
+  },
 ];
 
-/** Génère un PNG de QR (sans marge) */
-function makeQrPng(url: string): Buffer {
-  return qrImage.imageSync(url, {
-    type: "png",
-    ec_level: "M",
-    margin: 0,
-  }) as Buffer;
-}
-
-/** URL de base (prod/préprod/dev) */
+// ============================================================================
+// Load PDF template
+// ============================================================================
 function getBaseUrl(req: NextRequest) {
   const fixed = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
   if (fixed) return fixed.replace(/\/+$/, "");
   const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host =
-    req.headers.get("x-forwarded-host") ||
-    req.headers.get("host") ||
-    "localhost:3000";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
   return `${proto}://${host}`;
 }
 
-/** Charge le fond depuis /public/templates/planche-QR-code.pdf */
 async function loadTemplate(req: NextRequest): Promise<Uint8Array> {
   const base = getBaseUrl(req);
   const url = `${base}/templates/planche-QR-code.pdf`;
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Template introuvable (${res.status}) à ${url}`);
+  if (!res.ok) throw new Error(`Template introuvable (${res.status}) : ${url}`);
   return new Uint8Array(await res.arrayBuffer());
 }
 
+// ============================================================================
+// QR generator
+// ============================================================================
+function makeQrPng(url: string): Buffer {
+  return qrImage.imageSync(url, { type: "png", ec_level: "M", margin: 0 }) as Buffer;
+}
+
+// ============================================================================
+// MAIN ROUTE
+// ============================================================================
 export async function GET(req: NextRequest) {
   try {
     const sb = getSupabaseAdmin();
@@ -90,68 +152,63 @@ export async function GET(req: NextRequest) {
     const id = url.searchParams.get("id");
     const publicIdParam = url.searchParams.get("public_id");
 
-    // 1) public_id (5 chiffres) depuis ?public_id=xxxxx ou via lost_items.id
     let public_id: string | null = publicIdParam;
+
     if (!public_id) {
       if (!id) {
         return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
       }
-      const { data, error } = await sb
-        .from("lost_items")
-        .select("public_id")
-        .eq("id", id)
-        .maybeSingle();
+      const { data, error } = await sb.from("lost_items").select("public_id").eq("id", id).maybeSingle();
       if (error || !data?.public_id) {
         return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
       }
       public_id = String(data.public_id);
     }
+
     if (!/^\d{5}$/.test(public_id)) {
       return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
     }
 
-    // 2) URL scannée (page message anonyme)
     const base = getBaseUrl(req);
     const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
 
-    // 3) Charger la planche modèle et créer le doc en sortie
     const templateBytes = await loadTemplate(req);
     const pdf = await PDFDocument.load(templateBytes);
     const [page] = pdf.getPages();
 
-    // 4) Générer + embed le QR
     const qrPng = makeQrPng(scanUrl);
     const qrImg = await pdf.embedPng(qrPng);
 
-    // 5) Poser les QR sur tous les emplacements
-    for (const s of SLOTS) {
-      const x = mm(s.x_mm);
-      const y = mm(s.y_mm);
-      const size = mm(s.size_mm);
+    for (const f of FRAMES) {
+      for (const s of f.slots) {
+        const x = s.left_mm + (s.nudge_left_mm ?? 0);
+        const y = A4_H - ((s.top_mm + (s.nudge_top_mm ?? 0)) + s.height_mm);
 
-      // Debug : cadre rouge (corrigé → rgb(1,0,0))
-      if (DEBUG_OUTLINES) {
-        page.drawRectangle({
-          x,
-          y,
-          width: size,
-          height: size,
-          borderColor: rgb(1, 0, 0),
-          borderWidth: 1.2,
+        if (s.eraseUnder) {
+          const pad = mm(0.4);
+          page.drawRectangle({
+            x: x - pad,
+            y: y - pad,
+            width: s.width_mm + pad * 2,
+            height: s.height_mm + pad * 2,
+            color: rgb(1, 1, 1),
+          });
+        }
+
+        page.drawImage(qrImg, {
+          x, y,
+          width: s.width_mm,
+          height: s.height_mm,
         });
       }
-
-      page.drawImage(qrImg, { x, y, width: size, height: size });
     }
 
-    // 6) Retour PDF
     const bytes = await pdf.save();
-    const fileName = `stickers_${public_id}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Disposition": `inline; filename=stickers_${public_id}.pdf`,
         "Cache-Control": "no-store",
       },
     });

@@ -1,153 +1,198 @@
-// app/api/qr-sheet/route.ts
-import { NextRequest } from "next/server";
+// app/api/sticker-sheet/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb } from "pdf-lib";
-import fs from "node:fs/promises";
-import path from "node:path";
-
-// ✅ CJS require pour éviter les problèmes ESM avec qr-image
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const qrImage = require("qr-image") as any;
+// CJS ok en route API Next
+const qrImage = require("qr-image");
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ---------------------------------------------------------------------------
-// Vérifie ref 5 chiffres
-// ---------------------------------------------------------------------------
-function isFiveDigits(v: unknown): v is string {
-  return typeof v === "string" && /^[0-9]{5}$/.test(v);
+/* ---------- Utils ---------- */
+const mm = (n: number) => (n / 25.4) * 72; // 72pt/in • 25.4 mm/in
+
+/** A4 portrait */
+const PAGE_W_MM = 210;
+const PAGE_H_MM = 297;
+const PAGE_W_PT = mm(PAGE_W_MM);
+const PAGE_H_PT = mm(PAGE_H_MM);
+
+/** Charge la planche modèle depuis /public/templates/planche-QR-code.pdf */
+async function loadTemplate(req: NextRequest): Promise<Uint8Array> {
+  const base =
+    (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
+    `${req.headers.get("x-forwarded-proto") || "https"}://${
+      req.headers.get("x-forwarded-host") || req.headers.get("host")
+    }`;
+  const url = `${base}/templates/planche-QR-code.pdf`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Template introuvable (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
 }
 
-// ---------------------------------------------------------------------------
-// Génère un PNG de QR via qr-image
-// ---------------------------------------------------------------------------
-function generateQrPngBuffer(text: string, scale = 10): Buffer {
-  return qrImage.imageSync(text, {
+/** Génère un PNG QR (sans marge) */
+function makeQrPng(url: string): Buffer {
+  return qrImage.imageSync(url, {
     type: "png",
     ec_level: "M",
     margin: 0,
-    size: scale,
   }) as Buffer;
 }
 
-// ---------------------------------------------------------------------------
-// ✅ Coordonnées mesurées pour ta planche
-// (origine = bas-gauche, unité = point PDF)
-// ---------------------------------------------------------------------------
-const SLOT_POSITIONS: Array<{ x: number; y: number; size: number }> = [
-  { x: 378.254, y: 590.814, size: 113.386 },
-  { x: 447.791, y: 704.655, size: 113.386 },
-  { x:  33.532, y: 704.524, size: 113.386 },
-  { x: 171.524, y: 704.524, size: 113.386 },
-  { x: 309.658, y: 704.655, size: 113.386 },
+/* ---------- SLOTS : coller ici tes mesures Canva ---------- */
+/**
+ * IMPORTANT
+ * - Canva t’affiche LARG., HAUT., X, Y (souvent en cm) pour chaque QR maquette.
+ * - Convertis-les en mm (cm × 10) et renseigne ci-dessous.
+ * - left_mm / top_mm = coin SUPÉRIEUR GAUCHE de la zone QR.
+ * - width_mm / height_mm = taille exacte du QR voulu (souvent carré).
+ * - Le code convertit automatiquement en coordonnées PDF (origine bas-gauche).
+ *
+ * Commence avec 2–3 emplacements, vérifie en local (?debug=1), puis complète.
+ */
+type SlotTopLeft = {
+  left_mm: number;
+  top_mm: number;
+  width_mm: number;
+  height_mm: number;
+  eraseUnder?: boolean; // masque blanc sous le QR (par défaut true)
+};
 
-  { x: 188.057, y: 513.999, size: 115.126 },
+// EXEMPLES (à remplacer par tes vraies valeurs Canva) :
+const SLOTS_TOPLEFT: SlotTopLeft[] = [
+  // ---- Ligne 1 (exemples fictifs) ----
+  { left_mm: 22.5,  top_mm: 19.4, width_mm: 18.6, height_mm: 18.3, eraseUnder: true }, // rond 1
+  { left_mm: 71.1, top_mm: 19.2, width_mm: 18.6, height_mm: 18.3, eraseUnder: true }, // rond 2
+  { left_mm: 121.4, top_mm: 20.7, width_mm: 16.4, height_mm: 16.1, eraseUnder: true }, // rond 3
+  { left_mm: 169.9, top_mm: 20.1, width_mm: 16.9, height_mm: 16.6, eraseUnder: true }, // rond 4
 
-  { x: 276.750, y:  33.127, size: 116.220 },
-  { x: 433.744, y:  20.371, size: 141.732 },
-  { x: 174.817, y: 302.352, size: 141.732 },
-  { x:  19.217, y: 302.352, size: 141.732 },
+  // ---- Ligne 2 (rect. verticaux) ----
+  { left_mm: 27.4,  top_mm: 27, width_mm: 18, height_mm: 81.7, eraseUnder: true },
+  { left_mm: 23.3,  top_mm: 22.9, width_mm: 75, height_mm: 84.1, eraseUnder: true },
+  { left_mm: 18.6, top_mm: 18.3, width_mm: 144.4, height_mm: 59.4, eraseUnder: true },
+
+  // ---- Grand rectangle à droite ----
+  { left_mm: 55.5, top_mm: 54.7, width_mm: 131.8, height_mm: 136, eraseUnder: true },
+
+  // ---- Lignes du bas… (complète avec tes vraies mesures) ----
+  // { left_mm: ..., top_mm: ..., width_mm: ..., height_mm: ..., eraseUnder: true },
 ];
 
-const FIT_RATIO = 0.94;
-const CENTER_IN_CELL = true;
-
-// ---------------------------------------------------------------------------
-// ✅ Transforme un Uint8Array en ArrayBuffer compatible Vercel
-// ---------------------------------------------------------------------------
-function uint8ToArrayBuffer(u8: Uint8Array): ArrayBuffer {
-  const ab = new ArrayBuffer(u8.byteLength);
-  new Uint8Array(ab).set(u8);
-  return ab;
-}
-
-// ---------------------------------------------------------------------------
-// ✅ Handler GET
-// ---------------------------------------------------------------------------
+/* ---------- Route ---------- */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const publicId = searchParams.get("publicId");
+    const url = new URL(req.url);
+    const debug = url.searchParams.get("debug") === "1";
+    const onlyIdx = url.searchParams.get("only"); // e.g. ?only=0 pour ne poser qu’un slot
 
-    if (!isFiveDigits(publicId)) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "publicId must be 5 digits." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+    // public_id : ?public_id=12345 ou via lost_items.id
+    const sb = getSupabaseAdmin();
+    if (!sb) {
+      return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
+    }
+    let public_id = url.searchParams.get("public_id");
+    if (!public_id) {
+      const id = url.searchParams.get("id");
+      if (!id) {
+        return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
+      }
+      const { data, error } = await sb
+        .from("lost_items")
+        .select("public_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !data?.public_id) {
+        return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
+      }
+      public_id = String(data.public_id);
+    }
+    if (!/^\d{5}$/.test(public_id)) {
+      return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
     }
 
-    // URL cible du QR code — adapte si tu veux pointer ailleurs
-    const origin = req.nextUrl.origin;
-    const targetUrl = `${origin}/case/${publicId}`;
+    // URL scannée
+    const base =
+      (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
+      `${req.headers.get("x-forwarded-proto") || "https"}://${
+        req.headers.get("x-forwarded-host") || req.headers.get("host")
+      }`;
+    const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
 
-    // ✅ Chemin direct vers ton fichier /public/templates/...
-    const templatePath = path.join(
-      process.cwd(),
-      "public",
-      "templates",
-      "planche-QR-code.pdf"
+    // Charger la planche
+    const templateBytes = await loadTemplate(req);
+    const pdf = await PDFDocument.load(templateBytes);
+    const [page] = pdf.getPages();
+    const { width: pw, height: ph } = page.getSize();
+
+    // Sanity : si ton PDF n’est pas exactement A4, on convertit quand même
+    // en proportion de la taille réelle.
+    const scaleX = pw / PAGE_W_PT;
+    const scaleY = ph / PAGE_H_PT;
+
+    // QR unique
+    const qrPng = makeQrPng(scanUrl);
+    const qrImg = await pdf.embedPng(qrPng);
+
+    // Sélection de slots
+    const slots = SLOTS_TOPLEFT.filter((_, i) =>
+      onlyIdx === null ? true : i === Number(onlyIdx)
     );
 
-    // Vérifie la présence
-    try {
-      await fs.access(templatePath);
-    } catch {
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: "Template public/templates/planche-QR-code.pdf introuvable",
-        }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    for (const s of slots) {
+      const leftPt = mm(s.left_mm) * scaleX;
+      const topPt = mm(s.top_mm) * scaleY;
+      const wPt = mm(s.width_mm) * scaleX;
+      const hPt = mm(s.height_mm) * scaleY;
 
-    // Charge le PDF modèle
-    const templateBytes = await fs.readFile(templatePath);
-    const pdfDoc = await PDFDocument.load(templateBytes);
-    const page = pdfDoc.getPage(0);
+      // Conversion top-left (Canva) -> bottom-left (PDF)
+      const x = leftPt;
+      const y = ph - topPt - hPt;
 
-    // Génère un QR (1 seul réutilisé pour tous les encadrés)
-    const qrPngBuffer = generateQrPngBuffer(targetUrl, 10);
-    const qrImg = await pdfDoc.embedPng(qrPngBuffer);
+      // Masque blanc pour cacher le QR maquette en dessous
+      if (s.eraseUnder !== false) {
+        page.drawRectangle({
+          x,
+          y,
+          width: wPt,
+          height: hPt,
+          color: rgb(1, 1, 1),
+        });
+      }
 
-    // Dessine dans chaque encadré
-    for (const slot of SLOT_POSITIONS) {
-      const size = slot.size * FIT_RATIO;
-      const dx = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
-      const dy = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
+      // Debug : contour rouge
+      if (debug) {
+        page.drawRectangle({
+          x,
+          y,
+          width: wPt,
+          height: hPt,
+          borderWidth: 1,
+          borderColor: rgb(1, 0, 0),
+          color: undefined,
+        });
+      }
 
+      // Coller le QR
       page.drawImage(qrImg, {
-        x: slot.x + dx,
-        y: slot.y + dy,
-        width: size,
-        height: size,
+        x,
+        y,
+        width: wPt,
+        height: hPt,
       });
     }
 
-    // Petite signature discrète
-    page.drawText(`Ref: ${publicId}`, {
-      x: 16,
-      y: 16,
-      size: 8,
-      color: rgb(0.25, 0.25, 0.25),
-    });
-
-    // Sauvegarde & conversion type-safe
-    const pdfBytes = await pdfDoc.save();
-    const ab = uint8ToArrayBuffer(pdfBytes);
-
-    return new Response(ab, {
+    const bytes = await pdf.save();
+    const fileName = `stickers_${public_id}.pdf`;
+    return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="qr-sheet-${publicId}.pdf"`,
+        "Content-Disposition": `inline; filename="${fileName}"`,
         "Cache-Control": "no-store",
       },
     });
-  } catch (err: any) {
-    return new Response(
-      JSON.stringify({ ok: false, error: String(err?.message || err) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  } catch (e: any) {
+    console.error("[sticker-sheet]", e);
+    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
   }
 }
