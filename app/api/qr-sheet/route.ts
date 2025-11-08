@@ -1,301 +1,147 @@
 // app/api/qr-sheet/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-// ✅ use CJS require to avoid TS typing issue with qr-image
+import { PDFDocument, rgb } from "pdf-lib";
+import fs from "node:fs/promises";
+import path from "node:path";
+
+// ✅ CJS require pour éviter les erreurs d’import ESM
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const qrImage = require("qr-image") as any;
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Couleurs
- */
-const ORANGE = rgb(0.98, 0.51, 0.14);      // #FA8324 approché
-const ORANGE_DARK = rgb(0.92, 0.45, 0.10); // bande basse légèrement plus sombre
-const CREAM = rgb(0.98, 0.98, 0.96);       // fond crème du QR
-const BLACK = rgb(0, 0, 0);
-const WHITE = rgb(1, 1, 1);
+// ———————————————————————————————————————
+// Réglages
+// ———————————————————————————————————————
 
-/**
- * Helpers PDF
- */
-function mm(n: number) {
-  // 72 dpi • 1 in = 25.4 mm
-  return (n / 25.4) * 72;
-}
+// Essais de noms de modèle dans /public
+const TEMPLATE_CANDIDATES = [
+  "planche-QR-code -v3 (1).pdf",
+  "planche-QR-code-v3.pdf",
+];
 
-function roundedRect(page: any, opts: {
-  x: number; y: number; w: number; h: number;
-  r: number; fill?: any; stroke?: any; lineWidth?: number;
-}) {
-  const { x, y, w, h, r, fill, stroke, lineWidth = 1 } = opts;
-  const rr = Math.min(r, Math.min(w, h) / 2);
-
-  // centre des coins
-  const cx = x + rr, cy = y + rr;
-  const cx2 = x + w - rr, cy2 = y + h - rr;
-
-  // rectangles centraux
-  page.drawRectangle({ x: x + rr, y, width: w - 2 * rr, height: h, color: fill, borderColor: stroke, borderWidth: lineWidth });
-  page.drawRectangle({ x, y: y + rr, width: w, height: h - 2 * rr, color: fill, borderColor: stroke, borderWidth: lineWidth });
-
-  // 4 disques pour arrondis
-  page.drawCircle({ x: cx,  y: cy,  size: rr, color: fill, borderColor: stroke, borderWidth: lineWidth });
-  page.drawCircle({ x: cx2, y: cy,  size: rr, color: fill, borderColor: stroke, borderWidth: lineWidth });
-  page.drawCircle({ x: cx,  y: cy2, size: rr, color: fill, borderColor: stroke, borderWidth: lineWidth });
-  page.drawCircle({ x: cx2, y: cy2, size: rr, color: fill, borderColor: stroke, borderWidth: lineWidth });
+// Vérifie ref publique (5 chiffres)
+function isFiveDigits(v: unknown): v is string {
+  return typeof v === "string" && /^[0-9]{5}$/.test(v);
 }
 
 /**
- * Génère un PNG de QR (Buffer) via qr-image
+ * Génère un PNG Buffer de QR via qr-image
+ * @param text    contenu encodé dans le QR
+ * @param scale   facteur d’échelle (pixels par “module”)
  */
-function makeQrPng(url: string): Buffer {
-  // marge=0 car on encadre déjà avec un fond crème
-  const pngBuf = qrImage.imageSync(url, {
+function generateQrPngBuffer(text: string, scale = 6): Buffer {
+  // margin: 0 pour que le QR occupe vraiment la case blanche
+  // ec_level: 'M' = compromis robuste
+  return qrImage.imageSync(text, {
     type: "png",
     ec_level: "M",
     margin: 0,
+    size: scale,
   }) as Buffer;
-  return pngBuf;
 }
 
 /**
- * Dessine UNE étiquette au look “sticker orange”
- * tailles exprimées en points (72dpi)
+ * ⚠️ Positions mesurées pour ta planche (origine bas-gauche, en points PDF).
+ * Chaque slot = coin bas-gauche (x,y) + taille (carré).
+ * FIT_RATIO laisse un léger liseré pour ne pas toucher les traits des cadres.
  */
-async function drawSticker(opts: {
-  page: any; x: number; y: number; w: number; h: number;
-  scanUrl: string; font: any; smallFont: any;
-}) {
-  const { page, x, y, w, h, scanUrl, font, smallFont } = opts;
+const SLOT_POSITIONS: Array<{ x: number; y: number; size: number }> = [
+  { x: 378.254, y: 590.814, size: 113.386 },
+  { x: 447.791, y: 704.655, size: 113.386 },
+  { x:  33.532, y: 704.524, size: 113.386 },
+  { x: 171.524, y: 704.524, size: 113.386 },
+  { x: 309.658, y: 704.655, size: 113.386 },
+  { x: 188.057, y: 513.999, size: 115.126 },
+  { x: 276.750, y:  33.127, size: 116.220 },
+  { x: 433.744, y:  20.371, size: 141.732 },
+  { x: 174.817, y: 302.352, size: 141.732 },
+  { x:  19.217, y: 302.352, size: 141.732 },
+];
 
-  // Carte à coins arrondis
-  roundedRect(page, { x, y, w, h, r: mm(6), fill: ORANGE });
-
-  // Bande supérieure (titre)
-  const topH = h * 0.26;
-
-  // Titre
-  const title = "IF YOU FIND ME,\nPLEASE SCAN ME";
-  const titleSize = Math.min( mm(7.8), h * 0.075 );
-  const tMarginX = mm(8);
-  const tMarginY = mm(6);
-
-  const lines = title.split("\n");
-  let ty = y + h - tMarginY - titleSize;
-  for (const line of lines) {
-    page.drawText(line, {
-      x: x + tMarginX,
-      y: ty,
-      size: titleSize,
-      font,
-      color: WHITE,
-    });
-    ty -= titleSize + mm(1.5);
-  }
-
-  // Zone QR (fond crème)
-  const qrPad = mm(8);
-  const qrBoxX = x + qrPad;
-  const qrBoxW = w - qrPad * 2;
-  const qrBoxH = h * 0.45;
-  const qrBoxY = y + (h * 0.30);
-
-  roundedRect(page, {
-    x: qrBoxX,
-    y: qrBoxY,
-    w: qrBoxW,
-    h: qrBoxH,
-    r: mm(6),
-    fill: CREAM,
-  });
-
-  // QR lui-même
-  const qrPng = makeQrPng(scanUrl);
-  const qrImg = await page.doc.embedPng(qrPng);
-
-  // On garde un peu de marge intérieure
-  const innerMargin = mm(8);
-  const qrAvailW = qrBoxW - innerMargin * 2;
-  const qrAvailH = qrBoxH - innerMargin * 2;
-  const qrSize = Math.min(qrAvailW, qrAvailH);
-  const qrX = qrBoxX + (qrBoxW - qrSize) / 2;
-  const qrY = qrBoxY + (qrBoxH - qrSize) / 2;
-
-  page.drawImage(qrImg, {
-    x: qrX,
-    y: qrY,
-    width: qrSize,
-    height: qrSize,
-  });
-
-  // Bande basse (pictogramme + texte)
-  const bandH = h * 0.16;
-  roundedRect(page, { x, y, w, h: bandH, r: mm(6), fill: ORANGE_DARK });
-
-  // Bulle
-  const bubbleR = Math.min(bandH * 0.42, mm(12));
-  page.drawCircle({
-    x: x + mm(12),
-    y: y + bandH / 2,
-    size: bubbleR,
-    color: rgb(1, 0.85, 0.3),
-  });
-
-  // Texte bande basse
-  const foot = "TO SEND A MESSAGE\nTO THE OWNER";
-  const footSize = Math.min(mm(5.3), bandH * 0.28);
-  const fx = x + mm(26);
-  const fy = y + bandH / 2 + footSize * 0.45;
-
-  const footLines = foot.split("\n");
-  page.drawText(footLines[0], { x: fx, y: fy, size: footSize, font: smallFont, color: WHITE });
-  page.drawText(footLines[1], { x: fx, y: fy - (footSize + mm(1)), size: footSize, font: smallFont, color: WHITE });
-}
-
-/**
- * Fabrique une page A4 avec 4 formats :
- * - 90×130 mm (grand sticker)
- * - 54×85 mm (format étiquette bagage)
- * - 60×60 mm (carré laptop)
- * - 35×35 mm (mini pour clés / gourde)
- */
-async function makeSheet(scanUrl: string) {
-  const pdf = await PDFDocument.create();
-  const page = pdf.addPage([mm(210), mm(297)]); // A4 portrait
-  (page as any).doc = pdf; // petit “pont” pour embed depuis drawSticker
-
-  const font = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const smallFont = await pdf.embedFont(StandardFonts.HelveticaBold);
-
-  // Grille simple
-  const margin = mm(12);
-
-  // 1) Grand (90×130)
-  await drawSticker({
-    page,
-    x: margin,
-    y: page.getHeight() - margin - mm(130),
-    w: mm(90),
-    h: mm(130),
-    scanUrl,
-    font,
-    smallFont,
-  });
-
-  // 2) Luggage tag (54×85)
-  await drawSticker({
-    page,
-    x: margin + mm(100),
-    y: page.getHeight() - margin - mm(85),
-    w: mm(54),
-    h: mm(85),
-    scanUrl,
-    font,
-    smallFont,
-  });
-
-  // 3) Carré 60×60 (laptop)
-  await drawSticker({
-    page,
-    x: margin + mm(160),
-    y: page.getHeight() - margin - mm(60),
-    w: mm(60),
-    h: mm(60),
-    scanUrl,
-    font,
-    smallFont,
-  });
-
-  // 4) 2 minis 35×35
-  await drawSticker({
-    page,
-    x: margin + mm(100),
-    y: page.getHeight() - margin - mm(85) - mm(45),
-    w: mm(35),
-    h: mm(35),
-    scanUrl,
-    font,
-    smallFont,
-  });
-  await drawSticker({
-    page,
-    x: margin + mm(140),
-    y: page.getHeight() - margin - mm(85) - mm(45),
-    w: mm(35),
-    h: mm(35),
-    scanUrl,
-    font,
-    smallFont,
-  });
-
-  return await pdf.save();
-}
-
-/**
- * Base URL (dev/preprod/prod)
- */
-function getBaseUrl(req: NextRequest) {
-  const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  if (env) return env.replace(/\/+$/, "");
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-  return `${proto}://${host}`;
-}
+const FIT_RATIO = 0.94;
+const CENTER_IN_CELL = true;
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseAdmin();
-    if (!supabase) {
-      return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
+    const { searchParams } = new URL(req.url);
+    const publicId = searchParams.get("publicId");
+
+    if (!isFiveDigits(publicId)) {
+      return NextResponse.json(
+        { ok: false, error: "publicId doit être 5 chiffres" },
+        { status: 400 }
+      );
     }
 
-    const url = new URL(req.url);
-    const id = url.searchParams.get("id");
-    const publicIdParam = url.searchParams.get("public_id");
+    // URL cible encodée dans le QR — à adapter si besoin
+    const origin = req.nextUrl.origin;
+    const targetUrl = `${origin}/case/${publicId}`;
 
-    // Récupération du public_id (5 chiffres)
-    let public_id: string | null = publicIdParam;
-
-    if (!public_id) {
-      if (!id) {
-        return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
+    // Cherche le template dans /public
+    let templatePath: string | null = null;
+    for (const name of TEMPLATE_CANDIDATES) {
+      const p = path.join(process.cwd(), "public", name);
+      try {
+        await fs.access(p);
+        templatePath = p;
+        break;
+      } catch {
+        /* continue */
       }
-      const { data, error } = await supabase
-        .from("lost_items")
-        .select("public_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (error || !data?.public_id) {
-        return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
-      }
-      public_id = String(data.public_id);
+    }
+    if (!templatePath) {
+      return NextResponse.json(
+        { ok: false, error: "Template PDF introuvable dans /public" },
+        { status: 404 }
+      );
     }
 
-    if (!/^\d{5}$/.test(public_id)) {
-      return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
+    const templateBytes = await fs.readFile(templatePath);
+    const pdfDoc = await PDFDocument.load(templateBytes);
+    const page = pdfDoc.getPage(0);
+
+    // 1) Génère un seul PNG de QR (on le réutilise pour tous les slots)
+    //    Tu peux ajuster "scale" si jamais le rendu est trop flou (6–10)
+    const qrPngBuffer = generateQrPngBuffer(targetUrl, 10);
+    const qrImg = await pdfDoc.embedPng(qrPngBuffer);
+
+    // 2) Dessine le QR dans chaque encadré blanc
+    for (const slot of SLOT_POSITIONS) {
+      const size = slot.size * FIT_RATIO;
+      const dx = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
+      const dy = CENTER_IN_CELL ? (slot.size - size) / 2 : 0;
+
+      page.drawImage(qrImg, {
+        x: slot.x + dx,
+        y: slot.y + dy,
+        width: size,
+        height: size,
+      });
     }
 
-    // URL encodée dans le QR — page message (anonyme)
-    const base = getBaseUrl(req);
-    const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
+    // 3) Petite légende discrète (facultatif)
+    page.drawText(`Ref: ${publicId}`, {
+      x: 16,
+      y: 16,
+      size: 8,
+      color: rgb(0.2, 0.2, 0.2),
+    });
 
-    // Génération PDF
-    const bytes = await makeSheet(scanUrl);
-
-    const fileName = `reportlost_stickers_${public_id}.pdf`;
-    return new NextResponse(Buffer.from(bytes), {
+    const pdfBytes = await pdfDoc.save();
+    return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Disposition": `inline; filename="qr-sheet-${publicId}.pdf"`,
         "Cache-Control": "no-store",
       },
     });
   } catch (e: any) {
-    console.error("[qr-sheet] error:", e);
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: String(e?.message || e) },
+      { status: 500 }
+    );
   }
 }
