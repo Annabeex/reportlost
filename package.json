@@ -42,6 +42,7 @@
     "react-markdown": "^10.1.0",
     "react-qr-code": "^2.0.18",
     "react-simple-maps": "^3.0.0-beta.1",
+    "sharp": "^0.34.5",
     "stripe": "^18.2.1",
     "svg-pan-zoom": "^3.6.2",
     "tailwind-merge": "^3.3.1",
