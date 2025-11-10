@@ -274,6 +274,7 @@ export default function ReportForm({
       const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
 
       // utilitaire léger pour convertir "" -> null
+
 const toNull = (v: any) => (v === "" || v === undefined ? null : v);
 
 const payload = {
@@ -537,7 +538,7 @@ return true;
     alert("✅ Payment successful. Thank you for your contribution!");
   };
 
-  // ✅ envoi email “free submission” une seule fois
+  // ✅ envoi email “free submission” une seule fois (NOUVEAU CONTENU)
   const [freeEmailSent, setFreeEmailSent] = useState(false);
   useEffect(() => {
     const shouldSend =
@@ -560,45 +561,83 @@ return true;
           String(formData.report_id || "")
         );
 
-        const subject = "✅ Your report is published — upgrade anytime";
-        const text = `Hello ${formData.first_name || ""},
+        // 🔄 Nouveau modèle
+        const subject = "Your report is live — start the active search today";
 
-Your lost item report has been published on reportlost.org.
-
-What’s next:
-• Your report is now visible in our public database.
-• You can upgrade anytime to activate manual research and extended outreach.
-• Use the link in this email to manage your report.
-
-Your report details:
-- Item: ${formData.title || ""}
-- Date: ${formData.date || ""}
-- City: ${formData.city || ""}
-- Reference code: ${ref5}
-
-To upgrade later, open the confirmation email and click “Activate my search”.`;
-
-        // ✅ CTA remonté au-dessus de la liste + lien direct vers la page contribution avec rid
         const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
           String(formData.report_id || "")
         )}`;
 
+        // Preheader (affiché par certains clients)
+        const preheader =
+          "We’ll contact local lost-and-found desks and search large databases for you when you activate your search.";
+
+        const text = `Hello ${formData.first_name || ""},
+
+We’ve published your lost item report on reportlost.org.
+
+Item: ${formData.title || ""}
+Date: ${formData.date || ""}
+City: ${formData.city || ""}
+Reference code: ${ref5}
+
+Why activate your search now?
+In the first 48 hours, items move quickly between locations. When you activate, our team will:
+• Notify and follow up with local Lost & Found desks (transit, venues, and other likely locations) on your behalf.
+• Search across large databases and public listings relevant to your case.
+• Set up targeted alerts and outreach to increase your chances of being contacted if a match appears.
+
+Activate my search: ${contributeUrl}
+
+Included with “Maximum search”: prevention kit & secure stickers
+You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
+Each sticker routes finders to a private, dedicated address we host for you — so people can contact you
+without your personal email or phone appearing on the object.
+
+See what’s included: ${contributeUrl}
+
+You can manage or update your report any time using the link in this email.
+
+Thank you for using ReportLost — we’re here to help.
+— The ReportLost Team`;
+
         const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
+  <!-- Hidden preheader -->
+  <div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
+    ${preheader}
+  </div>
+
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Your report is published — upgrade anytime</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">Your report is live — start the active search today</p>
   </div>
 
   <div style="padding:20px;color:#111827;line-height:1.6">
     <p style="margin:0 0 12px">Hello <b>${formData.first_name || ""}</b>,</p>
 
-    <p style="margin:0 14px 16px">
-      Your lost item report has been published on
+    <p style="margin:0 0 12px">
+      We’ve published your lost item report on
       <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
 
-    <!-- CTA remonté juste ici -->
+    <ul style="margin:0 0 16px;padding-left:18px">
+      <li><b>Item:</b> ${formData.title || ""}</li>
+      <li><b>Date:</b> ${formData.date || ""}</li>
+      <li><b>City:</b> ${formData.city || ""}</li>
+      <li><b>Reference code:</b> ${ref5}</li>
+    </ul>
+
+    <p style="margin:14px 0 6px"><b>Why activate your search now?</b></p>
+    <p style="margin:0 0 10px">
+      In the first 48 hours, items move quickly between locations. When you activate, our team will:
+    </p>
+    <ul style="margin:0 0 18px;padding-left:18px">
+      <li>Notify and follow up with local Lost &amp; Found desks (transit, venues, and other likely locations) on your behalf.</li>
+      <li>Search across large databases and public listings relevant to your case.</li>
+      <li>Set up targeted alerts and outreach to increase your chances of being contacted if a match appears.</li>
+    </ul>
+
     <div style="margin:18px 0 22px;text-align:center">
       <a href="${contributeUrl}"
          style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
@@ -606,22 +645,20 @@ To upgrade later, open the confirmation email and click “Activate my search”
       </a>
     </div>
 
-    <p style="margin:0 0 10px"><b>What’s next</b></p>
-    <ul style="margin:0 0 16px;padding-left:18px">
-      <li>Your report is now visible in our public database.</li>
-      <li>You can upgrade anytime to activate manual research and outreach.</li>
-      <li>Use the link in this email to manage your report.</li>
-    </ul>
+    <p style="margin:18px 0 6px"><b>Included with “Maximum search”: prevention kit &amp; secure stickers</b></p>
+    <p style="margin:0 0 10px">
+      You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
+      Each sticker routes finders to a <b>private, dedicated address we host for you</b> — so people can contact you
+      <b>without your personal email or phone appearing on the object</b>. It’s safer, and it makes returns easier next time.
+    </p>
 
-    <p style="margin:0 0 8px"><b>Your report details</b></p>
-    <ul style="margin:0 16px 18px;padding-left:18px">
-      <li><b>Item:</b> ${formData.title || ""}</li>
-      <li><b>Date:</b> ${formData.date || ""}</li>
-      <li><b>City:</b> ${formData.city || ""}</li>
-      <li><b>Reference code:</b> ${ref5}</li>
-    </ul>
+    <p style="margin:0 0 18px;text-align:center">
+      <a href="${contributeUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
+    </p>
 
-    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+    <p style="margin:0 0 10px">You can manage or update your report any time using the link in this email.</p>
+
+    <p style="margin:18px 0 0;color:#6b7280">Thank you for using ReportLost — we’re here to help.<br/>— The ReportLost Team</p>
   </div>
 </div>`;
 
@@ -668,6 +705,15 @@ To upgrade later, open the confirmation email and click “Activate my search”
   const contributionUsd = Number(formData.contribution || 0);
   const amountCents = Math.max(100, Math.round(contributionUsd * 100));
 
+  // Helper pour lien "Activate my search" dans l'UI Step 5 (free)
+  const base =
+    (typeof window !== "undefined" && window.location.origin) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://reportlost.org";
+  const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
+    String(formData.report_id || "")
+  )}`;
+
   return (
     <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
       {step === 1 && (
@@ -707,13 +753,23 @@ To upgrade later, open the confirmation email and click “Activate my search”
               Thanks! Your report has been saved and published in our public database.
               You can upgrade to a higher assistance level anytime via the confirmation email we sent.
             </p>
-            <button
-              type="button"
-              onClick={handleBack}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
-            >
-              ← Back
-            </button>
+
+            {/* ✅ Bouton "Activate my search" vers la page de contribution */}
+            <div className="flex items-center gap-3 mt-4">
+              <a
+                href={contributeUrl}
+                className="inline-flex items-center px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 font-semibold"
+              >
+                Activate my search
+              </a>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+              >
+                ← Back
+              </button>
+            </div>
           </section>
         ) : (
           // ✅ Paiement si contribution > 0
