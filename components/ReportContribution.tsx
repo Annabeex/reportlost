@@ -45,7 +45,7 @@ function BulletIcon() {
 function TipGauge({
   value,
   setValue,
-  useHeartIcon = false, // ✅ icône 💚 si plan 1 (zéro)
+  useHeartIcon = false, // icône 💚 si plan 1 (zéro)
 }: {
   value: number;
   setValue: (n: number) => void;
@@ -100,7 +100,6 @@ function TipGauge({
         className="flex items-center gap-3 px-5 py-3"
         style={{ backgroundColor: LIGHT_GREEN_BG }}
       >
-        {/* ✅ cœur vert si plan 1, sinon icône levels */}
         {useHeartIcon ? (
           <span className="text-xl" aria-hidden>
             💚
@@ -127,7 +126,7 @@ function TipGauge({
           <strong className="text-green-800">
             Level {level} {level === 1 ? "(Standard)" : level === 2 ? "(Extended)" : "(Complete)"}:
           </strong>{" "}
-        {level === 1 ? (
+          {level === 1 ? (
             <>
               {messageIntro}
               <strong>{message}</strong>
@@ -252,10 +251,8 @@ export default function ReportContribution({
     [amount, contribution]
   );
 
-  // ✅ Prices updated to requested values: 0 / 12 / 25
   const PRICE = { 1: 0, 2: 12, 3: 25 } as const;
 
-  // Default: preselect plan 2
   const [step, setStep] = useState<"plans" | "tip">(initialStep ?? "plans");
   const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3>(initialPlan ?? 2);
   const [tip, setTip] = useState<number>(
@@ -300,7 +297,7 @@ export default function ReportContribution({
 
   const selectCard = (plan: 1 | 2 | 3) => setSelectedPlan(plan);
 
-  const showPlanHeader = selectedPlan !== 1; // ✅ cacher le titre si plan 1
+  const showPlanHeader = selectedPlan !== 1;
 
   return (
     <section className="px-3 sm:px-4 md:px-6">
@@ -328,7 +325,6 @@ export default function ReportContribution({
         <div className="rounded-2xl border border-green-200 overflow-hidden mb-4 bg-white">
           <div className="px-5 py-4 bg-white text-center">
             {selectedPlan === 1 ? (
-              // ✅ phrase spécifique avec cœur si plan 1 (zéro)
               <p className="text-[15px] text-gray-700">
                 Help us process every report with a small contribution <span aria-hidden>💚</span>
               </p>
@@ -343,7 +339,7 @@ export default function ReportContribution({
         {/* Step: Plans */}
         {step === "plans" && (
           <div className="grid gap-4">
-            {/* Plan 3 — Maximum search (TOP) */}
+            {/* Plan 3 — Maximum search (25$) — NOW MOST POPULAR */}
             <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -354,12 +350,15 @@ export default function ReportContribution({
                   alt="Maximum search"
                   className="w-5 h-5"
                 />
-                <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
+                <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: DARK_GREEN }}>
                   Maximum search
+                  <span className="text-xs font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                    🏅 Most popular
+                  </span>
                 </h3>
               </div>
+
               <div className="px-5 py-4">
-                {/* ✅ liste d’icônes level 3 (corrigée) */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {[
                     "information.svg",
@@ -379,7 +378,6 @@ export default function ReportContribution({
                     "locations.svg",
                     "x.svg",
                     "lostfoundservice.svg",
-                    "pinterest.svg",
                     "safari.png",
                     "big-data.svg",
                     "feedback.svg",
@@ -408,18 +406,25 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      {/* ✅ remplacer le début de la phrase */}
                       complete assistance. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution.
+                      Our AI continuously scans large databases for matches. Includes a printable PDF sheet of secure ID stickers.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <BulletIcon />
+                    <span className="text-gray-800">
+                      Recommended for valuable/sentimental items or when time matters.
                     </span>
                   </li>
                 </ul>
+
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-gray-700 font-medium">Search fee: $25</span>
                 </div>
               </div>
             </div>
 
-            {/* Plan 2 — Extended search (MIDDLE, preselected) */}
+            {/* Plan 2 — Extended search (12$) — BADGE REMOVED */}
             <div className={cardClass(selectedPlan === 2)} onClick={() => selectCard(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -430,12 +435,12 @@ export default function ReportContribution({
                   alt="Extended"
                   className="w-5 h-5"
                 />
-                <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: DARK_GREEN }}>
-                  Extended search <span className="text-xs font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">🏅 Most popular</span>
+                <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
+                  Extended search
                 </h3>
               </div>
+
               <div className="px-5 py-4">
-                {/* liste d’icônes (inchangée) */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {[
                     "meta.svg",
@@ -470,16 +475,19 @@ export default function ReportContribution({
                   </li>
                   <li className="flex items-start gap-3">
                     <BulletIcon />
-                    <span className="text-gray-800">Recommended for all types of lost items</span>
+                    <span className="text-gray-800">
+                      Recommended for all types of lost items
+                    </span>
                   </li>
                 </ul>
+
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-gray-700 font-medium">Search fee: $12</span>
                 </div>
               </div>
             </div>
 
-            {/* Plan 1 — Standard (BOTTOM) */}
+            {/* Plan 1 — Standard */}
             <div className={cardClass(selectedPlan === 1)} onClick={() => selectCard(1)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -494,6 +502,7 @@ export default function ReportContribution({
                   Standard (Free)
                 </h3>
               </div>
+
               <div className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {["information.svg", "google.svg"].map((icon) => (
@@ -514,6 +523,7 @@ export default function ReportContribution({
                     </span>
                   </li>
                 </ul>
+
                 <div className="mt-4 flex items-center justify-between">
                   <span className="text-gray-700 font-medium">Search fee: $0</span>
                 </div>
@@ -529,6 +539,7 @@ export default function ReportContribution({
               >
                 Back
               </button>
+
               <button
                 type="button"
                 onClick={proceed}
@@ -548,12 +559,13 @@ export default function ReportContribution({
         {/* Step: Tip */}
         {step === "tip" && (
           <div className="grid gap-4">
-            {/* ✅ cœur seulement si plan 1 */}
             <TipGauge value={tip} setValue={setTip} useHeartIcon={selectedPlan === 1} />
+
             <p className="flex items-center gap-2 text-sm text-gray-600 mt-1 ml-1">
               <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="Secure" className="w-4 h-4" />
               Payments are processed securely by Stripe.com — PCI DSS v4.0 certified.
             </p>
+
             <div className="mt-2 flex items-center justify-between">
               <button
                 type="button"
@@ -562,6 +574,7 @@ export default function ReportContribution({
               >
                 Back
               </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -569,6 +582,7 @@ export default function ReportContribution({
                   let level: 1 | 2 | 3 = 1;
                   if (contribution >= 15 && contribution < 25) level = 2;
                   else if (contribution >= 25) level = 3;
+
                   setFormData((prev: any) => ({
                     ...prev,
                     contribution,
