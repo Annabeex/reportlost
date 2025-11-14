@@ -539,7 +539,7 @@ return true;
   };
 
   // ✅ envoi email “free submission” une seule fois (NOUVEAU CONTENU)
-  const [freeEmailSent, setFreeEmailSent] = useState(false);
+const [freeEmailSent, setFreeEmailSent] = useState(false);
   useEffect(() => {
     const shouldSend =
       isClient &&
@@ -568,6 +568,9 @@ return true;
           String(formData.report_id || "")
         )}`;
 
+        // 🔗 Nouvelle URL pour la page "Maximum search"
+        const maximumUrl = `${base}/maximum-search`;
+
         // Preheader (affiché par certains clients)
         const preheader =
           "We’ll contact local lost-and-found desks and search large databases for you when you activate your search.";
@@ -594,14 +597,14 @@ You’ll receive a printable (PDF) with secure ID stickers for your everyday ite
 Each sticker routes finders to a private, dedicated address we host for you — so people can contact you
 without your personal email or phone appearing on the object.
 
-See what’s included: ${contributeUrl}
+See what’s included: ${maximumUrl}
 
 You can manage or update your report any time using the link in this email.
 
 Thank you for using ReportLost — we’re here to help.
 — The ReportLost Team`;
 
-        const html = `
+       const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
   <!-- Hidden preheader -->
   <div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
