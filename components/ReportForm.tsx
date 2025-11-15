@@ -39,7 +39,9 @@ function normalizeDbResult(resData: any) {
 async function sha1Hex(input: string): Promise<string> {
   const enc = new TextEncoder().encode(input);
   const buf = await crypto.subtle.digest("SHA-1", enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /** Ref à 5 chiffres à partir d’un id (même logique modulo que côté serveur) */
@@ -51,7 +53,10 @@ async function refCode5FromId(input: string): Promise<string> {
 }
 
 /** Priorité au public_id si 5 chiffres, sinon fallback depuis id */
-async function getReferenceCode(public_id: string | null | undefined, id: string): Promise<string> {
+async function getReferenceCode(
+  public_id: string | null | undefined,
+  id: string,
+): Promise<string> {
   if (public_id && /^\d{5}$/.test(public_id)) return public_id;
   return await refCode5FromId(id);
 }
@@ -77,7 +82,7 @@ export default function ReportForm({
   enforceValidation = false,
   onBeforeSubmit,
   onStepChange, // ✅ NEW
-  initialCategory,          // ✅ NEW
+  initialCategory, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -117,7 +122,7 @@ export default function ReportForm({
       transport_type_other: "",
 
       airline_name: "",
-      metro_line_known: null,   // boolean | null
+      metro_line_known: null, // boolean | null
       metro_line: "",
       train_company: "",
       rideshare_platform: "",
@@ -247,7 +252,9 @@ export default function ReportForm({
 
       const consentOK = !!(
         formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+        (formData.consent_contact &&
+          formData.consent_terms &&
+          formData.consent_authorized)
       );
 
       const normalizedCity = normalizeCityInput(formData.city);
@@ -257,7 +264,9 @@ export default function ReportForm({
       }
 
       const explicitState =
-        typeof formData.state_id === "string" ? formData.state_id.trim().toUpperCase() : "";
+        typeof formData.state_id === "string"
+          ? formData.state_id.trim().toUpperCase()
+          : "";
       const fallbackState =
         typeof normalizedCity.stateId === "string"
           ? normalizedCity.stateId.trim().toUpperCase()
@@ -271,217 +280,252 @@ export default function ReportForm({
         return false;
       }
 
-      const cityDisplay = formatCityWithState(normalizedCity.label, finalStateId);
+      const cityDisplay = formatCityWithState(
+        normalizedCity.label,
+        finalStateId,
+      );
 
       // utilitaire léger pour convertir "" -> null
+      const toNull = (v: any) =>
+        v === "" || v === undefined ? null : v;
 
-const toNull = (v: any) => (v === "" || v === undefined ? null : v);
+      const payload = {
+        // ✅ on envoie aussi la catégorie
+        category: toNull(
+          (formData.category || "").toString().trim().toLowerCase(),
+        ),
+        // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
+        source_station: toNull(
+          (formData.source_station || "").toString().trim().toLowerCase(),
+        ),
 
-const payload = {
-  // ✅ on envoie aussi la catégorie
-  category: toNull(
-    (formData.category || "").toString().trim().toLowerCase()
-  ),
-  // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
-  source_station: toNull(
-    (formData.source_station || "").toString().trim().toLowerCase()
-  ),
+        title: toNull(formData.title),
+        description: toNull(formData.description),
+        city: cityDisplay || null,
+        state_id: finalStateId,
+        date: toNull(formData.date),
+        time_slot: toNull(formData.time_slot),
+        loss_neighborhood: toNull(formData.loss_neighborhood),
+        loss_street: toNull(formData.loss_street),
 
-  title: toNull(formData.title),
-  description: toNull(formData.description),
-  city: cityDisplay || null,
-  state_id: finalStateId,
-  date: toNull(formData.date),
-  time_slot: toNull(formData.time_slot),
-  loss_neighborhood: toNull(formData.loss_neighborhood),
-  loss_street: toNull(formData.loss_street),
+        // === Nouveaux champs: contexte / transport / lieu ===
+        transport_answer: toNull(formData.transport_answer),
+        transport_type: toNull(formData.transport_type),
+        transport_type_other: toNull(formData.transport_type_other),
+        place_type: toNull(formData.place_type),
+        place_type_other: toNull(formData.place_type_other),
+        airline_name: toNull(formData.airline_name),
+        metro_line_known: formData.metro_line_known ?? null,
+        metro_line: toNull(formData.metro_line),
+        train_company: toNull(formData.train_company),
+        rideshare_platform: toNull(formData.rideshare_platform),
+        taxi_company: toNull(formData.taxi_company),
+        circumstances: toNull(formData.circumstances),
 
-  // === Nouveaux champs: contexte / transport / lieu ===
-  transport_answer: toNull(formData.transport_answer),
-  transport_type: toNull(formData.transport_type),
-  transport_type_other: toNull(formData.transport_type_other),
-  place_type: toNull(formData.place_type),
-  place_type_other: toNull(formData.place_type_other),
-  airline_name: toNull(formData.airline_name),
-  metro_line_known: formData.metro_line_known ?? null,
-  metro_line: toNull(formData.metro_line),
-  train_company: toNull(formData.train_company),
-  rideshare_platform: toNull(formData.rideshare_platform),
-  taxi_company: toNull(formData.taxi_company),
-  circumstances: toNull(formData.circumstances),
+        // === Trajet ===
+        departure_place: toNull(formData.departure_place),
+        arrival_place: toNull(formData.arrival_place),
+        departure_time: toNull(formData.departure_time),
+        arrival_time: toNull(formData.arrival_time),
+        travel_number: toNull(formData.travel_number),
 
-  // === Trajet ===
-  departure_place: toNull(formData.departure_place),
-  arrival_place: toNull(formData.arrival_place),
-  departure_time: toNull(formData.departure_time),
-  arrival_time: toNull(formData.arrival_time),
-  travel_number: toNull(formData.travel_number),
+        // === Contact ===
+        email: String(formData.email || ""),
+        first_name: String(formData.first_name || ""),
+        last_name: String(formData.last_name || ""),
+        phone: toNull(formData.phone),
+        address: toNull(formData.address),
 
-  // === Contact ===
-  email: String(formData.email || ""),
-  first_name: String(formData.first_name || ""),
-  last_name: String(formData.last_name || ""),
-  phone: toNull(formData.phone),
-  address: toNull(formData.address),
+        // === Préférences ===
+        preferred_contact_channel: toNull(
+          formData.preferred_contact_channel,
+        ),
+        research_report_opt_in: formData.research_report_opt_in ?? null,
 
-  // === Préférences ===
-  preferred_contact_channel: toNull(formData.preferred_contact_channel),
-  research_report_opt_in: formData.research_report_opt_in ?? null,
+        contribution: formData.contribution ?? 0,
+        consent: consentOK,
+        phone_description: toNull(phoneDescription),
+        object_photo,
+      };
 
-  contribution: formData.contribution ?? 0,
-  consent: consentOK,
-  phone_description: toNull(phoneDescription),
-  object_photo,
-};
+      const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
 
-const cleaned = onBeforeSubmit ? onBeforeSubmit(payload) : payload;
+      // compute fingerprint client-side so server and client fingerprint match
+      const fingerprint = await computeFingerprint(cleaned);
 
-// compute fingerprint client-side so server and client fingerprint match
-const fingerprint = await computeFingerprint(cleaned);
+      // ✅ On conserve le fingerprint, mais on NE BLOQUE PLUS le POST
+      try {
+        localStorage.setItem("rl_pending_fp", fingerprint);
+      } catch {
+        /* ignore */
+      }
 
-// ✅ éviter plusieurs POST identiques dans la même session
-try {
-  const prev = localStorage.getItem("rl_pending_fp");
-  if (prev === fingerprint) {
-    return true; // déjà en cours/traité côté client
-  }
-  localStorage.setItem("rl_pending_fp", fingerprint);
-} catch {}
+      // build body to POST to server endpoint
+      const bodyToSend: Record<string, any> = {
+        ...cleaned,
+        fingerprint,
+      };
 
-// build body to POST to server endpoint
-const bodyToSend: Record<string, any> = {
-  ...cleaned,
-  fingerprint,
-};
+      // include report_id if we already have one (update flow)
+      // ONLY send report_id if it *looks like a UUID*
+      if (formData.report_id) {
+        const candidate = String(formData.report_id).trim();
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(candidate)) {
+          bodyToSend.report_id = candidate;
+        } else if (formData.public_id) {
+          bodyToSend.report_public_id = String(formData.public_id);
+        } else {
+          console.warn(
+            "Not sending report_id because it is not a UUID:",
+            candidate,
+          );
+        }
+      }
 
-// include report_id if we already have one (update flow)
-// ONLY send report_id if it *looks like a UUID*
-if (formData.report_id) {
-  const candidate = String(formData.report_id).trim();
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(candidate)) {
-    bodyToSend.report_id = candidate;
-  } else if (formData.public_id) {
-    bodyToSend.report_public_id = String(formData.public_id);
-  } else {
-    console.warn("Not sending report_id because it is not a UUID:", candidate);
-  }
-}
+      // — avant l'appel fetch —
+      const controller = new AbortController();
+      const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-// — avant l'appel fetch —
-const controller = new AbortController();
-const timeoutMs = 20000; // ⬆️ passe de 8000 à 20000
-const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      let res: Response;
+      try {
+        res = await fetch("/api/save-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyToSend),
+          signal: controller.signal,
+        });
+      } catch (e: any) {
+        // 🔁 petit retry si c’est un AbortError
+        if (e?.name === "AbortError") {
+          const controller2 = new AbortController();
+          const retryTimeout = setTimeout(
+            () => controller2.abort(),
+            20000,
+          );
+          try {
+            res = await fetch("/api/save-report", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(bodyToSend),
+              signal: controller2.signal,
+            });
+          } finally {
+            clearTimeout(retryTimeout);
+          }
+        } else {
+          throw e;
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
 
-let res: Response;
-try {
-  res = await fetch("/api/save-report", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyToSend),
-    signal: controller.signal,
-  });
-} catch (e: any) {
-  // 🔁 petit retry si c’est un AbortError
-  if (e?.name === "AbortError") {
-    const controller2 = new AbortController();
-    const retryTimeout = setTimeout(() => controller2.abort(), 20000);
-    try {
-      res = await fetch("/api/save-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyToSend),
-        signal: controller2.signal,
-      });
-    } finally {
-      clearTimeout(retryTimeout);
-    }
-  } else {
-    throw e;
-  }
-} finally {
-  clearTimeout(timeout);
-}
+      // Diagnostic: if non-ok, lire et afficher le body (json ou texte)
+      if (!res!.ok) {
+        const contentType = res!.headers.get("content-type") || "";
+        let bodyText = "";
+        try {
+          if (contentType.includes("application/json")) {
+            const j = await res!.json().catch(() => null);
+            bodyText = JSON.stringify(j, null, 2);
+          } else {
+            bodyText = await res!.text().catch(() => "");
+          }
+        } catch (e) {
+          bodyText = String(e);
+        }
+        console.error("❌ /api/save-report non-ok:", res!.status, bodyText);
+        alert(
+          `Server error (${res!.status}): ${
+            bodyText || res!.statusText
+          }`,
+        );
+        return false;
+      }
 
-// Diagnostic: if non-ok, lire et afficher le body (json ou texte)
-if (!res.ok) {
-  const contentType = res.headers.get("content-type") || "";
-  let bodyText = "";
-  try {
-    if (contentType.includes("application/json")) {
-      const j = await res.json().catch(() => null);
-      bodyText = JSON.stringify(j, null, 2);
-    } else {
-      bodyText = await res.text().catch(() => "");
-    }
-  } catch (e) {
-    bodyText = String(e);
-  }
-  console.error("❌ /api/save-report non-ok:", res.status, bodyText);
-  alert(`Server error (${res.status}): ${bodyText || res.statusText}`);
-  return false;
-}
+      // Parse successful response; guard against invalid JSON
+      let jsonRes: any = null;
+      try {
+        jsonRes = await res!.json();
+      } catch (e) {
+        const txt = await res!.text().catch(() => "");
+        console.error(
+          "❌ /api/save-report returned invalid JSON:",
+          txt,
+          e,
+        );
+        alert(
+          "Server returned invalid response. Voir console pour détails.",
+        );
+        return false;
+      }
 
-// Parse successful response; guard against invalid JSON
-let jsonRes: any = null;
-try {
-  jsonRes = await res.json();
-} catch (e) {
-  const txt = await res.text().catch(() => "");
-  console.error("❌ /api/save-report returned invalid JSON:", txt, e);
-  alert("Server returned invalid response. Voir console pour détails.");
-  return false;
-}
+      if (!jsonRes || !jsonRes.ok) {
+        console.error("❌ /api/save-report error payload:", jsonRes);
+        alert(
+          `Unexpected database error: ${
+            jsonRes?.error || "unknown"
+          }`,
+        );
+        return false;
+      }
 
-if (!jsonRes || !jsonRes.ok) {
-  console.error("❌ /api/save-report error payload:", jsonRes);
-  alert(`Unexpected database error: ${jsonRes?.error || "unknown"}`);
-  return false;
-}
+      const returnedId = jsonRes.id?.toString?.() || "";
+      const returnedPublicId = jsonRes.public_id || "";
 
-const returnedId = jsonRes.id?.toString?.() || "";
-const returnedPublicId = jsonRes.public_id || "";
+      // persist to client state + localStorage
+      setFormData((p: any) => ({
+        ...p,
+        report_id: returnedId || p.report_id,
+        public_id: returnedPublicId || p.public_id,
+        report_public_id: returnedPublicId || p.report_public_id,
+        city: cityDisplay,
+        state_id: finalStateId,
+      }));
 
-// persist to client state + localStorage
-setFormData((p: any) => ({
-  ...p,
-  report_id: returnedId || p.report_id,
-  public_id: returnedPublicId || p.public_id,
-  report_public_id: returnedPublicId || p.report_public_id,
-  city: cityDisplay,
-  state_id: finalStateId,
-}));
+      try {
+        if (returnedId)
+          localStorage.setItem("reportlost_rid", returnedId);
+        if (returnedPublicId)
+          localStorage.setItem(
+            "reportlost_public_id",
+            returnedPublicId,
+          );
+      } catch {
+        /* ignore */
+      }
 
-try {
-  if (returnedId) localStorage.setItem("reportlost_rid", returnedId);
-  if (returnedPublicId) localStorage.setItem("reportlost_public_id", returnedPublicId);
-} catch {
-  /* ignore */
-}
-
-// === NOTE: pas de génération/redirect de slug ici.
-
-return true;
-
-       } catch (err: any) {
+      // === NOTE: pas de génération/redirect de slug ici.
+      return true;
+    } catch (err: any) {
       if (err?.name === "AbortError") {
         console.error("❌ /api/save-report timed out");
         alert("Request timed out. Please try again.");
         return false;
       }
-      console.error("💥 Unexpected error while saving report (client):", err);
-      alert(`Unexpected error. Voir la console pour plus d'infos: ${String(err?.message || err)}`);
+      console.error(
+        "💥 Unexpected error while saving report (client):",
+        err,
+      );
+      alert(
+        `Unexpected error. Voir la console pour plus d'infos: ${String(
+          err?.message || err,
+        )}`,
+      );
       return false;
     } finally {
       // ✅ relâche le verrou après un court délai pour éviter les rafales
       setTimeout(() => {
         submitLockRef.current = false;
         setIsSubmitting(false);
-        try { localStorage.removeItem("rl_pending_fp"); } catch {}
+        try {
+          localStorage.removeItem("rl_pending_fp");
+        } catch {}
       }, 3000);
     }
   };
-
 
   // --- navigation / step logic ---
   const handleNext = async () => {
@@ -517,7 +561,9 @@ return true;
 
       const consentOK = !!(
         formData.consent ||
-        (formData.consent_contact && formData.consent_terms && formData.consent_authorized)
+        (formData.consent_contact &&
+          formData.consent_terms &&
+          formData.consent_authorized)
       );
 
       if (!consentOK) {
@@ -529,7 +575,8 @@ return true;
       if (!success) return;
     }
 
-    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
+    if (formRef.current)
+      formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => s + 1);
   };
 
@@ -539,7 +586,7 @@ return true;
   };
 
   // ✅ envoi email “free submission” une seule fois (NOUVEAU CONTENU)
-const [freeEmailSent, setFreeEmailSent] = useState(false);
+  const [freeEmailSent, setFreeEmailSent] = useState(false);
   useEffect(() => {
     const shouldSend =
       isClient &&
@@ -554,28 +601,35 @@ const [freeEmailSent, setFreeEmailSent] = useState(false);
       try {
         const base =
           process.env.NEXT_PUBLIC_SITE_URL ||
-          (typeof window !== "undefined" ? window.location.origin : "https://reportlost.org");
+          (typeof window !== "undefined"
+            ? window.location.origin
+            : "https://reportlost.org");
 
         const ref5 = await getReferenceCode(
           String(formData.report_public_id || formData.public_id || ""),
-          String(formData.report_id || "")
+          String(formData.report_id || ""),
         );
 
         // 🔄 Nouveau modèle
-        const subject = "Your report is live — start the active search today";
+        const subject =
+          "Your report is live — start the active search today";
 
-        const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
-          String(formData.report_id || "")
-        )}`;
+        const ridForUrl = encodeURIComponent(
+          String(formData.report_id || ""),
+        );
 
-        // 🔗 Nouvelle URL pour la page "Maximum search"
-        const maximumUrl = `${base}/maximum-search`;
+        const contributeUrl = `${base}/report?go=contribute&rid=${ridForUrl}`;
+
+        // 🔗 Nouvelle URL pour la page "Maximum search" (avec rid)
+        const maximumUrl = `${base}/maximum-search?rid=${ridForUrl}`;
 
         // Preheader (affiché par certains clients)
         const preheader =
           "We’ll contact local lost-and-found desks and search large databases for you when you activate your search.";
 
-        const text = `Hello ${formData.first_name || ""},
+        const text = `Hello ${
+          formData.first_name || ""
+        },
 
 We’ve published your lost item report on reportlost.org.
 
@@ -604,7 +658,7 @@ You can manage or update your report any time using the link in this email.
 Thank you for using ReportLost — we’re here to help.
 — The ReportLost Team`;
 
-       const html = `
+        const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
   <!-- Hidden preheader -->
   <div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
@@ -656,7 +710,7 @@ Thank you for using ReportLost — we’re here to help.
     </p>
 
     <p style="margin:0 0 18px;text-align:center">
-      <a href="${contributeUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
+      <a href="${maximumUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
     </p>
 
     <p style="margin:0 0 10px">You can manage or update your report any time using the link in this email.</p>
@@ -682,7 +736,9 @@ Thank you for using ReportLost — we’re here to help.
             kind: "publication", // ✅ explicite : ce n’est PAS un follow-up manuel
           }),
           signal: controller.signal,
-        }).catch(() => { /* on ne bloque pas l’UX si l’envoi échoue */ });
+        }).catch(() => {
+          /* on ne bloque pas l’UX si l’envoi échoue */
+        });
 
         clearTimeout(t);
         setFreeEmailSent(true);
@@ -714,13 +770,20 @@ Thank you for using ReportLost — we’re here to help.
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://reportlost.org";
   const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
-    String(formData.report_id || "")
+    String(formData.report_id || ""),
   )}`;
 
   return (
-    <main ref={formRef} className="w-full min-h-screen px-4 py-6 space-y-4">
+    <main
+      ref={formRef}
+      className="w-full min-h-screen px-4 py-6 space-y-4"
+    >
       {step === 1 && (
-        <ReportFormStep1 formData={formData} onChange={handleChange} onNext={handleNext} />
+        <ReportFormStep1
+          formData={formData}
+          onChange={handleChange}
+          onNext={handleNext}
+        />
       )}
 
       {step === 2 && (
@@ -730,12 +793,16 @@ Thank you for using ReportLost — we’re here to help.
           onChange={handleChange}
           onNext={handleNext}
           onBack={handleBack}
-          isSubmitting={isSubmitting}   // ✅ passe l’état à Step2
+          isSubmitting={isSubmitting} // ✅ passe l’état à Step2
         />
       )}
 
       {step === 3 && (
-        <WhatHappensNext formData={formData} onNext={handleNext} onBack={handleBack} />
+        <WhatHappensNext
+          formData={formData}
+          onNext={handleNext}
+          onBack={handleBack}
+        />
       )}
 
       {step === 4 && (
@@ -747,14 +814,18 @@ Thank you for using ReportLost — we’re here to help.
         />
       )}
 
-      {step === 5 && (
-        Number(formData.contribution) <= 0 || formData?.paymentRequired === false ? (
+      {step === 5 &&
+        (Number(formData.contribution) <= 0 ||
+        formData?.paymentRequired === false ? (
           // ✅ Pas de paiement si 0 : message de confirmation + (email envoyé par l’effet au-dessus)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-            <h2 className="text-2xl font-bold mb-4">Your report is published</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Your report is published
+            </h2>
             <p className="text-gray-700 mb-4">
-              Thanks! Your report has been saved and published in our public database.
-              You can upgrade to a higher assistance level anytime via the confirmation email we sent.
+              Thanks! Your report has been saved and published in our public
+              database. You can upgrade to a higher assistance level anytime via
+              the confirmation email we sent.
             </p>
 
             {/* ✅ Bouton "Activate my search" vers la page de contribution */}
@@ -777,7 +848,9 @@ Thank you for using ReportLost — we’re here to help.
         ) : (
           // ✅ Paiement si contribution > 0
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-            <h2 className="text-2xl font-bold mb-4">Activate your search</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Activate your search
+            </h2>
             <Elements stripe={stripePromise}>
               <CheckoutForm
                 amount={Number(formData.contribution || 0)}
@@ -796,8 +869,7 @@ Thank you for using ReportLost — we’re here to help.
               />
             </Elements>
           </section>
-        )
-      )}
+        ))}
     </main>
   );
 }
