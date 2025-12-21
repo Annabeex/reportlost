@@ -23,7 +23,7 @@ import { walletSpec } from "./wallet";
 import { keysSpec } from "./keys";
 import { jewelrySpec } from "./jewelry";
 import { glassesSpec } from "./glasses";
-import { electronicDevicesSpec } from "./Electronic-devices";
+import { electronicDevicesSpec } from "./electronic-devices";
 import { phoneSpec } from "./phone";
 import { documentsSpec } from "./documents";
 import { clothesSpec } from "./clothes";
