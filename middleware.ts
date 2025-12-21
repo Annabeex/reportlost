@@ -13,7 +13,7 @@ export const config = {
     "/api/admin/:path*",
     "/api/stations/update",
 
-    // pages case (déjà noindex mais on protège l’édition)
+    // pages case (lecture publique OK, mais on protège l’édition ?edit=1)
     "/case/:path*",
   ],
 };
@@ -43,7 +43,6 @@ function requireBasicAuth(req: NextRequest) {
   }
 
   const [login, password] = decoded.split(":");
-
   if (login !== user || password !== pass) {
     return new Response("Unauthorized", {
       status: 401,
@@ -51,11 +50,11 @@ function requireBasicAuth(req: NextRequest) {
     });
   }
 
-  return null; // auth OK
+  return null;
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, searchParams } = req.nextUrl;
 
   // --------------------------------------------------
   // 1) PROTECTION ADMIN (UI + API sensibles)
@@ -72,10 +71,18 @@ export function middleware(req: NextRequest) {
   }
 
   // --------------------------------------------------
-  // 2) Pages case : lecture publique OK,
-  //    édition déjà protégée côté page (?edit=1)
+  // 2) Protection édition des /case (uniquement si ?edit=1|true|yes)
+  //    Lecture publique OK.
   // --------------------------------------------------
   if (pathname.startsWith("/case")) {
+    const edit = (searchParams.get("edit") || "").toLowerCase();
+    const isEdit = ["1", "true", "yes"].includes(edit);
+
+    if (isEdit) {
+      const res = requireBasicAuth(req);
+      if (res) return res;
+    }
+
     return NextResponse.next();
   }
 
@@ -100,8 +107,5 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // --------------------------------------------------
-  // 4) Public par défaut
-  // --------------------------------------------------
   return NextResponse.next();
 }
