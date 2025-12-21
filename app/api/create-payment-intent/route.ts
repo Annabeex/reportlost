@@ -1,74 +1,97 @@
+// app/api/create-payment-intent/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-export const runtime = "nodejs";          // Stripe nécessite Node runtime
-export const dynamic = "force-dynamic";   // pas de mise en cache de route
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY!;
+if (!stripeKey) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+
 const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" as any });
 
-// Limites de sécurité côté serveur
-const MIN_AMOUNT_USD = 100;    // $1.00
-const MAX_AMOUNT_USD = 50000;  // $500.00
-const ALLOWED_CURRENCY = new Set(["usd"]);
+// 🔐 Protection
+const PAYMENT_API_KEY = (process.env.PAYMENT_API_KEY || "").trim();
+const PAYMENT_ALLOWED_ORIGINS = (process.env.PAYMENT_ALLOWED_ORIGINS || "").trim();
+// Exemple: PAYMENT_ALLOWED_ORIGINS="https://reportlost.org,https://www.reportlost.org"
 
-// ---------- CORS helpers ----------
 function getAllowedOrigins(): string[] {
-  const env = (process.env.PAYMENT_ALLOWED_ORIGINS || "").trim();
-  if (env) {
-    return env.split(",").map(s => s.trim()).filter(Boolean);
+  if (PAYMENT_ALLOWED_ORIGINS) {
+    return PAYMENT_ALLOWED_ORIGINS
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   const site = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  return site ? [site] : [];
+  return site ? [site] : ["https://reportlost.org"];
 }
 
 function getCorsOrigin(req: NextRequest): string | null {
   const origin = req.headers.get("origin");
   if (!origin) return null;
+
   const allowed = getAllowedOrigins();
-  if (!allowed.length) return origin;
   return allowed.includes(origin) ? origin : "null";
 }
 
-// ---------- JSON helper ----------
+function hasValidPaymentKey(req: NextRequest): boolean {
+  // Si PAYMENT_API_KEY n'est pas défini, la route reste ouverte (pas recommandé).
+  if (!PAYMENT_API_KEY) return true;
+
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) return false;
+
+  const token = auth.slice("Bearer ".length).trim();
+  return token === PAYMENT_API_KEY;
+}
+
+// Limites de sécurité côté serveur
+const MIN_AMOUNT_USD = 100; // $1.00
+const MAX_AMOUNT_USD = 50000; // $500.00
+const ALLOWED_CURRENCY = new Set(["usd"]);
+
 function json(data: any, init?: ResponseInit, origin?: string | null) {
   const res = NextResponse.json(data, init);
   res.headers.set("Cache-Control", "no-store");
+
+  // CORS (si origin non fourni, on n'ajoute rien)
   if (origin) {
     res.headers.set("Access-Control-Allow-Origin", origin);
+    res.headers.set("Vary", "Origin");
   }
-  res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Idempotency-Key"
-  );
+
   return res;
 }
 
-// ---------- OPTIONS (preflight) ----------
 export async function OPTIONS(req: NextRequest) {
   const origin = getCorsOrigin(req);
+
   return new Response(null, {
     status: 204,
     headers: {
-      ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
+      ...(origin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {}),
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Idempotency-Key",
+      "Access-Control-Allow-Headers": "Content-Type, Idempotency-Key, Authorization",
       "Cache-Control": "no-store",
     },
   });
 }
 
-// ---------- POST ----------
 export async function POST(req: NextRequest) {
   const origin = getCorsOrigin(req);
 
+  // 🔐 Auth
+  if (!hasValidPaymentKey(req)) {
+    return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
+  }
+
   try {
-    // Vérifie le Content-Type
     const ct = req.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
       return json(
-        { error: "Content-Type must be application/json" },
+        { ok: false, error: "Content-Type must be application/json" },
         { status: 415 },
         origin
       );
@@ -83,22 +106,23 @@ export async function POST(req: NextRequest) {
     } | null;
 
     if (!body) {
-      return json({ error: "Invalid JSON body" }, { status: 400 }, origin);
+      return json({ ok: false, error: "Invalid JSON body" }, { status: 400 }, origin);
     }
 
-    // --- Validation du montant ---
+    // --- Validation montant ---
     const numericAmount = Number(body.amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      return json({ error: "Invalid amount" }, { status: 400 }, origin);
+      return json({ ok: false, error: "Invalid amount" }, { status: 400 }, origin);
     }
 
     const amountInCents = Math.round(numericAmount * 100);
     if (amountInCents < MIN_AMOUNT_USD || amountInCents > MAX_AMOUNT_USD) {
       return json(
         {
-          error: `Amount must be between ${(MIN_AMOUNT_USD / 100).toFixed(
+          ok: false,
+          error: `Amount must be between ${(MIN_AMOUNT_USD / 100).toFixed(2)} and ${(MAX_AMOUNT_USD / 100).toFixed(
             2
-          )} and ${(MAX_AMOUNT_USD / 100).toFixed(2)} USD`,
+          )} USD`,
         },
         { status: 400 },
         origin
@@ -108,29 +132,28 @@ export async function POST(req: NextRequest) {
     // --- Devise ---
     const currency = (body.currency ?? "usd").toLowerCase();
     if (!ALLOWED_CURRENCY.has(currency)) {
-      return json({ error: "Unsupported currency" }, { status: 400 }, origin);
+      return json({ ok: false, error: "Unsupported currency" }, { status: 400 }, origin);
     }
 
     // --- Idempotency ---
-    const clientIdem = req.headers.get("Idempotency-Key") || undefined;
+    // Stripe attend "idempotencyKey" via l'option de requête.
+    // On récupère le header de façon robuste (minuscule + forme canonique).
+    const clientIdem =
+      req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key") || undefined;
+
     const fallbackIdem =
-      body.reportId != null
-        ? `report-${String(body.reportId)}-${amountInCents}-${currency}`
-        : undefined;
+      body.reportId != null ? `report-${String(body.reportId)}-${amountInCents}-${currency}` : undefined;
 
     const idempotencyKey = clientIdem ?? fallbackIdem;
 
     // --- Description & metadata ---
     const description =
       body.description?.slice(0, 255) ||
-      (body.reportId
-        ? `ReportLost contribution for report #${body.reportId}`
-        : "ReportLost contribution");
+      (body.reportId ? `ReportLost contribution for report #${body.reportId}` : "ReportLost contribution");
 
     const metadata: Record<string, string> = {};
     if (body.reportId != null) metadata.report_id = String(body.reportId);
-    if (body.reportPublicId)
-      metadata.report_public_id = String(body.reportPublicId);
+    if (body.reportPublicId) metadata.report_public_id = String(body.reportPublicId);
 
     const paymentIntent = await stripe.paymentIntents.create(
       {
@@ -145,27 +168,21 @@ export async function POST(req: NextRequest) {
 
     return json(
       {
+        ok: true,
         id: paymentIntent.id,
-        clientSecret: paymentIntent.client_secret,
+        clientSecret: paymentIntent.client_secret, // nécessaire côté client
       },
       { status: 200 },
       origin
     );
   } catch (err: any) {
-    if (err?.type?.startsWith("Stripe")) {
+    // Normalisation des erreurs Stripe
+    if (err && typeof err === "object" && String(err.type || "").startsWith("Stripe")) {
       console.error("Stripe error:", err);
-      return json(
-        { error: err.message ?? "Stripe error" },
-        { status: 400 },
-        origin
-      );
+      return json({ ok: false, error: err.message ?? "Stripe error" }, { status: 400 }, origin);
     }
 
     console.error("Unexpected error (create-payment-intent):", err);
-    return json(
-      { error: "Unexpected server error" },
-      { status: 500 },
-      origin
-    );
+    return json({ ok: false, error: "Unexpected server error" }, { status: 500 }, origin);
   }
 }
