@@ -33,10 +33,13 @@ async function sendMailViaApi(
 ) {
   try {
     const base = getBaseUrl(req);
+    const mailApiKey = process.env.MAIL_API_KEY;
     const res = await fetch(`${base}/api/send-mail`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+   headers: {
+        "Content-Type": "application/json",
+        ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
+      },      body: JSON.stringify(payload),
       keepalive: true,
     });
     return res.ok;

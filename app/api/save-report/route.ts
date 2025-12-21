@@ -48,6 +48,7 @@ function computeFingerprint(obj: {
   return crypto.createHash("sha1").update(raw).digest("hex");
 }
 
+
 /* --- base URL helper (works in local / preview / prod) --- */
 function getBaseUrl(req: NextRequest): string {
   const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
@@ -71,9 +72,13 @@ async function sendMailViaApi(
 ) {
   try {
     const base = getBaseUrl(req);
+    const mailApiKey = process.env.MAIL_API_KEY;
     const reqFetch = fetch(`${base}/api/send-mail`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
+      },
       body: JSON.stringify(payload),
       keepalive: true,
     });
@@ -99,6 +104,7 @@ async function triggerSlugGeneration(req: NextRequest, id: string) {
     });
   } catch (e) {
     console.warn("generate-report-slug failed (ignored):", e);
+
   }
 }
 

@@ -5,23 +5,91 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * ENV à ajouter (local + Vercel) :
+ * - MAIL_API_KEY=une_chaine_longue_random_de_40+_caracteres
+ * - MAIL_ALLOWED_ORIGINS=https://reportlost.org,https://www.reportlost.org (optionnel)
+ * - MAIL_RATE_LIMIT_PER_HOUR=30 (optionnel)
+ */
+const MAIL_API_KEY = (process.env.MAIL_API_KEY || "").trim();
+const MAIL_ALLOWED_ORIGINS = (process.env.MAIL_ALLOWED_ORIGINS || "").trim();
+const MAIL_RATE_LIMIT_PER_HOUR = Number(process.env.MAIL_RATE_LIMIT_PER_HOUR || 30);
+
+type RateState = { count: number; resetAt: number };
+const rateLimits = new Map<string, RateState>();
+
+function getAllowedOrigins(): string[] {
+  if (MAIL_ALLOWED_ORIGINS) {
+    return MAIL_ALLOWED_ORIGINS
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  return site ? [site] : ["https://reportlost.org", "https://www.reportlost.org"];
+}
+
+function getCorsOrigin(req: NextRequest): string | null {
+  const origin = req.headers.get("origin");
+  if (!origin) return null;
+
+  const allowed = getAllowedOrigins();
+  // si on a une liste, on ne renvoie l'origin que si autorisé
+  if (allowed.length) return allowed.includes(origin) ? origin : "null";
+  return origin;
+}
+
+function getRequestIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || "unknown";
+}
+
+function isRateLimited(req: NextRequest): boolean {
+  if (!Number.isFinite(MAIL_RATE_LIMIT_PER_HOUR) || MAIL_RATE_LIMIT_PER_HOUR <= 0) return false;
+
+  const now = Date.now();
+  const key = getRequestIp(req);
+  const state = rateLimits.get(key);
+
+  if (!state || now > state.resetAt) {
+    rateLimits.set(key, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    return false;
+  }
+
+  if (state.count >= MAIL_RATE_LIMIT_PER_HOUR) return true;
+  state.count += 1;
+  return false;
+}
+
+function hasValidMailKey(req: NextRequest): boolean {
+  // si tu n'as pas défini MAIL_API_KEY (pas recommandé en prod), on laisse passer
+  if (!MAIL_API_KEY) return true;
+
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length).trim();
+  return token === MAIL_API_KEY;
+}
+
 /* ---------- Helpers JSON + CORS ---------- */
-function json(data: any, init?: ResponseInit) {
+function json(data: any, init?: ResponseInit, origin?: string | null) {
   const res = NextResponse.json(data, init);
   res.headers.set("Cache-Control", "no-store");
-  res.headers.set("Access-Control-Allow-Origin", "*");
+  if (origin) res.headers.set("Access-Control-Allow-Origin", origin);
   res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   return res;
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(req: NextRequest) {
+  const origin = getCorsOrigin(req);
   return new Response(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Cache-Control": "no-store",
     },
   });
@@ -45,9 +113,8 @@ function getTransporter(): Transporter {
     cachedTransporter = nodemailer.createTransport({
       host: smtpHostRaw,
       port: smtpPort,
-      secure: smtpPort === 465, // 465 = TLS implicite
+      secure: smtpPort === 465,
       auth: { user: smtpUser, pass: smtpPass },
-      // ⏱️ timeouts relevés à 20s
       connectionTimeout: 20_000,
       socketTimeout: 20_000,
       greetingTimeout: 20_000,
@@ -56,7 +123,7 @@ function getTransporter(): Transporter {
     return cachedTransporter;
   }
 
-  // 2) Fallback Zoho (ancienne config)
+  // 2) Fallback Zoho
   const zohoUser = process.env.ZOHO_USER;
   const zohoPass = process.env.ZOHO_PASS;
   if (zohoUser && zohoPass) {
@@ -75,16 +142,11 @@ function getTransporter(): Transporter {
 
   // 3) Dev-only: mock transport JSON
   if (process.env.NODE_ENV !== "production") {
-    cachedTransporter = nodemailer.createTransport({
-      jsonTransport: true,
-    });
-    console.warn(
-      "[mail] No valid SMTP configured; using jsonTransport (dev only, no real email sent)."
-    );
+    cachedTransporter = nodemailer.createTransport({ jsonTransport: true });
+    console.warn("[mail] No valid SMTP configured; using jsonTransport (dev only).");
     return cachedTransporter;
   }
 
-  // 4) Prod sans SMTP valide
   throw new Error(
     "Missing valid SMTP credentials. Provide non-local SMTP_HOST + SMTP_USER + SMTP_PASS, or ZOHO_USER + ZOHO_PASS."
   );
@@ -112,10 +174,22 @@ function normalizeToList(input?: string | string[]): string[] {
 
 /* ---------- Handler ---------- */
 export async function POST(req: NextRequest) {
+  const origin = getCorsOrigin(req);
+
+  // 1) Auth header obligatoire (si MAIL_API_KEY défini)
+  if (!hasValidMailKey(req)) {
+    return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
+  }
+
+  // 2) Rate limit par IP
+  if (isRateLimited(req)) {
+    return json({ ok: false, error: "Rate limit exceeded" }, { status: 429 }, origin);
+  }
+
   try {
     const ct = req.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
-      return json({ ok: false, error: "Content-Type must be application/json" }, { status: 415 });
+      return json({ ok: false, error: "Content-Type must be application/json" }, { status: 415 }, origin);
     }
 
     const body = (await req.json().catch(() => null)) as {
@@ -125,11 +199,11 @@ export async function POST(req: NextRequest) {
       html?: string;
       replyTo?: string;
       fromName?: string;
-      publicId?: string | number; // ex "12345" ou 12345
-      kind?: "followup" | string; // follow-up manuel => flag en base
+      publicId?: string | number;
+      kind?: "followup" | string;
     } | null;
 
-    if (!body) return json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    if (!body) return json({ ok: false, error: "Invalid JSON body" }, { status: 400 }, origin);
 
     const toList = normalizeToList(body.to);
     const subject = body.subject ? sanitizeHeader(body.subject) : "";
@@ -137,14 +211,13 @@ export async function POST(req: NextRequest) {
     const html = body.html ? String(body.html) : undefined;
 
     if (!toList.length || !subject || !text) {
-      return json({ ok: false, error: "Missing fields: to, subject, text" }, { status: 400 });
+      return json({ ok: false, error: "Missing fields: to, subject, text" }, { status: 400 }, origin);
     }
     if (subject.length > 200) {
-      return json({ ok: false, error: "Subject too long" }, { status: 400 });
+      return json({ ok: false, error: "Subject too long" }, { status: 400 }, origin);
     }
 
-    // From / Reply-To
-    const mailFromEnv = process.env.MAIL_FROM; // ex: "ReportLost <noreply@reportlost.org>"
+    const mailFromEnv = process.env.MAIL_FROM;
     const smtpUser = process.env.SMTP_USER || process.env.ZOHO_USER || "";
     const fromName = sanitizeHeader(body.fromName || "ReportLost");
     const from =
@@ -154,7 +227,6 @@ export async function POST(req: NextRequest) {
 
     const transporter = getTransporter();
 
-    // Envoi
     const info = await transporter.sendMail({
       from,
       to: toList.join(", "),
@@ -164,10 +236,10 @@ export async function POST(req: NextRequest) {
       ...(replyTo ? { replyTo } : {}),
     });
 
-    // jsonTransport retourne le message dans info.message
     if ((transporter as any).options?.jsonTransport) {
       try {
-        const parsed = typeof (info as any).message === "string" ? JSON.parse((info as any).message) : info;
+        const parsed =
+          typeof (info as any).message === "string" ? JSON.parse((info as any).message) : info;
         console.log("📧 [DEV] Email (jsonTransport):", JSON.stringify(parsed, null, 2));
       } catch {
         console.log("📧 [DEV] Email (jsonTransport):", info);
@@ -184,7 +256,6 @@ export async function POST(req: NextRequest) {
           const pidRaw = String(body.publicId);
           const pid = /^\d+$/.test(pidRaw) ? Number(pidRaw) : pidRaw;
 
-          // Tentative 1: nouvelles colonnes *_bool
           let { error } = await supabase
             .from("lost_items")
             .update({
@@ -196,7 +267,6 @@ export async function POST(req: NextRequest) {
 
           if (error) {
             console.warn("followup flag update (bool) failed, retry legacy:", error?.message || error);
-            // Tentative 2: anciennes colonnes (sans _bool)
             const r2 = await supabase
               .from("lost_items")
               .update({
@@ -205,6 +275,7 @@ export async function POST(req: NextRequest) {
                 followup_email_to: toList.join(", "),
               })
               .eq("public_id", pid);
+
             if (r2.error) {
               console.warn("followup flag update (legacy) failed:", r2.error?.message || r2.error);
             } else {
@@ -220,23 +291,20 @@ export async function POST(req: NextRequest) {
         console.warn("send-mail: followup flagging threw", e);
       }
     } else {
-      // Autres types d’emails (publication/receipt/internal_alert, etc.) : pas de flag spécifique ici.
       console.log("ℹ️ Email sent (no follow-up flagging). kind:", body.kind || "none");
     }
 
-    return json(
-      { ok: true, messageId: (info as any).messageId || "dev-json-transport" },
-      { status: 200 }
-    );
+    return json({ ok: true, messageId: (info as any).messageId || "dev-json-transport" }, { status: 200 }, origin);
   } catch (err: any) {
     if (err?.code || err?.responseCode) {
       console.error("SMTP error:", err);
       return json(
         { ok: false, error: "SMTP upstream error", code: err.code ?? err.responseCode },
-        { status: 502 }
+        { status: 502 },
+        origin
       );
     }
     console.error("Unexpected mail error:", err);
-    return json({ ok: false, error: "Unexpected server error" }, { status: 500 });
+    return json({ ok: false, error: "Unexpected server error" }, { status: 500 }, origin);
   }
 }

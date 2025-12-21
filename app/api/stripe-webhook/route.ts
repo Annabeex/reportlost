@@ -189,17 +189,23 @@ Thank you for using ReportLost.`;
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000);
 
-            const res = await fetch(`${base}/api/send-mail`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: row.email,
-                subject,
-                text,
-                html,
-              }),
-              signal: controller.signal,
-            });
+       const mailApiKey = process.env.MAIL_API_KEY;
+
+const res = await fetch(`${base}/api/send-mail`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
+  },
+  body: JSON.stringify({
+    to: row.email,
+    subject,
+    text,
+    html,
+  }),
+  signal: controller.signal,
+});
+
 
             clearTimeout(timeout);
 
