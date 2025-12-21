@@ -13,17 +13,13 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
  */
 export async function generateStaticParams() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    // ceci apparaîtra dans les Build Logs Vercel
-    console.warn(
-      "[generateStaticParams] Missing Supabase env vars at build time. Returning empty params."
-    );
+    console.warn("[generateStaticParams] Missing Supabase env vars at build time. Returning empty params.");
     return [];
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   try {
-    // limite configurable pour tests / éviter builds trop longs
     const { data, error } = await supabase
       .from("us_cities")
       .select("city_ascii, state_id")
@@ -39,7 +35,6 @@ export async function generateStaticParams() {
       return [];
     }
 
-    console.info("[generateStaticParams] got", data.length, "cities");
     return data.map((row: any) => ({
       state: String(row.state_id || "").toLowerCase(),
       city: toCitySlug(String(row.city_ascii || "")),

@@ -9,10 +9,8 @@ import type { Metadata } from "next";
 
 import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
-import { fromCitySlug, buildCityPath } from "@/lib/slugify";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"; // ← NEW (pour contourner RLS sur lost_items)
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-// --- Metadata inline hotfix (force Next à l'exécuter) -----------------------
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -21,14 +19,57 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // Keep runtime so we can fetch DB at request-time
 export const dynamic = "force-dynamic" as const;
 
-function _fallbackMeta(cityName: string, stateSlug: string, citySlug: string): Metadata {
-  const stateUp = (stateSlug || "").toUpperCase();
-  const title =
-    cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
-  const description = `Report or find lost items in ${cityName || "this city"}. Quick, secure and local via ReportLost.org.`;
-  const canonical = `${CANONICAL_BASE}/lost-and-found/${(stateSlug || "").toLowerCase()}/${encodeURIComponent(
-    citySlug
+// ✅ composants client chargés côté navigateur uniquement
+const CityMap = NextDynamic(() => import("@/components/MapClient").then((m) => m.default), {
+  ssr: false,
+  loading: () => <div className="text-gray-400">Loading map...</div>,
+});
+const CityLostFormBlock = NextDynamic(
+  () => import("@/components/CityLostFormBlock").then((m) => m.default),
+  { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
+);
+
+// ---------- helpers (slug <-> name) ----------
+function cityNameFromParam(cityParam: string) {
+  const raw = decodeURIComponent(cityParam || "");
+  // IMPORTANT: do NOT truncate or “merge” cities. Keep full slug.
+  // "new-york-mills" -> "New York Mills"
+  const spaced = raw
+    .replace(/\+/g, " ")
+    .replace(/-+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Title case (simple, predictable)
+  return spaced
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function formatMonthDay(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+}
+
+function canonicalUrl(stateSlug: string, citySlug: string) {
+  return `${CANONICAL_BASE}/lost-and-found/${(stateSlug || "").toLowerCase()}/${encodeURIComponent(
+    decodeURIComponent(citySlug || "")
   )}`;
+}
+
+function _fallbackMeta(stateSlug: string, citySlug: string): Metadata {
+  const stateUp = (stateSlug || "").toUpperCase();
+  const cityName = cityNameFromParam(citySlug) || citySlug || "this city";
+  const title = cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
+  const description = `Report or find lost items in ${cityName || "this city"}. Quick, secure and local via ReportLost.org.`;
+  const canonical = canonicalUrl(stateSlug, citySlug);
+
   return {
     title,
     description,
@@ -44,43 +85,35 @@ export async function generateMetadata({
   params: { state: string; city: string };
 }): Promise<Metadata> {
   const state = (params.state || "").toLowerCase();
-  const citySlug = decodeURIComponent(params.city || "");
-  const cityName = fromCitySlug(citySlug) || citySlug || "this city";
-
-  console.info("[generateMetadata] START", { state, citySlug, hasEnv: Boolean(SUPABASE_URL && SUPABASE_KEY) });
+  const citySlug = params.city || "";
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.warn("[generateMetadata] missing SUPABASE env, returning fallback", { state, citySlug });
-    return _fallbackMeta(cityName, state, citySlug);
+    return _fallbackMeta(state, citySlug);
   }
 
+  const stateAbbr = (state || "").toUpperCase();
+  const cityName = cityNameFromParam(citySlug);
+
   try {
-    const ilikePattern = `%${cityName}%`;
+    // STRICT: one page per city, no fuzzy merge.
     const { data, error } = await supabase
       .from("us_cities")
       .select("city_ascii, state_name, state_id, static_title, image_url, static_content")
-      .eq("state_id", state.toUpperCase())
-      .ilike("city_ascii", ilikePattern)
-      .limit(1)
+      .eq("state_id", stateAbbr)
+      .ilike("city_ascii", cityName) // exact (case-insensitive)
       .maybeSingle();
 
-    if (error) {
-      console.error("[generateMetadata] supabase error:", error);
-    }
-    if (!data) {
-      console.info("[generateMetadata] no DB row found -> fallback", { state, citySlug, ilikePattern });
-      return _fallbackMeta(cityName, state, citySlug);
+    if (error || !data) {
+      return _fallbackMeta(state, citySlug);
     }
 
-    const canonical = `${CANONICAL_BASE}${buildCityPath(data.state_id, data.city_ascii)}`;
+    const canonical = canonicalUrl(data.state_id ?? state, citySlug);
     const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
       : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
 
-    console.info("[generateMetadata] DONE (db)", { state: data.state_id, city: data.city_ascii, title });
-
-    const meta: Metadata = {
+    return {
       title,
       description,
       alternates: { canonical },
@@ -94,34 +127,9 @@ export async function generateMetadata({
       },
       twitter: { title, description, card: "summary_large_image" },
     };
-
-    return meta;
-  } catch (err) {
-    console.error("[generateMetadata] unexpected error:", err);
-    return _fallbackMeta(cityName, state, citySlug);
+  } catch {
+    return _fallbackMeta(state, citySlug);
   }
-}
-// ---------------------------------------------------------------------------
-
-// ✅ composants client chargés côté navigateur uniquement
-const CityMap = NextDynamic(() => import("@/components/MapClient").then(m => m.default), {
-  ssr: false,
-  loading: () => <div className="text-gray-400">Loading map...</div>,
-});
-const CityLostFormBlock = NextDynamic(
-  () => import("@/components/CityLostFormBlock").then(m => m.default),
-  { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
-);
-
-function toTitleCase(str: string) {
-  return str.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-}
-function formatDate(d: Date) {
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-}
-// ➕ petit helper Month Day (sans année), pour rester homogène avec les exemples
-function formatMonthDay(d: Date) {
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 
 type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
@@ -129,48 +137,31 @@ type PoliceStation = { id?: string; lat: number | null; lon: number | null; name
 export default async function Page({ params }: { params: { state: string; city: string } }) {
   try {
     const stateAbbr = (params.state || "").toUpperCase();
-    const cityName = toTitleCase(fromCitySlug(decodeURIComponent(params.city || "")));
+    const citySlug = params.city || "";
+    const cityName = cityNameFromParam(citySlug);
+
     if (!stateAbbr || !cityName) notFound();
 
-    // 1) Requête principale
-    let { data: candidates, error } = await supabase
+    // 1) Strict lookup: exact city within the state (no fallback that can “merge” cities)
+    const { data: cityData, error } = await supabase
       .from("us_cities")
       .select("*")
       .eq("state_id", stateAbbr)
-      .ilike("city_ascii", cityName)
-      .order("population", { ascending: false })
-      .limit(5);
-    if (error) console.warn("Supabase error (query 1):", error.message);
+      .ilike("city_ascii", cityName) // exact (case-insensitive)
+      .maybeSingle();
 
-    let cityData =
-      candidates?.find(c => (c.city_ascii || "").toLowerCase() === cityName.toLowerCase()) ??
-      candidates?.[0] ??
-      null;
-
-    // 2) Fallback préfixe
-    if (!cityData) {
-      const { data: prefixCandidates, error: e2 } = await supabase
-        .from("us_cities")
-        .select("*")
-        .eq("state_id", stateAbbr)
-        .ilike("city_ascii", `${cityName}%`)
-        .order("population", { ascending: false })
-        .limit(5);
-      if (e2) console.warn("Supabase error (query 2):", e2.message);
-
-      cityData =
-        prefixCandidates?.find(c => (c.city_ascii || "").toLowerCase() === cityName.toLowerCase()) ??
-        prefixCandidates?.[0] ??
-        null;
-    }
-
+    if (error) console.warn("Supabase error (city lookup):", error.message);
     if (!cityData) notFound();
 
-    // 3) Normalise JSON éventuels
+    // 2) Normalise JSON éventuels
     (["parks", "malls", "tourism_sites"] as const).forEach((f) => {
       const raw = (cityData as any)[f];
       if (typeof raw === "string") {
-        try { (cityData as any)[f] = JSON.parse(raw); } catch { (cityData as any)[f] = []; }
+        try {
+          (cityData as any)[f] = JSON.parse(raw);
+        } catch {
+          (cityData as any)[f] = [];
+        }
       }
     });
 
@@ -179,48 +170,49 @@ export default async function Page({ params }: { params: { state: string; city: 
     const today = formatDate(new Date());
 
     // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
-let realReports: string[] = [];
-try {
-  const admin = getSupabaseAdmin(); // peut être null si les vars d'env manquent
-  if (admin) {
-    const threeDaysAgoIso = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    let realReports: string[] = [];
+    try {
+      const admin = getSupabaseAdmin(); // peut être null si les vars d'env manquent
+      if (admin) {
+        const threeDaysAgoIso = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: recentLost, error: realErr } = await admin
-      .from("lost_items")
-      .select("title, city, state_id, created_at")
-      .eq("state_id", stateAbbr)
-      .ilike("city", `%${cityData.city_ascii}%`)
-      .gte("created_at", threeDaysAgoIso)
-      .order("created_at", { ascending: false })
-      .limit(3);
+        const { data: recentLost, error: realErr } = await admin
+          .from("lost_items")
+          .select("title, city, state_id, created_at")
+          .eq("state_id", stateAbbr)
+          .ilike("city", cityData.city_ascii) // stricter than %...%
+          .gte("created_at", threeDaysAgoIso)
+          .order("created_at", { ascending: false })
+          .limit(3);
 
-    if (!realErr && Array.isArray(recentLost) && recentLost.length) {
-      realReports = recentLost.map((r) => {
-        const label = (r?.title && String(r.title).trim()) || "Lost item";
-        const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : formatMonthDay(new Date());
-        const where =
-          (r?.city && r?.state_id) ? `${r.city}, ${r.state_id}` :
-          (r?.city ? String(r.city) : cityData.city_ascii);
-        return ` ${label} lost in ${where}, ${when}.`;
-      });
+        if (!realErr && Array.isArray(recentLost) && recentLost.length) {
+          realReports = recentLost.map((r) => {
+            const label = (r?.title && String(r.title).trim()) || "Lost item";
+            const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : formatMonthDay(new Date());
+            const where =
+              r?.city && r?.state_id ? `${r.city}, ${r.state_id}` : r?.city ? String(r.city) : cityData.city_ascii;
+            return ` ${label} lost in ${where}, ${when}.`;
+          });
+        }
+      }
+    } catch {
+      /* soft-fail */
     }
-  }
-} catch {
-  /* soft-fail */
-}
-// ===========================================================================
-
+    // ===========================================================================
 
     // Exemples “fallback”
     const fakeReports = exampleReports(cityData);
 
     // Compose: on place les vrais d’abord, puis on complète avec des faux (max 3)
     const reports = (realReports.length ? [...realReports, ...fakeReports] : fakeReports).slice(0, 3);
-    // ===========================================================================
 
     // 4) Nearby
     let nearbyCities: any[] = [];
-    try { nearbyCities = await getNearbyCities(cityData.id, cityData.state_id); } catch { nearbyCities = []; }
+    try {
+      nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
+    } catch {
+      nearbyCities = [];
+    }
 
     // 5) Image (dev only if missing) — import dynamique
     let cityImage = (cityData.image_url as string | null) || null;
@@ -230,7 +222,8 @@ try {
       try {
         const { default: fetchCityImageDirectly } = await import("@/lib/fetchCityImageDirectly");
         const img = await fetchCityImageDirectly(cityName, cityData.state_name);
-        cityImage = img.url; cityImageAlt = img.alt;
+        cityImage = img.url;
+        cityImageAlt = img.alt;
 
         await supabase
           .from("us_cities")
@@ -243,11 +236,12 @@ try {
           .eq("id", cityData.id);
 
         cityImageCredit = img.photographer ? `Photo by ${img.photographer}` : "";
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     // 6) Overpass → objets plats pour le composant client
-    type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
     let policeStations: PoliceStation[] = [];
     try {
       const overpassUrl =
@@ -258,13 +252,15 @@ try {
         const data = await res.json();
         const raw = Array.isArray(data?.elements) ? data.elements : [];
         policeStations = raw.map((el: any) => ({
-          id: (typeof el?.id === "number" || typeof el?.id === "string") ? String(el.id) : undefined,
-          lat: typeof el?.lat === "number" ? el.lat : (typeof el?.center?.lat === "number" ? el.center.lat : null),
-          lon: typeof el?.lon === "number" ? el.lon : (typeof el?.center?.lon === "number" ? el.center.lon : null),
+          id: typeof el?.id === "number" || typeof el?.id === "string" ? String(el.id) : undefined,
+          lat: typeof el?.lat === "number" ? el.lat : typeof el?.center?.lat === "number" ? el.center.lat : null,
+          lon: typeof el?.lon === "number" ? el.lon : typeof el?.center?.lon === "number" ? el.center.lon : null,
           name: typeof el?.tags?.name === "string" ? el?.tags?.name : null,
         }));
       }
-    } catch { policeStations = []; }
+    } catch {
+      policeStations = [];
+    }
 
     // 7) Texte enrichi
     const enrichedText = `<p>${(text || "")
@@ -283,9 +279,7 @@ try {
     // 8) Blocs réutilisés (passés au composant client pour masquage à l’étape 3)
     const TitleSection = (
       <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-          {title}
-        </h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
       </section>
     );
 
@@ -332,11 +326,16 @@ try {
                   const sidRaw = c.state_id ?? stateAbbr;
                   const sidDisplay = typeof sidRaw === "string" ? sidRaw.toUpperCase() : stateAbbr;
                   const sidForLink = typeof sidRaw === "string" ? sidRaw : stateAbbr;
+                  const cSlug = String(c.city_ascii || "")
+                    .toLowerCase()
+                    .replace(/\s+/g, "-")
+                    .replace(/-+/g, "-")
+                    .replace(/(^-|-$)/g, "");
                   return (
                     <li key={c.id ?? `${c.city_ascii}-${sidDisplay}`}>
                       <Link
                         prefetch={false}
-                        href={buildCityPath(sidForLink, c.city_ascii)}
+                        href={`/lost-and-found/${String(sidForLink).toLowerCase()}/${encodeURIComponent(cSlug)}`}
                         className="text-blue-600 hover:underline"
                       >
                         {c.city_ascii} ({sidDisplay})
@@ -357,9 +356,7 @@ try {
                     height={400}
                     className="w-full h-[250px] object-cover rounded-lg shadow"
                   />
-                  {cityImageCredit && (
-                    <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
-                  )}
+                  {cityImageCredit && <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>}
                 </>
               )}
             </div>

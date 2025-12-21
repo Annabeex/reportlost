@@ -1,24 +1,31 @@
 // app/lost-and-found/[state]/[city]/generateMetadata.ts
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
-import { fromCitySlug, buildCityPath } from "@/lib/slugify";
+import { fromCitySlug } from "@/lib/slugify";
 
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Keep runtime so we can fetch DB at request-time
 export const dynamic = "force-dynamic";
 
-function fallbackMeta(cityName: string, stateSlug: string, citySlug: string): Metadata {
+function fallbackMeta(stateSlug: string, citySlugRaw: string): Metadata {
   const stateUp = (stateSlug || "").toUpperCase();
+  const citySlug = decodeURIComponent(citySlugRaw || "");
+  const cityName = fromCitySlug(citySlug) || citySlug || "this city";
+
   const title =
     cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
+
   const description = `Report or find lost items in ${cityName || "this city"}. Quick, secure and local via ReportLost.org.`;
+
   const canonical = `${CANONICAL_BASE}/lost-and-found/${(stateSlug || "").toLowerCase()}/${encodeURIComponent(
     citySlug
   )}`;
+
   return {
     title,
     description,
@@ -33,43 +40,39 @@ export async function generateMetadata({
 }: {
   params: { state: string; city: string };
 }): Promise<Metadata> {
-  const state = (params.state || "").toLowerCase();
+  const stateSlug = (params.state || "").toLowerCase();
   const citySlug = decodeURIComponent(params.city || "");
   const cityName = fromCitySlug(citySlug) || citySlug || "this city";
 
-  console.info("[generateMetadata] START", { state, citySlug, hasEnv: Boolean(SUPABASE_URL && SUPABASE_KEY) });
+  // Canonical MUST match the requested URL (no regeneration => no accidental “merge”)
+  const canonical = `${CANONICAL_BASE}/lost-and-found/${stateSlug}/${encodeURIComponent(citySlug)}`;
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.warn("[generateMetadata] missing SUPABASE env, returning fallback", { state, citySlug });
-    return fallbackMeta(cityName, state, citySlug);
+    return fallbackMeta(stateSlug, citySlug);
   }
 
   try {
-    const ilikePattern = `%${cityName}%`;
+    // ✅ STRICT match (no %...%) to avoid “New York Mills” matching “New York”
     const { data, error } = await supabase
       .from("us_cities")
       .select("city_ascii, state_name, state_id, static_title, image_url, static_content")
-      .eq("state_id", state.toUpperCase())
-      .ilike("city_ascii", ilikePattern)
-      .limit(1)
+      .eq("state_id", stateSlug.toUpperCase())
+      .ilike("city_ascii", cityName) // exact (case-insensitive)
       .maybeSingle();
 
-    if (error) {
-      console.error("[generateMetadata] supabase error:", error);
+    if (error || !data) {
+      return {
+        ...fallbackMeta(stateSlug, citySlug),
+        alternates: { canonical },
+      };
     }
 
-    if (!data) {
-      console.info("[generateMetadata] no DB row found -> fallback", { state, citySlug, ilikePattern });
-      return fallbackMeta(cityName, state, citySlug);
-    }
-
-    const canonical = `${CANONICAL_BASE}${buildCityPath(data.state_id, data.city_ascii)}`;
     const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
       : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
 
-    const meta: Metadata = {
+    return {
       title,
       description,
       alternates: { canonical },
@@ -83,11 +86,10 @@ export async function generateMetadata({
       },
       twitter: { title, description, card: "summary_large_image" },
     };
-
-    console.info("[generateMetadata] DONE (db)", { state: data.state_id, city: data.city_ascii, title });
-    return meta;
-  } catch (err) {
-    console.error("[generateMetadata] unexpected error:", err);
-    return fallbackMeta(cityName, state, citySlug);
+  } catch {
+    return {
+      ...fallbackMeta(stateSlug, citySlug),
+      alternates: { canonical },
+    };
   }
 }
