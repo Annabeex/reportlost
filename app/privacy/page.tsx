@@ -1,3 +1,8 @@
+'use client';
+
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+
 const privacyContent = `
 ## Privacy Policy – ReportLost.org
 
@@ -85,7 +90,7 @@ ReportLost.org uses a limited number of cookies or similar technologies to:
 - Ensure basic site functionality,
 - Understand overall site usage through privacy-respecting analytics.
 
-Where applicable, analytics are configured to avoid unnecessary personal data collection. You may disable cookies in your browser settings at any time.
+Where applicable, analytics are configured to minimize the collection of personal data. You may disable cookies in your browser settings at any time.
 
 ---
 
@@ -108,3 +113,14 @@ If you have any questions about this Privacy Policy or how your data is handled,
 **ReportLost.org**  
 Email: support@reportlost.org
 `;
+
+export default function PrivacyPage() {
+  return (
+    <main className="max-w-4xl mx-auto px-6 py-12 text-sm text-gray-800">
+      <h1 className="text-2xl font-bold mb-6">Privacy Policy</h1>
+      <div className="prose prose-sm md:prose-base">
+        <ReactMarkdown>{privacyContent}</ReactMarkdown>
+      </div>
+    </main>
+  );
+}

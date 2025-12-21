@@ -1,3 +1,8 @@
+'use client';
+
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+
 const termsContent = `
 ## Terms of Use – ReportLost.org
 
@@ -115,3 +120,14 @@ For questions regarding these Terms:
 **ReportLost.org**  
 Email: support@reportlost.org
 `;
+
+export default function TermsPage() {
+  return (
+    <main className="max-w-4xl mx-auto px-6 py-12 text-sm text-gray-800">
+      <h1 className="text-2xl font-bold mb-6">Terms of Use</h1>
+      <div className="prose prose-sm md:prose-base">
+        <ReactMarkdown>{termsContent}</ReactMarkdown>
+      </div>
+    </main>
+  );
+}
