@@ -426,12 +426,13 @@ We will keep you informed as soon as we have any new information.`.replace(/\n{2
     };
 
     try {
-      const res = await fetch("/api/send-mail?t=" + Date.now(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        cache: "no-store",
-      });
+     const res = await fetch("/api/admin/send-mail?t=" + Date.now(), {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+  cache: "no-store",
+});
+
 
       if (!res.ok) {
         let msg = `HTTP ${res.status}`;

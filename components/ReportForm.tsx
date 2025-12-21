@@ -719,29 +719,24 @@ Thank you for using ReportLost — we’re here to help.
   </div>
 </div>`;
 
-        const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 15000);
+       const controller = new AbortController();
+const t = setTimeout(() => controller.abort(), 15000);
 
-        await fetch(`${base}/api/send-mail`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: formData.email,
-            subject,
-            text,
-            html,
-            fromName: "ReportLost",
-            // ✅ pour marquer followup_email_sent* en DB (via /api/send-mail)
-            publicId: ref5,
-            kind: "publication", // ✅ explicite : ce n’est PAS un follow-up manuel
-          }),
-          signal: controller.signal,
-        }).catch(() => {
-          /* on ne bloque pas l’UX si l’envoi échoue */
-        });
+await fetch("/api/public/send-publication-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    reportId: String(formData.report_id || ""),
+    // optionnel si tu veux un contrôle supplémentaire
+    email: formData.email || "",
+  }),
+  signal: controller.signal,
+}).catch(() => {
+  /* soft-fail */
+});
 
-        clearTimeout(t);
-        setFreeEmailSent(true);
+clearTimeout(t);
+setFreeEmailSent(true);
       } catch {
         // soft-fail
       }

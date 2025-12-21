@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export const dynamic = "force-dynamic"; // jamais de cache
-export const runtime = "nodejs";        // obligatoire pour Stripe
+export const runtime = "nodejs"; // obligatoire pour Stripe
 
 function json(data: any, init?: ResponseInit) {
   const res = NextResponse.json(data, init);
@@ -32,6 +32,17 @@ function getReferenceCode(public_id: string | null | undefined, id: string): str
   return refCode5FromId(id);
 }
 
+function getBaseUrl(req: NextRequest): string {
+  const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (env) return env;
+
+  // Vercel/proxy headers
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host =
+    req.headers.get("x-forwarded-host") || req.headers.get("host") || "reportlost.org";
+  return `${proto}://${host}`;
+}
+
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
@@ -41,11 +52,7 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     const body = await req.text(); // raw body requis
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err: any) {
     console.error("❌ Stripe signature verification failed:", err.message || err);
     return json({ error: `Webhook Error: ${err.message || err}` }, { status: 400 });
@@ -57,28 +64,37 @@ export async function POST(req: NextRequest) {
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // helpers to look up row by id or public_id
+    // helper: look up row by id or public_id
     async function findRowByIdOrPublic(idOrPublic?: string | null) {
       if (!idOrPublic) return null;
+
       // try by id
       try {
         const byId = await supabaseAdmin
           .from("lost_items")
-          .select("id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city")
+          .select(
+            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city"
+          )
           .eq("id", idOrPublic)
           .maybeSingle();
         if (!byId.error && byId.data) return byId.data;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       // fallback: by public_id
       try {
         const byPub = await supabaseAdmin
           .from("lost_items")
-          .select("id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city")
+          .select(
+            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city"
+          )
           .eq("public_id", idOrPublic)
           .maybeSingle();
         if (!byPub.error && byPub.data) return byPub.data;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       return null;
     }
@@ -86,17 +102,21 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
+
         const metaReportId = String(pi.metadata?.report_id ?? "").trim();
         const metaPublicId = String(pi.metadata?.report_public_id ?? "").trim();
 
-        // Find the row: try meta.report_id then meta.report_public_id
+        // Find row
         let row: any = null;
         if (metaReportId) row = await findRowByIdOrPublic(metaReportId);
         if (!row && metaPublicId) row = await findRowByIdOrPublic(metaPublicId);
 
         if (!row) {
-          console.warn("⚠️ payment_intent.succeeded: no report found for metadata", { metaReportId, metaPublicId });
-          return json({ received: true }); // ack the webhook anyway
+          console.warn("⚠️ payment_intent.succeeded: no report found for metadata", {
+            metaReportId,
+            metaPublicId,
+          });
+          return json({ received: true }); // ack anyway
         }
 
         const reportId = String(row.id);
@@ -104,7 +124,8 @@ export async function POST(req: NextRequest) {
 
         // Update payment fields if needed
         try {
-          const needsUpdate = !row.paid || Number(row.contribution ?? 0) !== Number(paidAmount);
+          const needsUpdate =
+            !row.paid || Number(row.contribution ?? 0) !== Number(paidAmount);
           if (needsUpdate) {
             const { error: upErr } = await supabaseAdmin
               .from("lost_items")
@@ -120,17 +141,10 @@ export async function POST(req: NextRequest) {
           console.error("❌ Exception while updating payment status:", e);
         }
 
-        // Send confirmation email once, with institutional tone + 5-digit reference
+        // Send confirmation email once
         try {
           if (!row.payment_email_sent && row.email) {
-            // >>> CHANGEMENT #1: base URL plus robuste
-            const base =
-              process.env.NEXT_PUBLIC_SITE_URL ||
-              process.env.NEXT_PUBLIC_BASE_URL ||
-              (() => {
-                try { return new URL(req.url).origin; } catch { return "https://reportlost.org"; }
-              })();
-
+            const base = getBaseUrl(req);
             const ref5 = getReferenceCode(row.public_id, reportId);
 
             const subject = "✅ Payment received — your report has been published";
@@ -185,27 +199,20 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            // >>> CHANGEMENT #2: timeout porté à 15s
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000);
 
-       const mailApiKey = process.env.MAIL_API_KEY;
+            const mailApiKey = (process.env.MAIL_API_KEY || "").trim();
 
-const res = await fetch(`${base}/api/send-mail`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
-  },
-  body: JSON.stringify({
-    to: row.email,
-    subject,
-    text,
-    html,
-  }),
-  signal: controller.signal,
-});
-
+            const res = await fetch(`${base}/api/send-mail`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
+              },
+              body: JSON.stringify({ to: row.email, subject, text, html }),
+              signal: controller.signal,
+            });
 
             clearTimeout(timeout);
 
@@ -213,7 +220,6 @@ const res = await fetch(`${base}/api/send-mail`, {
               const t = await res.text().catch(() => "");
               console.error("❌ /api/send-mail returned non-ok:", res.status, t);
             } else {
-              // mark payment_email_sent = true
               try {
                 await supabaseAdmin
                   .from("lost_items")
