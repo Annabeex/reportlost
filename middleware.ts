@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const config = {
   // On cible les pages villes, l'admin et les fiches "case"
-  matcher: ["/lost-and-found/:path*", "/admin/:path*", "/case/:path*"],
+  matcher: [
+  "/lost-and-found/:path*",
+  "/admin/:path*",
+  "/case/:path*",
+  "/poster-preview/:path*",
+  "/api/stations/update",
+],
+
 };
 
 
@@ -11,7 +18,12 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // --- 1) Protection Basic Auth pour /admin ---
-  if (pathname.startsWith("/admin")) {
+ if (
+  pathname.startsWith("/admin") ||
+  pathname.startsWith("/poster-preview") ||
+  pathname === "/api/stations/update"
+) {
+
     const user = process.env.ADMIN_USER || "";
     const pass = process.env.ADMIN_PASS || "";
 
