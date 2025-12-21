@@ -1,3 +1,8 @@
+'use client';
+
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+
 const cookiesContent = `
 ## Cookie Policy – ReportLost.org
 
@@ -66,3 +71,14 @@ For questions about cookies or tracking on ReportLost.org, contact:
 **ReportLost.org**  
 Email: support@reportlost.org
 `;
+
+export default function CookiesPage() {
+  return (
+    <main className="max-w-4xl mx-auto px-6 py-12 text-sm text-gray-800">
+      <h1 className="text-2xl font-bold mb-6">Cookie Policy</h1>
+      <div className="prose prose-sm md:prose-base">
+        <ReactMarkdown>{cookiesContent}</ReactMarkdown>
+      </div>
+    </main>
+  );
+}
