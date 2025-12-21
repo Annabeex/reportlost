@@ -15,7 +15,7 @@ export default function ContactPage() {
           If you want to report a lost item, please use our dedicated form:
         </p>
         <Link
-          href="/reportform"
+          href="/report"
           className="inline-block mt-2 text-blue-600 hover:underline font-medium"
         >
           → Go to Lost Item Report Form
