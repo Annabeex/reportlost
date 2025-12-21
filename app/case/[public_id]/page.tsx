@@ -2,14 +2,34 @@
 import React from "react";
 import { redirect, notFound } from "next/navigation";
 import nextDynamic from "next/dynamic";
+import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      noarchive: true,
+      nosnippet: true,
+    },
+  },
+};
 
 // ✅ imports dynamiques
 const CaseFollowup = nextDynamic(
   () => import("@/components/CaseFollowup").then((m) => m.default || m),
   {
     ssr: true,
-    loading: () => <div className="text-sm text-gray-500">Loading follow-up…</div>,
+    loading: () => (
+      <div className="text-sm text-gray-500">Loading follow-up…</div>
+    ),
   }
 );
 
@@ -30,11 +50,11 @@ type SupabaseLostRow = {
   public_id: string | null;
   created_at: string;
   description?: string | null;
-  title?: string | null;       // ⬅️ pour le sous-titre
+  title?: string | null; // ⬅️ pour le sous-titre
   city?: string | null;
   state_id?: string | null;
-  date?: string | null;        // ⬅️ pour le sous-titre
-  first_name?: string | null;  // pour le bouton Send (éditeur)
+  date?: string | null; // ⬅️ pour le sous-titre
+  first_name?: string | null; // pour le bouton Send (éditeur)
   email?: string | null;
   contribution?: number | null;
   case_followup?: any;
@@ -55,8 +75,10 @@ function toQS(searchParams?: Record<string, string | string[] | undefined>) {
   return s ? `?${s}` : "";
 }
 const DIGITS_ONLY = /^[0-9]+$/;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const norm = (s: string) => (s || "").replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const norm = (s: string) =>
+  (s || "").replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
 
 // -------- page --------
 export default async function Page({
@@ -77,7 +99,9 @@ export default async function Page({
         <div className="max-w-3xl mx-auto space-y-4">
           <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
             <div className="font-semibold mb-1">Server configuration error</div>
-            <div>Missing Supabase credentials (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).</div>
+            <div>
+              Missing Supabase credentials (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).
+            </div>
           </div>
         </div>
       </div>
@@ -135,7 +159,8 @@ export default async function Page({
         .limit(1)
         .maybeSingle();
 
-      const pub = (r3.data as { public_id?: string | number | null } | null)?.public_id;
+      const pub = (r3.data as { public_id?: string | number | null } | null)
+        ?.public_id;
       if (!r3.error && pub != null && pub !== "") {
         redirect(`/case/${String(pub)}${qs}`);
       }
@@ -151,15 +176,23 @@ export default async function Page({
     (typeof searchParams?.edit === "string" &&
       ["1", "true", "yes"].includes(String(searchParams.edit).toLowerCase())) ||
     (Array.isArray(searchParams?.edit) &&
-      ["1", "true", "yes"].includes(String(searchParams.edit[0] || "").toLowerCase()));
+      ["1", "true", "yes"].includes(
+        String(searchParams.edit[0] || "").toLowerCase()
+      ));
 
-  const blocks = Array.isArray((data as any).case_followup) ? (data as any).case_followup : [];
+  const blocks = Array.isArray((data as any).case_followup)
+    ? (data as any).case_followup
+    : [];
   const publicId = String(data.public_id || "");
 
   // Sous-titre : "Item … • Location … • Date of loss …"
   const subtitleParts = [
-    (data.title || data.description) ? `Item: ${data.title || data.description}` : null,
-    data.city || data.state_id ? `Location: ${[data.city, data.state_id].filter(Boolean).join(" (")}${data.state_id ? ")" : ""}` : null,
+    data.title || data.description ? `Item: ${data.title || data.description}` : null,
+    data.city || data.state_id
+      ? `Location: ${[data.city, data.state_id].filter(Boolean).join(" (")}${
+          data.state_id ? ")" : ""
+        }`
+      : null,
     data.date ? `Date of loss: ${data.date}` : null,
   ].filter(Boolean);
 
@@ -174,28 +207,35 @@ export default async function Page({
             title="Back to admin"
             aria-label="Back to admin"
           >
-            {/* cercle + triangle gauche */}
             <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" className="text-gray-500" />
-              {/* triangle pointant à gauche */}
-              <path d="M14.8 7.6L9.5 12l5.3 4.4V7.6z" fill="currentColor" className="text-gray-700" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10.5"
+                fill="none"
+                stroke="currentColor"
+                className="text-gray-500"
+              />
+              <path
+                d="M14.8 7.6L9.5 12l5.3 4.4V7.6z"
+                fill="currentColor"
+                className="text-gray-700"
+              />
             </svg>
           </a>
         </div>
       )}
 
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* En-tête */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">Report ID: {publicId}</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Report ID: {publicId}
+          </h1>
           {subtitleParts.length > 0 && (
-            <p className="mt-2 text-sm text-gray-600">
-              {subtitleParts.join(" • ")}
-            </p>
+            <p className="mt-2 text-sm text-gray-600">{subtitleParts.join(" • ")}</p>
           )}
         </div>
 
-        {/* Suivi : lecture seule OU éditeur */}
         <section className="mt-4">
           {isEdit ? (
             <CaseFollowupEditor
@@ -204,7 +244,6 @@ export default async function Page({
               userEmail={data.email || ""}
             />
           ) : (
-            // ⬅️ cache le bouton Edit dans la page publique
             <CaseFollowup blocks={blocks} publicId={publicId} hideEditButton />
           )}
         </section>
