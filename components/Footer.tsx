@@ -18,6 +18,7 @@ export default function Footer() {
           <ul className="space-y-1">
             <li><Link href="/helpcenter">Help center</Link></li>
             <li><Link href="/contact">Contact us</Link></li>
+            <li><Link href="/how-it-works">How it works</Link></li>
           </ul>
         </div>
 
