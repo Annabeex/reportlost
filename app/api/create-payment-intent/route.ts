@@ -1,4 +1,3 @@
-// app/api/create-payment-intent/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -25,7 +24,7 @@ function getAllowedOrigins(): string[] {
       .filter(Boolean);
   }
   const site = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  return site ? [site] : ["https://reportlost.org"];
+  return site ? [site] : ["https://reportlost.org", "https://www.reportlost.org"];
 }
 
 function getCorsOrigin(req: NextRequest): string | null {
@@ -37,12 +36,9 @@ function getCorsOrigin(req: NextRequest): string | null {
 }
 
 function hasValidPaymentKey(req: NextRequest): boolean {
-  // Si PAYMENT_API_KEY n'est pas défini, la route reste ouverte (pas recommandé).
-  if (!PAYMENT_API_KEY) return true;
-
+  if (!PAYMENT_API_KEY) return true; // si pas de clé configurée, pas d'auth
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return false;
-
   const token = auth.slice("Bearer ".length).trim();
   return token === PAYMENT_API_KEY;
 }
@@ -56,7 +52,6 @@ function json(data: any, init?: ResponseInit, origin?: string | null) {
   const res = NextResponse.json(data, init);
   res.headers.set("Cache-Control", "no-store");
 
-  // CORS (si origin non fourni, on n'ajoute rien)
   if (origin) {
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Vary", "Origin");
@@ -67,7 +62,6 @@ function json(data: any, init?: ResponseInit, origin?: string | null) {
 
 export async function OPTIONS(req: NextRequest) {
   const origin = getCorsOrigin(req);
-
   return new Response(null, {
     status: 204,
     headers: {
@@ -81,20 +75,25 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const origin = getCorsOrigin(req);
+  const hasOriginHeader = !!req.headers.get("origin");
 
-  // 🔐 Auth
-  if (!hasValidPaymentKey(req)) {
-    return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
+  // 🛡️ 1) Calls coming from browsers must be same-origin (allowed origins only)
+  if (hasOriginHeader) {
+    if (origin === "null") {
+      return json({ ok: false, error: "Forbidden" }, { status: 403 }, origin);
+    }
+    // Browser calls from allowed origin: OK, no secret key needed
+  } else {
+    // 🛡️ 2) Server-to-server calls (no Origin): require PAYMENT_API_KEY if configured
+    if (PAYMENT_API_KEY && !hasValidPaymentKey(req)) {
+      return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
+    }
   }
 
   try {
     const ct = req.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
-      return json(
-        { ok: false, error: "Content-Type must be application/json" },
-        { status: 415 },
-        origin
-      );
+      return json({ ok: false, error: "Content-Type must be application/json" }, { status: 415 }, origin);
     }
 
     const body = (await req.json().catch(() => null)) as {
@@ -109,7 +108,6 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, error: "Invalid JSON body" }, { status: 400 }, origin);
     }
 
-    // --- Validation montant ---
     const numericAmount = Number(body.amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       return json({ ok: false, error: "Invalid amount" }, { status: 400 }, origin);
@@ -129,15 +127,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- Devise ---
     const currency = (body.currency ?? "usd").toLowerCase();
     if (!ALLOWED_CURRENCY.has(currency)) {
       return json({ ok: false, error: "Unsupported currency" }, { status: 400 }, origin);
     }
 
-    // --- Idempotency ---
-    // Stripe attend "idempotencyKey" via l'option de requête.
-    // On récupère le header de façon robuste (minuscule + forme canonique).
     const clientIdem =
       req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key") || undefined;
 
@@ -146,7 +140,6 @@ export async function POST(req: NextRequest) {
 
     const idempotencyKey = clientIdem ?? fallbackIdem;
 
-    // --- Description & metadata ---
     const description =
       body.description?.slice(0, 255) ||
       (body.reportId ? `ReportLost contribution for report #${body.reportId}` : "ReportLost contribution");
@@ -170,18 +163,16 @@ export async function POST(req: NextRequest) {
       {
         ok: true,
         id: paymentIntent.id,
-        clientSecret: paymentIntent.client_secret, // nécessaire côté client
+        clientSecret: paymentIntent.client_secret,
       },
       { status: 200 },
       origin
     );
   } catch (err: any) {
-    // Normalisation des erreurs Stripe
     if (err && typeof err === "object" && String(err.type || "").startsWith("Stripe")) {
       console.error("Stripe error:", err);
       return json({ ok: false, error: err.message ?? "Stripe error" }, { status: 400 }, origin);
     }
-
     console.error("Unexpected error (create-payment-intent):", err);
     return json({ ok: false, error: "Unexpected server error" }, { status: 500 }, origin);
   }
