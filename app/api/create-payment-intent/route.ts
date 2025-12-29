@@ -1,3 +1,4 @@
+// app/api/create-payment-intent/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -5,9 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY!;
-if (!stripeKey) {
-  throw new Error("Missing STRIPE_SECRET_KEY");
-}
+if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" as any });
 
@@ -30,7 +29,6 @@ function getAllowedOrigins(): string[] {
 function getCorsOrigin(req: NextRequest): string | null {
   const origin = req.headers.get("origin");
   if (!origin) return null;
-
   const allowed = getAllowedOrigins();
   return allowed.includes(origin) ? origin : "null";
 }
@@ -52,6 +50,7 @@ function json(data: any, init?: ResponseInit, origin?: string | null) {
   const res = NextResponse.json(data, init);
   res.headers.set("Cache-Control", "no-store");
 
+  // CORS
   if (origin) {
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Vary", "Origin");
@@ -62,6 +61,7 @@ function json(data: any, init?: ResponseInit, origin?: string | null) {
 
 export async function OPTIONS(req: NextRequest) {
   const origin = getCorsOrigin(req);
+
   return new Response(null, {
     status: 204,
     headers: {
@@ -77,14 +77,15 @@ export async function POST(req: NextRequest) {
   const origin = getCorsOrigin(req);
   const hasOriginHeader = !!req.headers.get("origin");
 
-  // 🛡️ 1) Calls coming from browsers must be same-origin (allowed origins only)
+  // 🛡️ 1) Appels navigateur (avec Origin) : autorisés seulement si origin est listée
   if (hasOriginHeader) {
     if (origin === "null") {
+      // On renvoie quand même le header (null) pour que le navigateur comprenne que c'est refusé
       return json({ ok: false, error: "Forbidden" }, { status: 403 }, origin);
     }
-    // Browser calls from allowed origin: OK, no secret key needed
+    // Browser depuis origin autorisée -> OK (pas besoin de clé)
   } else {
-    // 🛡️ 2) Server-to-server calls (no Origin): require PAYMENT_API_KEY if configured
+    // 🛡️ 2) Server-to-server (pas de Origin) : clé requise si configurée
     if (PAYMENT_API_KEY && !hasValidPaymentKey(req)) {
       return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
     }
@@ -93,7 +94,11 @@ export async function POST(req: NextRequest) {
   try {
     const ct = req.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
-      return json({ ok: false, error: "Content-Type must be application/json" }, { status: 415 }, origin);
+      return json(
+        { ok: false, error: "Content-Type must be application/json" },
+        { status: 415 },
+        origin
+      );
     }
 
     const body = (await req.json().catch(() => null)) as {
@@ -108,6 +113,7 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, error: "Invalid JSON body" }, { status: 400 }, origin);
     }
 
+    // --- Validation montant ---
     const numericAmount = Number(body.amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       return json({ ok: false, error: "Invalid amount" }, { status: 400 }, origin);
@@ -127,22 +133,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // --- Devise ---
     const currency = (body.currency ?? "usd").toLowerCase();
     if (!ALLOWED_CURRENCY.has(currency)) {
       return json({ ok: false, error: "Unsupported currency" }, { status: 400 }, origin);
     }
 
+    // --- Idempotency ---
     const clientIdem =
-      req.headers.get("idempotency-key") || req.headers.get("Idempotency-Key") || undefined;
+      req.headers.get("idempotency-key") ||
+      req.headers.get("Idempotency-Key") ||
+      undefined;
 
     const fallbackIdem =
-      body.reportId != null ? `report-${String(body.reportId)}-${amountInCents}-${currency}` : undefined;
+      body.reportId != null
+        ? `report-${String(body.reportId)}-${amountInCents}-${currency}`
+        : undefined;
 
     const idempotencyKey = clientIdem ?? fallbackIdem;
 
+    // --- Description & metadata ---
     const description =
       body.description?.slice(0, 255) ||
-      (body.reportId ? `ReportLost contribution for report #${body.reportId}` : "ReportLost contribution");
+      (body.reportId
+        ? `ReportLost contribution for report #${body.reportId}`
+        : "ReportLost contribution");
 
     const metadata: Record<string, string> = {};
     if (body.reportId != null) metadata.report_id = String(body.reportId);
