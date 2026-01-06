@@ -40,7 +40,7 @@ function BulletIcon() {
 }
 
 // ---------------------------------------------------------------------------
-// Custom Heart Gauge with emoji at 0 and dynamic message
+// Custom Heart Gauge (subtle: grey at $0, green otherwise)
 // ---------------------------------------------------------------------------
 function TipGauge({
   value,
@@ -73,7 +73,15 @@ function TipGauge({
   };
 
   const pct = (value / MAX_TIP) * 100;
-  const heartScale = 1 + (value / MAX_TIP) * 0.6;
+
+  const HeartKnob = ({ active }: { active: boolean }) => (
+    <svg viewBox="0 0 24 24" width={24} height={24} aria-hidden>
+      <path
+        d="M12 21s-6.716-4.188-9.39-7.07C.97 11.18 1.41 7.87 3.86 6.26c2.05-1.35 4.81-.86 6.14 1.03 1.33-1.89 4.09-2.38 6.14-1.03 2.45 1.61 2.89 4.92 1.25 7.67C18.72 16.81 12 21 12 21z"
+        fill={active ? DARK_GREEN : "#cbd5e1"}
+      />
+    </svg>
+  );
 
   // --- Determine level and dynamic message ---
   let level = 1 as 1 | 2 | 3;
@@ -87,7 +95,7 @@ function TipGauge({
   } else if (value < 25) {
     level = 2;
     message =
-      "You activate manual research and dissemination to authorities and local groups by a team member.";
+      "You activate deeper manual review and targeted checks across major public sources by a team member.";
   } else {
     level = 3;
     message =
@@ -163,24 +171,8 @@ function TipGauge({
                 if (e.key === "End") setValue(MAX_TIP);
               }}
             >
-              <div
-                className="w-7 h-7 flex items-center justify-center"
-                style={{ transform: `scale(${heartScale})` }}
-              >
-                {value === 0 ? (
-                  <div className="text-2xl" aria-hidden>
-                    <span role="img" aria-label="sad">
-                      🙁
-                    </span>
-                  </div>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="drop-shadow" width={28} height={28}>
-                    <path
-                      d="M12 21s-6.716-4.188-9.39-7.07C.97 11.18 1.41 7.87 3.86 6.26c2.05-1.35 4.81-.86 6.14 1.03 1.33-1.89 4.09-2.38 6.14-1.03 2.45 1.61 2.89 4.92 1.25 7.67C18.72 16.81 12 21 12 21z"
-                      fill="#e11d48"
-                    />
-                  </svg>
-                )}
+              <div className="w-7 h-7 flex items-center justify-center">
+                <HeartKnob active={value > 0} />
               </div>
             </div>
           </div>
@@ -406,8 +398,10 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      complete assistance. Our team manually distributes your report through the right channels, tracks it over time and helps you until resolution.
-                      Our AI continuously scans large databases for matches. Includes a printable PDF sheet of secure ID stickers.
+                      Our team manually distributes your report through the appropriate channels, including relevant authorities and official services, and ensures continued monitoring and follow-up actions when applicable.
+                      <br />
+                      <br />
+                      Our AI continuously scans large databases for potential matches. Includes a printable PDF sheet of secure ID stickers.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
@@ -470,7 +464,7 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      AI and Manual research, dissemination to authorities and local groups
+                      Your report is actively reviewed and searched by our system and team member across major public databases and online sources.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
