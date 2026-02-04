@@ -254,22 +254,21 @@ export default async function NyuLostFoundPage() {
 
         {/* --- SECTION 2.5: THE "CROSSROADS" (UX Improvement) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            {/* Carte "J'ai Trouvé" (Bleu, incitatif) */}
-            <div className="bg-blue-600 rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between relative overflow-hidden group">
-                <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-                    <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                </div>
+           {/* OPTION 2 : STYLE SOFT VIOLET (Harmonieux avec NYU) */}
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-[#57068c]/20 p-6 flex flex-col justify-between relative overflow-hidden group hover:border-[#57068c]/40 transition-colors">
                 
                 <div>
-                    <h3 className="text-2xl font-bold mb-2">I found an item 😇</h3>
-                    <p className="text-blue-100 mb-6">
-                        Did you find a phone, keys, or a jacket on campus? Help a fellow student get it back.
+                    <h3 className="text-2xl font-bold mb-2 text-[#57068c]">
+                        I found an item 😇
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                        Did you find a phone, keys, or a jacket? Help a fellow student get it back.
                     </p>
                 </div>
                 
                 <Link 
                     href="/report?tab=found" 
-                    className="inline-block text-center bg-white text-blue-700 font-bold py-3 px-6 rounded-lg hover:bg-blue-50 transition shadow-md"
+                    className="inline-block text-center bg-[#57068c] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#460570] transition shadow-md"
                 >
                     Report a Found Item
                 </Link>
