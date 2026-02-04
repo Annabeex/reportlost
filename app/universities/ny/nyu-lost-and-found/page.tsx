@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link"; // ✅ Nouvel import nécessaire
+import Link from "next/link";
 import ReportForm from "@/components/ReportForm";
+import { createClient } from "@supabase/supabase-js"; // ✅ Nécessaire pour l'affichage des items
+
+// --- CONFIGURATION SUPABASE (Serveur) ---
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Force le rendu dynamique pour avoir des objets frais à chaque chargement
+export const dynamic = "force-dynamic";
 
 // --- SEO METADATA ---
 export const metadata: Metadata = {
@@ -17,7 +26,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/images/universities/nyu-guide-og.jpg", // Assure-toi d'avoir une image ou supprime cette ligne
+        url: "/images/universities/nyu-guide-og.jpg",
         width: 1200,
         height: 630,
         alt: "NYU Lost and Found Guide",
@@ -33,10 +42,18 @@ const jsonLd = {
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Where is the NYU Lost and Found?",
+      "name": "Where is the main NYU Lost and Found office?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The main repository is at 7 Washington Place for the Washington Square campus, and 370 Jay Street for the Brooklyn campus."
+        "text": "The central Department of Public Safety Lost & Found is located at 7 Washington Place (for the Washington Square campus). For the Brooklyn campus, it is located at 370 Jay Street."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens if I lost my NYU ID card?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Lost ID cards found on campus are sent to the NYU Card Center at 7 Washington Place. You can contact them at 212-443-CARD. If it hasn't been found, a replacement fee (typically $25) applies."
       }
     },
     {
@@ -44,14 +61,57 @@ const jsonLd = {
       "name": "Does NYU security keep lost water bottles or clothes?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. According to official policy, Campus Safety does not accept clothing, water bottles, umbrellas, or perishable food. Use ReportLost.org to signal these items."
+        "text": "No. Official policy states that sanitary items (water bottles, food containers) and clothing (jackets, scarves, gym gear) are not kept in the central inventory. They are often discarded or donated. We recommend posting these items on ReportLost.org."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "I lost something in the Bobst Library, where do I go?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Items found in Bobst Library are usually held at the main security desk in the lobby for a short period before being transferred to the central repository at 7 Washington Place."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does NYU keep lost items?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Valuable items are held for 30 days. After this period, they are removed from inventory and either auctioned, donated to charity, or discarded."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who do I contact for items lost on an NYU Shuttle?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For items lost on university transportation, contact the Department of Public Safety immediately at 212-998-1305. Drivers often turn items in at the end of their shift."
       }
     }
   ]
 };
 
-export default function NyuLostFoundPage() {
+// --- COMPOSANT PRINCIPAL (Async pour fetcher les données) ---
+export default async function NyuLostFoundPage() {
   const currentYear = new Date().getFullYear();
+
+  // ✅ 1. RÉCUPÉRATION DES ITEMS (Server Side)
+  // On cherche les objets perdus contenant "New York" dans la ville
+  let recentItems: any[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("lost_items")
+      .select("id, title, date, city, category, image_url")
+      .ilike("city", "%New York%") // Filtre large pour avoir du contenu
+      .order("created_at", { ascending: false })
+      .limit(6); // On prend les 6 derniers
+
+    if (!error && data) {
+      recentItems = data;
+    }
+  } catch (e) {
+    console.error("Error fetching items:", e);
+  }
 
   return (
     <main className="min-h-screen bg-[#f9fafb]">
@@ -192,8 +252,7 @@ export default function NyuLostFoundPage() {
           </div>
         </div>
 
-        {/* --- SECTION 2.5: THE "CROSSROADS" (CHOIX ACTION) --- */}
-        {/* ✅ Nouvelle section UX pour remplacer la Navbar */}
+        {/* --- SECTION 2.5: THE "CROSSROADS" (UX Improvement) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             {/* Carte "J'ai Trouvé" (Bleu, incitatif) */}
             <div className="bg-blue-600 rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between relative overflow-hidden group">
@@ -229,7 +288,7 @@ export default function NyuLostFoundPage() {
         </div>
 
         {/* --- SECTION 3: THE FORM (Embedded & Free) --- */}
-        <div id="report-form" className="scroll-mt-6">
+        <div id="report-form" className="scroll-mt-6 mb-16">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -245,11 +304,6 @@ export default function NyuLostFoundPage() {
                 </div>
             </div>
             
-            {/* FORM CONFIGURATION:
-               - defaultCity: "New York, NY" (pour sauver en base)
-               - universityName: "New York University (NYU)" (Active l'affichage spécial)
-               - forceFreeMode: true (Saute le paiement)
-            */}
             <div className="p-0 sm:p-2 bg-gray-50">
                 <ReportForm 
                   defaultCity="New York, NY" 
@@ -261,23 +315,173 @@ export default function NyuLostFoundPage() {
             </div>
         </div>
 
+        {/* --- SECTION 4: RECENT ITEMS (AFFICHAGE) --- */}
+        {/* ✅ Nouvelle section: Affichage des objets perdus */}
+        {recentItems.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <span className="text-blue-600">🔍</span> Recently Reported in New York
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {recentItems.map((item) => (
+                <Link 
+                  key={item.id} 
+                  href={`/lost-item/${item.id}`} 
+                  className="block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group"
+                >
+                  <div className="h-40 bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img 
+                        src={item.image_url} 
+                        alt={item.title || "Lost item"} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="text-4xl opacity-30">📦</span>
+                    )}
+                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                      {/* On coupe le nom de la ville si trop long */}
+                      {item.city?.split(',')[0]}
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-800 truncate mb-1">{item.title || "Unknown item"}</h3>
+                    <p className="text-sm text-gray-500 mb-2">
+                      {new Date(item.date).toLocaleDateString()} • {item.category || "General"}
+                    </p>
+                    <span className="text-sm text-blue-600 font-medium group-hover:underline">
+                      See details →
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {/* Bouton Voir tout */}
+            <div className="text-center mt-8">
+               <Link href="/lost-and-found/ny/new-york" className="inline-block px-6 py-2 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-50 font-medium text-sm">
+                 View all New York reports
+               </Link>
+            </div>
+          </div>
+        )}
+
         {/* --- FAQ SEO SECTION --- */}
         <div className="mt-16 max-w-3xl mx-auto space-y-8">
-            <h2 className="text-2xl font-bold text-gray-900 text-center">Frequently Asked Questions</h2>
-            <div className="space-y-4">
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                    <h3 className="font-bold text-gray-800 mb-2">Where do lost items go at Bobst Library?</h3>
-                    <p className="text-gray-600 text-sm">
-                        Items found within Bobst Library are typically turned in to the Lost & Found desk located on the <strong>Main Floor (Lobby)</strong> security desk. Valuable items are transferred to the central Department of Public Safety (7 Washington Place) after a short period.
-                    </p>
+            {/* --- COMPREHENSIVE FAQ SECTION --- */}
+        <div className="mt-20 max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Complete Lost & Found FAQ</h2>
+              <p className="text-gray-600">Everything you need to know about recovering items at NYU, categorized for speed.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* COLUMN 1 */}
+                <div className="space-y-8">
+                    {/* Category: Essentials */}
+                    <div>
+                        <h3 className="text-lg font-bold text-[#57068c] uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">
+                            🆔 ID Cards & Keys
+                        </h3>
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">I lost my NYU ID Card. What now?</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    This is the most common loss. If found, ID cards are almost always routed to the <strong>NYU Card Center</strong> (7 Washington Place).
+                                    <br/><br/>
+                                    <strong>Step 1:</strong> Call 212-443-CARD to check if it's there.
+                                    <br/>
+                                    <strong>Step 2:</strong> If not, you can deactivate it online to prevent misuse.
+                                    <br/>
+                                    <strong>Step 3:</strong> A replacement fee (usually around $25) will apply if you need a new one printed.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">I lost my dorm keys / room key.</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    For residence hall keys, contact your <strong>Residence Hall Resource Center</strong> immediately. For safety reasons, if a key is not found quickly, the lock core may need to be changed, which incurs a significantly higher fee than a simple key replacement.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Category: Tech */}
+                    <div>
+                        <h3 className="text-lg font-bold text-[#57068c] uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">
+                            💻 Laptops & Electronics
+                        </h3>
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">Are laptops tracked?</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    If you registered your device with NYU Public Safety (Operation ID), recovery is much faster. If not, you must provide the <strong>Serial Number</strong> to the lost and found office. They will not release an electronic device without proof of ownership (serial number match or detailed description/login capability).
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">I left my charger in a classroom.</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Chargers are often considered "low value" and might not make it to the central office immediately. Check the <strong>podium/desk of the classroom</strong> first, then the building's specific security guard desk before calling the main number.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-                    <h3 className="font-bold text-gray-800 mb-2">How do I find a lost NYU ID card?</h3>
-                    <p className="text-gray-600 text-sm">
-                        Lost ID cards are almost always sent to the NYU Card Center (7 Washington Place). You can check if yours has been turned in by calling 212-443-CARD. If not, you will need to pay a replacement fee.
-                    </p>
+
+                {/* COLUMN 2 */}
+                <div className="space-y-8">
+                    {/* Category: Locations */}
+                    <div>
+                        <h3 className="text-lg font-bold text-[#57068c] uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">
+                            📍 Specific Locations
+                        </h3>
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">Bobst Library</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Items found on the floors of Bobst are typically brought down to the <strong>Lobby Security Desk</strong>. If they are valuable (wallets, phones), they are moved to 7 Washington Place within 24-48 hours. If it's a book or bottle, it might stay at the desk longer or be discarded.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">Palladium & 404 Fitness</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Gyms have their own internal lost and found bins for clothing and bottles. Ask the front desk attendant. Valuable items (rings, watches) are usually secured in the manager's office before being sent to Public Safety.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-2">NYU Shuttles / Safe Ride</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Drivers check buses at the end of shifts. Items are turned in to Public Safety. Call 212-998-1305. Do not try to flag down another bus to ask; they are on strict schedules.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Category: The "Rejected" List */}
+                    <div>
+                        <h3 className="text-lg font-bold text-red-700 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">
+                            ⚠️ Items often discarded
+                        </h3>
+                        <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                            <h4 className="font-bold text-red-900 mb-2">Why didn't they take my water bottle?</h4>
+                            <p className="text-sm text-red-800 leading-relaxed mb-3">
+                                Due to hygiene and storage space, NYU (like most universities) does not inventory:
+                            </p>
+                            <ul className="list-disc list-inside text-sm text-red-800 space-y-1 mb-4">
+                                <li>Water bottles & Mugs (Hydroflask, Yeti, etc.)</li>
+                                <li>Tupperware / Food containers</li>
+                                <li>Loose clothing (Jackets, scarves, hats)</li>
+                                <li>Umbrellas</li>
+                                <li>Toiletries</li>
+                            </ul>
+                            <p className="text-sm font-semibold text-red-900">
+                                This is exactly why ReportLost exists. Post these items here so students can find each other directly, bypassing the official bin.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
         </div>
 
         {/* --- FOOTER DISCLAIMER --- */}
