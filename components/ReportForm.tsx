@@ -20,9 +20,11 @@ type ReportFormProps = {
   defaultCity?: string;
   enforceValidation?: boolean;
   onBeforeSubmit?: (formData: any) => any;
-  onStepChange?: (step: number) => void; // ✅ NEW
+  onStepChange?: (step: number) => void;
   /** ⬅️ NEW: permet de pré-remplir la catégorie (ex: "wallet") */
   initialCategory?: string;
+  forceFreeMode?: boolean; // ✅ NEW: Active le mode "Student" (skip paiement)
+  universityName?: string; // ✅ NEW: Pour afficher le nom de l'université
 };
 
 type EventLike =
@@ -81,8 +83,10 @@ export default function ReportForm({
   defaultCity = "",
   enforceValidation = false,
   onBeforeSubmit,
-  onStepChange, // ✅ NEW
-  initialCategory, // ✅ NEW
+  onStepChange,
+  initialCategory,
+  forceFreeMode = false, // ✅ NEW
+  universityName, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -575,6 +579,16 @@ export default function ReportForm({
       if (!success) return;
     }
 
+    // ✅ MODIFICATION ICI : Gestion du mode "Université"
+    // Si on est à l'étape 3 (WhatHappensNext) et qu'on est en forceFreeMode,
+    // on saute l'étape 4 (Paiement) pour aller direct à 5.
+    if (step === 3 && forceFreeMode) {
+      setFormData((prev: any) => ({ ...prev, contribution: 0, paymentRequired: false }));
+      if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
+      setStep(5);
+      return;
+    }
+
     if (formRef.current)
       formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => s + 1);
@@ -660,7 +674,6 @@ Thank you for using ReportLost — we’re here to help.
 
         const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
-  <!-- Hidden preheader -->
   <div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
     ${preheader}
   </div>
@@ -778,6 +791,7 @@ setFreeEmailSent(true);
           formData={formData}
           onChange={handleChange}
           onNext={handleNext}
+          universityName={universityName} // ✅ NEW: Prop passée pour affichage conditionnel
         />
       )}
 
@@ -800,7 +814,8 @@ setFreeEmailSent(true);
         />
       )}
 
-      {step === 4 && (
+      {/* ✅ MODIFICATION: On cache l'étape 4 si on est en mode gratuit (forceFreeMode) */}
+      {step === 4 && !forceFreeMode && (
         <ReportContribution
           amount={Number(formData.contribution ?? 0)}
           setFormData={setFormData}
@@ -812,36 +827,45 @@ setFreeEmailSent(true);
       {step === 5 &&
         (Number(formData.contribution) <= 0 ||
         formData?.paymentRequired === false ? (
-          // ✅ Pas de paiement si 0 : message de confirmation + (email envoyé par l’effet au-dessus)
+          // ✅ Pas de paiement (Mode Gratuit ou University)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-2xl font-bold mb-4">
-              Your report is published
+              {forceFreeMode ? "Report Published (Student Access)" : "Your report is published"}
             </h2>
             <p className="text-gray-700 mb-4">
-              Thanks! Your report has been saved and published in our public
-              database. You can upgrade to a higher assistance level anytime via
-              the confirmation email we sent.
+              {forceFreeMode 
+                ? "Your report has been broadcast to our community network. As part of our university partnership program, the standard listing fee has been waived."
+                : "Thanks! Your report has been saved and published in our public database. You can upgrade to a higher assistance level anytime via the confirmation email we sent."
+              }
             </p>
 
-            {/* ✅ Bouton "Activate my search" vers la page de contribution */}
-            <div className="flex items-center gap-3 mt-4">
-              <a
-                href={contributeUrl}
-                className="inline-flex items-center px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 font-semibold"
-              >
-                Activate my search
-              </a>
-              <button
-                type="button"
-                onClick={handleBack}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
-              >
-                ← Back
-              </button>
+            {/* ✅ Bouton "Activate my search" (Stripe Upgrade) toujours dispo mais contextuel */}
+            <div className="flex flex-col items-start gap-3 mt-4">
+              {forceFreeMode && (
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Optional:</strong> Need our team to actively search private databases and contact transit authorities for you?
+                </p>
+              )}
+              
+              <div className="flex items-center gap-3">
+                <a
+                  href={contributeUrl}
+                  className="inline-flex items-center px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 font-semibold"
+                >
+                  Activate Premium Search
+                </a>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+                >
+                  ← Back
+                </button>
+              </div>
             </div>
           </section>
         ) : (
-          // ✅ Paiement si contribution > 0
+          // ✅ Paiement si contribution > 0 (Flow classique)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-2xl font-bold mb-4">
               Activate your search

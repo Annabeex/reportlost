@@ -10,6 +10,7 @@ interface Props {
   formData: any;
   onChange: (e: React.ChangeEvent<any>) => void;
   onNext: () => void;
+  universityName?: string; // ✅ NEW: Ajouté pour accepter la prop du parent
 }
 
 /* --- Listes (inchangées) --- */
@@ -173,7 +174,7 @@ function LocalSuggest({
 
 /* ========================================================================= */
 
-export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
+export default function ReportFormStep1({ formData, onChange, onNext, universityName }: Props) { // ✅ NEW: Ajout de la prop ici
   // Phases
   const [phase, setPhase] = useState<"basic" | "context">("basic");
 
@@ -246,6 +247,12 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
   };
 
   const finishContextAndNext = () => {
+    // ✅ NEW: Si mode université, on valide immédiatement sans vérifier la ville/transport
+    if (universityName) {
+      onNext();
+      return;
+    }
+
     if (!formData.city?.trim()) return alert("Please enter the city.");
     if (!transportAnswer) return alert("Please answer the transport question.");
 
@@ -414,359 +421,396 @@ export default function ReportFormStep1({ formData, onChange, onNext }: Props) {
       {/* ================= PHASE 2 ================= */}
       {phase === "context" && (
         <>
-          <h2 className="text-xl font-bold">Step 2: Where the loss probably happen ?</h2>
+          <h2 className="text-xl font-bold">Step 2: Where did you lose it?</h2>
 
-          {/* City */}
-          <div>
-            <label className="block font-medium">City</label>
-            <AutoCompleteCitySelect
-              value={formData.city || ""}
-              placeholder="e.g. Chicago"
-              onChange={(value: string) =>
-                onChange({ target: { name: "city", value } } as React.ChangeEvent<HTMLInputElement>)
-              }
-              onSelect={(city) => {
-                onChange({ target: { name: "city", value: `${city.city_ascii}` } } as any);
-                onChange({ target: { name: "state_id", value: city.state_id } } as any);
-              }}
-            />
-          </div>
-
-          {/* Transport question */}
-          <div>
-            <p className="block font-medium mb-2">Was it during a transport?</p>
-            <div className="flex flex-col gap-2 text-[16px]">
-              {(["yes", "no", "maybe"] as const).map((v) => (
-                <label key={v} className={labelRadio}>
-                  <input
-                    type="radio"
-                    name="transport_answer"
-                    value={v}
-                    checked={transportAnswer === v}
-                    onChange={() => {
-                      setTransportAnswer(v);
-                      onChange({ target: { name: "transport_answer", value: v } } as any);
-                    }}
-                    className={radioCls}
-                  />
-                  <span className="capitalize">{v}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* YES -> sélecteurs custom (design identique à “What did you lose?”) */}
-          {transportAnswer === "yes" && (
-            <div className="space-y-4">
-              {/* Transport type */}
+          {/* ✅ NEW: Logique d'affichage Université vs Classique */}
+          {universityName ? (
+            /* --- VUE SPÉCIALE UNIVERSITÉ --- */
+            <div className="space-y-5">
+              
+              {/* Affichage statique du lieu */}
               <div>
-                <label className="block font-medium">Please select the transport type:</label>
-                <LocalSuggest
-                  value={formData.transport_type || ""}
-                  onChange={(val) => handleTransportChange(val)}
-                  options={TRANSPORT_OPTIONS}
-                  placeholder="Start typing..."
-                />
-                {transportIsOther && (
-                  <input
-                    type="text"
-                    placeholder="Type your transport…"
-                    className={inputCls + " mt-2"}
-                    value={formData.transport_type_other || ""}
-                    onChange={(e) =>
-                      onChange({ target: { name: "transport_type_other", value: e.target.value } } as any)
-                    }
-                  />
-                )}
+                <label className="block font-medium text-gray-700 mb-1">Campus / Location</label>
+                <div className="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2.5 text-[16px] text-gray-600 font-medium">
+                  📍 {universityName}
+                </div>
               </div>
 
-              {/* Airplane */}
-              {formData.transport_type === "Airplane" && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block font-medium">Airline name</label>
-                    <input
-                      className={inputCls}
-                      value={formData.airline_name || ""}
-                      onChange={(e) => onChange({ target: { name: "airline_name", value: e.target.value } } as any)}
-                      placeholder="e.g., Delta, United…"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium">Flight number</label>
-                    <input
-                      className={inputCls}
-                      value={formData.travel_number || ""}
-                      onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
-                      placeholder="e.g., UA123"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium">Departure place</label>
-                      <input
-                        className={inputCls}
-                        placeholder="e.g., JFK Terminal 4"
-                        value={formData.departure_place || ""}
-                        onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
-                      />
-                      <label className="block font-medium mt-2">Departure time</label>
-                      <input
-                        type="time"
-                        className={inputCls}
-                        value={formData.departure_time || ""}
-                        onChange={(e) => onChange({ target: { name: "departure_time", value: e.target.value } } as any)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium">Arrival place</label>
-                      <input
-                        className={inputCls}
-                        placeholder="e.g., SFO Gate A7"
-                        value={formData.arrival_place || ""}
-                        onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
-                      />
-                      <label className="block font-medium mt-2">Arrival time</label>
-                      <input
-                        type="time"
-                        className={inputCls}
-                        value={formData.arrival_time || ""}
-                        onChange={(e) => onChange({ target: { name: "arrival_time", value: e.target.value } } as any)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Champ "Circonstances" mis en avant et obligatoire visuellement */}
+              <div>
+                <label className="block font-medium text-gray-900 mb-2">
+                  Precise location & circumstances
+                </label>
+                <textarea
+                  name="circumstances"
+                  placeholder="e.g. I left it on a table at Bobst Library (5th floor) near the elevators, or maybe at the Kimmel Center cafeteria..."
+                  value={formData.circumstances || ""}
+                  onChange={onChange}
+                  className={inputCls + " min-h-[120px]"}
+                  autoFocus
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Please be as specific as possible to help fellow students identify your item.
+                </p>
+              </div>
 
-              {/* Metro / Tram */}
-              {(formData.transport_type === "Metro / Subway" || formData.transport_type === "Tram") && (
-                <div className="space-y-3">
-                  <p className="block font-medium">Do you know on which line it happened?</p>
-                  <div className="flex flex-col gap-2">
-                    {[{ v: true, l: "Yes" }, { v: false, l: "No" }].map(({ v, l }) => (
-                      <label key={String(v)} className={labelRadio}>
-                        <input
-                          type="radio"
-                          className={radioCls}
-                          name="metro_line_known"
-                          value={String(v)}
-                          checked={formData.metro_line_known === v}
-                          onChange={() => onChange({ target: { name: "metro_line_known", value: v } } as any)}
-                        />
-                        <span>{l}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {formData.metro_line_known === true && (
-                    <div>
-                      <label className="block font-medium">Metro/Tram line</label>
+            </div>
+          ) : (
+            /* --- VUE CLASSIQUE (Ville + Transport) --- */
+            <>
+              {/* City */}
+              <div>
+                <label className="block font-medium">City</label>
+                <AutoCompleteCitySelect
+                  value={formData.city || ""}
+                  placeholder="e.g. Chicago"
+                  onChange={(value: string) =>
+                    onChange({ target: { name: "city", value } } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                  onSelect={(city) => {
+                    onChange({ target: { name: "city", value: `${city.city_ascii}` } } as any);
+                    onChange({ target: { name: "state_id", value: city.state_id } } as any);
+                  }}
+                />
+              </div>
+
+              {/* Transport question */}
+              <div>
+                <p className="block font-medium mb-2">Was it during a transport?</p>
+                <div className="flex flex-col gap-2 text-[16px]">
+                  {(["yes", "no", "maybe"] as const).map((v) => (
+                    <label key={v} className={labelRadio}>
                       <input
-                        className={inputCls}
-                        placeholder="e.g., Line 2, M, Green Line…"
-                        value={formData.metro_line || ""}
-                        onChange={(e) => onChange({ target: { name: "metro_line", value: e.target.value } } as any)}
+                        type="radio"
+                        name="transport_answer"
+                        value={v}
+                        checked={transportAnswer === v}
+                        onChange={() => {
+                          setTransportAnswer(v);
+                          onChange({ target: { name: "transport_answer", value: v } } as any);
+                        }}
+                        className={radioCls}
                       />
+                      <span className="capitalize">{v}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* YES -> sélecteurs custom */}
+              {transportAnswer === "yes" && (
+                <div className="space-y-4">
+                  {/* Transport type */}
+                  <div>
+                    <label className="block font-medium">Please select the transport type:</label>
+                    <LocalSuggest
+                      value={formData.transport_type || ""}
+                      onChange={(val) => handleTransportChange(val)}
+                      options={TRANSPORT_OPTIONS}
+                      placeholder="Start typing..."
+                    />
+                    {transportIsOther && (
+                      <input
+                        type="text"
+                        placeholder="Type your transport…"
+                        className={inputCls + " mt-2"}
+                        value={formData.transport_type_other || ""}
+                        onChange={(e) =>
+                          onChange({ target: { name: "transport_type_other", value: e.target.value } } as any)
+                        }
+                      />
+                    )}
+                  </div>
+
+                  {/* Airplane */}
+                  {formData.transport_type === "Airplane" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block font-medium">Airline name</label>
+                        <input
+                          className={inputCls}
+                          value={formData.airline_name || ""}
+                          onChange={(e) => onChange({ target: { name: "airline_name", value: e.target.value } } as any)}
+                          placeholder="e.g., Delta, United…"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium">Flight number</label>
+                        <input
+                          className={inputCls}
+                          value={formData.travel_number || ""}
+                          onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
+                          placeholder="e.g., UA123"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">Departure place</label>
+                          <input
+                            className={inputCls}
+                            placeholder="e.g., JFK Terminal 4"
+                            value={formData.departure_place || ""}
+                            onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
+                          />
+                          <label className="block font-medium mt-2">Departure time</label>
+                          <input
+                            type="time"
+                            className={inputCls}
+                            value={formData.departure_time || ""}
+                            onChange={(e) => onChange({ target: { name: "departure_time", value: e.target.value } } as any)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-medium">Arrival place</label>
+                          <input
+                            className={inputCls}
+                            placeholder="e.g., SFO Gate A7"
+                            value={formData.arrival_place || ""}
+                            onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
+                          />
+                          <label className="block font-medium mt-2">Arrival time</label>
+                          <input
+                            type="time"
+                            className={inputCls}
+                            value={formData.arrival_time || ""}
+                            onChange={(e) => onChange({ target: { name: "arrival_time", value: e.target.value } } as any)}
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium">Departure place</label>
+                  {/* Metro / Tram */}
+                  {(formData.transport_type === "Metro / Subway" || formData.transport_type === "Tram") && (
+                    <div className="space-y-3">
+                      <p className="block font-medium">Do you know on which line it happened?</p>
+                      <div className="flex flex-col gap-2">
+                        {[{ v: true, l: "Yes" }, { v: false, l: "No" }].map(({ v, l }) => (
+                          <label key={String(v)} className={labelRadio}>
+                            <input
+                              type="radio"
+                              className={radioCls}
+                              name="metro_line_known"
+                              value={String(v)}
+                              checked={formData.metro_line_known === v}
+                              onChange={() => onChange({ target: { name: "metro_line_known", value: v } } as any)}
+                            />
+                            <span>{l}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {formData.metro_line_known === true && (
+                        <div>
+                          <label className="block font-medium">Metro/Tram line</label>
+                          <input
+                            className={inputCls}
+                            placeholder="e.g., Line 2, M, Green Line…"
+                            value={formData.metro_line || ""}
+                            onChange={(e) => onChange({ target: { name: "metro_line", value: e.target.value } } as any)}
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">Departure place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.departure_place || ""}
+                            onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
+                            placeholder="e.g., 5th Ave Station"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-medium">Arrival place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.arrival_place || ""}
+                            onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
+                            placeholder="e.g., Central Station"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Train */}
+                  {formData.transport_type === "Train" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block font-medium">Train company</label>
+                        <LocalSuggest
+                          value={formData.train_company || ""}
+                          onChange={(val) => onChange({ target: { name: "train_company", value: val } } as any)}
+                          options={TRAIN_COMPANIES_US}
+                          placeholder="Start typing..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-medium">Do you know the train number?</label>
+                        <input
+                          className={inputCls}
+                          placeholder="If known, enter the train number (optional)"
+                          value={formData.travel_number || ""}
+                          onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">Departure place</label>
+                          <input
+                            className={inputCls}
+                            placeholder="e.g., Chicago Union Station"
+                            value={formData.departure_place || ""}
+                            onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
+                          />
+                          <label className="block font-medium mt-2">Departure time</label>
+                          <input
+                            type="time"
+                            className={inputCls}
+                            value={formData.departure_time || ""}
+                            onChange={(e) => onChange({ target: { name: "departure_time", value: e.target.value } } as any)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-medium">Arrival place</label>
+                          <input
+                            className={inputCls}
+                            placeholder="e.g., St. Louis Gateway"
+                            value={formData.arrival_place || ""}
+                            onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
+                          />
+                          <label className="block font-medium mt-2">Arrival time</label>
+                          <input
+                            type="time"
+                            className={inputCls}
+                            value={formData.arrival_time || ""}
+                            onChange={(e) => onChange({ target: { name: "arrival_time", value: e.target.value } } as any)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rideshare */}
+                  {formData.transport_type === "Rideshare (Uber/Lyft)" && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block font-medium">Rideshare platform</label>
+                        <LocalSuggest
+                          value={formData.rideshare_platform || ""}
+                          onChange={(val) =>
+                            onChange({ target: { name: "rideshare_platform", value: val } } as any)
+                          }
+                          options={RIDESHARE_PLATFORMS_US}
+                          placeholder="Start typing..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">Departure place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.departure_place || ""}
+                            onChange={(e) =>
+                              onChange({ target: { name: "departure_place", value: e.target.value } } as any)
+                            }
+                            placeholder="e.g., Home, Airport…"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-medium">Arrival place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.arrival_place || ""}
+                            onChange={(e) =>
+                              onChange({ target: { name: "arrival_place", value: e.target.value } } as any)
+                            }
+                            placeholder="e.g., Office, Hotel…"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bus/Coach/Shuttle/Ferry/Other */}
+                  {["Bus","Coach","Shuttle","Ferry / Boat","Other (not listed)"].includes(formData.transport_type) && (
+                    <div className="space-y-3">
+                      <label className="block font-medium">
+                        Please provide the transport name and/or number (optional)
+                      </label>
                       <input
                         className={inputCls}
-                        value={formData.departure_place || ""}
-                        onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
-                        placeholder="e.g., 5th Ave Station"
+                        placeholder="e.g., Bus #42, Shuttle A, Ferry Ref ABC…"
+                        value={formData.travel_number || ""}
+                        onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
                       />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-medium">Departure place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.departure_place || ""}
+                            onChange={(e) =>
+                              onChange({ target: { name: "departure_place", value: e.target.value } } as any)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-medium">Arrival place</label>
+                          <input
+                            className={inputCls}
+                            value={formData.arrival_place || ""}
+                            onChange={(e) =>
+                              onChange({ target: { name: "arrival_place", value: e.target.value } } as any)
+                            }
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block font-medium">Arrival place</label>
-                      <input
-                        className={inputCls}
-                        value={formData.arrival_place || ""}
-                        onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
-                        placeholder="e.g., Central Station"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 
-              {/* Train */}
-              {formData.transport_type === "Train" && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block font-medium">Train company</label>
-                    <LocalSuggest
-                      value={formData.train_company || ""}
-                      onChange={(val) => onChange({ target: { name: "train_company", value: val } } as any)}
-                      options={TRAIN_COMPANIES_US}
-                      placeholder="Start typing..."
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block font-medium">Do you know the train number?</label>
-                    <input
-                      className={inputCls}
-                      placeholder="If known, enter the train number (optional)"
-                      value={formData.travel_number || ""}
-                      onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium">Departure place</label>
-                      <input
-                        className={inputCls}
-                        placeholder="e.g., Chicago Union Station"
-                        value={formData.departure_place || ""}
-                        onChange={(e) => onChange({ target: { name: "departure_place", value: e.target.value } } as any)}
-                      />
-                      <label className="block font-medium mt-2">Departure time</label>
-                      <input
-                        type="time"
-                        className={inputCls}
-                        value={formData.departure_time || ""}
-                        onChange={(e) => onChange({ target: { name: "departure_time", value: e.target.value } } as any)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium">Arrival place</label>
-                      <input
-                        className={inputCls}
-                        placeholder="e.g., St. Louis Gateway"
-                        value={formData.arrival_place || ""}
-                        onChange={(e) => onChange({ target: { name: "arrival_place", value: e.target.value } } as any)}
-                      />
-                      <label className="block font-medium mt-2">Arrival time</label>
-                      <input
-                        type="time"
-                        className={inputCls}
-                        value={formData.arrival_time || ""}
-                        onChange={(e) => onChange({ target: { name: "arrival_time", value: e.target.value } } as any)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Rideshare */}
-              {formData.transport_type === "Rideshare (Uber/Lyft)" && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block font-medium">Rideshare platform</label>
-                    <LocalSuggest
-                      value={formData.rideshare_platform || ""}
-                      onChange={(val) =>
-                        onChange({ target: { name: "rideshare_platform", value: val } } as any)
-                      }
-                      options={RIDESHARE_PLATFORMS_US}
-                      placeholder="Start typing..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium">Departure place</label>
-                      <input
-                        className={inputCls}
-                        value={formData.departure_place || ""}
-                        onChange={(e) =>
-                          onChange({ target: { name: "departure_place", value: e.target.value } } as any)
-                        }
-                        placeholder="e.g., Home, Airport…"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium">Arrival place</label>
-                      <input
-                        className={inputCls}
-                        value={formData.arrival_place || ""}
-                        onChange={(e) =>
-                          onChange({ target: { name: "arrival_place", value: e.target.value } } as any)
-                        }
-                        placeholder="e.g., Office, Hotel…"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Bus/Coach/Shuttle/Ferry/Other */}
-              {["Bus","Coach","Shuttle","Ferry / Boat","Other (not listed)"].includes(formData.transport_type) && (
-                <div className="space-y-3">
-                  <label className="block font-medium">
-                    Please provide the transport name and/or number (optional)
-                  </label>
-                  <input
-                    className={inputCls}
-                    placeholder="e.g., Bus #42, Shuttle A, Ferry Ref ABC…"
-                    value={formData.travel_number || ""}
-                    onChange={(e) => onChange({ target: { name: "travel_number", value: e.target.value } } as any)}
+              {(transportAnswer === "no" || transportAnswer === "maybe") && (
+                <div className="space-y-2">
+                  <label className="block font-medium">Please specify the place</label>
+                  <LocalSuggest
+                    value={formData.place_type || ""}
+                    onChange={(val) => handlePlaceChange(val)}
+                    options={PLACE_OPTIONS}
+                    placeholder="Start typing..."
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-medium">Departure place</label>
-                      <input
-                        className={inputCls}
-                        value={formData.departure_place || ""}
-                        onChange={(e) =>
-                          onChange({ target: { name: "departure_place", value: e.target.value } } as any)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium">Arrival place</label>
-                      <input
-                        className={inputCls}
-                        value={formData.arrival_place || ""}
-                        onChange={(e) =>
-                          onChange({ target: { name: "arrival_place", value: e.target.value } } as any)
-                        }
-                      />
-                    </div>
-                  </div>
+                  {placeIsOther && (
+                    <input
+                      type="text"
+                      placeholder="Type your place…"
+                      className={inputCls + " mt-2"}
+                      value={formData.place_type_other || ""}
+                      onChange={(e) =>
+                        onChange({ target: { name: "place_type_other", value: e.target.value } } as any)
+                      }
+                    />
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-
-          {(transportAnswer === "no" || transportAnswer === "maybe") && (
-            <div className="space-y-2">
-              <label className="block font-medium">Please specify the place</label>
-              <LocalSuggest
-                value={formData.place_type || ""}
-                onChange={(val) => handlePlaceChange(val)}
-                options={PLACE_OPTIONS}
-                placeholder="Start typing..."
-              />
-              {placeIsOther && (
-                <input
-                  type="text"
-                  placeholder="Type your place…"
-                  className={inputCls + " mt-2"}
-                  value={formData.place_type_other || ""}
-                  onChange={(e) =>
-                    onChange({ target: { name: "place_type_other", value: e.target.value } } as any)
-                  }
+              {/* Circumstances — toujours à la fin */}
+              <div>
+                <label className="block font-medium">Circumstances of loss (optional)</label>
+                <textarea
+                  name="circumstances"
+                  placeholder="e.g., I forgot it in the rear seat pocket of the taxi…"
+                  value={formData.circumstances || ""}
+                  onChange={onChange}
+                  className={inputCls + " min-h-[88px]"}
                 />
-              )}
-            </div>
+              </div>
+            </>
           )}
-
-          {/* Circumstances — toujours à la fin */}
-          <div>
-            <label className="block font-medium">Circumstances of loss (optional)</label>
-            <textarea
-              name="circumstances"
-              placeholder="e.g., I forgot it in the rear seat pocket of the taxi…"
-              value={formData.circumstances || ""}
-              onChange={onChange}
-              className={inputCls + " min-h-[88px]"}
-            />
-          </div>
 
           <div className="flex justify-between pt-4">
             <button
