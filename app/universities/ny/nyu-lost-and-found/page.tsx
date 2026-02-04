@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "NYU Lost & Found: The Unofficial Student Guide",
-  description: "Lost something at New York University? Find locations for Bobst & Campus Safety, pickup hours, and search recent lost & found items.",
+  description: "Lost something at New York University? Find locations for Bobst & Campus Safety, pickup hours, and search lost & found items.",
   alternates: {
     canonical: "https://reportlost.org/universities/ny/nyu-lost-and-found",
   },
@@ -102,7 +102,7 @@ export default async function NyuLostFoundPage() {
       .select("id, title, date, city, category, image_url, created_at")
       .or(NYC_FILTER)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20); // Limite augmentée pour avoir de l'historique
     if (data) lostData = data;
   } catch (e) {
     console.error("Error fetching lost items:", e);
@@ -116,7 +116,7 @@ export default async function NyuLostFoundPage() {
       .select("id, title, date, city, image_url, created_at")
       .or(NYC_FILTER)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20);
     if (data) foundData = data;
   } catch (e) {
     console.error("Error fetching found items:", e);
@@ -128,7 +128,7 @@ export default async function NyuLostFoundPage() {
     ...foundData.map((i) => ({ ...i, type: "found" })),
   ]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 8);
+    .slice(0, 12); // On affiche les 12 plus pertinents
 
   return (
     <main className="min-h-screen bg-[#f9fafb]">
@@ -245,7 +245,7 @@ export default async function NyuLostFoundPage() {
           </div>
         </div>
 
-        {/* --- SECTION 2.5: THE "CROSSROADS" (I Found vs I Lost) --- */}
+        {/* --- SECTION 2.5: THE "CROSSROADS" --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           {/* Green Card (Found) */}
           <div
@@ -315,17 +315,17 @@ export default async function NyuLostFoundPage() {
           </div>
         </div>
 
-        {/* --- SECTION 4: RECENT ITEMS (MIXTE & LIVE) --- */}
+        {/* --- SECTION 4: ITEMS LIST (MIXTE & LIVE) --- */}
         {allItems.length > 0 ? (
           <div className="mb-20">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <span className="text-[#26723e]">🔍</span> Recent Activity in NYC
+              <span className="text-[#26723e]">🔍</span> Reports in New York / NYU
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {allItems.map((item) => (
                 <Link
                   key={`${item.type}-${item.id}`}
-                  href={`/lost-item/${item.id}`} // Assurez-vous que cette route gère aussi les items 'found' si besoin
+                  href={`/lost-item/${item.id}`}
                   className="block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow group relative"
                 >
                   {/* Badge Type */}
@@ -379,115 +379,97 @@ export default async function NyuLostFoundPage() {
           </div>
         ) : (
           <div className="mb-20 text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-            <p className="text-gray-500">No recent reports found in NYC.</p>
+            <p className="text-gray-500">No reports found matching NYU.</p>
             <p className="text-xs text-gray-400 mt-1">
               (Be the first to report something!)
             </p>
           </div>
         )}
 
-        {/* --- FAQ SEO SECTION (Vertical Layout) --- */}
-        <div className="mt-20 max-w-4xl mx-auto">
+        {/* --- FAQ SEO SECTION (Vertical Linear Layout) --- */}
+        <div className="mt-20 max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Complete Lost & Found FAQ</h2>
             <p className="text-gray-600">
-              Everything you need to know about recovering items at NYU, categorized for speed.
+              Everything you need to know about recovering items at NYU.
             </p>
           </div>
 
           <div className="space-y-12"> {/* ✅ Layout Vertical : Sections l'une après l'autre */}
             
-            {/* Category: Essentials */}
-            <div className="border-b border-gray-100 pb-8 last:border-0">
+            {/* 1. Essentials */}
+            <div className="border-b border-gray-200 pb-10 last:border-0">
               <h3 className="flex items-center gap-3 text-xl font-bold text-[#57068c] uppercase tracking-wide mb-6">
                 <span className="text-2xl">🆔</span> ID Cards & Keys
               </h3>
-              <div className="space-y-6 pl-0 md:pl-2">
-                <div>
+              <div className="space-y-6">
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">I lost my NYU ID Card. What now?</h4>
                   <p className="text-gray-600 leading-relaxed">
                     This is the most common loss. If found, ID cards are almost always routed to the{" "}
                     <strong>NYU Card Center</strong> (7 Washington Place).
                     <br />
-                    <br />
-                    <strong>Step 1:</strong> Call 212-443-CARD to check if it's there.
-                    <br />
-                    <strong>Step 2:</strong> If not, you can deactivate it online to prevent misuse.
-                    <br />
-                    <strong>Step 3:</strong> A replacement fee (usually around $25) will apply if you need a new one printed.
+                    Call 212-443-CARD to check if it's there. A replacement fee (usually around $25) will apply if you need a new one printed.
                   </p>
-                </div>
-                <div>
+                </article>
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">I lost my dorm keys / room key.</h4>
                   <p className="text-gray-600 leading-relaxed">
                     For residence hall keys, contact your <strong>Residence Hall Resource Center</strong>{" "}
                     immediately. For safety reasons, if a key is not found quickly, the lock core may need
-                    to be changed, which incurs a significantly higher fee than a simple key replacement.
+                    to be changed.
                   </p>
-                </div>
+                </article>
               </div>
             </div>
 
-            {/* Category: Tech */}
-            <div className="border-b border-gray-100 pb-8 last:border-0">
+            {/* 2. Tech */}
+            <div className="border-b border-gray-200 pb-10 last:border-0">
               <h3 className="flex items-center gap-3 text-xl font-bold text-[#57068c] uppercase tracking-wide mb-6">
                 <span className="text-2xl">💻</span> Laptops & Electronics
               </h3>
-              <div className="space-y-6 pl-0 md:pl-2">
-                <div>
+              <div className="space-y-6">
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">Are laptops tracked?</h4>
                   <p className="text-gray-600 leading-relaxed">
                     If you registered your device with NYU Public Safety (Operation ID), recovery is much faster.
                     If not, you must provide the <strong>Serial Number</strong> to the lost and found office.
-                    They will not release an electronic device without proof of ownership (serial number match
-                    or detailed description/login capability).
+                    They will not release an electronic device without proof of ownership.
                   </p>
-                </div>
-                <div>
+                </article>
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">I left my charger in a classroom.</h4>
                   <p className="text-gray-600 leading-relaxed">
-                    Chargers are often considered "low value" and might not make it to the central office
-                    immediately. Check the <strong>podium/desk of the classroom</strong> first, then the
+                    Chargers are often considered "low value". Check the <strong>podium/desk of the classroom</strong> first, then the
                     building's specific security guard desk before calling the main number.
                   </p>
-                </div>
+                </article>
               </div>
             </div>
 
-            {/* Category: Locations */}
-            <div className="border-b border-gray-100 pb-8 last:border-0">
+            {/* 3. Locations */}
+            <div className="border-b border-gray-200 pb-10 last:border-0">
               <h3 className="flex items-center gap-3 text-xl font-bold text-[#57068c] uppercase tracking-wide mb-6">
                 <span className="text-2xl">📍</span> Specific Locations
               </h3>
-              <div className="space-y-6 pl-0 md:pl-2">
-                <div>
+              <div className="space-y-6">
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">Bobst Library</h4>
                   <p className="text-gray-600 leading-relaxed">
                     Items found on the floors of Bobst are typically brought down to the{" "}
-                    <strong>Lobby Security Desk</strong>. If they are valuable (wallets, phones), they are
-                    moved to 7 Washington Place within 24-48 hours. If it's a book or bottle, it might stay
-                    at the desk longer or be discarded.
+                    <strong>Lobby Security Desk</strong>. If valuable, they move to 7 Washington Place within 48h.
                   </p>
-                </div>
-                <div>
+                </article>
+                <article>
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">Palladium & 404 Fitness</h4>
                   <p className="text-gray-600 leading-relaxed">
-                    Gyms have their own internal lost and found bins for clothing and bottles. Ask the front
-                    desk attendant. Valuable items (rings, watches) are usually secured in the manager's office
-                    before being sent to Public Safety.
+                    Gyms have their own internal bins for clothing/bottles. Ask the front desk. Valuable items are secured in the manager's office.
                   </p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-2 text-lg">NYU Shuttles / Safe Ride</h4>
-                  <p className="text-gray-600 leading-relaxed">
-                    Drivers check buses at the end of shifts. Items are turned in to Public Safety. Call
-                    212-998-1305. Do not try to flag down another bus to ask; they are on strict schedules.
-                  </p>
-                </div>
+                </article>
               </div>
             </div>
 
-            {/* Category: The "Rejected" List */}
+            {/* 4. Rejected */}
             <div>
               <h3 className="flex items-center gap-3 text-xl font-bold text-red-700 uppercase tracking-wide mb-6">
                 <span className="text-2xl">⚠️</span> Items often discarded
@@ -502,11 +484,10 @@ export default async function NyuLostFoundPage() {
                   <li>Tupperware / Food containers</li>
                   <li>Loose clothing (Jackets, scarves, hats)</li>
                   <li>Umbrellas</li>
-                  <li>Toiletries</li>
                 </ul>
                 <p className="font-semibold text-red-900">
                   This is exactly why ReportLost exists. Post these items here so students can find each
-                  other directly, bypassing the official bin.
+                  other directly.
                 </p>
               </div>
             </div>
@@ -515,7 +496,7 @@ export default async function NyuLostFoundPage() {
         </div>
 
         {/* --- FOOTER DISCLAIMER --- */}
-        <div className="text-center text-gray-400 text-xs mt-20 mb-8 max-w-2xl mx-auto leading-normal px-4">
+        <div className="text-center text-gray-400 text-xs mt-24 mb-8 max-w-2xl mx-auto leading-normal px-4">
           <p className="mb-2">ReportLost.org is a community-run initiative aimed at helping students.</p>
           <p>
             We are <strong>not affiliated</strong> with New York University or the Department of Public Safety. The
