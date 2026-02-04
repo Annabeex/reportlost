@@ -254,25 +254,48 @@ export default async function NyuLostFoundPage() {
 
         {/* --- SECTION 2.5: THE "CROSSROADS" (UX Improvement) --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-           {/* OPTION 2 : STYLE SOFT VIOLET (Harmonieux avec NYU) */}
-            <div className="bg-white rounded-2xl shadow-sm border-2 border-[#57068c]/20 p-6 flex flex-col justify-between relative overflow-hidden group hover:border-[#57068c]/40 transition-colors">
+          {/* --- SECTION 2.5: THE "CROSSROADS" --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            
+            {/* OPTION 1 : STYLE REPORTLOST (Dégradé Vert) */}
+            <div className="rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between relative overflow-hidden group"
+                 style={{ background: 'linear-gradient(135deg, #26723e 0%, #2ea052 100%)' }}>
                 
-                <div>
-                    <h3 className="text-2xl font-bold mb-2 text-[#57068c]">
-                        I found an item 😇
+                {/* Icône de fond décorative (subtile) */}
+                <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+                    <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                </div>
+                
+                <div className="relative z-10">
+                    <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                        I found an item <span className="text-2xl">😇</span>
                     </h3>
-                    <p className="text-gray-600 mb-6">
-                        Did you find a phone, keys, or a jacket? Help a fellow student get it back.
+                    <p className="text-green-50 mb-6 font-medium">
+                        Did you find a phone, keys, or a jacket on campus? Help a fellow student get it back quickly.
                     </p>
                 </div>
                 
                 <Link 
                     href="/report?tab=found" 
-                    className="inline-block text-center bg-[#57068c] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#460570] transition shadow-md"
+                    className="relative z-10 inline-block text-center bg-white text-[#1f6b3a] font-bold py-3 px-6 rounded-lg hover:bg-green-50 transition shadow-md"
                 >
                     Report a Found Item
                 </Link>
             </div>
+
+            {/* Carte "J'ai Perdu" (Blanc sobre) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-center text-center md:text-left">
+                 <h3 className="text-xl font-bold text-gray-800 mb-2">I lost an item 😢</h3>
+                 <p className="text-gray-600 mb-4">
+                    If Security doesn't have it, post a community alert below so other students can contact you directly.
+                 </p>
+                 <a href="#report-form" className="text-[#26723e] font-semibold hover:underline flex items-center justify-center md:justify-start gap-2">
+                    Scroll to form ↓
+                 </a>
+            </div>
+        </div>
 
             {/* Carte "J'ai Perdu" (Blanc, orientation) */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-center text-center md:text-left">
