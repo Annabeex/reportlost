@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link"; // ✅ Nouvel import nécessaire
 import ReportForm from "@/components/ReportForm";
 
 // --- SEO METADATA ---
@@ -139,7 +140,7 @@ export default function NyuLostFoundPage() {
         </div>
 
         {/* --- SECTION 2: THE PROBLEM (Why use ReportLost) --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           {/* Card: Not Accepted */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-red-100 p-6 md:p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-10 -mt-10"></div>
@@ -189,6 +190,42 @@ export default function NyuLostFoundPage() {
               ReportLost covers all these locations.
             </p>
           </div>
+        </div>
+
+        {/* --- SECTION 2.5: THE "CROSSROADS" (CHOIX ACTION) --- */}
+        {/* ✅ Nouvelle section UX pour remplacer la Navbar */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            {/* Carte "J'ai Trouvé" (Bleu, incitatif) */}
+            <div className="bg-blue-600 rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between relative overflow-hidden group">
+                <div className="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+                    <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </div>
+                
+                <div>
+                    <h3 className="text-2xl font-bold mb-2">I found an item 😇</h3>
+                    <p className="text-blue-100 mb-6">
+                        Did you find a phone, keys, or a jacket on campus? Help a fellow student get it back.
+                    </p>
+                </div>
+                
+                <Link 
+                    href="/report?tab=found" 
+                    className="inline-block text-center bg-white text-blue-700 font-bold py-3 px-6 rounded-lg hover:bg-blue-50 transition shadow-md"
+                >
+                    Report a Found Item
+                </Link>
+            </div>
+
+            {/* Carte "J'ai Perdu" (Blanc, orientation) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-center text-center md:text-left">
+                 <h3 className="text-xl font-bold text-gray-800 mb-2">I lost an item 😢</h3>
+                 <p className="text-gray-600 mb-4">
+                    If Security doesn't have it, post a community alert below so other students can contact you.
+                 </p>
+                 <a href="#report-form" className="text-green-600 font-semibold hover:underline flex items-center justify-center md:justify-start gap-2">
+                    Scroll to form ↓
+                 </a>
+            </div>
         </div>
 
         {/* --- SECTION 3: THE FORM (Embedded & Free) --- */}

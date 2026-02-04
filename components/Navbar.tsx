@@ -34,6 +34,9 @@ export default function Navbar() {
   const slant = 28; // largeur de la pente oblique
   const [isMobile, setIsMobile] = useState(false);
 
+  // ✅ UX: On détecte si on est sur une page université pour cacher les onglets
+  const isUniPage = pathname.startsWith('/universities');
+
   // Détection de la taille d’écran
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -98,77 +101,79 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Liens */}
-        <div className="flex items-stretch gap-0 h-full">
-          {/* --- VERSION MOBILE : droite et compacte --- */}
-          {isMobile ? (
-            <>
-              <Link
-                href="/report?tab=lost"
-                className="flex items-center justify-center bg-green-600 text-white font-semibold px-3 py-1 text-xs rounded-l-md"
-              >
-                <Search size={14} className="mr-1 opacity-95" />
-                LOST
-              </Link>
-              <Link
-                href="/report?tab=found"
-                className="flex items-center justify-center bg-blue-500 text-white font-semibold px-3 py-1 text-xs rounded-r-md"
-              >
-                <SmallCheck size={14} />
-                FOUND
-              </Link>
-            </>
-          ) : (
-            <>
-              {/* --- VERSION DESKTOP : oblique --- */}
-              <Link
-                href="/report?tab=lost"
-                className="flex items-center font-semibold text-white no-underline"
-                style={{
-                  position: 'relative',
-                  padding: '0 26px 0 28px',
-                  background: 'linear-gradient(90deg,#26723e 0%, #2ea052 100%)',
-                  clipPath: `polygon(${slant}px 0, 100% 0, calc(100% - ${slant}px) 100%, 0 100%)`,
-                  height: '100%',
-                  zIndex: 1,
-                }}
-              >
-                <Search size={18} className="mr-2 opacity-95" />
-                <span className="whitespace-nowrap">I lost something</span>
-              </Link>
-
-              <Link
-                href="/report?tab=found"
-                className="flex items-center font-semibold text-white no-underline"
-                style={{
-                  position: 'relative',
-                  padding: '0 22px',
-                  background: 'linear-gradient(90deg,#7fb7ff 0%, #8ec3ff 100%)',
-                  clipPath: `polygon(${slant}px 0, 100% 0, 100% 100%, 0 100%)`,
-                  marginLeft: `${-slant + 2}px`,
-                  height: '100%',
-                  zIndex: 2,
-                }}
-              >
-                {/* Triangle vert de continuité */}
-                <span
-                  aria-hidden="true"
+        {/* Liens (Cachés si on est sur une page Université) */}
+        {!isUniPage && (
+          <div className="flex items-stretch gap-0 h-full">
+            {/* --- VERSION MOBILE : droite et compacte --- */}
+            {isMobile ? (
+              <>
+                <Link
+                  href="/report?tab=lost"
+                  className="flex items-center justify-center bg-green-600 text-white font-semibold px-3 py-1 text-xs rounded-l-md"
+                >
+                  <Search size={14} className="mr-1 opacity-95" />
+                  LOST
+                </Link>
+                <Link
+                  href="/report?tab=found"
+                  className="flex items-center justify-center bg-blue-500 text-white font-semibold px-3 py-1 text-xs rounded-r-md"
+                >
+                  <SmallCheck size={14} />
+                  FOUND
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* --- VERSION DESKTOP : oblique --- */}
+                <Link
+                  href="/report?tab=lost"
+                  className="flex items-center font-semibold text-white no-underline"
                   style={{
-                    position: 'absolute',
-                    left: `${-slant}px`,
-                    top: 0,
-                    width: `${slant}px`,
-                    height: '100%',
+                    position: 'relative',
+                    padding: '0 26px 0 28px',
                     background: 'linear-gradient(90deg,#26723e 0%, #2ea052 100%)',
-                    clipPath: 'polygon(0 100%, 100% 0, 100% 100%)',
+                    clipPath: `polygon(${slant}px 0, 100% 0, calc(100% - ${slant}px) 100%, 0 100%)`,
+                    height: '100%',
+                    zIndex: 1,
                   }}
-                />
-                <SmallCheck size={18} />
-                <span className="whitespace-nowrap">I found something</span>
-              </Link>
-            </>
-          )}
-        </div>
+                >
+                  <Search size={18} className="mr-2 opacity-95" />
+                  <span className="whitespace-nowrap">I lost something</span>
+                </Link>
+
+                <Link
+                  href="/report?tab=found"
+                  className="flex items-center font-semibold text-white no-underline"
+                  style={{
+                    position: 'relative',
+                    padding: '0 22px',
+                    background: 'linear-gradient(90deg,#7fb7ff 0%, #8ec3ff 100%)',
+                    clipPath: `polygon(${slant}px 0, 100% 0, 100% 100%, 0 100%)`,
+                    marginLeft: `${-slant + 2}px`,
+                    height: '100%',
+                    zIndex: 2,
+                  }}
+                >
+                  {/* Triangle vert de continuité */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      left: `${-slant}px`,
+                      top: 0,
+                      width: `${slant}px`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg,#26723e 0%, #2ea052 100%)',
+                      clipPath: 'polygon(0 100%, 100% 0, 100% 100%)',
+                    }}
+                  />
+                  <SmallCheck size={18} />
+                  <span className="whitespace-nowrap">I found something</span>
+                </Link>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );
