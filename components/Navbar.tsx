@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
@@ -29,6 +28,28 @@ function SmallCheck({ size = 18 }: { size?: number }) {
   );
 }
 
+// ✅ Logo texte + pin (remplace l'ancien PNG /images/logo-reportlost.png)
+function BrandLogo({ compact = false }: { compact?: boolean }) {
+  const pin = compact ? 26 : 30;
+  return (
+    <span className="flex items-center gap-2">
+      <svg width={pin} height={pin} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"
+          fill="#1e293b"
+        />
+      </svg>
+      <span className={`${compact ? 'text-xl' : 'text-2xl'} font-extrabold tracking-tight leading-none`}>
+        <span className="text-gray-900">Report</span>
+        <span className="text-blue-500">Lost</span>
+        <span className="text-gray-400 text-sm font-bold align-top ml-0.5">.org</span>
+      </span>
+    </span>
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname() || '/';
   const slant = 28; // largeur de la pente oblique
@@ -50,14 +71,7 @@ export default function Navbar() {
     return (
       <nav className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
         <Link href="/" className="flex items-center" passHref>
-          <Image
-            src="/images/logo-reportlost.png"
-            alt="ReportLost Logo"
-            width={180}
-            height={48}
-            priority
-            className="cursor-pointer"
-          />
+          <BrandLogo />
         </Link>
         <div className="space-x-4 text-sm text-gray-700">
           <Link href="/report" className="hover:text-blue-600 transition-colors">
@@ -91,14 +105,7 @@ export default function Navbar() {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center" passHref>
-          <Image
-            src="/images/logo-reportlost.png"
-            alt="ReportLost Logo"
-            width={isMobile ? 140 : 160}
-            height={48}
-            priority
-            className="cursor-pointer"
-          />
+          <BrandLogo compact={isMobile} />
         </Link>
 
         {/* Liens (Cachés si on est sur une page Université) */}

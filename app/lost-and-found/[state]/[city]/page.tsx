@@ -12,6 +12,7 @@ import { getNearbyCities } from "@/lib/getNearbyCities";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { fetchPoliceStations } from "@/lib/fetchPoliceStations";
 import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
+import { LaTitleSection, LaExtraContent } from "@/components/LosAngelesContent";
 
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -176,6 +177,9 @@ export default async function Page({ params }: { params: { state: string; city: 
     const isNYC =
       stateAbbr === "NY" &&
       String(cityData.city_ascii || "").trim().toLowerCase() === "new york";
+    const isLA =
+      stateAbbr === "CA" &&
+      String(cityData.city_ascii || "").trim().toLowerCase() === "los angeles";
 
     // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
     let realReports: string[] = [];
@@ -276,6 +280,8 @@ export default async function Page({ params }: { params: { state: string; city: 
     // 8) Blocs réutilisés (passés au composant client pour masquage à l’étape 3)
     const TitleSection = isNYC ? (
       <NycTitleSection />
+    ) : isLA ? (
+      <LaTitleSection />
     ) : (
       <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
@@ -309,6 +315,12 @@ export default async function Page({ params }: { params: { state: string; city: 
 
     const ExtraBelowForm = isNYC ? (
       <NycExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : isLA ? (
+      <LaExtraContent
         cityImage={cityImage}
         cityImageAlt={cityImageAlt}
         cityImageCredit={cityImageCredit}
