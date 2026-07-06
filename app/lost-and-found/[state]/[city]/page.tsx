@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { fetchPoliceStations } from "@/lib/fetchPoliceStations";
 import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
 
 const CANONICAL_BASE = "https://reportlost.org";
@@ -248,23 +249,12 @@ export default async function Page({ params }: { params: { state: string; city: 
       }
     }
 
-    // 6) Overpass → objets plats pour le composant client
+    // 6) Postes de police via Overpass (helper robuste : "out center", ways/relations,
+    //    timeout, miroirs de secours, logs). Corrige le bug "out tags center" qui
+    //    supprimait les coordonnées des nodes.
     let policeStations: PoliceStation[] = [];
     try {
-      const overpassUrl =
-        `https://overpass-api.de/api/interpreter?data=` +
-        `[out:json];node[amenity=police](around:10000,${cityData.lat},${cityData.lng});out tags center;`;
-      const res = await fetch(overpassUrl, { next: { revalidate: 3600 } });
-      if (res.ok) {
-        const data = await res.json();
-        const raw = Array.isArray(data?.elements) ? data.elements : [];
-        policeStations = raw.map((el: any) => ({
-          id: typeof el?.id === "number" || typeof el?.id === "string" ? String(el.id) : undefined,
-          lat: typeof el?.lat === "number" ? el.lat : typeof el?.center?.lat === "number" ? el.center.lat : null,
-          lon: typeof el?.lon === "number" ? el.lon : typeof el?.center?.lon === "number" ? el.center.lon : null,
-          name: typeof el?.tags?.name === "string" ? el?.tags?.name : null,
-        }));
-      }
+      policeStations = await fetchPoliceStations(Number(cityData.lat), Number(cityData.lng));
     } catch {
       policeStations = [];
     }
