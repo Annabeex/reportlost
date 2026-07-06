@@ -5,16 +5,16 @@
  *   npx tsx scripts/regen-city-image.ts                 # New York, NY (défaut)
  *   npx tsx scripts/regen-city-image.ts "Los Angeles" CA
  */
-const { config } = require("dotenv");
-const { existsSync } = require("node:fs");
-const path = require("node:path");
+import { config } from "dotenv";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 
+// Charger .env.local (sinon .env) AVANT de lire les variables
 const envLocal = path.resolve(process.cwd(), ".env.local");
 const envDefault = path.resolve(process.cwd(), ".env");
 if (existsSync(envLocal)) config({ path: envLocal });
 else if (existsSync(envDefault)) config({ path: envDefault });
-
-const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
