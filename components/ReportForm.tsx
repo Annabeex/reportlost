@@ -25,6 +25,9 @@ type ReportFormProps = {
   initialCategory?: string;
   forceFreeMode?: boolean; // ✅ NEW: Active le mode "Student" (skip paiement)
   universityName?: string; // ✅ NEW: Pour afficher le nom de l'université
+  /** ✅ NEW: version "intégrée" (page ville) — enlève min-h-screen et allège les marges.
+   *  Par défaut false → aucun impact sur /report, universités, home. */
+  embedded?: boolean;
 };
 
 type EventLike =
@@ -87,6 +90,7 @@ export default function ReportForm({
   initialCategory,
   forceFreeMode = false, // ✅ NEW
   universityName, // ✅ NEW
+  embedded = false, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -784,7 +788,11 @@ setFreeEmailSent(true);
   return (
     <main
       ref={formRef}
-      className="w-full min-h-screen px-4 py-6 space-y-4"
+      className={
+        embedded
+          ? "w-full px-1 sm:px-2 py-1 space-y-4"
+          : "w-full min-h-screen px-4 py-6 space-y-4"
+      }
     >
       {step === 1 && (
         <ReportFormStep1

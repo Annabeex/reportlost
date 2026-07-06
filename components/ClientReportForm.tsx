@@ -16,6 +16,8 @@ type Props = {
   compact?: boolean;
   /** ⬅️ nouvelle prop pour pré-remplir la catégorie */
   initialCategory?: string;
+  /** version "intégrée" page ville : formulaire moins haut (enlève min-h-screen) */
+  embedded?: boolean;
 };
 
 export default function ClientReportForm({
@@ -24,6 +26,7 @@ export default function ClientReportForm({
   onStepChangeExternal,
   compact = false,
   initialCategory, // ⬅️ ajouté
+  embedded = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"lost" | "found">(initialTab);
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -38,9 +41,15 @@ export default function ClientReportForm({
   }, [currentStep, onStepChangeExternal]);
 
   return (
-    <section className="bg-transparent sm:bg-blue-100 py-4 sm:py-10 px-1 sm:px-5 lg:px-8 rounded-none sm:rounded-xl">
+    <section
+      className={
+        embedded
+          ? "bg-transparent sm:bg-blue-100 py-2 sm:py-4 px-1 sm:px-4 rounded-none sm:rounded-xl"
+          : "bg-transparent sm:bg-blue-100 py-4 sm:py-10 px-1 sm:px-5 lg:px-8 rounded-none sm:rounded-xl"
+      }
+    >
       <div className={compact ? "max-w-4xl mx-auto" : "max-w-5xl mx-auto"}>
-        <div className="bg-white rounded-xl shadow-md p-3 sm:p-8 lg:p-10">
+        <div className={embedded ? "bg-white rounded-xl shadow-md p-3 sm:p-5" : "bg-white rounded-xl shadow-md p-3 sm:p-8 lg:p-10"}>
           {activeTab === "lost" ? (
             <ReportForm
               defaultCity={defaultCity}
@@ -48,6 +57,7 @@ export default function ClientReportForm({
               onStepChange={setCurrentStep}
               // ⬅️ on passe la catégorie au formulaire
               initialCategory={initialCategory}
+              embedded={embedded}
             />
           ) : (
             <FoundItemsForm defaultCity={defaultCity} />

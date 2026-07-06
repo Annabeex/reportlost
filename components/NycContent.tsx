@@ -137,6 +137,44 @@ export function NycExtraContent({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      {/* Comment ça marche — 3 étapes (explique le process) */}
+      <section className="bg-white p-6 rounded-xl shadow">
+        <h2 className="text-2xl font-bold text-gray-900 text-center">
+          How we help you recover it in New York
+        </h2>
+        <div className="grid md:grid-cols-3 gap-6 mt-8">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📝</div>
+            <h3 className="font-bold mt-3 text-gray-900">1. You report the loss</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Describe the item and where you lost it. The more detail, the better the match.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
+            <h3 className="font-bold mt-3 text-gray-900">2. We route it to the right places</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              The NYPD precinct covering that spot, plus MTA / TLC / airport lost &amp; found and the right social groups.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center text-2xl">🤝</div>
+            <h3 className="font-bold mt-3 text-gray-900">3. You get matched &amp; notified</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              If someone finds or turns in your item, you&apos;re alerted to arrange pickup.
+            </p>
+          </div>
+        </div>
+        <div className="text-center mt-8">
+          <a
+            href="#report-form"
+            className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
+          >
+            Report my lost item →
+          </a>
+        </div>
+      </section>
+
       {/* Intro + image */}
       <section className="bg-white p-6 rounded-xl shadow">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -267,6 +305,20 @@ export function NycExtraContent({
         </div>
       </section>
 
+      {/* CTA milieu de page vers le formulaire */}
+      <section className="bg-blue-50 rounded-xl border border-blue-100 p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-900">Don&apos;t wait — the first 48 hours matter most</h2>
+        <p className="mt-2 text-gray-600">
+          Lost &amp; found offices clear items on strict deadlines. Get in the system now.
+        </p>
+        <a
+          href="#report-form"
+          className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
+        >
+          Report my lost item →
+        </a>
+      </section>
+
       {/* Quartiers / arrondissements — maillage interne */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900">Lost something in a specific NYC neighborhood?</h2>
@@ -342,6 +394,18 @@ export function NycExtraContent({
             </Link>
           ))}
         </div>
+      </section>
+
+      {/* CTA final vers le formulaire */}
+      <section className="text-center py-6">
+        <h2 className="text-2xl font-bold text-gray-900">Ready to get your item back?</h2>
+        <p className="text-gray-600 mt-2">One report. Every relevant channel in New York City.</p>
+        <a
+          href="#report-form"
+          className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
+        >
+          Start my report →
+        </a>
       </section>
 
       {/* Disclaimer (E-E-A-T) */}

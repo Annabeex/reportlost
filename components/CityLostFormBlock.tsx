@@ -51,12 +51,15 @@ export default function CityLostFormBlock({
         {recentAndMapSection}
       </div>
 
-      {/* Le formulaire */}
-      <ClientReportForm
-        defaultCity={defaultCity}
-        initialTab="lost"
-        onStepChangeExternal={setStep} // récupère le step
-      />
+      {/* Le formulaire (ancre pour les boutons CTA "Report") */}
+      <div id="report-form" className="scroll-mt-6">
+        <ClientReportForm
+          defaultCity={defaultCity}
+          initialTab="lost"
+          onStepChangeExternal={setStep} // récupère le step
+          embedded // ✅ page ville : formulaire moins haut
+        />
+      </div>
 
       {/* Sections en-dessous (optionnelles) — TOUJOURS rendues */}
       {extraBelowForm && (
