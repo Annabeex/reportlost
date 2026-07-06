@@ -11,6 +11,8 @@ import { buildCityPath } from '@/lib/slugify';
 // --- IMPORTANT: carte interactive chargée à la demande, pas au-dessus du fold
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
 
+
+
 // helper: slug catégorie
 function categoryToSlug(name: string) {
   return String(name)

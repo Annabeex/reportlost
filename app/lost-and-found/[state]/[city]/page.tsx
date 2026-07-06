@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
 
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -169,6 +170,12 @@ export default async function Page({ params }: { params: { state: string; city: 
     const text = cityData.static_content || "";
     const today = formatDate(new Date());
 
+    // ====== Page enrichie dédiée à New York City ======
+    // (n'affecte AUCUNE autre ville : contenu générique conservé partout ailleurs)
+    const isNYC =
+      stateAbbr === "NY" &&
+      String(cityData.city_ascii || "").trim().toLowerCase() === "new york";
+
     // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
     let realReports: string[] = [];
     try {
@@ -277,7 +284,9 @@ export default async function Page({ params }: { params: { state: string; city: 
       .replace(/\n/g, " ")}</p>`;
 
     // 8) Blocs réutilisés (passés au composant client pour masquage à l’étape 3)
-    const TitleSection = (
+    const TitleSection = isNYC ? (
+      <NycTitleSection />
+    ) : (
       <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
       </section>
@@ -308,7 +317,13 @@ export default async function Page({ params }: { params: { state: string; city: 
       </section>
     );
 
-    const ExtraBelowForm = (
+    const ExtraBelowForm = isNYC ? (
+      <NycExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : (
       <>
         <section className="bg-white p-6 rounded-xl shadow">
           <div
