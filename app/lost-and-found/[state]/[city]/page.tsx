@@ -13,6 +13,9 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { fetchPoliceStations } from "@/lib/fetchPoliceStations";
 import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
 import { LaTitleSection, LaExtraContent } from "@/components/LosAngelesContent";
+import { ChicagoTitleSection, ChicagoExtraContent } from "@/components/ChicagoContent";
+import { HoustonTitleSection, HoustonExtraContent } from "@/components/HoustonContent";
+import { PhoenixTitleSection, PhoenixExtraContent } from "@/components/PhoenixContent";
 
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -180,6 +183,15 @@ export default async function Page({ params }: { params: { state: string; city: 
     const isLA =
       stateAbbr === "CA" &&
       String(cityData.city_ascii || "").trim().toLowerCase() === "los angeles";
+    const isChicago =
+      stateAbbr === "IL" &&
+      String(cityData.city_ascii || "").trim().toLowerCase() === "chicago";
+    const isHouston =
+      stateAbbr === "TX" &&
+      String(cityData.city_ascii || "").trim().toLowerCase() === "houston";
+    const isPhoenix =
+      stateAbbr === "AZ" &&
+      String(cityData.city_ascii || "").trim().toLowerCase() === "phoenix";
 
     // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
     let realReports: string[] = [];
@@ -282,6 +294,12 @@ export default async function Page({ params }: { params: { state: string; city: 
       <NycTitleSection />
     ) : isLA ? (
       <LaTitleSection />
+    ) : isChicago ? (
+      <ChicagoTitleSection />
+    ) : isHouston ? (
+      <HoustonTitleSection />
+    ) : isPhoenix ? (
+      <PhoenixTitleSection />
     ) : (
       <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
@@ -321,6 +339,24 @@ export default async function Page({ params }: { params: { state: string; city: 
       />
     ) : isLA ? (
       <LaExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : isChicago ? (
+      <ChicagoExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : isHouston ? (
+      <HoustonExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : isPhoenix ? (
+      <PhoenixExtraContent
         cityImage={cityImage}
         cityImageAlt={cityImageAlt}
         cityImageCredit={cityImageCredit}
