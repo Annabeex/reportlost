@@ -24,6 +24,7 @@ export const maxDuration = 60;
 const BATCH = Number(process.env.MATCH_BATCH || 10);
 const MAX_JUDGE = Number(process.env.MATCH_MAX_JUDGE || 5);
 const TIME_BUDGET_MS = Number(process.env.MATCH_TIME_BUDGET_MS || 50000);
+const MIN_CONTRIB = Number(process.env.MATCH_MIN_CONTRIBUTION || 12); // veille si contribution > ce montant
 
 function authorized(req: NextRequest): boolean {
   const secret = (process.env.CRON_SECRET || "").trim();
@@ -108,6 +109,8 @@ export async function GET(req: NextRequest) {
       .from("lost_items")
       .select(SELECT)
       .eq("search_status", "active")
+      .eq("paid", true) // ⬅️ veille UNIQUEMENT sur les clients qui ont payé
+      .gte("contribution", MIN_CONTRIB) // ⬅️ et seulement au seuil ou au-dessus (12 $ inclus par défaut, test)
       .lte("next_search_at", new Date().toISOString())
       .order("next_search_at", { ascending: true })
       .limit(BATCH);
