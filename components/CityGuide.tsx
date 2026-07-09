@@ -145,7 +145,15 @@ export function CityGuideExtra({
         <div className="mt-6 space-y-4">
           {guide.areas.map((a) => (
             <div key={a.name} className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-semibold text-gray-900">{a.name}</h3>
+              <h3 className="font-semibold text-gray-900">
+                {a.href ? (
+                  <Link href={a.href} className="text-blue-700 hover:underline">
+                    {a.name}
+                  </Link>
+                ) : (
+                  a.name
+                )}
+              </h3>
               <p className="text-sm text-gray-600 mt-1">{a.blurb}</p>
             </div>
           ))}

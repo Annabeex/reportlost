@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/match-watch", "schedule": "0 7 * * *" },
+    { "path": "/api/match-digest", "schedule": "30 8 * * *" }
+  ]
+}
