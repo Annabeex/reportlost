@@ -53,7 +53,8 @@ export function buildDigestHtml(entries: DigestEntry[]): string {
             ${verdictBadge(c.verdict, c.confidence)}
             <a href="${esc(c.link)}" style="color:#2563eb;font-weight:600">${esc(c.title)}</a>
             <span style="color:#9ca3af;font-size:12px">(${esc(c.source)}${c.date ? " · " + esc(c.date) : ""})</span>
-            <div style="color:#6b7280;font-size:13px">${esc(c.reason)}</div>
+            ${c.snippet ? `<div style="color:#374151;font-size:13px;margin-top:4px">${esc(c.snippet)}</div>` : ""}
+            <div style="color:#6b7280;font-size:12px;margin-top:3px">🤖 ${esc(c.reason)}</div>
           </li>`
         )
         .join("");
