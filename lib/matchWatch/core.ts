@@ -7,9 +7,10 @@ export type LostReport = {
   title: string | null;
   description: string | null;
   category: string | null;
+  circumstances: string | null; // contexte de la perte (aide au jugement)
   city: string | null;
   state_id: string | null;
-  place: string | null; // lieu précis (place_type_other / place_type)
+  place: string | null; // lieu précis (place_type_other / loss_street / loss_neighborhood / place_type)
   lossDate: string | null; // ISO
   slug: string | null;
   public_id: string | null;
@@ -174,6 +175,7 @@ export async function judgeCandidate(report: LostReport, r: SerperResult): Promi
     `Item: ${report.title ?? ""}`,
     `Description: ${report.description ?? ""}`,
     `Category: ${report.category ?? ""}`,
+    `Context: ${report.circumstances ?? ""}`,
     `Lost in: ${[report.place, report.city, report.state_id].filter(Boolean).join(", ")}`,
     `Lost around: ${report.lossDate ?? "unknown"}`,
   ].join("\n");

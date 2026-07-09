@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
   const ids = Array.from(byReport.keys());
   const { data: reports } = await sb
     .from("lost_items")
-    .select("id, title, description, category, city, state_id, place_type, place_type_other, date, created_at, slug, public_id")
+    .select("id, title, description, primary_category, categories, circumstances, city, state_id, place_type, place_type_other, loss_street, loss_neighborhood, date, created_at, slug, public_id")
     .in("id", ids);
 
   const reportById = new Map<string, any>((reports || []).map((r: any) => [String(r.id), r]));
@@ -65,10 +65,11 @@ export async function GET(req: NextRequest) {
       id: String(row.id),
       title: row.title ?? null,
       description: row.description ?? null,
-      category: row.category ?? null,
+      category: row.primary_category || row.categories || null,
+      circumstances: row.circumstances ?? null,
       city: row.city ?? null,
       state_id: row.state_id ?? null,
-      place: row.place_type_other || row.place_type || null,
+      place: row.place_type_other || row.loss_street || row.loss_neighborhood || row.place_type || null,
       lossDate: row.date || row.created_at || null,
       slug: row.slug ?? null,
       public_id: row.public_id ?? null,

@@ -79,10 +79,11 @@ function toReport(row: any): LostReport {
     id: String(row.id),
     title: row.title ?? null,
     description: row.description ?? null,
-    category: row.category ?? null,
+    category: row.primary_category || row.categories || null,
+    circumstances: row.circumstances ?? null,
     city: row.city ?? null,
     state_id: row.state_id ?? null,
-    place: row.place_type_other || row.place_type || null,
+    place: row.place_type_other || row.loss_street || row.loss_neighborhood || row.place_type || null,
     lossDate: row.date || row.created_at || null,
     slug: row.slug ?? null,
     public_id: row.public_id ?? null,
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest) {
   let candidatesFound = 0;
 
   const SELECT =
-    "id, title, description, category, city, state_id, place_type, place_type_other, date, created_at, slug, public_id";
+    "id, title, description, primary_category, categories, circumstances, city, state_id, place_type, place_type_other, loss_street, loss_neighborhood, date, created_at, slug, public_id";
 
   while (Date.now() - startedAt < TIME_BUDGET_MS) {
     const { data: reports, error } = await sb
