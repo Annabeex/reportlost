@@ -1,30 +1,21 @@
 // app/api/match-watch/route.ts
-// Worker de veille : sélectionne les signalements "dus", cherche en ligne (Serper),
+// Worker de veille : sélectionne les signalements payants "dus", cherche en ligne,
 // juge avec Haiku, stocke les candidats. N'ENVOIE PAS d'email (voir /api/match-digest).
 // Déclenché par Vercel Cron (voir vercel.json). Protégé par CRON_SECRET.
 // Boucle avec budget de temps : draine plusieurs lots dans une seule exécution.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import {
-  LostReport,
-  Candidate,
-  generateItemTerms,
-  buildQueries,
-  serperSearch,
-  prefilter,
-  judgeCandidate,
-  computeNextSearch,
-} from "@/lib/matchWatch/core";
+import { computeNextSearch } from "@/lib/matchWatch/core";
+import { LOST_SELECT, toReport, runSearchForReport } from "@/lib/matchWatch/run";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const BATCH = Number(process.env.MATCH_BATCH || 10);
-const MAX_JUDGE = Number(process.env.MATCH_MAX_JUDGE || 5);
 const TIME_BUDGET_MS = Number(process.env.MATCH_TIME_BUDGET_MS || 50000);
-const MIN_CONTRIB = Number(process.env.MATCH_MIN_CONTRIBUTION || 12); // veille si contribution > ce montant
+const MIN_CONTRIB = Number(process.env.MATCH_MIN_CONTRIBUTION || 12); // veille si contribution >= ce montant
 
 function authorized(req: NextRequest): boolean {
   const secret = (process.env.CRON_SECRET || "").trim();
@@ -32,62 +23,6 @@ function authorized(req: NextRequest): boolean {
   const auth = req.headers.get("authorization") || "";
   if (auth === `Bearer ${secret}`) return true; // Vercel Cron envoie ce header
   return new URL(req.url).searchParams.get("key") === secret;
-}
-
-async function processReport(sb: any, report: LostReport): Promise<number> {
-  // URLs déjà vues pour ce signalement (anti-doublon)
-  const { data: seenRows } = await sb.from("match_candidates").select("url").eq("lost_item_id", report.id);
-  const seen = new Set<string>((seenRows || []).map((r: any) => r.url));
-
-  const terms = await generateItemTerms(report);
-
-  // Tier ville, puis escalade lieu précis si rien
-  let results = (
-    await Promise.all(buildQueries(report, terms, "city").map((q) => serperSearch(q, report.lossDate).catch(() => [])))
-  ).flat();
-  let filtered = prefilter(results, terms, seen);
-  if (filtered.length === 0 && report.place) {
-    results = (
-      await Promise.all(buildQueries(report, terms, "place").map((q) => serperSearch(q, report.lossDate).catch(() => [])))
-    ).flat();
-    filtered = prefilter(results, terms, seen);
-  }
-
-  const toJudge = filtered.slice(0, MAX_JUDGE);
-  const judged: Candidate[] = [];
-  for (const r of toJudge) judged.push(await judgeCandidate(report, r));
-
-  if (judged.length) {
-    const rows = judged.map((c) => ({
-      lost_item_id: report.id,
-      url: c.link,
-      title: c.title,
-      snippet: c.snippet,
-      source: c.source,
-      verdict: c.verdict,
-      confidence: c.confidence,
-      reason: c.reason,
-      emailed: c.verdict === "no", // 'no' mémorisé mais jamais envoyé
-    }));
-    await sb.from("match_candidates").upsert(rows, { onConflict: "lost_item_id,url", ignoreDuplicates: true });
-  }
-  return judged.filter((c) => c.verdict !== "no").length;
-}
-
-function toReport(row: any): LostReport {
-  return {
-    id: String(row.id),
-    title: row.title ?? null,
-    description: row.description ?? null,
-    category: row.primary_category || row.categories || null,
-    circumstances: row.circumstances ?? null,
-    city: row.city ?? null,
-    state_id: row.state_id ?? null,
-    place: row.place_type_other || row.loss_street || row.loss_neighborhood || row.place_type || null,
-    lossDate: row.date || row.created_at || null,
-    slug: row.slug ?? null,
-    public_id: row.public_id ?? null,
-  };
 }
 
 export async function GET(req: NextRequest) {
@@ -101,17 +36,15 @@ export async function GET(req: NextRequest) {
   const startedAt = Date.now();
   let processed = 0;
   let candidatesFound = 0;
-
-  const SELECT =
-    "id, title, description, primary_category, categories, circumstances, city, state_id, place_type, place_type_other, loss_street, loss_neighborhood, date, created_at, slug, public_id";
+  const reportsDone: { ref: string; title: string; city: string; found: number }[] = [];
 
   while (Date.now() - startedAt < TIME_BUDGET_MS) {
     const { data: reports, error } = await sb
       .from("lost_items")
-      .select(SELECT)
+      .select(LOST_SELECT)
       .eq("search_status", "active")
-      .eq("paid", true) // ⬅️ veille UNIQUEMENT sur les clients qui ont payé
-      .gte("contribution", MIN_CONTRIB) // ⬅️ et seulement au seuil ou au-dessus (12 $ inclus par défaut, test)
+      // payé & contribution >= seuil, OU forcé manuellement depuis l'admin
+      .or(`and(paid.eq.true,contribution.gte.${MIN_CONTRIB}),force_search.eq.true`)
       .lte("next_search_at", new Date().toISOString())
       .order("next_search_at", { ascending: true })
       .limit(BATCH);
@@ -121,8 +54,11 @@ export async function GET(req: NextRequest) {
 
     for (const row of reports) {
       const report = toReport(row);
+      let found = 0;
       try {
-        candidatesFound += await processReport(sb, report);
+        const judged = await runSearchForReport(sb, report);
+        found = judged.filter((c) => c.verdict !== "no").length;
+        candidatesFound += found;
       } catch (e) {
         console.error("match-watch report error", report.id, (e as Error).message);
       }
@@ -135,10 +71,17 @@ export async function GET(req: NextRequest) {
           search_status: done ? "done" : "active",
         })
         .eq("id", report.id);
+
+      reportsDone.push({
+        ref: report.public_id || report.id,
+        title: report.title || "—",
+        city: report.city || "—",
+        found,
+      });
       processed += 1;
       if (Date.now() - startedAt >= TIME_BUDGET_MS) break;
     }
   }
 
-  return NextResponse.json({ ok: true, processed, candidatesFound });
+  return NextResponse.json({ ok: true, processed, candidatesFound, reports: reportsDone });
 }

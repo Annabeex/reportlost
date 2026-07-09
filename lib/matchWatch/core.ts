@@ -14,6 +14,9 @@ export type LostReport = {
   lossDate: string | null; // ISO
   slug: string | null;
   public_id: string | null;
+  email: string | null; // email du client sur reportlost
+  photo?: string | null; // object_photo (URL) si fournie
+  visual?: string | null; // description visuelle générée depuis la photo
 };
 
 export type SerperResult = { title: string; link: string; snippet: string; date?: string; source: string };
@@ -54,6 +57,44 @@ async function callHaiku(system: string, user: string, maxTokens = 400): Promise
   }
   const data = await res.json();
   return String(data?.content?.[0]?.text ?? "");
+}
+
+// Décrit la photo du signalement (une seule lecture d'image par dossier)
+export async function describePhoto(url: string): Promise<string> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key || !url) return "";
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 200,
+        system: "You describe lost items factually so they can be matched against 'found item' posts.",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Describe this lost item for matching: exact type/style, material, color, and any distinctive features. One or two factual sentences.",
+              },
+              { type: "image", source: { type: "url", url } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return String(data?.content?.[0]?.text ?? "");
+  } catch {
+    return "";
+  }
 }
 
 function parseJson<T>(txt: string, fallback: T): T {
@@ -176,6 +217,7 @@ export async function judgeCandidate(report: LostReport, r: SerperResult): Promi
     `Description: ${report.description ?? ""}`,
     `Category: ${report.category ?? ""}`,
     `Context: ${report.circumstances ?? ""}`,
+    `Visual (from owner's photo): ${report.visual ?? ""}`,
     `Lost in: ${[report.place, report.city, report.state_id].filter(Boolean).join(", ")}`,
     `Lost around: ${report.lossDate ?? "unknown"}`,
   ].join("\n");
@@ -193,6 +235,7 @@ ${candidateStr}
 Decide if this online result is a post by SOMEONE WHO FOUND this same item (a potential match), NOT a person who also lost it, and NOT an unrelated listing/shop.
 Rules:
 - "no" if it's someone looking for their own lost item, a store, an ad, or clearly a different object.
+- If a "Visual" description of the owner's item is given, the found item must match that specific style, material and color. A different-looking item of the same category (e.g. a beaded bracelet vs a silver chain bracelet) is NOT a match.
 - The location must plausibly match (same city or nearby area).
 - The date must be plausible (found on/after the loss date, not before).
 Reply JSON: {"verdict":"yes|maybe|no","confidence":0-100,"reason":"one short sentence"}`;

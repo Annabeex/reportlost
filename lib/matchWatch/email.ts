@@ -68,7 +68,15 @@ export function buildDigestHtml(entries: DigestEntry[]): string {
       return `
       <div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:14px 0">
         <div style="font-weight:700;color:#111827">${esc(e.report.title || "Lost item")} — ${esc(loc)}</div>
-        <div style="color:#6b7280;font-size:12px;margin-bottom:8px">ID ${esc(e.report.public_id || e.report.id)}</div>
+        <div style="color:#6b7280;font-size:12px;margin-bottom:8px">
+          ID <strong>${esc(e.report.public_id || e.report.id)}</strong>${
+        e.report.email ? ` · Client : <a href="mailto:${esc(e.report.email)}" style="color:#2563eb">${esc(e.report.email)}</a>` : ""
+      }${
+        e.report.public_id
+          ? ` · <a href="https://reportlost.org/case/${esc(e.report.public_id)}?edit=1" style="color:#2563eb">Ouvrir le dossier</a>`
+          : ""
+      }
+        </div>
         <ul style="list-style:none;padding-left:0;margin:0">${cands}</ul>
         <div style="margin-top:10px;font-size:13px">
           🔎 Vérif manuelle Facebook :

@@ -32,6 +32,17 @@ interface LostItem {
   // ✅ catégories (ajouté)
   primary_category?: string | null;
   categories?: string[] | null;
+
+  // ✅ coordonnées complètes
+  phone?: string | null;
+  address?: string | null;
+  paid?: boolean | null;
+
+  // ✅ état de la veille IA
+  search_status?: string | null;
+  next_search_at?: string | null;
+  last_searched_at?: string | null;
+  force_search?: boolean | null;
 }
 
 interface FoundItem {
@@ -198,10 +209,64 @@ export default function AdminPage() {
 
   // UI state: search + paid filter + pagination + view mode
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [paidOnly, setPaidOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [view, setView] = useState<'lost' | 'found'>('lost'); // ← NEW
   const PAGE_SIZE = 10;
+
+  // Totaux EXACTS (comptés en base, pas seulement les 200 chargés)
+  const [totals, setTotals] = useState<{ lost: number | null; found: number | null; paid: number | null }>({
+    lost: null,
+    found: null,
+    paid: null,
+  });
+
+  // Recherche en ligne (veille) à la demande, par dossier
+  const [searchingId, setSearchingId] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<Record<string, any[]>>({});
+
+  // Exclure / réintégrer / forcer un dossier dans la veille
+  const toggleSearch = async (id: string, action: 'exclude' | 'include' | 'force_on' | 'force_off') => {
+    try {
+      const res = await fetch('/api/admin/match-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j?.ok) {
+        alert(`Action échouée: ${j?.error || res.status}`);
+        return;
+      }
+      setLostItems(prev => prev.map(it =>
+        it.id === id ? { ...it, search_status: j.search_status, force_search: j.force_search } : it
+      ));
+    } catch (e: any) {
+      alert(`Erreur réseau: ${String(e?.message || e)}`);
+    }
+  };
+
+  const runOnlineSearch = async (id: string) => {
+    setSearchingId(id);
+    try {
+      const res = await fetch('/api/admin/match-one', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j?.ok) {
+        alert(`Recherche échouée: ${j?.error || res.status}`);
+        return;
+      }
+      setSearchResults(prev => ({ ...prev, [id]: j.candidates || [] }));
+    } catch (e: any) {
+      alert(`Erreur réseau: ${String(e?.message || e)}`);
+    } finally {
+      setSearchingId(null);
+    }
+  };
 
   // (SUPPRIMÉ : états et handlers de QR preview)
 
@@ -220,13 +285,20 @@ export default function AdminPage() {
     }
   };
 
+  // Debounce de la recherche → interroge le serveur (toute la base), pas juste les 200 chargés
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 400);
+    return () => clearTimeout(t);
+  }, [query]);
+
   useEffect(() => {
     const run = async () => {
       setLoading(true);
       setErr(null);
       try {
         // ⚠️ API server-side qui lit Supabase : pas de supabase côté client
-        const res = await fetch('/api/admin/list?limit=200', { cache: 'no-store' });
+        const url = `/api/admin/list?limit=200${debouncedQuery ? `&q=${encodeURIComponent(debouncedQuery)}` : ''}`;
+        const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) {
           const text = await res.text().catch(() => '');
           throw new Error(`GET /api/admin/list failed (${res.status}) ${text}`);
@@ -234,6 +306,12 @@ export default function AdminPage() {
         const payload = await res.json();
         setLostItems(Array.isArray(payload?.lost) ? payload.lost : []);
         setFoundItems(Array.isArray(payload?.found) ? payload.found : []);
+        setTotals({
+          lost: payload?.lostTotal ?? null,
+          found: payload?.foundTotal ?? null,
+          paid: payload?.paidTotal ?? null,
+        });
+        setPage(1);
       } catch (e: any) {
         setErr(e?.message || 'Unknown error');
       } finally {
@@ -241,44 +319,25 @@ export default function AdminPage() {
       }
     };
     run();
-  }, []);
+  }, [debouncedQuery]);
 
-  // ——— Stats
-  const lostCount = lostItems.length;
-  const foundCount = foundItems.length;
+  // ——— Stats (on privilégie les totaux EXACTS de la base, sinon les 200 chargés)
+  const lostCount = totals.lost ?? lostItems.length;
+  const foundCount = totals.found ?? foundItems.length;
   const paidCount = useMemo(
-    () => lostItems.filter(it => Number(it.contribution || 0) > 0).length,
-    [lostItems],
+    () => totals.paid ?? lostItems.filter(it => Number(it.contribution || 0) > 0).length,
+    [lostItems, totals.paid],
   );
   const conversionRate = useMemo(() => {
     if (!lostCount) return 0;
     return Math.round((paidCount / lostCount) * 1000) / 10; // 1 décimale
   }, [lostCount, paidCount]);
 
-  // ——— Filtrage (query + paid) pour LOST uniquement
+  // ——— Filtrage : la recherche texte est faite côté serveur (toute la base).
+  // Ici on n'applique plus que le filtre "payés uniquement".
   const filteredLost = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const base = paidOnly
-      ? lostItems.filter(it => Number(it.contribution || 0) > 0)
-      : lostItems;
-
-    if (!q) return base;
-
-    return base.filter(it => {
-      const ref = isFiveDigits(it.public_id || null) ? String(it.public_id) : '';
-      const hay = [
-        it.title || '',
-        it.description || '',
-        it.city || '',
-        it.state_id || '',
-        it.email || '',
-        ref,
-      ]
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [lostItems, query, paidOnly]);
+    return paidOnly ? lostItems.filter(it => Number(it.contribution || 0) > 0) : lostItems;
+  }, [lostItems, paidOnly]);
 
   // ——— Pagination (LOST)
   const totalPages = Math.max(1, Math.ceil(filteredLost.length / PAGE_SIZE));
@@ -448,8 +507,81 @@ export default function AdminPage() {
                           )}
                         </div>
 
+                        {/* ✅ Coordonnées client complètes */}
+                        <div className="text-sm text-gray-700 mb-3 grid sm:grid-cols-2 gap-x-6 gap-y-0.5">
+                          <div><strong>Name:</strong> {[item.first_name, item.last_name].filter(Boolean).join(' ') || '—'}</div>
+                          <div><strong>Email:</strong> {item.email || '—'}</div>
+                          <div><strong>Phone:</strong> {item.phone || '—'}</div>
+                          <div><strong>Address:</strong> {item.address || '—'}</div>
+                        </div>
+
+                        {/* ✅ État de la veille IA + actions */}
+                        <div className="text-xs text-gray-600 mb-2 flex flex-wrap items-center gap-3 border-t pt-2">
+                          <span>Veille : <strong>{item.search_status || 'active'}</strong>{item.force_search ? ' (forcé)' : ''}</span>
+                          <span>Dernière : {item.last_searched_at ? new Date(item.last_searched_at).toLocaleDateString() : '—'}</span>
+                          <span>Prochaine : {item.next_search_at ? new Date(item.next_search_at).toLocaleDateString() : '—'}</span>
+
+                          {item.search_status === 'excluded' ? (
+                            <button type="button" onClick={() => toggleSearch(item.id, 'include')}
+                              className="rounded bg-emerald-600 text-white px-2 py-1 hover:brightness-110">
+                              Réintégrer à la veille
+                            </button>
+                          ) : (
+                            <button type="button" onClick={() => toggleSearch(item.id, 'exclude')}
+                              className="rounded bg-gray-700 text-white px-2 py-1 hover:brightness-110">
+                              Exclure de la veille
+                            </button>
+                          )}
+
+                          {Number(item.contribution || 0) < 12 && (
+                            item.force_search ? (
+                              <button type="button" onClick={() => toggleSearch(item.id, 'force_off')}
+                                className="rounded bg-amber-200 text-amber-800 px-2 py-1 hover:brightness-105">
+                                Retirer le forçage
+                              </button>
+                            ) : (
+                              <button type="button" onClick={() => toggleSearch(item.id, 'force_on')}
+                                className="rounded bg-amber-500 text-white px-2 py-1 hover:brightness-110">
+                                Forcer dans la veille (&lt;12$)
+                              </button>
+                            )
+                          )}
+                        </div>
+
                         <div className="mt-4 flex flex-wrap items-center gap-3">
                           <strong>Contribution:</strong> {item.contribution ?? 0}
+
+                          <button
+                            type="button"
+                            onClick={() => runOnlineSearch(item.id)}
+                            disabled={searchingId === item.id}
+                            className="inline-flex items-center rounded-md bg-blue-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110 disabled:opacity-50"
+                            title="Lancer la recherche en ligne pour ce dossier"
+                          >
+                            {searchingId === item.id ? 'Recherche…' : '🔎 Rechercher en ligne'}
+                          </button>
+
+                          {searchResults[item.id] && (
+                            <div className="w-full mt-2 text-sm">
+                              {searchResults[item.id].length === 0 ? (
+                                <div className="text-gray-500">Aucun candidat crédible trouvé pour l&apos;instant.</div>
+                              ) : (
+                                <ul className="list-none pl-0 space-y-2">
+                                  {searchResults[item.id].map((c: any, i: number) => (
+                                    <li key={i} className="border-l-2 border-blue-200 pl-2">
+                                      <span className={c.verdict === 'yes' ? 'text-green-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                                        {String(c.verdict).toUpperCase()} {c.confidence}%
+                                      </span>{' '}
+                                      <a href={c.link} target="_blank" rel="noreferrer" className="text-blue-600 underline">{c.title}</a>
+                                      <span className="text-gray-400"> ({c.source})</span>
+                                      {c.snippet && <div className="text-gray-600">{c.snippet}</div>}
+                                      <div className="text-gray-500 text-xs">🤖 {c.reason}</div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          )}
 
                           {publicUrl ? (
                             <a
