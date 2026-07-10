@@ -1,23 +1,22 @@
 // app/api/poster/[id]/route.tsx
-// Poster social "WANTED" en PNG 1080x1080 pour un signalement.
-// Un léger passage IA nettoie le titre + choisit la couleur de catégorie,
-// puis un template (next/og) met en forme joliment. Photo intégrée si dispo.
+// Poster social "WANTED" en PNG (portrait 1080x1350, format Instagram).
+// L'IA nettoie titre + lieu + couleur de catégorie, le template met en forme.
+// Police Montserrat chargée (repli police système si indisponible).
 // URL : /api/poster/{public_id}
 
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-// Correspondance couleur (palette coolors), selon la demande
 const COLORS: Record<string, string> = {
-  jewelry: "#ffd6a5", // bijou -> orange clair
-  watch: "#ffd6a5", // montre -> orange clair
-  electronics: "#a0c4ff", // électronique -> bleu
-  bag: "#ffadad", // sac / porte-monnaie
-  wallet: "#caffbf", // portefeuille -> vert
-  documents: "#fdffb6", // documents / livres / papiers -> jaune
-  keys: "#bdb2ff", // clés -> violet
-  other: "#a0c4ff", // non catégorisé -> bleu
+  jewelry: "#ffd6a5",
+  watch: "#ffd6a5",
+  electronics: "#a0c4ff",
+  bag: "#ffadad",
+  wallet: "#caffbf",
+  documents: "#fdffb6",
+  keys: "#bdb2ff",
+  other: "#a0c4ff",
 };
 
 function fallbackColorKey(text: string): string {
@@ -28,7 +27,7 @@ function fallbackColorKey(text: string): string {
   if (/bag|purse|handbag|backpack|coin|pouch/.test(c)) return "bag";
   if (/key|fob/.test(c)) return "keys";
   if (/passport|document|book|paper|card|id|folder|notebook/.test(c)) return "documents";
-  if (/phone|iphone|laptop|tablet|airpod|electronic|camera|headphone|charger|watch/.test(c)) return "electronics";
+  if (/phone|iphone|laptop|tablet|airpod|electronic|camera|headphone|charger/.test(c)) return "electronics";
   return "other";
 }
 
@@ -42,29 +41,44 @@ function hexToRgba(hex: string, a: number): string {
   return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
 }
 
-// Passage IA : titre propre + clé couleur (avec repli sans IA)
-async function aiClean(row: any): Promise<{ title: string; colorKey: string }> {
-  const raw = [row.title, row.description, row.primary_category, row.categories].filter(Boolean).join(" — ").slice(0, 400);
+async function loadFont(weight: number): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(
+      `https://cdn.jsdelivr.net/npm/@fontsource/montserrat@5.0.18/files/montserrat-latin-${weight}-normal.woff`,
+      { cache: "force-cache" }
+    );
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
+async function aiClean(row: any): Promise<{ title: string; colorKey: string; place: string }> {
+  const rawPlace = clean(row.place_type_other || row.place_type || "", 50);
   const fallback = {
     title: clean(row.primary_category || row.title || "Item", 20),
     colorKey: fallbackColorKey(`${row.primary_category} ${row.categories} ${row.title} ${row.description}`),
+    place: rawPlace,
   };
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return fallback;
+  const raw = [row.title, row.description, row.primary_category].filter(Boolean).join(" — ").slice(0, 400);
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL || "claude-haiku-4-5",
-        max_tokens: 120,
-        system: "You label lost items for a poster. Reply ONLY with JSON.",
+        max_tokens: 160,
+        system: "You label a lost item for a poster. Reply ONLY with JSON.",
         messages: [
           {
             role: "user",
-            content: `Lost item: "${raw}".
+            content: `Lost item: "${raw}". Place where lost (raw): "${rawPlace}".
 Return JSON:
-{"title":"a clean 1-3 word poster name for the item, Title Case (e.g. 'Baby Book','Gold Bracelet','iPhone','Car Keys')",
+{"title":"clean 1-3 word poster name, Title Case (e.g. 'Baby Book','Gold Bracelet','Kodak Camera')",
+ "place":"a very short natural place, 1-4 words (e.g. 'the beach','Central Park','a taxi') or '' if unknown",
  "colorKey":"one of: jewelry, watch, electronics, bag, wallet, documents, keys, other"}`,
           },
         ],
@@ -72,13 +86,14 @@ Return JSON:
     });
     if (!res.ok) return fallback;
     const data = await res.json();
-    const txt = String(data?.content?.[0]?.text ?? "");
-    const m = txt.match(/\{[\s\S]*\}/);
+    const m = String(data?.content?.[0]?.text ?? "").match(/\{[\s\S]*\}/);
     if (!m) return fallback;
     const j = JSON.parse(m[0]);
-    const title = clean(j.title || fallback.title, 22);
-    const colorKey = COLORS[j.colorKey] ? j.colorKey : fallback.colorKey;
-    return { title, colorKey };
+    return {
+      title: clean(j.title || fallback.title, 24),
+      colorKey: COLORS[j.colorKey] ? j.colorKey : fallback.colorKey,
+      place: typeof j.place === "string" ? clean(j.place, 32) : fallback.place,
+    };
   } catch {
     return fallback;
   }
@@ -107,29 +122,35 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     }
     if (!row) row = { title: "Item", public_id: id };
 
-    const { title, colorKey } = await aiClean(row);
+    const [{ title, colorKey, place }, f500, f800] = await Promise.all([aiClean(row), loadFont(500), loadFont(800)]);
     const accent = COLORS[colorKey] || COLORS.other;
 
-    const city = clean(row.city || "", 26);
+    // Ville : retire un éventuel "(XX)" déjà présent pour ne pas doubler l'État
+    const cityRaw = clean(row.city || "", 30).replace(/\s*\([^)]*\)\s*$/, "").trim();
     const state = clean(row.state_id || "", 4);
-    const place = clean(row.place_type_other || row.place_type || "", 40);
-    const where = `IN ${city.toUpperCase()}${state ? ` (${state})` : ""}${place ? ` AT ${place.toUpperCase()}` : ""}`;
+    const where =
+      `IN ${cityRaw.toUpperCase()}${state ? ` (${state})` : ""}` + (place ? ` AT ${place.toUpperCase()}` : "");
     const date = clean(row.date || "", 20);
     const email = `item${clean(row.public_id || id, 10)}@reportlost.org`;
     const photo = typeof row.object_photo === "string" && /^https?:\/\//.test(row.object_photo) ? row.object_photo : "";
 
-    const titleSize = title.length > 14 ? 92 : title.length > 9 ? 118 : 148;
+    const titleSize = title.length > 14 ? 86 : title.length > 9 ? 108 : 132;
+
+    const fonts: any[] = [];
+    if (f500) fonts.push({ name: "Montserrat", data: f500, weight: 500, style: "normal" });
+    if (f800) fonts.push({ name: "Montserrat", data: f800, weight: 800, style: "normal" });
+    const fam = fonts.length ? "Montserrat" : "sans-serif";
 
     return new ImageResponse(
       (
         <div
           style={{
             width: "1080px",
-            height: "1080px",
+            height: "1350px",
             display: "flex",
             padding: "40px",
-            fontFamily: "sans-serif",
-            background: `linear-gradient(135deg, ${hexToRgba(accent, 0.45)} 0%, #ffffff 65%)`,
+            fontFamily: fam,
+            background: `linear-gradient(135deg, ${hexToRgba(accent, 0.5)} 0%, #ffffff 68%)`,
           }}
         >
           <div
@@ -138,8 +159,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               flexDirection: "column",
               flex: 1,
               background: "#ffffff",
-              borderRadius: "52px",
-              padding: "70px 60px",
+              borderRadius: "56px",
+              padding: "72px 60px",
               alignItems: "center",
               justifyContent: "space-between",
               boxShadow: "0 24px 70px rgba(30,41,59,0.08)",
@@ -147,15 +168,15 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           >
             {/* Header */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ fontSize: "48px", letterSpacing: "8px", color: ink, fontWeight: 700 }}>WANTED</div>
+              <div style={{ fontSize: "46px", letterSpacing: "8px", color: ink, fontWeight: 500 }}>WANTED</div>
               <div
                 style={{
                   fontSize: `${titleSize}px`,
                   fontWeight: 800,
                   color: ink,
-                  lineHeight: 1.02,
+                  lineHeight: 1.03,
                   textAlign: "center",
-                  marginTop: "6px",
+                  marginTop: "10px",
                 }}
               >
                 {title.toUpperCase()}
@@ -163,30 +184,30 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               <div
                 style={{
                   display: "flex",
-                  marginTop: "26px",
-                  maxWidth: "820px",
+                  marginTop: "30px",
+                  maxWidth: "840px",
                   background: hexToRgba(accent, 0.55),
                   color: ink,
                   borderRadius: "44px",
                   padding: "18px 40px",
                   fontSize: "34px",
-                  fontWeight: 700,
+                  fontWeight: 500,
                   textAlign: "center",
-                  lineHeight: 1.15,
+                  lineHeight: 1.2,
                 }}
               >
                 {where}
               </div>
             </div>
 
-            {/* Visuel (photo si dispo) */}
+            {/* Visuel (photo si dispo), avec de l'espace autour */}
             {photo ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "44px 0" }}>
                 <img
                   src={photo}
-                  width={520}
+                  width={500}
                   height={380}
-                  style={{ width: "520px", height: "380px", objectFit: "cover", borderRadius: "28px" }}
+                  style={{ width: "500px", height: "380px", objectFit: "cover", borderRadius: "30px" }}
                 />
               </div>
             ) : (
@@ -195,16 +216,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
             {/* Footer */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {date ? <div style={{ fontSize: "36px", color: muted, marginBottom: "18px" }}>{date}</div> : null}
-              <div style={{ fontSize: "27px", color: muted }}>If found, please send an email:</div>
-              <div style={{ fontSize: "44px", color: ink, fontWeight: 700, marginTop: "8px" }}>{email}</div>
-              <div style={{ display: "flex", fontSize: "52px", color: ink, marginTop: "26px", fontWeight: 700 }}>®</div>
-              <div style={{ fontSize: "30px", color: muted, marginTop: "4px", fontWeight: 600 }}>reportlost.org</div>
+              {date ? <div style={{ fontSize: "36px", color: muted, marginBottom: "20px", fontWeight: 500 }}>{date}</div> : null}
+              <div style={{ fontSize: "27px", color: muted, fontWeight: 500 }}>If found, please send an email:</div>
+              <div style={{ fontSize: "44px", color: ink, fontWeight: 800, marginTop: "10px" }}>{email}</div>
+              <div style={{ display: "flex", fontSize: "50px", color: ink, marginTop: "28px", fontWeight: 500 }}>®</div>
+              <div style={{ fontSize: "30px", color: muted, marginTop: "4px", fontWeight: 500 }}>reportlost.org</div>
             </div>
           </div>
         </div>
       ),
-      { width: 1080, height: 1080 }
+      { width: 1080, height: 1350, ...(fonts.length ? { fonts } : {}) }
     );
   } catch {
     return new ImageResponse(
@@ -212,7 +233,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         <div
           style={{
             width: "1080px",
-            height: "1080px",
+            height: "1350px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -226,7 +247,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           reportlost.org
         </div>
       ),
-      { width: 1080, height: 1080 }
+      { width: 1080, height: 1350 }
     );
   }
 }

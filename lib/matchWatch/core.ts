@@ -97,6 +97,25 @@ export async function describePhoto(url: string): Promise<string> {
   }
 }
 
+// Normalise une URL pour le dédoublonnage : même annonce sous des liens variés
+// (fbclid, m.facebook, www, / final…) -> une seule clé.
+export function normalizeUrl(u: string): string {
+  try {
+    const url = new URL(String(u).trim());
+    url.hostname = url.hostname.toLowerCase().replace(/^(m|www|web|l|mobile)\./, "");
+    const drop = /^(fbclid|utm_|gclid|ref$|ref_src|__tn__|__cft__|mibextid|rdid|share_url|igshid|si)$/i;
+    const params = new URLSearchParams();
+    url.searchParams.forEach((v, k) => {
+      if (!drop.test(k)) params.append(k, v);
+    });
+    const q = params.toString();
+    const path = url.pathname.replace(/\/+$/, "");
+    return `https://${url.hostname}${path}${q ? "?" + q : ""}`;
+  } catch {
+    return String(u || "").trim().replace(/[?#].*$/, "").replace(/\/+$/, "");
+  }
+}
+
 function parseJson<T>(txt: string, fallback: T): T {
   try {
     const m = txt.match(/\{[\s\S]*\}/); // isole le premier objet JSON

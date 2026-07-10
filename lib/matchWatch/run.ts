@@ -11,6 +11,7 @@ import {
   prefilter,
   judgeCandidate,
   describePhoto,
+  normalizeUrl,
 } from "./core";
 
 const MAX_JUDGE = Number(process.env.MATCH_MAX_JUDGE || 5);
@@ -39,18 +40,20 @@ export function toReport(row: any): LostReport {
 /** Cherche en ligne pour un signalement, stocke les candidats, renvoie ceux jugés. */
 export async function runSearchForReport(sb: any, report: LostReport): Promise<Candidate[]> {
   const { data: seenRows } = await sb.from("match_candidates").select("url").eq("lost_item_id", report.id);
-  const seen = new Set<string>((seenRows || []).map((r: any) => r.url));
+  // clés normalisées : une annonce sous plusieurs URLs = un seul match
+  const seen = new Set<string>((seenRows || []).map((r: any) => normalizeUrl(r.url)));
+  const norm = (rs: any[]) => rs.map((r) => ({ ...r, link: normalizeUrl(r.link) }));
 
   const terms = await generateItemTerms(report);
 
-  let results = (
-    await Promise.all(buildQueries(report, terms, "city").map((q) => serperSearch(q, report.lossDate).catch(() => [])))
-  ).flat();
+  let results = norm(
+    (await Promise.all(buildQueries(report, terms, "city").map((q) => serperSearch(q, report.lossDate).catch(() => [])))).flat()
+  );
   let filtered = prefilter(results, terms, seen);
   if (filtered.length === 0 && report.place) {
-    results = (
-      await Promise.all(buildQueries(report, terms, "place").map((q) => serperSearch(q, report.lossDate).catch(() => [])))
-    ).flat();
+    results = norm(
+      (await Promise.all(buildQueries(report, terms, "place").map((q) => serperSearch(q, report.lossDate).catch(() => [])))).flat()
+    );
     filtered = prefilter(results, terms, seen);
   }
 
