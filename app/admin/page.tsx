@@ -561,6 +561,18 @@ export default function AdminPage() {
                             {searchingId === item.id ? 'Recherche…' : '🔎 Rechercher en ligne'}
                           </button>
 
+                          {ref && (
+                            <a
+                              href={`/api/poster/${encodeURIComponent(ref)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center rounded-md bg-purple-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                              title="Image sociale (PNG 1080x1080 à télécharger)"
+                            >
+                              📸 Image sociale
+                            </a>
+                          )}
+
                           {searchResults[item.id] && (
                             <div className="w-full mt-2 text-sm">
                               {searchResults[item.id].length === 0 ? (
