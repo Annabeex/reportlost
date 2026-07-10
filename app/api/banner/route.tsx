@@ -33,8 +33,10 @@ export async function GET(req: Request) {
   const label = [city.toUpperCase(), state].filter(Boolean).join(" - ");
 
   // Réglages fins par l'URL (pour caler au pixel) : top/left en %, size en px, color en hex
-  const topPct = searchParams.get("top") || "61";
-  const leftPct = searchParams.get("left") || "9.3";
+  // Le texte est centré dans une "boîte" qui couvre la largeur du bloc FOUND
+  const topPct = searchParams.get("top") || "65";
+  const leftPct = searchParams.get("left") || "8"; // bord gauche de la boîte (~= "FOUND")
+  const widthPct = searchParams.get("width") || "38"; // largeur de la boîte (~= "FOUND")
   const sizeOverride = Number(searchParams.get("size") || 0);
   const colorParam = searchParams.get("color");
   const green = colorParam ? `#${colorParam.replace(/^#/, "")}` : GREEN;
@@ -52,8 +54,17 @@ export async function GET(req: Request) {
   const fonts = font ? [{ name: "Arimo", data: font, weight: 700 as const, style: "normal" as const }] : [];
   const fam = font ? "Arimo" : "sans-serif";
 
-  // Taille du texte adaptée à la longueur (ou forcée par ?size=)
-  const size = sizeOverride > 0 ? sizeOverride : label.length > 16 ? 48 : label.length > 11 ? 58 : 66;
+  // Taille adaptée à la longueur (plus la ville est longue, plus c'est petit) — ou forcée par ?size=
+  const size =
+    sizeOverride > 0
+      ? sizeOverride
+      : label.length > 19
+      ? 38
+      : label.length > 15
+      ? 46
+      : label.length > 11
+      ? 56
+      : 66;
 
   return new ImageResponse(
     (
@@ -75,14 +86,23 @@ export async function GET(req: Request) {
             position: "absolute",
             top: `${topPct}%`,
             left: `${leftPct}%`,
+            width: `${widthPct}%`,
             display: "flex",
-            fontSize: `${size}px`,
-            fontWeight: 700,
-            color: green,
-            letterSpacing: "1px",
+            justifyContent: "center",
           }}
         >
-          {label}
+          <div
+            style={{
+              display: "flex",
+              fontSize: `${size}px`,
+              fontWeight: 700,
+              color: green,
+              letterSpacing: "1px",
+              textAlign: "center",
+            }}
+          >
+            {label}
+          </div>
         </div>
       </div>
     ),
