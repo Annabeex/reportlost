@@ -40,16 +40,28 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
-        max_tokens: 500,
-        system: "You write warm, tasteful lost & found captions for Instagram/Facebook. Reply ONLY with JSON.",
+        max_tokens: 700,
+        system:
+          "You write THIRD-PERSON social media captions for ReportLost.org, a platform that broadcasts lost-item reports on behalf of the owner. Never use the first person. Reply ONLY with JSON.",
         messages: [
           {
             role: "user",
             content: `${info}
 
+Write a caption to help recover this lost item, from ReportLost.org's point of view (a platform posting on behalf of the owner).
+
+Strict rules:
+- THIRD PERSON ONLY. Never "I", "me", "my". Refer to "the owner" and "the item".
+- Warm and human, but factual and respectful.
+- Do NOT include any dangerous or private detail: no home address, no exact GPS / Find My location, no travel route home. Only the general area (city / neighborhood).
+- Highlight distinctive features that help identification.
+- Add a short call to share the post, especially with people in that area.
+- End with a new line: "📩 Found it or have any information? Please contact: ${email}".
+- Then a final line of 12-16 relevant hashtags, plain "#Tag" format separated by spaces (item type, brand if known, city, state, neighborhood, #LostAndFound, #ReportLost, and community/help tags).
+
 Return JSON:
-{"en":"an English caption: 2-4 short lines, warm and hopeful, urging anyone who found it to help, ending with 'If found, please email ${email}', then a new line with 6-10 relevant hashtags (city, item type, #lostandfound, #reportlost, etc.)",
- "fr":"a natural French translation of the same caption (keep the email address and the hashtags identical)"}`,
+{"en":"the English caption as described",
+ "fr":"a natural French translation of the same caption; keep the email address and the hashtags identical to the English"}`,
           },
         ],
       }),

@@ -110,9 +110,31 @@ export async function GET(req: Request) {
       .select("id", { count: "exact", head: true })
       .gt("contribution", 0);
 
+    // Villes qui apparaissent pour la 1ère fois : le 1er signalement PAYÉ de chaque ville
+    // -> c'est là qu'on propose de créer un groupe Facebook.
+    let firstIds = new Set<string>();
+    try {
+      const { data: paidRows } = await supabase
+        .from("lost_items")
+        .select("id, city, state_id, created_at")
+        .eq("paid", true);
+      const earliest = new Map<string, { id: string; ts: number }>();
+      for (const p of paidRows || []) {
+        const kk = `${String(p.state_id || "").toUpperCase()}/${String(p.city || "").trim().toLowerCase()}`;
+        const ts = p.created_at ? new Date(p.created_at).getTime() : Infinity;
+        const cur = earliest.get(kk);
+        if (!cur || ts < cur.ts) earliest.set(kk, { id: String(p.id), ts });
+      }
+      firstIds = new Set(Array.from(earliest.values()).map((v) => v.id));
+    } catch {
+      /* non bloquant */
+    }
+
+    const lostWithFlag = (lost ?? []).map((it: any) => ({ ...it, first_in_city: firstIds.has(String(it.id)) }));
+
     return NextResponse.json(
       {
-        lost: lost ?? [],
+        lost: lostWithFlag,
         found: found ?? [],
         lostTotal: lostTotal ?? null,
         foundTotal: foundTotal ?? null,

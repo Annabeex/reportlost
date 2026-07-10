@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Kit = {
   cityUrl: string;
@@ -45,7 +45,10 @@ export default function GroupKitPage() {
   const [err, setErr] = useState<string | null>(null);
   const [kit, setKit] = useState<Kit | null>(null);
 
-  const generate = async () => {
+  const generate = async (cityArg?: string, stateArg?: string) => {
+    const c = (cityArg ?? city).trim();
+    const s = (stateArg ?? state).trim();
+    if (!c || s.length !== 2) return;
     setLoading(true);
     setErr(null);
     setKit(null);
@@ -53,7 +56,7 @@ export default function GroupKitPage() {
       const res = await fetch('/api/admin/group-kit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city: city.trim(), state: state.trim() }),
+        body: JSON.stringify({ city: c, state: s }),
       });
       const j = await res.json().catch(() => null);
       if (!res.ok || !j?.ok) {
@@ -65,6 +68,35 @@ export default function GroupKitPage() {
       setErr(String(e?.message || e));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Pré-remplissage depuis l'URL (?city=&state=) + génération automatique
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const c = sp.get('city') || '';
+    const s = (sp.get('state') || '').toUpperCase();
+    if (c) setCity(c);
+    if (s) setState(s);
+    if (c && s.length === 2) generate(c, s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const bannerUrl = `/api/banner?city=${encodeURIComponent(city.trim())}&state=${encodeURIComponent(state.trim())}`;
+  const downloadBanner = async () => {
+    try {
+      const res = await fetch(bannerUrl, { cache: 'no-store' });
+      const blob = await res.blob();
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u;
+      a.download = `banner-${city.trim()}-${state.trim()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(u);
+    } catch {
+      window.open(bannerUrl, '_blank');
     }
   };
 
@@ -98,7 +130,7 @@ export default function GroupKitPage() {
         </div>
         <button
           type="button"
-          onClick={generate}
+          onClick={() => generate()}
           disabled={loading || !city.trim() || state.trim().length !== 2}
           className="rounded-lg bg-green-600 text-white font-semibold px-5 py-2 text-sm hover:brightness-110 disabled:opacity-50"
         >
@@ -107,6 +139,25 @@ export default function GroupKitPage() {
       </div>
 
       {err && <div className="text-sm text-red-600 mb-4">Erreur : {err}</div>}
+
+      {city.trim() && state.trim().length === 2 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Bannière du groupe</h2>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={bannerUrl}
+            alt="Bannière Lost & Found"
+            className="w-full max-w-xl rounded-lg border border-gray-200 shadow"
+          />
+          <button
+            type="button"
+            onClick={downloadBanner}
+            className="mt-3 rounded-lg bg-green-600 text-white font-semibold px-5 py-2 text-sm hover:brightness-110"
+          >
+            ⬇️ Enregistrer la bannière
+          </button>
+        </div>
+      )}
 
       {kit && (
         <div className="space-y-4">

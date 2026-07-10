@@ -43,6 +43,9 @@ interface LostItem {
   next_search_at?: string | null;
   last_searched_at?: string | null;
   force_search?: boolean | null;
+
+  // ✅ 1er signalement payé de sa ville (-> proposer le kit groupe FB)
+  first_in_city?: boolean | null;
 }
 
 interface FoundItem {
@@ -570,6 +573,20 @@ export default function AdminPage() {
                               title="Image sociale + légende (télécharger)"
                             >
                               📸 Image sociale
+                            </a>
+                          )}
+
+                          {item.first_in_city && (
+                            <a
+                              href={`/admin/group-kit?city=${encodeURIComponent(
+                                String(item.city || '').replace(/\s*\([^)]*\)\s*$/, '').trim()
+                              )}&state=${encodeURIComponent(item.state_id || '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center rounded-md bg-teal-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                              title="1ère fois pour cette ville — générer le kit de groupe Facebook"
+                            >
+                              👥 Kit groupe FB
                             </a>
                           )}
 
