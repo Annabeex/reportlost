@@ -66,8 +66,18 @@ export async function POST(req: NextRequest) {
     ? foundLeads.map((l) => `- ${l.title} — ${l.snippet} (${l.link})`).join("\n")
     : "(no public 'found' leads available)";
 
+  const tones = [
+    "warm and welcoming",
+    "upbeat and energetic",
+    "calm and reassuring",
+    "practical and down-to-earth",
+    "friendly and neighborly",
+    "hopeful and encouraging",
+  ];
+  const tone = tones[Math.floor(Math.random() * tones.length)];
+
   const system =
-    "You create high-converting Facebook group launch content for ReportLost.org, a lost & found service. Reply ONLY with valid JSON.";
+    "You write fresh, natural, NON-templated Facebook group content for ReportLost.org (a lost & found service). Every output must feel human and unique — avoid AI clichés and repetitive phrasing. Reply ONLY with valid JSON.";
   const user = `City: ${city}, ${state}
 ReportLost city page URL (promote this exact link): ${cityUrl}
 
@@ -77,8 +87,8 @@ ${foundBlock}
 Produce JSON in US English:
 {
   "groupName": "a catchy, searchable Facebook group name people would search when they lose/find something in this city (include the city name)",
-  "description": "a warm 120-200 word group description: it reunites people with lost items and pets, invites members to post items they FOUND, and clearly invites anyone who LOST something to report it at ${cityUrl} (include this exact link once).",
-  "posts": ["exactly 3 short engaging starter posts (welcome + how the group works + a call to post found items). 2-4 sentences each, friendly, with 1-2 relevant emojis."],
+  "description": "a ${tone}, natural 110-180 word group description in US English, SPECIFIC to ${city}. BANNED phrases (never use, nor close variants): 'reunite people with their lost items', 'connect people/neighbors with their lost items', 'come to the right place', 'neighbors helping neighbors', 'neighbors support neighbors', 'we're here to help', 'trusted community', 'belongings back home', 'together we make ... a community', 'beloved pets'. Write fresh human copy; if you know ${city}, name a real local spot or two; invite members to post things they find; include this exact link ONCE for reporting a lost item: ${cityUrl}. Vary structure and wording so it never reads like a template.",
+  "posts": ["exactly 3 short engaging starter posts (welcome + how the group works + a call to post found items). 2-4 sentences each, friendly, 1-2 emojis, and avoid the banned clichés above."],
   "foundPosts": ["up to 3 short shareable posts built from the real 'found' leads above. Each MUST start with 'FOUND ✅', summarize the item and where it was found, add 'seen in a public group — verify before claiming', and include the source URL. If there are no usable leads, return []."]
 }`;
 

@@ -32,6 +32,13 @@ export async function GET(req: Request) {
   const state = (searchParams.get("state") || "").trim().toUpperCase();
   const label = [city.toUpperCase(), state].filter(Boolean).join(" - ");
 
+  // Réglages fins par l'URL (pour caler au pixel) : top/left en %, size en px, color en hex
+  const topPct = searchParams.get("top") || "61";
+  const leftPct = searchParams.get("left") || "9.3";
+  const sizeOverride = Number(searchParams.get("size") || 0);
+  const colorParam = searchParams.get("color");
+  const green = colorParam ? `#${colorParam.replace(/^#/, "")}` : GREEN;
+
   // Fond : la bannière vierge (data URI, fiable)
   let bg = "";
   try {
@@ -45,8 +52,8 @@ export async function GET(req: Request) {
   const fonts = font ? [{ name: "Arimo", data: font, weight: 700 as const, style: "normal" as const }] : [];
   const fam = font ? "Arimo" : "sans-serif";
 
-  // Taille du texte adaptée à la longueur (pour ne pas déborder)
-  const size = label.length > 16 ? 48 : label.length > 11 ? 58 : 66;
+  // Taille du texte adaptée à la longueur (ou forcée par ?size=)
+  const size = sizeOverride > 0 ? sizeOverride : label.length > 16 ? 48 : label.length > 11 ? 58 : 66;
 
   return new ImageResponse(
     (
@@ -66,12 +73,12 @@ export async function GET(req: Request) {
         <div
           style={{
             position: "absolute",
-            top: "61%",
-            left: "9.3%",
+            top: `${topPct}%`,
+            left: `${leftPct}%`,
             display: "flex",
             fontSize: `${size}px`,
             fontWeight: 700,
-            color: GREEN,
+            color: green,
             letterSpacing: "1px",
           }}
         >
