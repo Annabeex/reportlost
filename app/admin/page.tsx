@@ -563,11 +563,11 @@ export default function AdminPage() {
 
                           {ref && (
                             <a
-                              href={`/api/poster/${encodeURIComponent(ref)}`}
+                              href={`/admin/poster/${encodeURIComponent(ref)}`}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center rounded-md bg-purple-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                              title="Image sociale (PNG 1080x1080 à télécharger)"
+                              title="Image sociale + légende (télécharger)"
                             >
                               📸 Image sociale
                             </a>
