@@ -140,6 +140,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const photo = typeof row.object_photo === "string" && /^https?:\/\//.test(row.object_photo) ? row.object_photo : "";
 
     const titleSize = title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
+    const photoH = title.length > 9 ? 260 : 320;
 
     const fonts: any[] = [];
     if (f500) fonts.push({ name: "Montserrat", data: f500, weight: 500, style: "normal" });
@@ -168,7 +169,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               borderRadius: "52px",
               padding: "52px 56px",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "center",
               boxShadow: "0 24px 70px rgba(30,41,59,0.08)",
             }}
           >
@@ -206,18 +207,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               </div>
             </div>
 
-            {/* Visuel (photo si dispo), avec de l'espace autour */}
+            {/* Visuel : photo si dispo, sinon un séparateur décoratif (compo équilibrée) */}
             {photo ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "20px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "42px 0" }}>
                 <img
                   src={photo}
                   width={440}
-                  height={300}
-                  style={{ width: "440px", height: "300px", objectFit: "cover", borderRadius: "28px" }}
+                  height={photoH}
+                  style={{ width: "440px", height: `${photoH}px`, objectFit: "cover", borderRadius: "28px" }}
                 />
               </div>
             ) : (
-              <div style={{ display: "flex" }} />
+              <div style={{ display: "flex", justifyContent: "center", margin: "60px 0" }}>
+                <div
+                  style={{ display: "flex", width: "150px", height: "10px", borderRadius: "10px", background: hexToRgba(accent, 0.85) }}
+                />
+              </div>
             )}
 
             {/* Footer */}
