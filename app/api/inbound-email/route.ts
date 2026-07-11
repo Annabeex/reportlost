@@ -19,7 +19,14 @@ export const dynamic = "force-dynamic";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: { persistSession: false },
+    global: {
+      // Lectures toujours fraîches (pas de cache de données Next/Vercel)
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
+  }
 );
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@reportlost.org";

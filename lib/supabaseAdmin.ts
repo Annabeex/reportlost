@@ -18,5 +18,10 @@ export function getSupabaseAdmin(): SupabaseClient | null {
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false },
+    global: {
+      // Empêche le cache de données Next/Vercel sur les lectures REST Supabase :
+      // les routes admin doivent toujours voir l'état frais de la base.
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 }
