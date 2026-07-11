@@ -11,6 +11,7 @@ interface Props {
   onChange: (e: React.ChangeEvent<any>) => void;
   onNext: () => void;
   universityName?: string; // ✅ NEW: Ajouté pour accepter la prop du parent
+  petMode?: boolean; // ✅ NEW: libellés adaptés aux animaux perdus
 }
 
 /* --- Listes (inchangées) --- */
@@ -174,7 +175,7 @@ function LocalSuggest({
 
 /* ========================================================================= */
 
-export default function ReportFormStep1({ formData, onChange, onNext, universityName }: Props) { // ✅ NEW: Ajout de la prop ici
+export default function ReportFormStep1({ formData, onChange, onNext, universityName, petMode = false }: Props) { // ✅ NEW: Ajout de la prop ici
   // Phases
   const [phase, setPhase] = useState<"basic" | "context">("basic");
 
@@ -293,19 +294,35 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
       {/* ================= PHASE 1 ================= */}
       {phase === "basic" && (
         <>
-          <h2 className="text-xl font-bold">Step 1: Describe the lost item</h2>
+          <h2 className="text-xl font-bold">
+            {petMode ? "Step 1: Tell us about your pet" : "Step 1: Describe the lost item"}
+          </h2>
 
           {/* What did you lose — composant existant (garde ton design) */}
-          <div>
-            <ObjectSuggest
-              value={formData.title || ""}
-              onChange={(val) =>
-                onChange({ target: { name: "title", value: val } } as React.ChangeEvent<HTMLInputElement>)
-              }
-            />
-          </div>
+          {petMode ? (
+            <div>
+              <label className="block font-medium mb-2">What kind of animal, and their name?</label>
+              <input
+                type="text"
+                name="title"
+                placeholder='e.g. "Yorkshire Terrier, Luna" or "Gray tabby cat, Milo"'
+                value={formData.title || ""}
+                onChange={onChange}
+                className="w-full rounded-lg border border-blue-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          ) : (
+            <div>
+              <ObjectSuggest
+                value={formData.title || ""}
+                onChange={(val) =>
+                  onChange({ target: { name: "title", value: val } } as React.ChangeEvent<HTMLInputElement>)
+                }
+              />
+            </div>
+          )}
 
-          {showSuggestInfo && (
+          {showSuggestInfo && !petMode && (
             <div className="rounded-lg border border-green-200 bg-green-50 text-green-800 px-3 py-2 text-sm">
               If there isn’t an adequate suggestion, select <strong>“Other – My item isn’t listed”</strong> and
               enter the item’s category. You can provide details later.
@@ -313,10 +330,16 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
           )}
 
           <div>
-            <label className="block font-medium mb-2">Please provide a detailed description</label>
+            <label className="block font-medium mb-2">
+              {petMode ? "Describe your pet" : "Please provide a detailed description"}
+            </label>
             <textarea
               name="description"
-              placeholder="Color, brand, unique features..."
+              placeholder={
+                petMode
+                  ? "Breed, color, size, collar and tag, microchipped or not, temperament (shy, friendly)..."
+                  : "Color, brand, unique features..."
+              }
               onFocus={() => {
                 if (titleFilled) setShowSuggestInfo(false);
                 setShowPrivacyInfo(true);
@@ -335,7 +358,9 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
           )}
 
           <div>
-            <label className="block font-medium">Date of the loss</label>
+            <label className="block font-medium">
+              {petMode ? "When did your pet go missing?" : "Date of the loss"}
+            </label>
             <div
               className="inline-block"
               onClick={openDatePicker}
@@ -421,7 +446,9 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
       {/* ================= PHASE 2 ================= */}
       {phase === "context" && (
         <>
-          <h2 className="text-xl font-bold">Step 2: Where did you lose it?</h2>
+          <h2 className="text-xl font-bold">
+            {petMode ? "Step 2: Where was your pet last seen?" : "Step 2: Where did you lose it?"}
+          </h2>
 
           {/* ✅ NEW: Logique d'affichage Université vs Classique */}
           {universityName ? (
@@ -476,7 +503,9 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
 
               {/* Transport question */}
               <div>
-                <p className="block font-medium mb-2">Was it during a transport?</p>
+                <p className="block font-medium mb-2">
+                  {petMode ? "Did your pet go missing during a trip or transport?" : "Was it during a transport?"}
+                </p>
                 <div className="flex flex-col gap-2 text-[16px]">
                   {(["yes", "no", "maybe"] as const).map((v) => (
                     <label key={v} className={labelRadio}>

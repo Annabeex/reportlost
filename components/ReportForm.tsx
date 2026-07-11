@@ -803,6 +803,7 @@ setFreeEmailSent(true);
           onChange={handleChange}
           onNext={handleNext}
           universityName={universityName} // ✅ NEW: Prop passée pour affichage conditionnel
+          petMode={petMode} // ✅ NEW: libellés animaux
         />
       )}
 
