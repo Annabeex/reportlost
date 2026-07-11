@@ -564,6 +564,14 @@ export default function AdminPage() {
                             {searchingId === item.id ? 'Recherche…' : '🔎 Rechercher en ligne'}
                           </button>
 
+                          <a
+                            href={`/admin/case/${encodeURIComponent(item.id)}`}
+                            className="inline-flex items-center rounded-md bg-amber-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
+                            title="Dossier : échanges groupés + assistant IA"
+                          >
+                            🗂️ Dossier
+                          </a>
+
                           {ref && (
                             <a
                               href={`/admin/poster/${encodeURIComponent(ref)}`}

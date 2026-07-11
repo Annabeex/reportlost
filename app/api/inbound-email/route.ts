@@ -57,6 +57,136 @@ function extractPublicId(recipientLower: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Archive un mail entrant dans case_messages (groupage par dossier).
+ * Non bloquant : une erreur ici ne doit jamais casser le relais.
+ */
+async function archiveInbound(params: {
+  publicId?: string | null;
+  fromHeader: string;
+  recipient: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}) {
+  try {
+    const { publicId, fromHeader, recipient, subject, text, html } = params;
+    const fromEmail =
+      fromHeader.match(/<([^>]+)>/)?.[1]?.toLowerCase() ||
+      fromHeader.trim().toLowerCase();
+
+    let item: { id: string; public_id: string | null } | null = null;
+
+    if (publicId) {
+      const { data } = await supabase
+        .from("lost_items")
+        .select("id, public_id")
+        .eq("public_id", publicId)
+        .maybeSingle();
+      item = data as any;
+    }
+    // fallback : mail spontané -> rattachement par l'adresse de l'expéditeur
+    if (!item && fromEmail) {
+      const { data } = await supabase
+        .from("lost_items")
+        .select("id, public_id")
+        .eq("email", fromEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      item = data as any;
+    }
+    if (!item?.id) return;
+
+    await supabase.from("case_messages").insert({
+      lost_item_id: item.id,
+      public_id: item.public_id,
+      direction: "in",
+      from_email: fromEmail,
+      to_email: recipient.toLowerCase(),
+      subject,
+      body_text: text || null,
+      body_html: html || null,
+    });
+  } catch (e) {
+    console.error("[inbound-email] archiveInbound failed:", e);
+  }
+}
+
+/* ---------- Archivage des copies support@ (BCC / transfert) ---------- */
+
+const ARCHIVE_ADDRESS = "archive@scan.reportlost.org";
+
+// Cherche un ID de dossier dans le sujet puis le corps : "#12345", "case 12345",
+// "dossier #12345", "ID: 12345"… (évite de matcher les codes postaux à 5 chiffres)
+function extractCaseIdFromText(subject: string, body: string): string | null {
+  const tryMatch = (s: string) =>
+    s.match(/(?:#\s*|\b(?:case|dossier|report|ref|id)\s*[:#]?\s*)(\d{5})\b/i)?.[1] || null;
+  return tryMatch(subject) || tryMatch(body);
+}
+
+/**
+ * Copie d'un mail support@ (auto-BCC FreeScout sortant, ou transfert Zoho entrant).
+ * Rattache au dossier via l'ID #12345 (sujet/corps), sinon via l'adresse du correspondant.
+ */
+async function archiveSupportCopy(params: {
+  fromHeader: string;
+  toHeader: string;
+  subject: string;
+  text?: string;
+  html?: string;
+}) {
+  const { fromHeader, toHeader, subject, text, html } = params;
+  const pickEmail = (h: string) =>
+    h.match(/<([^>]+)>/)?.[1]?.toLowerCase() || h.split(",")[0]?.trim().toLowerCase() || "";
+
+  const fromEmail = pickEmail(fromHeader);
+  const toEmail = pickEmail(toHeader);
+  const support = (process.env.ZOHO_USER || SUPPORT_EMAIL).toLowerCase();
+  const direction: "in" | "out" = fromEmail === support ? "out" : "in";
+  const correspondent = direction === "out" ? toEmail : fromEmail;
+
+  let item: { id: string; public_id: string | null } | null = null;
+
+  const caseId = extractCaseIdFromText(subject, text || "");
+  if (caseId) {
+    const { data } = await supabase
+      .from("lost_items")
+      .select("id, public_id")
+      .eq("public_id", caseId)
+      .maybeSingle();
+    item = data as any;
+  }
+  if (!item && correspondent) {
+    const { data } = await supabase
+      .from("lost_items")
+      .select("id, public_id")
+      .eq("email", correspondent)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    item = data as any;
+  }
+  if (!item?.id) {
+    // Pas de rattachement possible : on trace dans les logs Vercel (utile aussi pour
+    // récupérer un éventuel mail de vérification Zoho envoyé à archive@).
+    console.log("[archive] non rattaché:", { fromEmail, toEmail, subject, text: (text || "").slice(0, 3000) });
+    return;
+  }
+
+  await supabase.from("case_messages").insert({
+    lost_item_id: item.id,
+    public_id: item.public_id,
+    direction,
+    from_email: fromEmail,
+    to_email: toEmail,
+    subject,
+    body_text: text || null,
+    body_html: html || null,
+    meta: { via: "archive", matched_by: caseId ? "case_id" : "correspondent" },
+  });
+}
+
 function buildTransport() {
   // Zoho Europe
   return nodemailer.createTransport({
@@ -183,8 +313,22 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, error: "Bad signature" }, 403);
     }
 
+    // 1bis) Copies support@ (auto-BCC FreeScout / transfert Zoho) → archivage pur, pas de relais
+    if (recipient.toLowerCase() === ARCHIVE_ADDRESS) {
+      const toHeader = String(form.get("To") || form.get("to") || "");
+      try {
+        await archiveSupportCopy({ fromHeader, toHeader, subject, text, html });
+      } catch (e) {
+        console.error("[inbound-email] archiveSupportCopy failed:", e);
+      }
+      return json({ ok: true, routed: "archive" });
+    }
+
     // 2) Public ID
     const publicId = extractPublicId(recipient.toLowerCase());
+
+    // Archive dans le dossier (case_messages) — non bloquant
+    await archiveInbound({ publicId, fromHeader, recipient, subject, text, html });
     if (!publicId) {
       // alias non géré → on notifie juste le support
       const tr = buildTransport();
