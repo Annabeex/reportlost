@@ -4,6 +4,7 @@
 // Rien n'est publié sans clic explicite. URL : /admin/city-guides
 
 import { useEffect, useState } from "react";
+import { buildCityPath } from "@/lib/slugify";
 
 type Row = { state_id: string; city_slug: string; status: string; updated_at: string };
 type CityRow = { city: string; state: string; population: number | null; guide_status: string | null };
@@ -255,6 +256,16 @@ export default function CityGuidesAdmin() {
             <a href={previewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 underline">
               👁 Aperçu
             </a>
+            {current.status === "published" && (
+              <a
+                href={buildCityPath(current.state, current.city)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-green-700 underline"
+              >
+                🌐 Voir la page
+              </a>
+            )}
           </div>
           <textarea
             className="h-96 w-full rounded border p-3 font-mono text-xs"
@@ -315,10 +326,20 @@ export default function CityGuidesAdmin() {
                     <span className={r.status === "published" ? "text-green-700" : "text-amber-600"}>{r.status}</span>
                   </td>
                   <td className="text-gray-500">{new Date(r.updated_at).toLocaleString("fr-FR")}</td>
-                  <td>
+                  <td className="space-x-3">
                     <button onClick={() => open(r)} className="text-blue-600 underline">
                       Ouvrir
                     </button>
+                    {r.status === "published" && (
+                      <a
+                        href={buildCityPath(r.state_id, r.city_slug)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-green-700 underline"
+                      >
+                        🌐 Voir
+                      </a>
+                    )}
                   </td>
                 </tr>
               ))}

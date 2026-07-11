@@ -2,8 +2,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendMailDirect } from "@/lib/mailer";
 
 export const runtime = "nodejs";
+export const maxDuration = 60; // les envois de mails (SMTP) peuvent être lents
 export const dynamic = "force-dynamic";
 
 /* small helper: promise timeout (10s) */
@@ -52,15 +54,19 @@ function computeFingerprint(obj: {
 /* --- base URL helper (works in local / preview / prod) --- */
 function getBaseUrl(req: NextRequest): string {
   const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  if (env) return env;
-  const proto = req.headers.get("x-forwarded-proto") || "http";
+  // ⚠️ Une valeur localhost en prod (variable copiée depuis .env.local) casserait
+  // tous les appels internes (mails...) : on l'ignore hors développement.
+  const isLocalEnv = /localhost|127\.0\.0\.1/i.test(env);
+  if (env && (!isLocalEnv || process.env.NODE_ENV !== "production")) return env;
+  const proto = req.headers.get("x-forwarded-proto") || "https";
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "127.0.0.1:3000";
   return `${proto}://${host}`;
 }
 
-/* call /api/send-mail on the same deployment */
+/* ✅ Envoi DIRECT via SMTP (lib/mailer), plus d'appel HTTP interne vers /api/send-mail
+   (l'auto-fetch échouait en timeout : firewall / protection de déploiement / self-fetch). */
 async function sendMailViaApi(
-  req: NextRequest,
+  _req: NextRequest,
   payload: {
     to: string | string[];
     subject: string;
@@ -71,23 +77,7 @@ async function sendMailViaApi(
   },
 ) {
   try {
-    const base = getBaseUrl(req);
-    const mailApiKey = process.env.MAIL_API_KEY;
-    const reqFetch = fetch(`${base}/api/send-mail`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
-      },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
-    const res = (await withTimeout(reqFetch, 10_000)) as Response; // ⏱️ timeout dur 10s
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.error("sendMailViaApi non-ok:", res.status, body);
-    }
-    return res.ok;
+    return await sendMailDirect(payload);
   } catch (e) {
     console.error("sendMailViaApi error", e);
     return false;

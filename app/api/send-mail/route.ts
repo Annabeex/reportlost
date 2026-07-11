@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // SMTP parfois lent (throttling Zoho)
 
 /**
  * ENV à ajouter (local + Vercel) :

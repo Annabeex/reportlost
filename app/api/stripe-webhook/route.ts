@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { sendMailDirect } from "@/lib/mailer";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as any,
@@ -32,9 +33,12 @@ function getReferenceCode(public_id: string | null | undefined, id: string): str
   return refCode5FromId(id);
 }
 
+// (import de l'envoi direct)
 function getBaseUrl(req: NextRequest): string {
   const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  if (env) return env;
+  // ⚠️ Une valeur localhost en prod casserait les appels internes (mails post-paiement)
+  const isLocalEnv = /localhost|127\.0\.0\.1/i.test(env);
+  if (env && (!isLocalEnv || process.env.NODE_ENV !== "production")) return env;
 
   // Vercel/proxy headers
   const proto = req.headers.get("x-forwarded-proto") || "https";
@@ -199,26 +203,11 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 15000);
+            // ✅ Envoi DIRECT via SMTP (lib/mailer) : plus d'appel HTTP interne fragile
+            const okMail = await sendMailDirect({ to: row.email, subject, text, html });
 
-            const mailApiKey = (process.env.MAIL_API_KEY || "").trim();
-
-            const res = await fetch(`${base}/api/send-mail`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
-              },
-              body: JSON.stringify({ to: row.email, subject, text, html }),
-              signal: controller.signal,
-            });
-
-            clearTimeout(timeout);
-
-            if (!res.ok) {
-              const t = await res.text().catch(() => "");
-              console.error("❌ /api/send-mail returned non-ok:", res.status, t);
+            if (!okMail) {
+              console.error("❌ sendMailDirect failed for", reportId);
             } else {
               try {
                 await supabaseAdmin
