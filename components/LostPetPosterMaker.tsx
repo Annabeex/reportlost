@@ -35,6 +35,10 @@ export default function LostPetPosterMaker() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState(false);
+  // Champs optionnels : dès que la personne y touche, l'exemple ne revient plus
+  // (champ vidé = section masquée sur l'affiche)
+  const [noteTouched, setNoteTouched] = useState(false);
+  const [rewardTouched, setRewardTouched] = useState(false);
 
   const posterRef = useRef<HTMLDivElement | null>(null);
 
@@ -172,11 +176,27 @@ export default function LostPetPosterMaker() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-medium text-gray-500">Personal note (optional)</label>
-            <input className={inputCls} placeholder="She's shy — please don't chase, just call" value={note} onChange={(e) => setNote(e.target.value)} />
+            <input
+              className={inputCls}
+              placeholder="She's shy, please don't chase, just call"
+              value={note}
+              onChange={(e) => {
+                setNoteTouched(true);
+                setNote(e.target.value);
+              }}
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500">Reward (optional)</label>
-            <input className={inputCls} placeholder="$200 reward" value={reward} onChange={(e) => setReward(e.target.value)} />
+            <input
+              className={inputCls}
+              placeholder="$200 reward"
+              value={reward}
+              onChange={(e) => {
+                setRewardTouched(true);
+                setReward(e.target.value);
+              }}
+            />
           </div>
         </div>
 
@@ -253,14 +273,18 @@ export default function LostPetPosterMaker() {
             <p className="text-sm text-gray-700">
               📍 <strong>Last seen:</strong> {lastSeen || EXAMPLE.lastSeen}, {date || EXAMPLE.date}
             </p>
-            <p className="mx-auto max-w-[85%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm italic text-gray-800">
-              “{note || EXAMPLE.note}”
-            </p>
-            <p>
-              <span className="inline-block rounded-full bg-red-600 px-5 py-1 text-lg font-extrabold tracking-wide text-white">
-                {(reward || EXAMPLE.reward).toUpperCase()}
-              </span>
-            </p>
+            {(note || (!noteTouched && EXAMPLE.note)) && (
+              <p className="mx-auto max-w-[85%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm italic text-gray-800">
+                “{note || EXAMPLE.note}”
+              </p>
+            )}
+            {(reward || (!rewardTouched && EXAMPLE.reward)) && (
+              <p>
+                <span className="inline-block rounded-full bg-red-600 px-5 py-1 text-lg font-extrabold tracking-wide text-white">
+                  {(reward || EXAMPLE.reward).toUpperCase()}
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Contact */}
