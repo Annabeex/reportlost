@@ -400,8 +400,9 @@ export async function POST(req: NextRequest) {
         `New message about your QR-tagged item (ID ${publicId})`,
       text: ownerText,
       html: ownerHtml,
-      // BCC support si tu veux un œil côté admin
-      // bcc: SUPPORT_EMAIL,
+      // Copie support (remplace l'ancien forward("support@") de la route Mailgun,
+      // supprimé pour éviter la boucle avec le transfert Zoho → archive@)
+      bcc: SUPPORT_EMAIL,
     });
 
     return json({ ok: true, routed: "owner", publicId, owner: item.email });
