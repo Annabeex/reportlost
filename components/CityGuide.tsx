@@ -68,11 +68,6 @@ export function CityGuideExtra({
             </div>
           ))}
         </div>
-        <div className="text-center mt-8">
-          <a href="#report-form" className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition">
-            {guide.ctaLabel}
-          </a>
-        </div>
       </section>
 
       {/* Intro + image */}

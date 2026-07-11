@@ -12,7 +12,7 @@ const ANIMALS = ["DOG", "CAT", "BIRD", "RABBIT", "PET"] as const;
 // le rendu final immédiatement, et chaque exemple disparaît dès qu'elle tape.
 const EXAMPLE = {
   petName: "Luna",
-  photo: "/images/categories/pets.jpg",
+  photo: "/images/lost-pet-example.jpg",
   description: "Small brown terrier mix, red collar, white patch on chest",
   lastSeen: "Maple Street & 5th Ave",
   date: "July 10, 2026",
@@ -34,6 +34,7 @@ export default function LostPetPosterMaker() {
   const [reward, setReward] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState(false);
 
   const posterRef = useRef<HTMLDivElement | null>(null);
 
@@ -211,47 +212,75 @@ export default function LostPetPosterMaker() {
           style={{ aspectRatio: "210/297", fontFamily: "Arial, Helvetica, sans-serif" }}
         >
           {/* Bandeau */}
-          <div className="bg-red-600 py-4 text-center">
-            <div className="text-5xl font-extrabold tracking-wider text-white">LOST {animal}</div>
-            <div className="mt-1 text-2xl font-bold text-red-100">&ldquo;{petName || EXAMPLE.petName}&rdquo;</div>
+          <div
+            className="py-5 text-center"
+            style={{ background: "linear-gradient(135deg, #dc2626 0%, #ef4444 55%, #f97316 100%)" }}
+          >
+            <div className="text-[44px] font-extrabold leading-none tracking-[0.12em] text-white">
+              LOST {animal}
+            </div>
+            <div className="mt-2 inline-block rounded-full bg-white px-5 py-1 text-xl font-extrabold text-red-600">
+              “{petName || EXAMPLE.petName}”
+            </div>
           </div>
 
           {/* Photo */}
-          <div className="flex justify-center px-6 pt-5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photo || EXAMPLE.photo}
-              alt="Lost pet"
-              className="h-56 w-full rounded-xl border-4 border-gray-800 object-cover"
-            />
+          <div className="flex justify-center px-7 pt-6">
+            {photoError ? (
+              <div
+                className="flex h-60 w-full items-center justify-center rounded-2xl text-7xl"
+                style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}
+              >
+                🐕
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photo || EXAMPLE.photo}
+                alt="Lost pet"
+                onError={() => setPhotoError(true)}
+                className="h-60 w-full rounded-2xl object-cover shadow-lg"
+                style={{ border: "5px solid #ffffff", outline: "1px solid #e5e7eb" }}
+              />
+            )}
           </div>
 
           {/* Détails */}
-          <div className="space-y-2 px-6 pt-4 text-center">
-            <p className="text-base font-medium leading-snug text-gray-900">{description || EXAMPLE.description}</p>
-            <p className="text-sm text-gray-800">
-              <strong>Last seen:</strong> {lastSeen || EXAMPLE.lastSeen}, {date || EXAMPLE.date}
+          <div className="space-y-2.5 px-7 pt-4 text-center">
+            <p className="text-[17px] font-semibold leading-snug text-gray-900">
+              {description || EXAMPLE.description}
             </p>
-            <p className="text-sm italic text-gray-700">“{note || EXAMPLE.note}”</p>
-            <p className="text-lg font-extrabold text-red-600">{(reward || EXAMPLE.reward).toUpperCase()}</p>
+            <p className="text-sm text-gray-700">
+              📍 <strong>Last seen:</strong> {lastSeen || EXAMPLE.lastSeen}, {date || EXAMPLE.date}
+            </p>
+            <p className="mx-auto max-w-[85%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm italic text-gray-800">
+              “{note || EXAMPLE.note}”
+            </p>
+            <p>
+              <span className="inline-block rounded-full bg-red-600 px-5 py-1 text-lg font-extrabold tracking-wide text-white">
+                {(reward || EXAMPLE.reward).toUpperCase()}
+              </span>
+            </p>
           </div>
 
           {/* Contact */}
-          <div className="mt-4 border-t-4 border-gray-800 px-6 py-4">
-            <div className="flex items-center justify-between gap-4">
+          <div className="mt-5 bg-slate-900 px-7 py-5 text-white">
+            <div className="flex items-center justify-between gap-5">
               <div className="min-w-0 flex-1 text-left">
-                <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                <div className="text-xs font-semibold uppercase tracking-widest text-slate-300">
                   If you see {petName || EXAMPLE.petName}, please call
                 </div>
-                <div className="mt-1 break-words text-3xl font-extrabold text-gray-900">
+                <div className="mt-1.5 break-words text-[32px] font-extrabold leading-none text-white">
                   {phone || EXAMPLE.phone}
                 </div>
               </div>
               {qrDataUrl && (
                 <div className="text-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrDataUrl} alt="QR code to email the owner" className="mx-auto h-24 w-24" />
-                  <div className="mt-1 text-[10px] font-medium text-gray-600">
+                  <div className="rounded-xl bg-white p-1.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrDataUrl} alt="QR code to email the owner" className="mx-auto h-[88px] w-[88px]" />
+                  </div>
+                  <div className="mt-1 max-w-[110px] text-[9px] font-medium leading-tight text-slate-300">
                     {emailValid ? "Scan to email the owner" : "Add your email to activate this QR code"}
                   </div>
                 </div>
