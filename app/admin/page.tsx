@@ -357,7 +357,16 @@ export default function AdminPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-12">
       <section className="space-y-4">
-        <h1 className="text-3xl font-bold">📦 Lost Items (Admin)</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-bold">📦 Lost Items (Admin)</h1>
+          <a
+            href="/admin/city-guides"
+            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+            title="Générer et publier les guides ville (SEO)"
+          >
+            🏙️ Guides ville
+          </a>
+        </div>
 
         {/* Controls row: search + stats */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

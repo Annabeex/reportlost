@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Retourne un client Supabase admin (service role).
  * N'importez **jamais** ce fichier côté client.
  */
-export function getSupabaseAdmin(): SupabaseClient | null {
+export function getSupabaseAdmin(opts?: { fresh?: boolean }): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -16,12 +16,19 @@ export function getSupabaseAdmin(): SupabaseClient | null {
     return null;
   }
 
+  // fresh (défaut) : lectures toujours à jour (routes admin, webhooks).
+  // fresh: false : lectures cachables — indispensable sur les pages publiques ISR,
+  // car un fetch no-store rendrait la page dynamique et annulerait le cache 24h.
+  const fresh = opts?.fresh !== false;
+
   return createClient(url, serviceKey, {
     auth: { persistSession: false },
-    global: {
-      // Empêche le cache de données Next/Vercel sur les lectures REST Supabase :
-      // les routes admin doivent toujours voir l'état frais de la base.
-      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
-    },
+    ...(fresh
+      ? {
+          global: {
+            fetch: ((input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' })) as typeof fetch,
+          },
+        }
+      : {}),
   });
 }

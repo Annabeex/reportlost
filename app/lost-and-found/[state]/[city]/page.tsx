@@ -11,6 +11,8 @@ import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { fetchPoliceStations } from "@/lib/fetchPoliceStations";
+import { CityGuideTitle, CityGuideExtra } from "@/components/CityGuide";
+import type { CityGuide as CityGuideType } from "@/lib/cityGuides";
 import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
 import { LaTitleSection, LaExtraContent } from "@/components/LosAngelesContent";
 import { ChicagoTitleSection, ChicagoExtraContent } from "@/components/ChicagoContent";
@@ -22,8 +24,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Keep runtime so we can fetch DB at request-time
-export const dynamic = "force-dynamic" as const;
+// ISR : la page est rendue puis mise en cache 24h — crawl rapide pour Google,
+// et les nouveaux signalements apparaissent au plus tard le lendemain.
+export const revalidate = 86400;
 
 // ✅ composants client chargés côté navigateur uniquement
 const CityMap = NextDynamic(() => import("@/components/MapClient").then((m) => m.default), {
@@ -193,19 +196,44 @@ export default async function Page({ params }: { params: { state: string; city: 
       stateAbbr === "AZ" &&
       String(cityData.city_ascii || "").trim().toLowerCase() === "phoenix";
 
-    // ====== vrais signalements (≤ 3 jours) pour cette ville/État — via ADMIN ======
-    let realReports: string[] = [];
+    // ====== Guide ville publié (table city_guides, validé dans /admin/city-guides) ======
+    // Les 5 grandes villes gardent leurs composants dédiés ; partout ailleurs, un guide
+    // publié remplace le contenu générique.
+    let dbGuide: CityGuideType | null = null;
+    if (!isNYC && !isLA && !isChicago && !isHouston && !isPhoenix) {
+      try {
+        const adminGuide = getSupabaseAdmin({ fresh: false }); // cacheable : page ISR
+        if (adminGuide) {
+          const { data: g } = await adminGuide
+            .from("city_guides")
+            .select("guide")
+            .eq("state_id", stateAbbr)
+            .eq("city_slug", String(cityData.city_ascii || "").trim().toLowerCase())
+            .eq("status", "published")
+            .maybeSingle();
+          dbGuide = (g?.guide as CityGuideType) || null;
+        }
+      } catch {
+        dbGuide = null;
+      }
+    }
+
+    // ====== vrais signalements (≤ 90 jours) pour cette ville/État — via ADMIN ======
+    // Fenêtre longue : le contenu réel (unique, local) reste visible et chaque
+    // signalement publié est LIÉ à sa page /lost/... (maillage interne SEO).
+    type ReportLine = { text: string; slug: string | null };
+    let realReports: ReportLine[] = [];
     try {
-      const admin = getSupabaseAdmin(); // peut être null si les vars d'env manquent
+      const admin = getSupabaseAdmin({ fresh: false }); // cacheable : page ISR
       if (admin) {
-        const threeDaysAgoIso = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+        const ninetyDaysAgoIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
         const { data: recentLost, error: realErr } = await admin
           .from("lost_items")
-          .select("title, city, state_id, created_at")
+          .select("title, city, state_id, created_at, slug")
           .eq("state_id", stateAbbr)
           .ilike("city", cityData.city_ascii) // stricter than %...%
-          .gte("created_at", threeDaysAgoIso)
+          .gte("created_at", ninetyDaysAgoIso)
           .order("created_at", { ascending: false })
           .limit(3);
 
@@ -215,7 +243,10 @@ export default async function Page({ params }: { params: { state: string; city: 
             const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : formatMonthDay(new Date());
             const where =
               r?.city && r?.state_id ? `${r.city}, ${r.state_id}` : r?.city ? String(r.city) : cityData.city_ascii;
-            return ` ${label} lost in ${where}, ${when}.`;
+            return {
+              text: ` ${label} lost in ${where}, ${when}.`,
+              slug: r?.slug ? String(r.slug) : null,
+            };
           });
         }
       }
@@ -224,11 +255,11 @@ export default async function Page({ params }: { params: { state: string; city: 
     }
     // ===========================================================================
 
-    // Exemples “fallback”
-    const fakeReports = exampleReports(cityData);
+    // Exemples “fallback” (jamais 0 signalement affiché)
+    const fakeReports: ReportLine[] = exampleReports(cityData).map((t: string) => ({ text: t, slug: null }));
 
     // Compose: on place les vrais d’abord, puis on complète avec des faux (max 3)
-    const reports = (realReports.length ? [...realReports, ...fakeReports] : fakeReports).slice(0, 3);
+    const reports: ReportLine[] = (realReports.length ? [...realReports, ...fakeReports] : fakeReports).slice(0, 3);
 
     // 4) Nearby
     let nearbyCities: any[] = [];
@@ -300,6 +331,8 @@ export default async function Page({ params }: { params: { state: string; city: 
       <HoustonTitleSection />
     ) : isPhoenix ? (
       <PhoenixTitleSection />
+    ) : dbGuide ? (
+      <CityGuideTitle guide={dbGuide} />
     ) : (
       <section className="text-center py-10 px-4 bg-gradient-to-r from-blue-50 to-white rounded-t-xl shadow">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
@@ -315,10 +348,16 @@ export default async function Page({ params }: { params: { state: string; city: 
               Recently reported lost items in {cityData.city_ascii} – updated this {today}
             </h2>
             <ul className="list-none space-y-2 pl-0">
-              {reports.map((r: string, i: number) => (
+              {reports.map((r, i: number) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="text-blue-500">📍</span>
-                  <span>{r}</span>
+                  {r.slug ? (
+                    <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
+                      {r.text}
+                    </Link>
+                  ) : (
+                    <span>{r.text}</span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -357,6 +396,13 @@ export default async function Page({ params }: { params: { state: string; city: 
       />
     ) : isPhoenix ? (
       <PhoenixExtraContent
+        cityImage={cityImage}
+        cityImageAlt={cityImageAlt}
+        cityImageCredit={cityImageCredit}
+      />
+    ) : dbGuide ? (
+      <CityGuideExtra
+        guide={dbGuide}
         cityImage={cityImage}
         cityImageAlt={cityImageAlt}
         cityImageCredit={cityImageCredit}
@@ -418,9 +464,34 @@ export default async function Page({ params }: { params: { state: string; city: 
       </>
     );
 
+    // JSON-LD : fil d'Ariane (aide Google à comprendre la hiérarchie état > ville)
+    const breadcrumbJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Lost & Found", item: `${CANONICAL_BASE}/lost-and-found` },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: cityData.state_name || stateAbbr,
+          item: `${CANONICAL_BASE}/lost-and-found/${(cityData.state_id || stateAbbr).toLowerCase()}`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: `${cityData.city_ascii}, ${cityData.state_id || stateAbbr}`,
+          item: canonicalUrl(cityData.state_id || stateAbbr, params.city),
+        },
+      ],
+    };
+
     // 9) Render
     return (
       <main className="bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
         <div className="max-w-6xl mx-auto space-y-16">
           <CityLostFormBlock
             defaultCity={cityData.city_ascii}

@@ -274,12 +274,19 @@ Reply JSON: {"verdict":"yes|maybe|no","confidence":0-100,"reason":"one short sen
 }
 
 // ---------------------------------------------------------------------------
-// 6) Cadence dégressive : quotidien (7j) -> hebdo (30j) -> mensuel (6 mois) -> stop
+// 6) Cadence dégressive : quotidien (7j) -> hebdo (30j) -> mensuel -> stop
+//    Durée totale : 6 mois (offre standard) / 12 mois (offre premium, >= 25 $)
 // ---------------------------------------------------------------------------
-export function computeNextSearch(createdAt: string | null): { next: Date | null; done: boolean } {
+export const PREMIUM_CONTRIBUTION = Number(process.env.MATCH_PREMIUM_CONTRIB || 25);
+
+export function computeNextSearch(
+  createdAt: string | null,
+  contribution?: number | null
+): { next: Date | null; done: boolean } {
   const created = createdAt ? new Date(createdAt) : new Date();
   const ageDays = (Date.now() - created.getTime()) / 86400000;
-  if (ageDays >= 180) return { next: null, done: true };
+  const maxDays = (contribution ?? 0) >= PREMIUM_CONTRIBUTION ? 365 : 180;
+  if (ageDays >= maxDays) return { next: null, done: true };
   const addDays = ageDays < 7 ? 1 : ageDays < 30 ? 7 : 30;
   return { next: new Date(Date.now() + addDays * 86400000), done: false };
 }

@@ -19,6 +19,7 @@ export default function Footer() {
             <li><Link href="/helpcenter">Help center</Link></li>
             <li><Link href="/contact">Contact us</Link></li>
             <li><Link href="/how-it-works">How it works</Link></li>
+            <li><Link href="/lost-item-recovery-assistance-usa">Recovery assistance (USA)</Link></li>
           </ul>
         </div>
 

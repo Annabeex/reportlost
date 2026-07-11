@@ -17,7 +17,7 @@ import {
 const MAX_JUDGE = Number(process.env.MATCH_MAX_JUDGE || 5);
 
 export const LOST_SELECT =
-  "id, title, description, primary_category, categories, circumstances, city, state_id, place_type, place_type_other, loss_street, loss_neighborhood, date, created_at, slug, public_id, email, object_photo";
+  "id, title, description, primary_category, categories, circumstances, city, state_id, place_type, place_type_other, loss_street, loss_neighborhood, date, created_at, slug, public_id, email, object_photo, contribution";
 
 export function toReport(row: any): LostReport {
   return {

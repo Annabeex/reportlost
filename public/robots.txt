@@ -5,6 +5,18 @@ Allow: /
 Disallow: /login
 Disallow: /dashboard
 Disallow: /api/
+Disallow: /admin/
+
+# Robot de recherche ChatGPT (apparition dans les réponses ChatGPT Search)
+User-agent: OAI-SearchBot
+Allow: /
+
+# Robots de recherche IA équivalents
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
 
 # Sitemap principal
 Sitemap: https://reportlost.org/sitemap.xml

@@ -5,8 +5,8 @@
 // - Fonctionnalités et contenu conservés
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR 1h : page publique cacheable (SEO), rafraîchie au plus tard toutes les heures.
+export const revalidate = 3600;
 
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -153,7 +153,7 @@ function shortenTitleForDisplay(title: string): string {
 export async function generateMetadata(
   { params }: PageProps
 ): Promise<Metadata> {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAdmin({ fresh: false }); // cacheable : page ISR
   if (!supabase) return {};
 
   const { data } = await supabase
@@ -224,7 +224,7 @@ export async function generateMetadata(
 // ---------------- Page ----------------
 
 export default async function LostReportPage({ params }: PageProps) {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAdmin({ fresh: false }); // cacheable : page ISR
   if (!supabase) notFound();
 
   const wantedSlug = params.slug;

@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         console.error("match-watch report error", report.id, (e as Error).message);
       }
-      const { next, done } = computeNextSearch(report.lossDate);
+      const { next, done } = computeNextSearch(report.lossDate, (row as any).contribution);
       await sb
         .from("lost_items")
         .update({
