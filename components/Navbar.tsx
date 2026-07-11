@@ -77,6 +77,9 @@ export default function Navbar() {
           <Link href="/report" className="hover:text-blue-600 transition-colors">
             Report
           </Link>
+          <Link href="/lost-pet-poster" className="hover:text-blue-600 transition-colors">
+            🐾 Lost Pet Poster
+          </Link>
           <Link href="/about" className="hover:text-blue-600 transition-colors">
             About
           </Link>
@@ -109,6 +112,14 @@ export default function Navbar() {
         </Link>
 
         {/* Liens (Cachés si on est sur une page Université) */}
+        {!isUniPage && !isMobile && (
+          <Link
+            href="/lost-pet-poster"
+            className="mr-4 hidden items-center text-sm text-gray-700 transition-colors hover:text-blue-600 lg:flex"
+          >
+            🐾 Lost Pet Poster
+          </Link>
+        )}
         {!isUniPage && (
           <div className="flex items-stretch gap-0 h-full">
             {/* --- VERSION MOBILE : droite et compacte --- */}

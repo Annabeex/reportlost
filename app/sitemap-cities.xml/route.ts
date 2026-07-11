@@ -36,6 +36,7 @@ export async function GET() {
 <url><loc>${BASE}/</loc></url>
 <url><loc>${BASE}/report</loc></url>
 <url><loc>${BASE}/lost-item-recovery-assistance-usa</loc></url>
+<url><loc>${BASE}/lost-pet-poster</loc></url>
 <url><loc>${BASE}/lost-and-found</loc></url>
 ${urls}
 </urlset>`;

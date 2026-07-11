@@ -100,14 +100,31 @@ export async function POST(req: NextRequest) {
 
     // 2) Rédaction stricte
     const raw = await callClaude(
-      `Tu rédiges le guide "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
-Règles STRICTES :
-- N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte → pas de "links" sur cette carte (le texte reste utile et générique).
-- N'inclus une carte "aéroport" ou "transit" QUE si la ville en a réellement un d'après les résultats. Une petite ville a typiquement : police, city hall, commerces/lieux publics, animaux perdus. 4 cartes suffisent alors.
-- "areas" : 3-5 vrais quartiers/zones de la ville si tu les connais avec certitude, sinon des zones génériques honnêtes (downtown, main street, parcs...). Pas de href.
-- "social" : cite les groupes/subreddits UNIQUEMENT s'ils apparaissent dans les résultats ; sinon des catégories génériques ("Facebook groups", "Nextdoor"...).
-- FAQ : 4-6 questions locales concrètes, réponses factuelles basées sur les résultats (délais de garde, où réclamer...). En cas de doute, formule prudente ("check with...").
-- Anglais américain naturel, chaleureux et concret, dans l'esprit de ReportLost (on aide, on ne remplace pas les services officiels).
+      `Tu rédiges la page "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
+Tu es un EXPERT EN CONVERSION, pas un blogueur : cette page vend le service d'accompagnement de ReportLost
+(un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale et surveille le web
+pendant 6 à 12 mois). Chaque section doit ramener vers le formulaire de signalement.
+
+Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
+- h1 : orienté action et bénéfice, ex "Lost something in <ville>? Report it and get it back."
+- heroSubtitle : la promesse du service, "One report and we route it to the right <police locale>, the relevant lost & found offices, and active local social channels."
+- steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. You get matched & notified), adaptées à la ville.
+- intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant.
+- cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
+- midCta / finalCta : le timing est un argument mais JAMAIS anxiogène ni commercial agressif. Pas de "Don't wait!", "The clock is ticking", "before it's too late". Formule positive et rassurante : agir tôt améliore les chances, et une fois le signalement déposé, l'utilisateur peut souffler, l'équipe prend le relais ("The sooner your report is in the system, the better the odds, and once it is, we take it from there", "One report. Every relevant channel in <ville>. You can breathe.").
+- ctaLabel / finalCtaLabel : "Report my lost item →" / "Start my report →".
+
+Règles STRICTES de véracité :
+- N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).
+- N'inclus une carte "aéroport" ou "transit" QUE si la ville en a réellement un d'après les résultats. Une petite ville a typiquement : police, city hall, commerces/lieux publics, animaux perdus, 4 cartes suffisent alors.
+- "areas" : 3-5 vrais quartiers/zones de la ville si tu les connais avec certitude, sinon des zones génériques honnêtes (downtown, main street, parcs). Pas de href.
+- "social" : cite les groupes/subreddits UNIQUEMENT s'ils apparaissent dans les résultats, sinon des catégories génériques ("Facebook groups", "Nextdoor").
+- FAQ : 4-6 questions locales concrètes, réponses factuelles basées sur les résultats (délais de garde, où réclamer). En cas de doute, formule prudente ("check with..."). Termine par une question sur ReportLost ("Is ReportLost.org official / does it replace the police?" avec la réponse honnête : service indépendant).
+
+Règles de STYLE :
+- Anglais américain naturel, chaleureux et concret.
+- JAMAIS de tiret cadratin ni de tiret de ponctuation ("—" ou " - "), utilise des virgules à la place.
+- N'utilise JAMAIS le mot "guide" dans les textes visibles, préfère "what to do", "where to report", "the right channel".
 - Icônes emoji + iconBg parmi : bg-blue-100, bg-yellow-100, bg-indigo-100, bg-sky-100, bg-green-100, bg-rose-100.
 - state="${stateAbbr}", citySlug="${cityName.toLowerCase()}", nearby=[].
 - disclaimer : indépendance de ReportLost vis-à-vis des entités citées.
