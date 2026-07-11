@@ -8,6 +8,19 @@ import { useEffect, useRef, useState } from "react";
 
 const ANIMALS = ["DOG", "CAT", "BIRD", "RABBIT", "PET"] as const;
 
+// Exemple affiché tant que le champ correspondant est vide : la personne voit
+// le rendu final immédiatement, et chaque exemple disparaît dès qu'elle tape.
+const EXAMPLE = {
+  petName: "Luna",
+  photo: "/images/categories/pets.jpg",
+  description: "Small brown terrier mix, red collar, white patch on chest",
+  lastSeen: "Maple Street & 5th Ave",
+  date: "July 10, 2026",
+  phone: "(512) 555-0123",
+  note: "She's shy, please don't chase her, just call",
+  reward: "$200 REWARD",
+};
+
 export default function LostPetPosterMaker() {
   const [animal, setAnimal] = useState<(typeof ANIMALS)[number]>("DOG");
   const [petName, setPetName] = useState("");
@@ -24,21 +37,21 @@ export default function LostPetPosterMaker() {
 
   const posterRef = useRef<HTMLDivElement | null>(null);
 
-  // QR code -> mailto (généré localement avec la lib qrcode déjà présente)
+  const emailValid = /\S+@\S+\.\S+/.test(email.trim());
+
+  // QR code -> mailto (généré localement avec la lib qrcode déjà présente).
+  // Sans email : un QR de démonstration (vers cette page) pour montrer le rendu final.
   useEffect(() => {
     let cancelled = false;
     async function gen() {
-      if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-        setQrDataUrl(null);
-        return;
-      }
       try {
         const QRCode = (await import("qrcode")).default;
-        const subject = encodeURIComponent(`Found ${animal.toLowerCase()}${petName ? ` — ${petName}` : ""}`);
-        const url = await QRCode.toDataURL(`mailto:${email.trim()}?subject=${subject}`, {
-          margin: 1,
-          width: 240,
-        });
+        const target = emailValid
+          ? `mailto:${email.trim()}?subject=${encodeURIComponent(
+              `Found ${animal.toLowerCase()}${petName ? `, ${petName}` : ""}`
+            )}`
+          : "https://reportlost.org/lost-pet-poster";
+        const url = await QRCode.toDataURL(target, { margin: 1, width: 240 });
         if (!cancelled) setQrDataUrl(url);
       } catch {
         if (!cancelled) setQrDataUrl(null);
@@ -48,7 +61,7 @@ export default function LostPetPosterMaker() {
     return () => {
       cancelled = true;
     };
-  }, [email, animal, petName]);
+  }, [email, emailValid, animal, petName]);
 
   function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -189,6 +202,9 @@ export default function LostPetPosterMaker() {
 
       {/* ---- Aperçu de l'affiche ---- */}
       <div>
+        <p className="mb-2 text-center text-xs text-gray-500">
+          👀 Example preview, your edits replace it live
+        </p>
         <div
           ref={posterRef}
           className="mx-auto w-full max-w-[520px] overflow-hidden border border-gray-200 bg-white shadow-lg"
@@ -197,33 +213,27 @@ export default function LostPetPosterMaker() {
           {/* Bandeau */}
           <div className="bg-red-600 py-4 text-center">
             <div className="text-5xl font-extrabold tracking-wider text-white">LOST {animal}</div>
-            {petName && <div className="mt-1 text-2xl font-bold text-red-100">&ldquo;{petName}&rdquo;</div>}
+            <div className="mt-1 text-2xl font-bold text-red-100">&ldquo;{petName || EXAMPLE.petName}&rdquo;</div>
           </div>
 
           {/* Photo */}
           <div className="flex justify-center px-6 pt-5">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="Lost pet" className="h-56 w-full rounded-xl border-4 border-gray-800 object-cover" />
-            ) : (
-              <div className="flex h-56 w-full items-center justify-center rounded-xl border-4 border-dashed border-gray-300 text-gray-400">
-                Your pet&rsquo;s photo here
-              </div>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo || EXAMPLE.photo}
+              alt="Lost pet"
+              className="h-56 w-full rounded-xl border-4 border-gray-800 object-cover"
+            />
           </div>
 
           {/* Détails */}
           <div className="space-y-2 px-6 pt-4 text-center">
-            {description && <p className="text-base font-medium leading-snug text-gray-900">{description}</p>}
-            {(lastSeen || date) && (
-              <p className="text-sm text-gray-800">
-                <strong>Last seen:</strong> {lastSeen}
-                {lastSeen && date ? " — " : ""}
-                {date}
-              </p>
-            )}
-            {note && <p className="text-sm italic text-gray-700">“{note}”</p>}
-            {reward && <p className="text-lg font-extrabold text-red-600">{reward.toUpperCase()}</p>}
+            <p className="text-base font-medium leading-snug text-gray-900">{description || EXAMPLE.description}</p>
+            <p className="text-sm text-gray-800">
+              <strong>Last seen:</strong> {lastSeen || EXAMPLE.lastSeen}, {date || EXAMPLE.date}
+            </p>
+            <p className="text-sm italic text-gray-700">“{note || EXAMPLE.note}”</p>
+            <p className="text-lg font-extrabold text-red-600">{(reward || EXAMPLE.reward).toUpperCase()}</p>
           </div>
 
           {/* Contact */}
@@ -231,15 +241,19 @@ export default function LostPetPosterMaker() {
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 text-left">
                 <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                  If you see {petName || `this ${animal.toLowerCase()}`}, please call
+                  If you see {petName || EXAMPLE.petName}, please call
                 </div>
-                <div className="mt-1 break-words text-3xl font-extrabold text-gray-900">{phone || "(___) ___-____"}</div>
+                <div className="mt-1 break-words text-3xl font-extrabold text-gray-900">
+                  {phone || EXAMPLE.phone}
+                </div>
               </div>
               {qrDataUrl && (
                 <div className="text-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={qrDataUrl} alt="QR code to email the owner" className="mx-auto h-24 w-24" />
-                  <div className="mt-1 text-[10px] font-medium text-gray-600">Scan to email the owner</div>
+                  <div className="mt-1 text-[10px] font-medium text-gray-600">
+                    {emailValid ? "Scan to email the owner" : "Add your email to activate this QR code"}
+                  </div>
                 </div>
               )}
             </div>
