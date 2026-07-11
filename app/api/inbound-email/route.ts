@@ -150,6 +150,13 @@ async function archiveSupportCopy(params: {
   const direction: "in" | "out" = fromEmail === support ? "out" : "in";
   const correspondent = direction === "out" ? toEmail : fromEmail;
 
+  // Notifications internes support→support (ex: transmission d'une réponse client
+  // déjà archivée en direct) : on n'archive pas une seconde fois.
+  if (fromEmail === support && toEmail === support) {
+    console.log("[archive] ignoré (notification interne support→support):", subject);
+    return;
+  }
+
   const caseId = extractCaseIdFromText(subject, text || "");
   console.log("[archive] reçu:", { fromEmail, toEmail, subject, caseId: caseId || "(aucun ID détecté)" });
 
@@ -381,6 +388,25 @@ export async function POST(req: NextRequest) {
         )}</p>${html ? html : `<pre>${escapeHtml(text || "(no text)")}</pre>`}`,
       });
       return json({ ok: true, routed: "support-only (no owner)" });
+    }
+
+    // 3bis) Si l'expéditeur EST le propriétaire du dossier (réponse client à un mail
+    // envoyé depuis l'admin avec Reply-To tracké), on ne lui relaie pas son propre
+    // message : on transmet à support@ pour qu'Anna le voie dans FreeScout et puisse
+    // répondre directement (Reply-To = client).
+    const senderEmail =
+      fromHeader.match(/<([^>]+)>/)?.[1]?.toLowerCase() || fromHeader.trim().toLowerCase();
+    if (item.email && senderEmail === item.email.toLowerCase()) {
+      const tr0 = buildTransport();
+      await tr0.sendMail({
+        from: `ReportLost <${SUPPORT_EMAIL}>`,
+        to: SUPPORT_EMAIL,
+        replyTo: item.email,
+        subject: `[#${publicId}] ${subject || "Client reply"}`,
+        text: text || "(no text)",
+        html: html || `<pre>${escapeHtml(text || "(no text)")}</pre>`,
+      });
+      return json({ ok: true, routed: "support (client reply)", publicId });
     }
 
     // 4) Envoi au propriétaire (joli gabarit)

@@ -20,7 +20,7 @@ async function buildContext(lostItemId: string): Promise<string> {
   const sb = getSupabaseAdmin();
   if (!sb) throw new Error("Supabase non configuré");
 
-  const [{ data: item }, { data: messages }, { data: candidates }] = await Promise.all([
+  const [{ data: item }, { data: messages }, { data: candidates }, { data: establishments }] = await Promise.all([
     sb
       .from("lost_items")
       .select(
@@ -41,6 +41,11 @@ async function buildContext(lostItemId: string): Promise<string> {
       .in("verdict", ["yes", "maybe"])
       .order("created_at", { ascending: false })
       .limit(10),
+    sb
+      .from("case_establishments")
+      .select("name, email, url, contacted_email, contacted_form, notes")
+      .eq("lost_item_id", lostItemId)
+      .order("created_at", { ascending: true }),
   ]);
 
   if (!item) throw new Error("Dossier introuvable");
@@ -87,6 +92,18 @@ async function buildContext(lostItemId: string): Promise<string> {
     );
   }
 
+  if (establishments?.length) {
+    parts.push(
+      "## Établissements lost & found suivis pour ce dossier\n" +
+        establishments
+          .map(
+            (e) =>
+              `- ${e.name}${e.email ? " <" + e.email + ">" : ""}${e.url ? " " + e.url : ""} — contacté par mail : ${e.contacted_email ? "OUI" : "non"} · par formulaire : ${e.contacted_form ? "OUI" : "non"}${e.notes ? " — notes : " + e.notes : ""}`
+          )
+          .join("\n")
+    );
+  }
+
   return parts.join("\n\n");
 }
 
@@ -104,7 +121,39 @@ SUBJECT: <sujet>
 <corps du mail>
 EMAIL>>>
 - Adapte-toi aux consignes d'Anna dans le chat (ton, contenu, geste commercial...). Sois concis.
-- Rien n'est envoyé automatiquement : Anna valide toujours manuellement.`;
+- Rien n'est envoyé automatiquement : Anna valide toujours manuellement.
+
+## Le "mail initial d'enquête" (quand Anna demande le mail initial)
+Adapte ce modèle au dossier (objet, ville, lieu, créneau, prénom). Garde ce ton chaleureux et professionnel :
+
+SUBJECT: Your lost item case Update (<public_id>)
+<<<EMAIL
+Hello <prénom>,
+
+My name is Anna, and I'm assisting you with the manual investigation regarding your lost <objet précis> in <ville, état> (ID <public_id>).
+
+I'm really sorry this happened. I'll do everything I can to help increase the chances of getting it back.
+
+An initial scan across major online sources, community groups, and public lost-and-found platforms for the <ville> area has been completed. No matching report has surfaced yet, but this is completely normal at this early stage — new posts can appear at any moment.
+
+Based on the information you provided (<résumé des circonstances : lieu, créneau, date>), we have reached out to the main local entities most likely to receive found items:
+
+<liste de 2-3 entités locales pertinentes : nom, rôle en une ligne. Adapte au contexte : police locale et city hall par défaut ; ajoute le parc, le restaurant, l'hôtel, le réseau de transport ou l'aéroport si le lieu de perte s'y prête>
+
+Next steps on our side:
+
+- Continue outreach to nearby businesses and high-traffic spots along the area where you may have walked.
+- Our automated monitoring keeps scanning the entire web and social networks (community groups, marketplaces, neighborhood pages) and re-checks regularly to catch any new "found <type d'objet>" post in or around <ville>.
+- I will keep following your case and notify you immediately if anything new is reported.
+
+Warm regards,
+Anna
+Lost Item Investigation Team
+ReportLost.org
+EMAIL>>>
+
+## Suggestions d'établissements à contacter
+Quand Anna demande qui contacter : propose une liste courte et priorisée (3 à 6) adaptée au lieu de perte — police locale, city hall, puis selon le contexte : parc (administration), restaurant/hôtel (directement), transports, aéroport, centre commercial... Pour chacun : nom, moyen de contact probable (email ou formulaire web), et sur demande un brouillon de mail en anglais (sujet contenant #<public_id>). IMPORTANT : tu n'as pas accès au web — signale les adresses, téléphones et emails précis comme "(à vérifier)" plutôt que de les affirmer. Anna les vérifie puis les ajoute à sa liste d'établissements.`;
 
 export async function POST(req: NextRequest) {
   try {

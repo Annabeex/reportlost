@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const { data: item, error } = await sb
     .from("lost_items")
     .select(
-      "id, public_id, created_at, title, description, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, contribution, paid, object_photo, search_status, last_searched_at"
+      "id, public_id, created_at, title, description, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, contribution, paid, object_photo, slug, search_status, last_searched_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error?.message || "Dossier introuvable" }, { status: 404 });
   }
 
-  const [{ data: messages }, { data: candidates }] = await Promise.all([
+  const [{ data: messages }, { data: candidates }, { data: establishments }] = await Promise.all([
     sb
       .from("case_messages")
       .select("id, direction, from_email, to_email, subject, body_text, body_html, created_at")
@@ -40,11 +40,17 @@ export async function GET(req: NextRequest) {
       .in("verdict", ["yes", "maybe"])
       .order("created_at", { ascending: false })
       .limit(20),
+    sb
+      .from("case_establishments")
+      .select("id, name, email, url, contacted_email, contacted_form, notes, created_at")
+      .eq("lost_item_id", id)
+      .order("created_at", { ascending: true }),
   ]);
 
   return NextResponse.json({
     item,
     messages: messages || [],
     candidates: candidates || [],
+    establishments: establishments || [],
   });
 }
