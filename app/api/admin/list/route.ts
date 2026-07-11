@@ -110,16 +110,15 @@ export async function GET(req: Request) {
       .select("id", { count: "exact", head: true })
       .gt("contribution", 0);
 
-    // Villes qui apparaissent pour la 1ère fois : le 1er signalement PAYÉ de chaque ville
-    // -> c'est là qu'on propose de créer un groupe Facebook.
+    // Villes qui apparaissent pour la 1ère fois : le 1er signalement de chaque ville
+    // (payé ou non) -> c'est là qu'on propose de créer un groupe Facebook.
     let firstIds = new Set<string>();
     try {
-      const { data: paidRows } = await supabase
+      const { data: cityRows } = await supabase
         .from("lost_items")
-        .select("id, city, state_id, created_at")
-        .eq("paid", true);
+        .select("id, city, state_id, created_at");
       const earliest = new Map<string, { id: string; ts: number }>();
-      for (const p of paidRows || []) {
+      for (const p of cityRows || []) {
         const kk = `${String(p.state_id || "").toUpperCase()}/${String(p.city || "").trim().toLowerCase()}`;
         const ts = p.created_at ? new Date(p.created_at).getTime() : Infinity;
         const cur = earliest.get(kk);

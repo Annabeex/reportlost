@@ -102,6 +102,12 @@ export default function GroupKitPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6">
+      <a
+        href="/admin"
+        className="mb-4 inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100"
+      >
+        ← Retour à l’admin
+      </a>
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Kit de groupe Facebook</h1>
       <p className="text-gray-600 text-sm mb-6">
         Entre une ville et son État (2 lettres) : l&apos;IA génère le nom du groupe, la description (avec le lien
@@ -149,13 +155,23 @@ export default function GroupKitPage() {
             alt="Bannière Lost & Found"
             className="w-full max-w-xl rounded-lg border border-gray-200 shadow"
           />
-          <button
-            type="button"
-            onClick={downloadBanner}
-            className="mt-3 rounded-lg bg-green-600 text-white font-semibold px-5 py-2 text-sm hover:brightness-110"
-          >
-            ⬇️ Enregistrer la bannière
-          </button>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={downloadBanner}
+              className="rounded-lg bg-green-600 text-white font-semibold px-5 py-2 text-sm hover:brightness-110"
+            >
+              ⬇️ Enregistrer la bannière
+            </button>
+            <a
+              href="https://www.facebook.com/groups/create/"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg bg-[#1877F2] text-white font-semibold px-5 py-2 text-sm hover:brightness-110"
+            >
+              👥 Créer le groupe Facebook ↗
+            </a>
+          </div>
         </div>
       )}
 

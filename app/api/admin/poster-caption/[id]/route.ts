@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
-        max_tokens: 700,
+        max_tokens: 1000,
         system:
           "You write THIRD-PERSON social media captions for ReportLost.org, a platform that broadcasts lost-item reports on behalf of the owner. Never use the first person. Reply ONLY with JSON.",
         messages: [
@@ -54,12 +54,16 @@ Strict rules:
 - THIRD PERSON ONLY. Never "I", "me", "my". Refer to "the owner" and "the item".
 - Warm and human, but factual and respectful.
 - Do NOT include any dangerous or private detail: no home address, no exact GPS / Find My location, no travel route home. Only the general area (city / neighborhood).
-- Highlight distinctive features that help identification.
-- Add a short call to share the post, especially with people in that area.
-- End with a new line: "📩 Found it or have any information? Please contact: ${email}".
-- Then a final line of 12-16 relevant hashtags, plain "#Tag" format separated by spaces (item type, brand if known, city, state, neighborhood, #LostAndFound, #ReportLost, and community/help tags).
+- Include the item description in the caption (the poster image only shows the object type, so the caption must carry the details) and highlight the distinctive features that help identification.
 
-Return JSON:
+REQUIRED LAYOUT — 5 blocks separated by BLANK LINES (write them as \\n\\n inside the JSON strings):
+1. Hook: "🚨 LOST in <City> (<State>) — <short item name>"
+2. Short paragraph: where and when it was lost, then the description and distinctive features.
+3. "🙏 Please share this post, especially with people in the <city/area> area — it really helps."
+4. "📩 Found it or have any information? Please contact: ${email}"
+5. One line of 12-16 hashtags, plain "#Tag" separated by spaces (item type, brand if known, city, state, neighborhood, #LostAndFound, #ReportLost, community/help tags).
+
+Return JSON (all line breaks escaped as \\n, no raw newlines inside the strings):
 {"en":"the English caption as described",
  "fr":"a natural French translation of the same caption; keep the email address and the hashtags identical to the English"}`,
           },

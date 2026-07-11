@@ -77,7 +77,7 @@ async function aiClean(row: any): Promise<{ title: string; colorKey: string; pla
             role: "user",
             content: `Lost item: "${raw}". Place where lost (raw): "${rawPlace}".
 Return JSON:
-{"title":"clean 1-3 word poster name, Title Case (e.g. 'Baby Book','Gold Bracelet','Kodak Camera')",
+{"title":"the OBJECT TYPE ONLY, 1-2 words max, Title Case (e.g. 'Camera','Wallet','Gold Bracelet','Baby Book') — never brand+model+type together, it must fit big on a poster",
  "place":"a very short natural place, 1-4 words (e.g. 'the beach','Central Park','a taxi') or '' if unknown",
  "colorKey":"one of: jewelry, watch, electronics, bag, wallet, documents, keys, other"}`,
           },
@@ -90,7 +90,7 @@ Return JSON:
     if (!m) return fallback;
     const j = JSON.parse(m[0]);
     return {
-      title: clean(j.title || fallback.title, 24),
+      title: clean(j.title || fallback.title, 18),
       colorKey: COLORS[j.colorKey] ? j.colorKey : fallback.colorKey,
       place: typeof j.place === "string" ? clean(j.place, 32) : fallback.place,
     };

@@ -294,7 +294,12 @@ export default function CasePage() {
   }
 
   if (loadError) {
-    return <div className="p-8 text-red-600">Erreur : {loadError}</div>;
+    return (
+      <div className="p-8">
+        <a href="/admin" className="text-sm text-blue-600 underline">← Retour à l’admin</a>
+        <div className="mt-3 text-red-600">Erreur : {loadError}</div>
+      </div>
+    );
   }
   if (!item) {
     return <div className="p-8 text-gray-500">Chargement du dossier…</div>;
@@ -304,6 +309,13 @@ export default function CasePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
+      <a
+        href="/admin"
+        className="mb-3 inline-flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100"
+      >
+        ← Retour à l’admin
+      </a>
+
       {/* En-tête dossier : infos complètes du signalement */}
       <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
         <div className="flex gap-4">
