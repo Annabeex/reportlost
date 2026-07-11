@@ -14,8 +14,10 @@ type Props = {
   onNext: () => void;
   referenceCode?: string;
   initialStep?: "plans" | "tip";
-  initialPlan?: 1 | 2 | 3;
+  initialPlan?: 1 | 2 | 3 | 4;
   initialTip?: number;
+  /** ✅ Mode animaux perdus : formule unique Pet Priority (30$) + option gratuite */
+  petMode?: boolean;
 };
 
 const DARK_GREEN = "#1f6b3a";
@@ -234,6 +236,7 @@ export default function ReportContribution({
   initialPlan,
   initialStep,
   initialTip,
+  petMode = false,
 }: Props) {
   const effectiveAmount = useMemo(
     () =>
@@ -243,20 +246,26 @@ export default function ReportContribution({
     [amount, contribution]
   );
 
-  const PRICE = { 1: 0, 2: 12, 3: 25 } as const;
+  const PRICE = { 1: 0, 2: 12, 3: 25, 4: 30 } as const;
 
   const [step, setStep] = useState<"plans" | "tip">(initialStep ?? "plans");
-  const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3>(initialPlan ?? 2);
+  const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
+    initialPlan ?? (petMode ? 4 : 2)
+  );
   const [tip, setTip] = useState<number>(
     Math.max(0, Math.min(MAX_TIP, Math.round(initialTip ?? 0)))
   );
 
   useEffect(() => {
     if (initialPlan || initialStep) return;
+    if (petMode) {
+      setSelectedPlan(4);
+      return;
+    }
     if (effectiveAmount === PRICE[2]) setSelectedPlan(2);
     else if (effectiveAmount === PRICE[3]) setSelectedPlan(3);
     else setSelectedPlan(2);
-  }, [effectiveAmount, initialPlan, initialStep]);
+  }, [effectiveAmount, initialPlan, initialStep, petMode]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -287,7 +296,7 @@ export default function ReportContribution({
         : "border-green-200 hover:border-green-300"
     }`;
 
-  const selectCard = (plan: 1 | 2 | 3) => setSelectedPlan(plan);
+  const selectCard = (plan: 1 | 2 | 3 | 4) => setSelectedPlan(plan);
 
   const showPlanHeader = selectedPlan !== 1;
 
@@ -331,7 +340,51 @@ export default function ReportContribution({
         {/* Step: Plans */}
         {step === "plans" && (
           <div className="grid gap-4">
+            {/* Plan 4 — Pet Priority (30$) — uniquement en mode animaux */}
+            {petMode && (
+              <div className={cardClass(selectedPlan === 4)} onClick={() => selectCard(4)}>
+                <div
+                  className="flex items-center gap-3 px-5 py-3"
+                  style={{ backgroundColor: LIGHT_GREEN_BG }}
+                >
+                  <span className="text-xl">🐾</span>
+                  <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: DARK_GREEN }}>
+                    Pet Priority search
+                    <span className="text-xs font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                      ⚡ Priority handling
+                    </span>
+                  </h3>
+                </div>
+
+                <div className="px-5 py-4">
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <BulletIcon />
+                      <span className="text-gray-800">
+                        Your case is treated as <strong>time-critical</strong>: our team contacts the local animal
+                        shelters, animal control and rescue services (and the police where appropriate), the same day
+                        whenever possible.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <BulletIcon />
+                      <span className="text-gray-800">
+                        A dedicated visual is published on local social channels, <strong>including private lost pet
+                        groups our team is a member of</strong>, with <strong>12 months</strong> of web monitoring and
+                        a protected relay email address.
+                      </span>
+                    </li>
+                  </ul>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-gray-700 font-medium">Search fee: $30</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Plan 3 — Maximum search (25$) — NOW MOST POPULAR */}
+            {!petMode && (
             <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -417,8 +470,10 @@ export default function ReportContribution({
                 </div>
               </div>
             </div>
+            )}
 
             {/* Plan 2 — Extended search (12$) — BADGE REMOVED */}
+            {!petMode && (
             <div className={cardClass(selectedPlan === 2)} onClick={() => selectCard(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -480,6 +535,7 @@ export default function ReportContribution({
                 </div>
               </div>
             </div>
+            )}
 
             {/* Plan 1 — Standard */}
             <div className={cardClass(selectedPlan === 1)} onClick={() => selectCard(1)}>

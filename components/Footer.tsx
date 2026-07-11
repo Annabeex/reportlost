@@ -21,6 +21,7 @@ export default function Footer() {
             <li><Link href="/how-it-works">How it works</Link></li>
             <li><Link href="/lost-item-recovery-assistance-usa">Recovery assistance (USA)</Link></li>
             <li><Link href="/lost-pet-poster">Free lost pet poster</Link></li>
+            <li><Link href="/report-lost-pet">Report a lost pet</Link></li>
           </ul>
         </div>
 

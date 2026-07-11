@@ -28,6 +28,8 @@ type ReportFormProps = {
   /** ✅ NEW: version "intégrée" (page ville) — enlève min-h-screen et allège les marges.
    *  Par défaut false → aucun impact sur /report, universités, home. */
   embedded?: boolean;
+  /** ✅ NEW: mode animaux perdus — formule unique Pet Priority (30$) à l'étape contribution */
+  petMode?: boolean;
 };
 
 type EventLike =
@@ -91,6 +93,7 @@ export default function ReportForm({
   forceFreeMode = false, // ✅ NEW
   universityName, // ✅ NEW
   embedded = false, // ✅ NEW
+  petMode = false, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
@@ -829,6 +832,7 @@ setFreeEmailSent(true);
           setFormData={setFormData}
           onBack={handleBack}
           onNext={handleNext}
+          petMode={petMode}
         />
       )}
 

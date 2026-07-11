@@ -116,6 +116,7 @@ Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost
 
 Règles STRICTES de véracité :
 - N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).
+- Les liens doivent pointer vers les structures elles-mêmes : services officiels (police, ville/mairie, transports publics, aéroports, universités, animal control, humane society, SPCA) ou entreprises privées directement concernées (compagnie de taxi locale, Uber/Lyft, hôtel, centre commercial, stade, compagnie aérienne). INTERDIT : tout service d'objets trouvés tiers ou plateforme concurrente de ReportLost (annuaires lost & found, services d'alerte payants), agrégateurs, articles de presse, blogs. Le test : le lien est-il l'entité qui détient ou reçoit l'objet ? Oui, on garde. C'est un intermédiaire de recherche comme nous ? Non.
 - N'inclus une carte "aéroport" ou "transit" QUE si la ville en a réellement un d'après les résultats. Une petite ville a typiquement : police, city hall, commerces/lieux publics, animaux perdus, 4 cartes suffisent alors.
 - "areas" : 3-5 vrais quartiers/zones de la ville si tu les connais avec certitude, sinon des zones génériques honnêtes (downtown, main street, parcs). Pas de href.
 - "social" : cite les groupes/subreddits UNIQUEMENT s'ils apparaissent dans les résultats, sinon des catégories génériques ("Facebook groups", "Nextdoor").

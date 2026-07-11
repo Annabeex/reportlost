@@ -144,7 +144,7 @@ export default function LostPetPosterPage() {
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link
-              href="/report"
+              href="/report-lost-pet"
               className="rounded-lg bg-green-600 px-8 py-3 font-bold text-white shadow-md transition hover:bg-green-700"
             >
               Report my lost pet

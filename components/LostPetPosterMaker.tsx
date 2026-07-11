@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const ANIMALS = ["DOG", "CAT", "BIRD", "RABBIT", "PET"] as const;
+const ANIMALS = ["DOG", "CAT", "BIRD", "RABBIT", "PET", "OTHER"] as const;
 
 // Exemple affiché tant que le champ correspondant est vide : la personne voit
 // le rendu final immédiatement, et chaque exemple disparaît dès qu'elle tape.
@@ -234,7 +234,7 @@ export default function LostPetPosterMaker() {
           {/* Bandeau */}
           <div
             className="py-5 text-center"
-            style={{ background: "linear-gradient(135deg, #dc2626 0%, #ef4444 55%, #f97316 100%)" }}
+            style={{ background: "linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)" }}
           >
             <div className="text-[44px] font-extrabold leading-none tracking-[0.12em] text-white">
               LOST {animal}
