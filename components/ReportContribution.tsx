@@ -401,7 +401,7 @@ export default function ReportContribution({
                       Our team manually distributes your report through the appropriate channels, including relevant authorities and official services, and ensures continued monitoring and follow-up actions when applicable.
                       <br />
                       <br />
-                      Our AI continuously scans large databases for potential matches. Includes a printable PDF sheet of secure ID stickers.
+                      Our AI monitors the web and social sources for <strong>12 months</strong>, and every potential match is reviewed by a team member before it reaches you. Includes a printable PDF sheet of secure ID stickers.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
@@ -464,7 +464,7 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      Your report is actively reviewed and searched by our system and team member across major public databases and online sources.
+                      Your report is actively reviewed and searched by our system and team member across major public databases and online sources, with <strong>6 months</strong> of web and social monitoring.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
@@ -574,7 +574,7 @@ export default function ReportContribution({
                 onClick={() => {
                   const contribution = Math.max(0, Math.min(MAX_TIP, Math.round(tip)));
                   let level: 1 | 2 | 3 = 1;
-                  if (contribution >= 15 && contribution < 25) level = 2;
+                  if (contribution >= 12 && contribution < 25) level = 2;
                   else if (contribution >= 25) level = 3;
 
                   setFormData((prev: any) => ({

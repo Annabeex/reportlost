@@ -15,6 +15,33 @@ export async function GET(req: NextRequest) {
 
   const state = req.nextUrl.searchParams.get("state");
   const city = req.nextUrl.searchParams.get("city");
+  const citiesMode = req.nextUrl.searchParams.get("cities");
+
+  // Mode "liste de travail" : villes triées par population + statut de guide
+  if (citiesMode) {
+    const q = (req.nextUrl.searchParams.get("q") || "").trim();
+    let query = sb
+      .from("us_cities")
+      .select("city_ascii, state_id, population")
+      .order("population", { ascending: false })
+      .limit(100);
+    if (q) query = query.ilike("city_ascii", `%${q}%`);
+    const [{ data: cities, error: cErr }, { data: guides }] = await Promise.all([
+      query,
+      sb.from("city_guides").select("state_id, city_slug, status"),
+    ]);
+    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    const statusMap = new Map(
+      (guides || []).map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
+    );
+    const rows = (cities || []).map((c: any) => ({
+      city: c.city_ascii,
+      state: c.state_id,
+      population: c.population ?? null,
+      guide_status: statusMap.get(`${String(c.state_id).toUpperCase()}/${String(c.city_ascii).toLowerCase()}`) || null,
+    }));
+    return NextResponse.json({ ok: true, cities: rows });
+  }
 
   if (state && city) {
     const { data, error } = await sb

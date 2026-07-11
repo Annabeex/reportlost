@@ -212,7 +212,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-sm text-gray-700">
             <div className="bg-white shadow p-6 rounded-lg hover:shadow-lg transition">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Workflow size={20} className="text-blue-500" /> How It Works
+                <Workflow size={20} className="text-blue-500" />{" "}
+                <Link href="/lost-item-recovery-assistance-usa" className="hover:underline">
+                  How It Works
+                </Link>
               </h3>
               <ul className="space-y-1">
                 <li className="flex gap-2">
@@ -225,7 +228,7 @@ export default function HomePage() {
                   <span className="text-blue-500">→</span> Your report is shared with appropriate authorities and relevant services.
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-blue-500">→</span> Receive updates if there’s a credible match.
+                  <span className="text-blue-500">→</span> Receive updates if there&rsquo;s a credible match.
                 </li>
               </ul>
             </div>
