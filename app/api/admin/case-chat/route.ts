@@ -44,6 +44,7 @@ async function buildContext(lostItemId: string): Promise<string> {
   ]);
 
   if (!item) throw new Error("Dossier introuvable");
+  if (!item.paid) throw new Error("Assistant IA réservé aux dossiers payants");
 
   const parts: string[] = [];
   parts.push(`## Signalement #${item.public_id || item.id}
@@ -59,10 +60,15 @@ async function buildContext(lostItemId: string): Promise<string> {
     parts.push(
       "## Historique des échanges (du plus ancien au plus récent)\n" +
         messages
-          .map(
-            (m) =>
-              `[${fmtDate(m.created_at)}] ${m.direction === "in" ? "REÇU de " + (m.from_email || "?") : "ENVOYÉ à " + (m.to_email || "?")} — ${m.subject || "(sans sujet)"}\n${(m.body_text || "").slice(0, 1500)}`
-          )
+          .map((m) => {
+            const head =
+              m.direction === "in"
+                ? "REÇU de " + (m.from_email || "?")
+                : m.direction === "note"
+                ? "NOTE INTERNE d'Anna (consigne à prendre en compte)"
+                : "ENVOYÉ à " + (m.to_email || "?");
+            return `[${fmtDate(m.created_at)}] ${head} — ${m.subject || "(sans sujet)"}\n${(m.body_text || "").slice(0, 1500)}`;
+          })
           .join("\n---\n")
     );
   } else {

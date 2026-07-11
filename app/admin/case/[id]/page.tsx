@@ -28,7 +28,7 @@ type Item = {
 
 type CaseMessage = {
   id: number;
-  direction: "in" | "out";
+  direction: "in" | "out" | "note";
   from_email?: string | null;
   to_email?: string | null;
   subject?: string | null;
@@ -72,6 +72,10 @@ export default function CasePage() {
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Note interne
+  const [noteText, setNoteText] = useState("");
+  const [noteBusy, setNoteBusy] = useState(false);
 
   // Composeur
   const [to, setTo] = useState("");
@@ -124,6 +128,27 @@ export default function CasePage() {
       setChat([...next, { role: "assistant", content: `⚠️ Erreur : ${String(e?.message || e)}` }]);
     } finally {
       setChatBusy(false);
+    }
+  }
+
+  async function addNote() {
+    const text = noteText.trim();
+    if (!text || noteBusy || !id) return;
+    setNoteBusy(true);
+    try {
+      const r = await fetch("/api/admin/case-note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lostItemId: id, text }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || r.statusText);
+      setNoteText("");
+      await load();
+    } catch (e: any) {
+      alert(`Erreur note : ${String(e?.message || e)}`);
+    } finally {
+      setNoteBusy(false);
     }
   }
 
@@ -222,19 +247,48 @@ export default function CasePage() {
                 <div
                   key={m.id}
                   className={`rounded-lg border p-3 text-sm ${
-                    m.direction === "in" ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-50"
+                    m.direction === "in"
+                      ? "border-blue-200 bg-blue-50"
+                      : m.direction === "note"
+                      ? "border-yellow-300 bg-yellow-50"
+                      : "border-gray-200 bg-gray-50"
                   }`}
                 >
                   <div className="mb-1 flex justify-between text-xs text-gray-500">
                     <span>
-                      {m.direction === "in" ? `⬅️ ${m.from_email}` : `➡️ ${m.to_email}`}
+                      {m.direction === "in"
+                        ? `⬅️ ${m.from_email}`
+                        : m.direction === "note"
+                        ? "📝 Note interne"
+                        : `➡️ ${m.to_email}`}
                     </span>
                     <span>{fmt(m.created_at)}</span>
                   </div>
-                  <div className="font-medium">{m.subject || "(sans sujet)"}</div>
+                  {m.direction !== "note" && <div className="font-medium">{m.subject || "(sans sujet)"}</div>}
                   <div className="mt-1 whitespace-pre-wrap text-gray-700">{m.body_text}</div>
                 </div>
               ))}
+            </div>
+            <div className="mt-3 flex gap-2 border-t pt-3">
+              <input
+                className="flex-1 rounded border px-3 py-2 text-sm"
+                placeholder="📝 Ajouter une note interne (visible par l'assistant IA)…"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addNote();
+                  }
+                }}
+              />
+              <button
+                onClick={addNote}
+                disabled={noteBusy || !noteText.trim()}
+                className="rounded bg-yellow-500 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+              >
+                {noteBusy ? "…" : "Noter"}
+              </button>
             </div>
           </div>
 

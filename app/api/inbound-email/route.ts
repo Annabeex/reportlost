@@ -75,12 +75,12 @@ async function archiveInbound(params: {
       fromHeader.match(/<([^>]+)>/)?.[1]?.toLowerCase() ||
       fromHeader.trim().toLowerCase();
 
-    let item: { id: string; public_id: string | null } | null = null;
+    let item: { id: string; public_id: string | null; paid: boolean | null } | null = null;
 
     if (publicId) {
       const { data } = await supabase
         .from("lost_items")
-        .select("id, public_id")
+        .select("id, public_id, paid")
         .eq("public_id", publicId)
         .maybeSingle();
       item = data as any;
@@ -89,7 +89,7 @@ async function archiveInbound(params: {
     if (!item && fromEmail) {
       const { data } = await supabase
         .from("lost_items")
-        .select("id, public_id")
+        .select("id, public_id, paid")
         .eq("email", fromEmail)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -97,6 +97,10 @@ async function archiveInbound(params: {
       item = data as any;
     }
     if (!item?.id) return;
+    if (!item.paid) {
+      console.log("[archive] ignoré (dossier non payant):", item.public_id || item.id);
+      return;
+    }
 
     await supabase.from("case_messages").insert({
       lost_item_id: item.id,
@@ -146,13 +150,15 @@ async function archiveSupportCopy(params: {
   const direction: "in" | "out" = fromEmail === support ? "out" : "in";
   const correspondent = direction === "out" ? toEmail : fromEmail;
 
-  let item: { id: string; public_id: string | null } | null = null;
-
   const caseId = extractCaseIdFromText(subject, text || "");
+  console.log("[archive] reçu:", { fromEmail, toEmail, subject, caseId: caseId || "(aucun ID détecté)" });
+
+  let item: { id: string; public_id: string | null; paid: boolean | null } | null = null;
+
   if (caseId) {
     const { data } = await supabase
       .from("lost_items")
-      .select("id, public_id")
+      .select("id, public_id, paid")
       .eq("public_id", caseId)
       .maybeSingle();
     item = data as any;
@@ -160,12 +166,16 @@ async function archiveSupportCopy(params: {
   if (!item && correspondent) {
     const { data } = await supabase
       .from("lost_items")
-      .select("id, public_id")
+      .select("id, public_id, paid")
       .eq("email", correspondent)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     item = data as any;
+  }
+  if (item?.id && !item.paid) {
+    console.log("[archive] ignoré (dossier non payant):", item.public_id || item.id);
+    return;
   }
   if (!item?.id) {
     // Pas de rattachement possible : on trace dans les logs Vercel (utile aussi pour
