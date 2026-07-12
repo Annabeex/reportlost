@@ -436,14 +436,14 @@ Thank you for using ReportLost.`;
         }
       }
 
-      // --- Support notification (fire & forget robuste) ---
-      (() => {
-        try {
-          const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-          const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-          const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-          const reference = getReferenceCode(existing.public_id, existing.id);
-          const bodyText = `Report: ${existing.id}
+      // --- Support notification (⚠️ AWAITED : en SMTP direct, un fire & forget
+      // serait tué au gel de la fonction serverless dès la réponse envoyée) ---
+      try {
+        const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+        const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+        const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+        const reference = getReferenceCode(existing.public_id, existing.id);
+        const bodyText = `Report: ${existing.id}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -458,19 +458,15 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-          sendMailViaApi(req, {
-            to: "support@reportlost.org",
-            subject,
-            text: bodyText,
-          })
-            .then((ok) =>
-              console.log(ok ? "📨 Support email sent (existing)" : "❌ Support email failed (existing)"),
-            )
-            .catch((err) => console.error("❌ Support email throw (existing):", err));
-        } catch (err) {
-          console.error("❌ Email notification to support failed for existing row:", err);
-        }
-      })();
+        const okSupport = await sendMailViaApi(req, {
+          to: "support@reportlost.org",
+          subject,
+          text: bodyText,
+        });
+        console.log(okSupport ? "📨 Support email sent (existing)" : "❌ Support email failed (existing)");
+      } catch (err) {
+        console.error("❌ Email notification to support failed for existing row:", err);
+      }
 
       return NextResponse.json(
         {
@@ -599,15 +595,14 @@ Thank you for using ReportLost.`;
           }
         }
 
-        // --- Support notification (fire & forget robuste) ---
-        (() => {
-          try {
-            const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-            const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-            const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-            const reference = getReferenceCode(existing.public_id, clientProvidedId);
-            const createdAt = existing.created_at || new Date().toISOString();
-            const bodyText = `Report: ${clientProvidedId}
+        // --- Support notification (⚠️ AWAITED, cf. commentaire branche existing) ---
+        try {
+          const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+          const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+          const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+          const reference = getReferenceCode(existing.public_id, clientProvidedId);
+          const createdAt = existing.created_at || new Date().toISOString();
+          const bodyText = `Report: ${clientProvidedId}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -622,19 +617,15 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-            sendMailViaApi(req, {
-              to: "support@reportlost.org",
-              subject,
-              text: bodyText,
-            })
-              .then((ok) =>
-                console.log(ok ? "📨 Support email sent (update by id)" : "❌ Support email failed (update by id)"),
-              )
-              .catch((err) => console.error("❌ Support email throw (update by id):", err));
-          } catch (err) {
-            console.error("❌ Email notification to support failed for clientProvidedId:", err);
-          }
-        })();
+          const okSupport = await sendMailViaApi(req, {
+            to: "support@reportlost.org",
+            subject,
+            text: bodyText,
+          });
+          console.log(okSupport ? "📨 Support email sent (update by id)" : "❌ Support email failed (update by id)");
+        } catch (err) {
+          console.error("❌ Email notification to support failed for clientProvidedId:", err);
+        }
 
         return NextResponse.json(
           { ok: true, action: "updated", id: clientProvidedId, public_id: existing.public_id },
@@ -794,15 +785,15 @@ Thank you for using ReportLost.`;
       }
     }
 
-    // --- Support notification (fire & forget robuste) ---
-    (() => {
-      try {
-        const subjectBase = `Lost item : ${other.title || "Untitled"}`;
-        const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
-        const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
-        const reference = getReferenceCode(insData.public_id, String(insData.id));
-        const createdAt = (insData as any).created_at || new Date().toISOString();
-        const bodyText = `Report: ${insData.id}
+    // --- Support notification (⚠️ AWAITED : en SMTP direct, un fire & forget
+    // serait tué au gel de la fonction dès la réponse envoyée) ---
+    try {
+      const subjectBase = `Lost item : ${other.title || "Untitled"}`;
+      const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
+      const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
+      const reference = getReferenceCode(insData.public_id, String(insData.id));
+      const createdAt = (insData as any).created_at || new Date().toISOString();
+      const bodyText = `Report: ${insData.id}
 City: ${other.city || ""}
 State: ${state_id || ""}
 Reference: ${reference}
@@ -817,19 +808,15 @@ If you think you found it, please contact : support@reportlost.org reference (${
 
 Contribution : ${other.contribution ?? 0}`;
 
-        sendMailViaApi(req, {
-          to: "support@reportlost.org",
-          subject,
-          text: bodyText,
-        })
-          .then((ok) =>
-            console.log(ok ? "📨 Support email sent (insert)" : "❌ Support email failed (insert)"),
-          )
-          .catch((err) => console.error("❌ Support email throw (insert):", err));
-      } catch (err) {
-        console.error("❌ Support email failed for new insert:", err);
-      }
-    })();
+      const okSupport = await sendMailViaApi(req, {
+        to: "support@reportlost.org",
+        subject,
+        text: bodyText,
+      });
+      console.log(okSupport ? "📨 Support email sent (insert)" : "❌ Support email failed (insert)");
+    } catch (err) {
+      console.error("❌ Support email failed for new insert:", err);
+    }
 
     return NextResponse.json(
       { ok: true, action: "inserted", id: insData.id, public_id: insData.public_id },

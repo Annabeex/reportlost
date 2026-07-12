@@ -173,7 +173,23 @@ export default function ReportForm({
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
-      const rid = params.get("rid") || localStorage.getItem("reportlost_rid") || "";
+
+      // ✅ rid : l'URL (?rid=, lien du mail) prime toujours. Le rid mémorisé en
+      // localStorage n'est réutilisé que s'il a moins de 24h — au-delà, c'est un
+      // NOUVEAU signalement, pas la reprise d'un brouillon (sinon on écrasait
+      // l'ancien dossier et aucun mail ne repartait).
+      const urlRid = params.get("rid") || "";
+      let storedRid = "";
+      if (!urlRid) {
+        const ts = Number(localStorage.getItem("reportlost_rid_ts") || 0);
+        if (ts && Date.now() - ts < 24 * 60 * 60 * 1000) {
+          storedRid = localStorage.getItem("reportlost_rid") || "";
+        } else {
+          localStorage.removeItem("reportlost_rid");
+          localStorage.removeItem("reportlost_rid_ts");
+        }
+      }
+      const rid = urlRid || storedRid;
       if (rid) setFormData((p: any) => ({ ...p, report_id: rid }));
 
       // ✅ Bonus safe: si ?category=... dans l'URL et que le champ est vide, on le pose
@@ -499,6 +515,7 @@ export default function ReportForm({
       try {
         if (returnedId)
           localStorage.setItem("reportlost_rid", returnedId);
+          localStorage.setItem("reportlost_rid_ts", String(Date.now()));
         if (returnedPublicId)
           localStorage.setItem(
             "reportlost_public_id",
