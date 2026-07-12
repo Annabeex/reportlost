@@ -78,8 +78,17 @@ export default function LostPetPosterMaker() {
 
   async function capture(): Promise<HTMLCanvasElement | null> {
     if (!posterRef.current) return null;
-    const html2canvas = (await import("html2canvas")).default;
-    return html2canvas(posterRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    const el = posterRef.current;
+    // html2canvas ne supporte pas `aspect-ratio` : on fige la hauteur A4 en pixels
+    // le temps de la capture, puis on restaure.
+    const prevHeight = el.style.height;
+    el.style.height = `${Math.round((el.clientWidth * 297) / 210)}px`;
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      return await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    } finally {
+      el.style.height = prevHeight;
+    }
   }
 
   async function downloadPng() {
@@ -231,15 +240,21 @@ export default function LostPetPosterMaker() {
           className="mx-auto w-full max-w-[520px] overflow-hidden border border-gray-200 bg-white shadow-lg"
           style={{ aspectRatio: "210/297", fontFamily: "Arial, Helvetica, sans-serif" }}
         >
-          {/* Bandeau */}
+          {/* Bandeau (structure 100% flex : rendu fiable en capture PNG/PDF) */}
           <div
-            className="py-5 text-center"
-            style={{ background: "linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)" }}
+            className="flex flex-col items-center py-5"
+            style={{ background: "linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)", gap: "12px" }}
           >
-            <div className="text-[44px] font-extrabold leading-none tracking-[0.12em] text-white">
+            <div
+              className="flex text-[44px] font-extrabold text-white"
+              style={{ letterSpacing: "0.12em", lineHeight: "44px" }}
+            >
               LOST {animal}
             </div>
-            <div className="mt-2 inline-block rounded-full bg-white px-5 py-1 text-xl font-extrabold text-red-600">
+            <div
+              className="flex items-center rounded-full bg-white px-5 text-xl font-extrabold text-red-600"
+              style={{ height: "36px", lineHeight: "36px" }}
+            >
               “{petName || EXAMPLE.petName}”
             </div>
           </div>
@@ -265,25 +280,26 @@ export default function LostPetPosterMaker() {
             )}
           </div>
 
-          {/* Détails */}
-          <div className="space-y-2.5 px-7 pt-4 text-center">
-            <p className="text-[17px] font-semibold leading-snug text-gray-900">
+          {/* Détails (structure 100% flex) */}
+          <div className="flex flex-col items-center px-7 pt-4" style={{ gap: "10px" }}>
+            <p className="m-0 text-center text-[17px] font-semibold leading-snug text-gray-900">
               {description || EXAMPLE.description}
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="m-0 text-center text-sm text-gray-700">
               📍 <strong>Last seen:</strong> {lastSeen || EXAMPLE.lastSeen}, {date || EXAMPLE.date}
             </p>
             {(note || (!noteTouched && EXAMPLE.note)) && (
-              <p className="mx-auto max-w-[85%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm italic text-gray-800">
-                “{note || EXAMPLE.note}”
-              </p>
+              <div className="flex max-w-[85%] items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5">
+                <span className="text-center text-sm italic text-gray-800">“{note || EXAMPLE.note}”</span>
+              </div>
             )}
             {(reward || (!rewardTouched && EXAMPLE.reward)) && (
-              <p>
-                <span className="inline-block rounded-full bg-red-600 px-5 py-1 text-lg font-extrabold tracking-wide text-white">
-                  {(reward || EXAMPLE.reward).toUpperCase()}
-                </span>
-              </p>
+              <div
+                className="flex items-center rounded-full bg-red-600 px-5 text-lg font-extrabold text-white"
+                style={{ height: "38px", lineHeight: "38px", letterSpacing: "0.03em" }}
+              >
+                {(reward || EXAMPLE.reward).toUpperCase()}
+              </div>
             )}
           </div>
 
@@ -314,7 +330,7 @@ export default function LostPetPosterMaker() {
 
           {/* Pied */}
           <div className="bg-gray-100 py-2 text-center text-[11px] text-gray-500">
-            Free poster by ReportLost.org — lost &amp; found assistance in the USA
+            Free poster by ReportLost.org, lost &amp; found assistance in the USA
           </div>
         </div>
       </div>
