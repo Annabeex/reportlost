@@ -45,6 +45,10 @@ function computeFingerprint(obj: {
     (obj.state_id ?? "").toUpperCase(),
     obj.date ?? "",
     (obj.email ?? "").toLowerCase(),
+    // ✅ Jour de soumission inclus : l'anti-doublon n'agit que dans la même journée
+    // (protège des double-clics / retours en arrière), un dépôt identique un autre
+    // jour crée un NOUVEAU dossier au lieu de recycler l'ancien.
+    new Date().toISOString().slice(0, 10),
   ];
   const raw = parts.join("|");
   return crypto.createHash("sha1").update(raw).digest("hex");
