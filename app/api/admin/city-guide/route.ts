@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(1000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
     let query = sb
       .from("us_cities")
-      .select("city_ascii, state_id, population")
+      .select("city_ascii, state_id, population, fb_group_done")
       .order("population", { ascending: false })
       .limit(limit);
     if (q) query = query.ilike("city_ascii", `%${q}%`);
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       state: c.state_id,
       population: c.population ?? null,
       guide_status: statusMap.get(`${String(c.state_id).toUpperCase()}/${String(c.city_ascii).toLowerCase()}`) || null,
+      fb_group_done: !!c.fb_group_done,
     }));
     return NextResponse.json({ ok: true, cities: rows });
   }

@@ -46,6 +46,51 @@ export default function GroupKitPage() {
   const [kit, setKit] = useState<Kit | null>(null);
   const [fbDone, setFbDone] = useState<boolean | null>(null);
 
+  // Liste de travail : villes par population + état du groupe FB
+  type CityRow = { city: string; state: string; population: number | null; fb_group_done: boolean };
+  const [cities, setCities] = useState<CityRow[]>([]);
+  const [citySearch, setCitySearch] = useState('');
+
+  const loadCities = async (q = '') => {
+    try {
+      const r = await fetch(`/api/admin/city-guide?cities=1&limit=300&q=${encodeURIComponent(q)}`, {
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (r.ok) setCities(j.cities || []);
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadCities();
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => loadCities(citySearch), 350);
+    return () => clearTimeout(t);
+  }, [citySearch]);
+
+  const toggleCityDone = async (row: CityRow) => {
+    const next = !row.fb_group_done;
+    setCities((prev) =>
+      prev.map((c) => (c.city === row.city && c.state === row.state ? { ...c, fb_group_done: next } : c))
+    );
+    if (city.trim().toLowerCase() === row.city.toLowerCase() && state.trim().toUpperCase() === row.state) {
+      setFbDone(next);
+    }
+    try {
+      await fetch('/api/admin/fb-group-done', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: row.city, state: row.state, done: next }),
+      });
+    } catch {
+      setCities((prev) =>
+        prev.map((c) => (c.city === row.city && c.state === row.state ? { ...c, fb_group_done: !next } : c))
+      );
+    }
+  };
+
   const loadFbDone = async (c: string, s: string) => {
     try {
       const r = await fetch(
@@ -240,6 +285,68 @@ export default function GroupKitPage() {
           )}
         </div>
       )}
+
+      {/* Liste de travail : villes par population + suivi des groupes créés */}
+      <section className="mt-10 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-800">
+            📋 Villes par population — groupes créés : {cities.filter((c) => c.fb_group_done).length}
+          </h2>
+          <input
+            className="w-64 rounded border border-gray-300 px-3 py-2 text-sm"
+            placeholder="🔍 Chercher une ville…"
+            value={citySearch}
+            onChange={(e) => setCitySearch(e.target.value)}
+          />
+        </div>
+        <div className="max-h-[28rem] overflow-y-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="sticky top-0 bg-white">
+              <tr className="border-b text-xs text-gray-500">
+                <th className="py-2">Ville</th>
+                <th>État</th>
+                <th className="text-right">Population</th>
+                <th className="pl-6">Groupe FB créé</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {cities.map((c) => (
+                <tr key={`${c.state}/${c.city}`} className={`border-b border-gray-100 ${c.fb_group_done ? 'bg-green-50/50' : ''}`}>
+                  <td className="py-1.5">{c.city}</td>
+                  <td>{c.state}</td>
+                  <td className="text-right tabular-nums text-gray-600">
+                    {c.population ? c.population.toLocaleString('en-US') : '—'}
+                  </td>
+                  <td className="pl-6">
+                    <input type="checkbox" checked={c.fb_group_done} onChange={() => toggleCityDone(c)} />
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => {
+                        setCity(c.city);
+                        setState(c.state);
+                        generate(c.city, c.state);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-blue-600 underline"
+                    >
+                      Générer le kit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {cities.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-4 text-center text-gray-500">
+                    Aucune ville trouvée.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   );
 }
