@@ -43,6 +43,67 @@ async function callClaude(system: string, user: string, maxTokens = 6000): Promi
   return String(data?.content?.[0]?.text ?? "");
 }
 
+/**
+ * Photo d'illustration UNIQUE par ville, générée par IA (Gemini) et stockée
+ * dans Supabase Storage (bucket public "city-images"). Ne tourne que si
+ * GEMINI_API_KEY est défini et que la ville n'a pas déjà d'image. Non bloquant.
+ */
+async function generateCityPhoto(
+  sb: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  cityRow: { id: number | string; city_ascii: string; state_id: string; state_name?: string | null }
+): Promise<string | null> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+
+  const prompt = `Photorealistic editorial photograph of ${cityRow.city_ascii}, ${
+    cityRow.state_name || cityRow.state_id
+  }, USA. A characteristic daytime view of the town: main street, downtown or typical landscape. Natural light, realistic colors, landscape orientation. No readable text or signs, no close-up people, no watermark.`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    }
+  );
+  if (!res.ok) {
+    console.error("[city-image] Gemini", res.status, (await res.text().catch(() => "")).slice(0, 200));
+    return null;
+  }
+  const data = await res.json();
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const img = parts.find((p: any) => p?.inlineData?.data);
+  if (!img) {
+    console.error("[city-image] pas d'image dans la réponse Gemini");
+    return null;
+  }
+  const buffer = Buffer.from(img.inlineData.data, "base64");
+  const mime = img.inlineData.mimeType || "image/png";
+  const ext = mime.includes("jpeg") ? "jpg" : "png";
+  const path = `${cityRow.state_id.toLowerCase()}/${String(cityRow.city_ascii).toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${ext}`;
+
+  let up = await sb.storage.from("city-images").upload(path, buffer, { contentType: mime, upsert: true });
+  if (up.error && /not found/i.test(up.error.message || "")) {
+    await sb.storage.createBucket("city-images", { public: true }).catch(() => {});
+    up = await sb.storage.from("city-images").upload(path, buffer, { contentType: mime, upsert: true });
+  }
+  if (up.error) {
+    console.error("[city-image] upload:", up.error.message);
+    return null;
+  }
+  const { data: pub } = sb.storage.from("city-images").getPublicUrl(path);
+  const url = pub?.publicUrl || null;
+  if (url) {
+    await sb
+      .from("us_cities")
+      .update({ image_url: url, image_alt: `View of ${cityRow.city_ascii}, ${cityRow.state_id}` })
+      .eq("id", cityRow.id);
+  }
+  return url;
+}
+
 const GUIDE_SCHEMA = `type CityGuide = {
   state: string; citySlug: string; badge: string; h1: string;
   heroSubtitle: string; // HTML (<strong> autorisé)
@@ -75,7 +136,7 @@ export async function POST(req: NextRequest) {
     const stateAbbr = String(state).toUpperCase();
     const { data: cityRow } = await sb
       .from("us_cities")
-      .select("id, city_ascii, state_id, state_name")
+      .select("id, city_ascii, state_id, state_name, image_url")
       .eq("state_id", stateAbbr)
       .ilike("city_ascii", String(city).trim())
       .maybeSingle();
@@ -205,7 +266,17 @@ ${results}`,
       }
     }
 
-    return NextResponse.json({ ok: true, guide, queries, status });
+    // 6) Photo d'illustration unique (IA), si la ville n'en a pas encore — non bloquant
+    let imageUrl: string | null = (cityRow as any).image_url || null;
+    if (!imageUrl) {
+      try {
+        imageUrl = await generateCityPhoto(sb, cityRow as any);
+      } catch (e) {
+        console.error("[city-image] échec non bloquant:", e);
+      }
+    }
+
+    return NextResponse.json({ ok: true, guide, queries, status, image: imageUrl });
   } catch (e: any) {
     console.error("[city-guide-generate] fatal:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });

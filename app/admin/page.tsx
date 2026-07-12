@@ -44,8 +44,10 @@ interface LostItem {
   last_searched_at?: string | null;
   force_search?: boolean | null;
 
-  // ✅ 1er signalement payé de sa ville (-> proposer le kit groupe FB)
+  // ✅ 1er signalement de sa ville (-> proposer le kit groupe FB)
   first_in_city?: boolean | null;
+  // ✅ groupe Facebook déjà créé pour cette ville (case cochée sur la page kit)
+  fb_group_done?: boolean | null;
 }
 
 interface FoundItem {
@@ -358,7 +360,16 @@ export default function AdminPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-12">
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-bold">📦 Lost Items (Admin)</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold">📦 Lost Items (Admin)</h1>
+            <a
+              href="/admin/group-kit"
+              className="inline-flex items-center rounded-md bg-[#1877F2] px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+              title="Générer un kit de groupe Facebook (nom, description, posts, bannière) et suivre les groupes créés"
+            >
+              👥 Kits Facebook
+            </a>
+          </div>
           <a
             href="/admin/city-guides"
             className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
@@ -595,7 +606,7 @@ export default function AdminPage() {
                             </a>
                           )}
 
-                          {item.first_in_city && (
+                          {item.first_in_city && !item.fb_group_done && (
                             <a
                               href={`/admin/group-kit?city=${encodeURIComponent(
                                 String(item.city || '').replace(/\s*\([^)]*\)\s*$/, '').trim()

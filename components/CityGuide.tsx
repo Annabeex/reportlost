@@ -70,31 +70,6 @@ export function CityGuideExtra({
         </div>
       </section>
 
-      {/* Intro + image */}
-      <section className="bg-white p-6 rounded-xl shadow">
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
-            {guide.intro.map((p, i) => (
-              <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
-            ))}
-          </div>
-          {cityImage && (
-            <div className="lg:w-2/5 w-full">
-              <Image
-                src={cityImage}
-                alt={cityImageAlt || guide.imageAltFallback}
-                width={600}
-                height={400}
-                className="w-full h-[240px] object-cover rounded-lg shadow"
-              />
-              {cityImageCredit && (
-                <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* Guide par lieu */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">{guide.guideHeading}</h2>
@@ -131,6 +106,31 @@ export function CityGuideExtra({
         <a href="#report-form" className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition">
           {guide.ctaLabel}
         </a>
+      </section>
+
+      {/* Contexte local + image (volontairement plus bas dans la page) */}
+      <section className="bg-white p-6 rounded-xl shadow">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
+            {guide.intro.map((p, i) => (
+              <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
+            ))}
+          </div>
+          {cityImage && (
+            <div className="lg:w-2/5 w-full">
+              <Image
+                src={cityImage}
+                alt={cityImageAlt || guide.imageAltFallback}
+                width={600}
+                height={400}
+                className="w-full h-[240px] object-cover rounded-lg shadow"
+              />
+              {cityImageCredit && (
+                <p className="text-xs text-gray-500 mt-1 text-center">{cityImageCredit}</p>
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Secteurs / quartiers */}

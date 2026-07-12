@@ -44,6 +44,34 @@ export default function GroupKitPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [kit, setKit] = useState<Kit | null>(null);
+  const [fbDone, setFbDone] = useState<boolean | null>(null);
+
+  const loadFbDone = async (c: string, s: string) => {
+    try {
+      const r = await fetch(
+        `/api/admin/fb-group-done?city=${encodeURIComponent(c)}&state=${encodeURIComponent(s)}`,
+        { cache: 'no-store' }
+      );
+      const j = await r.json();
+      setFbDone(r.ok ? !!j.done : null);
+    } catch {
+      setFbDone(null);
+    }
+  };
+
+  const toggleFbDone = async () => {
+    const next = !fbDone;
+    setFbDone(next);
+    try {
+      await fetch('/api/admin/fb-group-done', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: city.trim(), state: state.trim(), done: next }),
+      });
+    } catch {
+      setFbDone(!next); // rollback
+    }
+  };
 
   const generate = async (cityArg?: string, stateArg?: string) => {
     const c = (cityArg ?? city).trim();
@@ -64,6 +92,7 @@ export default function GroupKitPage() {
         return;
       }
       setKit(j);
+      loadFbDone(c, s);
     } catch (e: any) {
       setErr(String(e?.message || e));
     } finally {
@@ -78,7 +107,10 @@ export default function GroupKitPage() {
     const s = (sp.get('state') || '').toUpperCase();
     if (c) setCity(c);
     if (s) setState(s);
-    if (c && s.length === 2) generate(c, s);
+    if (c && s.length === 2) {
+      generate(c, s);
+      loadFbDone(c, s);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -108,7 +140,19 @@ export default function GroupKitPage() {
       >
         ← Retour à l’admin
       </a>
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Kit de groupe Facebook</h1>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-gray-900">Kit de groupe Facebook</h1>
+        {city.trim() && state.trim().length === 2 && fbDone !== null && (
+          <label
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium ${
+              fbDone ? 'border-green-300 bg-green-50 text-green-800' : 'border-gray-200 bg-white text-gray-700'
+            }`}
+          >
+            <input type="checkbox" checked={!!fbDone} onChange={toggleFbDone} />
+            {fbDone ? '✅ Groupe Facebook créé pour cette ville' : 'Groupe Facebook créé ?'}
+          </label>
+        )}
+      </div>
       <p className="text-gray-600 text-sm mb-6">
         Entre une ville et son État (2 lettres) : l&apos;IA génère le nom du groupe, la description (avec le lien
         reportlost), 3 posts de démarrage, et 3 posts « FOUND ✅ » basés sur de vrais objets trouvés publics.

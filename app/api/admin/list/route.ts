@@ -129,7 +129,34 @@ export async function GET(req: Request) {
       /* non bloquant */
     }
 
-    const lostWithFlag = (lost ?? []).map((it: any) => ({ ...it, first_in_city: firstIds.has(String(it.id)) }));
+    // Villes dont le groupe Facebook est déjà créé (case cochée sur la page kit)
+    let fbDoneKeys = new Set<string>();
+    try {
+      const { data: fbRows } = await supabase
+        .from("us_cities")
+        .select("city_ascii, state_id")
+        .eq("fb_group_done", true);
+      fbDoneKeys = new Set(
+        (fbRows || []).map(
+          (r: any) =>
+            `${String(r.state_id || "").toUpperCase()}/${String(r.city_ascii || "").trim().toLowerCase()}`
+        )
+      );
+    } catch {
+      /* non bloquant */
+    }
+
+    const lostWithFlag = (lost ?? []).map((it: any) => {
+      const cityKey = `${String(it.state_id || "").toUpperCase()}/${String(it.city || "")
+        .replace(/\s*\([^)]*\)\s*$/, "")
+        .trim()
+        .toLowerCase()}`;
+      return {
+        ...it,
+        first_in_city: firstIds.has(String(it.id)),
+        fb_group_done: fbDoneKeys.has(cityKey),
+      };
+    });
 
     return NextResponse.json(
       {

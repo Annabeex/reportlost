@@ -269,17 +269,11 @@ export default async function Page({ params }: { params: { state: string; city: 
       nearbyCities = [];
     }
 
-    // 5) Image : photo stockée si présente, sinon visuel de marque généré
-    //    par le serveur, unique pour chaque ville (plus de dépendance Pexels).
-    let cityImage = (cityData.image_url as string | null) || null;
-    let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
-    let cityImageCredit = "";
-    if (!cityImage) {
-      cityImage = `/api/city-image?city=${encodeURIComponent(cityData.city_ascii || cityName)}&state=${encodeURIComponent(
-        cityData.state_id || stateAbbr
-      )}`;
-      cityImageAlt = `Lost & Found in ${cityName}, ${cityData.state_id || stateAbbr}`;
-    }
+    // 5) Image : photo stockée (image_url) — générée par IA lors de la création
+    //    du guide (unique par ville), plus de fetch Pexels à la volée.
+    const cityImage = (cityData.image_url as string | null) || null;
+    const cityImageAlt = cityData.image_alt || `View of ${cityName}`;
+    const cityImageCredit = "";
 
     // 6) Postes de police via Overpass (helper robuste : "out center", ways/relations,
     //    timeout, miroirs de secours, logs). Corrige le bug "out tags center" qui
