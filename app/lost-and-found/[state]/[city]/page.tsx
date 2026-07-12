@@ -269,31 +269,16 @@ export default async function Page({ params }: { params: { state: string; city: 
       nearbyCities = [];
     }
 
-    // 5) Image (dev only if missing) — import dynamique
+    // 5) Image : photo stockée si présente, sinon visuel de marque généré
+    //    par le serveur, unique pour chaque ville (plus de dépendance Pexels).
     let cityImage = (cityData.image_url as string | null) || null;
     let cityImageAlt = cityData.image_alt || `View of ${cityName}`;
     let cityImageCredit = "";
-    if (!cityImage && process.env.NODE_ENV !== "production") {
-      try {
-        const { default: fetchCityImageDirectly } = await import("@/lib/fetchCityImageDirectly");
-        const img = await fetchCityImageDirectly(cityName, cityData.state_name);
-        cityImage = img.url;
-        cityImageAlt = img.alt;
-
-        await supabase
-          .from("us_cities")
-          .update({
-            image_url: img.url,
-            image_alt: img.alt,
-            photographer: img.photographer,
-            image_source_url: img.source_url,
-          })
-          .eq("id", cityData.id);
-
-        cityImageCredit = img.photographer ? `Photo by ${img.photographer}` : "";
-      } catch {
-        /* ignore */
-      }
+    if (!cityImage) {
+      cityImage = `/api/city-image?city=${encodeURIComponent(cityData.city_ascii || cityName)}&state=${encodeURIComponent(
+        cityData.state_id || stateAbbr
+      )}`;
+      cityImageAlt = `Lost & Found in ${cityName}, ${cityData.state_id || stateAbbr}`;
     }
 
     // 6) Postes de police via Overpass (helper robuste : "out center", ways/relations,

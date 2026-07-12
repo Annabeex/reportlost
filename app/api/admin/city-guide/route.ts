@@ -20,11 +20,12 @@ export async function GET(req: NextRequest) {
   // Mode "liste de travail" : villes triées par population + statut de guide
   if (citiesMode) {
     const q = (req.nextUrl.searchParams.get("q") || "").trim();
+    const limit = Math.min(1000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
     let query = sb
       .from("us_cities")
       .select("city_ascii, state_id, population")
       .order("population", { ascending: false })
-      .limit(100);
+      .limit(limit);
     if (q) query = query.ilike("city_ascii", `%${q}%`);
     const [{ data: cities, error: cErr }, { data: guides }] = await Promise.all([
       query,
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
   if (state && city) {
     const { data, error } = await sb
       .from("city_guides")
-      .select("state_id, city_slug, guide, status, updated_at")
+      .select("state_id, city_slug, guide, status, verified, updated_at")
       .eq("state_id", state.toUpperCase())
       .eq("city_slug", city.toLowerCase())
       .maybeSingle();
@@ -56,7 +57,8 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await sb
     .from("city_guides")
-    .select("state_id, city_slug, status, updated_at")
+    .select("state_id, city_slug, status, verified, updated_at")
+    .order("verified", { ascending: true })
     .order("updated_at", { ascending: false })
     .limit(300);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { state, city, guide, status } = await req.json();
+    const { state, city, guide, status, verified } = await req.json();
     if (!state || !city) return NextResponse.json({ error: "state et city requis" }, { status: 400 });
     if (status && !["draft", "published"].includes(status)) {
       return NextResponse.json({ error: "status invalide" }, { status: 400 });
@@ -77,6 +79,9 @@ export async function PUT(req: NextRequest) {
     const patch: Record<string, any> = { updated_at: new Date().toISOString() };
     if (guide) patch.guide = guide;
     if (status) patch.status = status;
+    // Toute sauvegarde/publication manuelle vaut relecture ; le flag peut aussi être posé seul.
+    if (typeof verified === "boolean") patch.verified = verified;
+    else if (guide || status === "published") patch.verified = true;
 
     const stateUp = String(state).toUpperCase();
     const cityLow = String(city).toLowerCase();

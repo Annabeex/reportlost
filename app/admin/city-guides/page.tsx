@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { buildCityPath } from "@/lib/slugify";
 
-type Row = { state_id: string; city_slug: string; status: string; updated_at: string };
+type Row = { state_id: string; city_slug: string; status: string; verified?: boolean; updated_at: string };
 type CityRow = { city: string; state: string; population: number | null; guide_status: string | null };
 
 export default function CityGuidesAdmin() {
@@ -17,7 +17,7 @@ export default function CityGuidesAdmin() {
   const [info, setInfo] = useState<string | null>(null);
 
   // Éditeur
-  const [current, setCurrent] = useState<{ state: string; city: string; status: string } | null>(null);
+  const [current, setCurrent] = useState<{ state: string; city: string; status: string; verified?: boolean } | null>(null);
   const [guideText, setGuideText] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
 
@@ -89,8 +89,25 @@ export default function CityGuidesAdmin() {
     );
     const j = await r.json();
     if (r.ok && j.row) {
-      setCurrent({ state: row.state_id, city: row.city_slug, status: j.row.status });
+      setCurrent({ state: row.state_id, city: row.city_slug, status: j.row.status, verified: j.row.verified });
       setGuideText(JSON.stringify(j.row.guide, null, 2));
+    }
+  }
+
+  async function markVerified() {
+    if (!current) return;
+    try {
+      const r = await fetch("/api/admin/city-guide", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: current.state, city: current.city, verified: true }),
+      });
+      if (!r.ok) throw new Error((await r.json())?.error || r.statusText);
+      setCurrent({ ...current, verified: true });
+      setInfo("✅ Marqué comme vérifié.");
+      loadList();
+    } catch (e: any) {
+      setInfo(`⚠️ ${String(e?.message || e)}`);
     }
   }
 
@@ -252,7 +269,21 @@ export default function CityGuidesAdmin() {
               <span className={current.status === "published" ? "text-green-700" : "text-amber-600"}>
                 {current.status === "published" ? "publié" : "brouillon"}
               </span>
+              {current.status === "published" && !current.verified && (
+                <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">
+                  ⚠ non vérifié
+                </span>
+              )}
             </h2>
+            {current.status === "published" && !current.verified && (
+              <button
+                onClick={markVerified}
+                className="rounded bg-orange-500 px-3 py-1 text-xs font-medium text-white hover:brightness-110"
+                title="J'ai relu cette page, elle est bonne telle quelle"
+              >
+                ✓ Marquer vérifié
+              </button>
+            )}
             <a href={previewUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 underline">
               👁 Aperçu
             </a>
@@ -324,6 +355,11 @@ export default function CityGuidesAdmin() {
                   <td>{r.state_id}</td>
                   <td>
                     <span className={r.status === "published" ? "text-green-700" : "text-amber-600"}>{r.status}</span>
+                    {r.status === "published" && !r.verified && (
+                      <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                        à vérifier
+                      </span>
+                    )}
                   </td>
                   <td className="text-gray-500">{new Date(r.updated_at).toLocaleString("fr-FR")}</td>
                   <td className="space-x-3">

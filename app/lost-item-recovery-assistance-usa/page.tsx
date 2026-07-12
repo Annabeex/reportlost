@@ -268,13 +268,20 @@ export default function RecoveryAssistancePage() {
 
         {/* Trust */}
         <section className="rounded-xl bg-white p-8 shadow">
-          <h2 className="text-2xl font-bold text-gray-900">Who is behind ReportLost?</h2>
+          <h2 className="text-2xl font-bold text-gray-900">How your case is actually worked</h2>
           <p className="mt-4 text-gray-700">
-            ReportLost.org operates in partnership with an established French lost-and-found assistance service and
-            applies the same human-assisted method to the United States: real people making real contacts, with a
-            written trail of every step taken on your case. We tell you what we can do — and just as clearly what
-            we cannot: we do not guarantee recovery, we do not access non-public data, and we never impersonate
-            officials.
+            Every paid case combines four concrete actions. Your report is <strong>filed with the police</strong>{" "}
+            and sent to the establishments where the item may have been lost (hotel, venue, transit, businesses
+            nearby). A dedicated visual is <strong>published on local social channels</strong> and community
+            groups. Our <strong>automated monitoring scans the web for 6 to 12 months</strong>, crossing your
+            item&rsquo;s description, location and date against new listings and &ldquo;found&rdquo; posts, so you
+            don&rsquo;t have to check every site yourself. And a <strong>real team reviews each case manually</strong>:
+            they check incoming reports, run additional searches, and filter potential matches before anything
+            reaches your inbox.
+          </p>
+          <p className="mt-3 text-gray-700">
+            We are equally clear about what we don&rsquo;t do: we do not guarantee recovery, we do not access
+            non-public data, and we never impersonate officials.
           </p>
         </section>
 

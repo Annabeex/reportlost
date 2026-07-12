@@ -66,7 +66,7 @@ const GUIDE_SCHEMA = `type CityGuide = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { city, state } = await req.json();
+    const { city, state, autoPublish } = await req.json();
     if (!city || !state) return NextResponse.json({ error: "city et state requis" }, { status: 400 });
 
     const sb = getSupabaseAdmin();
@@ -108,8 +108,9 @@ pendant 6 à 12 mois). Chaque section doit ramener vers le formulaire de signale
 Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
 - h1 : orienté action et bénéfice, ex "Lost something in <ville>? Report it and get it back."
 - heroSubtitle : la promesse du service, "One report and we route it to the right <police locale>, the relevant lost & found offices, and active local social channels."
-- steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. You get matched & notified), adaptées à la ville.
-- intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant.
+- steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Automated monitoring finds matches for you), adaptées à la ville. L'étape 3 insiste sur la veille : "Our automated search keeps scanning the entire web, marketplaces and local social channels for matching 'found' posts, so you don't have to check them yourself every day. You're alerted as soon as something credible surfaces."
+- ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : la veille automatique. ReportLost surveille tout le web public (annonces, marketplaces, groupes et pages locales) avec des recherches répétées pendant des mois, en croisant description, lieu et date. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, la surveillance tourne pour lui.
+- intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
 - cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
 - midCta / finalCta : le timing est un argument mais JAMAIS anxiogène ni commercial agressif. Pas de "Don't wait!", "The clock is ticking", "before it's too late". Formule positive et rassurante : agir tôt améliore les chances, et une fois le signalement déposé, l'utilisateur peut souffler, l'équipe prend le relais ("The sooner your report is in the system, the better the odds, and once it is, we take it from there", "One report. Every relevant channel in <ville>. You can breathe.").
 - ctaLabel / finalCtaLabel : "Report my lost item →" / "Start my report →".
@@ -166,20 +167,45 @@ ${results}`,
       if (!Array.isArray(guide[k])) guide[k] = [];
     }
 
-    // 4) Sauvegarde en brouillon
+    // 4) Sauvegarde (brouillon par défaut, ou publication directe non vérifiée)
+    const status = autoPublish ? "published" : "draft";
     const { error: upErr } = await sb.from("city_guides").upsert(
       {
         state_id: stateAbbr,
         city_slug: cityName.toLowerCase(),
         guide,
-        status: "draft",
+        status,
+        verified: false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "state_id,city_slug" }
     );
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
 
-    return NextResponse.json({ ok: true, guide, queries });
+    // 5) Publication directe : renseigne aussi title/meta SEO (us_cities) s'ils sont vides
+    if (autoPublish) {
+      try {
+        const { data: seoRow } = await sb
+          .from("us_cities")
+          .select("id, static_title, static_content")
+          .eq("id", cityRow.id)
+          .maybeSingle();
+        const stripHtml = (s: string) => String(s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+        const seoPatch: Record<string, string> = {};
+        if (seoRow && !seoRow.static_title) {
+          seoPatch.static_title = `Lost & Found in ${cityName}, ${stateAbbr}: Report a Lost Item`;
+        }
+        if (seoRow && !seoRow.static_content) {
+          const desc = stripHtml(guide.heroSubtitle || (Array.isArray(guide.intro) ? guide.intro[0] : "") || "");
+          if (desc) seoPatch.static_content = desc.slice(0, 300);
+        }
+        if (Object.keys(seoPatch).length) await sb.from("us_cities").update(seoPatch).eq("id", cityRow.id);
+      } catch (e) {
+        console.error("[city-guide-generate] maj SEO non bloquante:", e);
+      }
+    }
+
+    return NextResponse.json({ ok: true, guide, queries, status });
   } catch (e: any) {
     console.error("[city-guide-generate] fatal:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });
