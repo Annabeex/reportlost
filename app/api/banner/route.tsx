@@ -1,24 +1,25 @@
 // app/api/banner/route.tsx
-// Superpose "VILLE - ÉTAT" (vert, style Helvetica via Arimo) sur la bannière
-// Lost & Found vierge (public/images/lost-found-base.png).
-// URL : /api/banner?city=Bronx&state=NY
+// Bannière de groupe Facebook générée entièrement par le code (plus d'image
+// de fond avec "Exchange"). Titre "LOST & FOUND · Community Group", puis
+// VILLE, ÉTAT toujours sur UNE seule ligne (taille auto selon la longueur).
+// URL : /api/banner?city=Philadelphia&state=PA   (option ?size= pour forcer)
 
 import { ImageResponse } from "next/og";
-import fs from "node:fs";
-import path from "node:path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const W = 1200;
 const H = 800;
-const GREEN = "#4a9a2e";
+const GREEN = "#2e7d32";
+const INK = "#1e293b";
 
-async function loadArimo(): Promise<ArrayBuffer | null> {
+async function loadArimo(weight: 400 | 700): Promise<ArrayBuffer | null> {
   try {
-    const res = await fetch("https://cdn.jsdelivr.net/npm/@fontsource/arimo@5.0.18/files/arimo-latin-700-normal.woff", {
-      cache: "force-cache",
-    });
+    const res = await fetch(
+      `https://cdn.jsdelivr.net/npm/@fontsource/arimo@5.0.18/files/arimo-latin-${weight}-normal.woff`,
+      { cache: "force-cache" }
+    );
     if (!res.ok) return null;
     return await res.arrayBuffer();
   } catch {
@@ -30,41 +31,18 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const city = (searchParams.get("city") || "").trim();
   const state = (searchParams.get("state") || "").trim().toUpperCase();
-  const label = [city.toUpperCase(), state].filter(Boolean).join(" - ");
+  const label = [city.toUpperCase(), state].filter(Boolean).join(", ");
 
-  // Réglages fins par l'URL (pour caler au pixel) : top/left en %, size en px, color en hex
-  // Le texte est centré dans une "boîte" qui couvre la largeur du bloc FOUND
-  const topPct = searchParams.get("top") || "65";
-  const leftPct = searchParams.get("left") || "8"; // bord gauche de la boîte (~= "FOUND")
-  const widthPct = searchParams.get("width") || "38"; // largeur de la boîte (~= "FOUND")
+  // Une seule ligne garantie : taille dérivée de la longueur (~0.62 × size par caractère)
   const sizeOverride = Number(searchParams.get("size") || 0);
-  const colorParam = searchParams.get("color");
-  const green = colorParam ? `#${colorParam.replace(/^#/, "")}` : GREEN;
+  const autoSize = Math.max(30, Math.min(84, Math.floor((W * 0.86) / (Math.max(label.length, 6) * 0.62))));
+  const citySize = sizeOverride > 0 ? sizeOverride : autoSize;
 
-  // Fond : la bannière vierge (data URI, fiable)
-  let bg = "";
-  try {
-    const buf = fs.readFileSync(path.join(process.cwd(), "public", "images", "lost-found-base.png"));
-    bg = `data:image/png;base64,${buf.toString("base64")}`;
-  } catch {
-    bg = "";
-  }
-
-  const font = await loadArimo();
-  const fonts = font ? [{ name: "Arimo", data: font, weight: 700 as const, style: "normal" as const }] : [];
-  const fam = font ? "Arimo" : "sans-serif";
-
-  // Taille adaptée à la longueur (plus la ville est longue, plus c'est petit) — ou forcée par ?size=
-  const size =
-    sizeOverride > 0
-      ? sizeOverride
-      : label.length > 19
-      ? 38
-      : label.length > 15
-      ? 46
-      : label.length > 11
-      ? 56
-      : 66;
+  const [f700, f400] = await Promise.all([loadArimo(700), loadArimo(400)]);
+  const fonts: any[] = [];
+  if (f700) fonts.push({ name: "Arimo", data: f700, weight: 700, style: "normal" });
+  if (f400) fonts.push({ name: "Arimo", data: f400, weight: 400, style: "normal" });
+  const fam = fonts.length ? "Arimo" : "sans-serif";
 
   return new ImageResponse(
     (
@@ -73,36 +51,75 @@ export async function GET(req: Request) {
           width: `${W}px`,
           height: `${H}px`,
           display: "flex",
-          position: "relative",
-          background: "#d7e6f4",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(160deg, #f2f8fd 0%, #dcebf7 55%, #cfe3f2 100%)",
           fontFamily: fam,
+          position: "relative",
         }}
       >
-        {bg ? (
-          <img src={bg} width={W} height={H} style={{ width: `${W}px`, height: `${H}px`, objectFit: "cover" }} />
-        ) : null}
+        {/* Décor discret */}
+        <div style={{ position: "absolute", top: "36px", left: "48px", fontSize: "64px", opacity: 0.16, display: "flex" }}>
+          🔍
+        </div>
+        <div style={{ position: "absolute", bottom: "36px", right: "48px", fontSize: "64px", opacity: 0.16, display: "flex" }}>
+          🐾
+        </div>
+
+        {/* Titre */}
+        <div
+          style={{
+            display: "flex",
+            fontSize: "108px",
+            fontWeight: 700,
+            color: INK,
+            letterSpacing: "4px",
+            lineHeight: 1,
+          }}
+        >
+          LOST &amp; FOUND
+        </div>
+        <div
+          style={{
+            display: "flex",
+            marginTop: "18px",
+            fontSize: "38px",
+            fontWeight: 400,
+            color: "#475569",
+            letterSpacing: "10px",
+          }}
+        >
+          COMMUNITY GROUP
+        </div>
+
+        {/* Ville, État : UNE seule ligne */}
+        <div
+          style={{
+            display: "flex",
+            marginTop: "56px",
+            fontSize: `${citySize}px`,
+            fontWeight: 700,
+            color: GREEN,
+            letterSpacing: "2px",
+            whiteSpace: "nowrap",
+            maxWidth: `${Math.floor(W * 0.92)}px`,
+          }}
+        >
+          {label || "YOUR CITY, ST"}
+        </div>
+
+        {/* Pied discret */}
         <div
           style={{
             position: "absolute",
-            top: `${topPct}%`,
-            left: `${leftPct}%`,
-            width: `${widthPct}%`,
+            bottom: "30px",
             display: "flex",
-            justifyContent: "center",
+            fontSize: "26px",
+            color: "#64748b",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontSize: `${size}px`,
-              fontWeight: 700,
-              color: green,
-              letterSpacing: "1px",
-              textAlign: "center",
-            }}
-          >
-            {label}
-          </div>
+          reportlost.org
         </div>
       </div>
     ),
