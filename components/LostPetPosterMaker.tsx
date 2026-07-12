@@ -79,11 +79,19 @@ export default function LostPetPosterMaker() {
   async function capture(): Promise<HTMLCanvasElement | null> {
     if (!posterRef.current) return null;
     const el = posterRef.current;
-    // html2canvas ne supporte pas `aspect-ratio` : on fige la hauteur A4 en pixels
-    // le temps de la capture, puis on restaure.
+    // On fige la hauteur A4 en pixels le temps de la capture (aspect-ratio n'est
+    // pas fiable dans les moteurs de capture), puis on restaure.
     const prevHeight = el.style.height;
     el.style.height = `${Math.round((el.clientWidth * 297) / 210)}px`;
     try {
+      // 1) html-to-image : le navigateur rasterise lui-même le DOM (fidèle au pixel)
+      try {
+        const { toCanvas } = await import("html-to-image");
+        return await toCanvas(el, { pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true });
+      } catch (e) {
+        console.warn("html-to-image indisponible, repli html2canvas:", e);
+      }
+      // 2) Repli : html2canvas
       const html2canvas = (await import("html2canvas")).default;
       return await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
     } finally {
