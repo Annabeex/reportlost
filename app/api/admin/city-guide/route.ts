@@ -4,7 +4,9 @@
 // GET ?state=&city=    → un guide complet
 // PUT {state, city, guide?, status?} → sauvegarde et/ou changement de statut
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { buildCityPath } from "@/lib/slugify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,6 +99,16 @@ export async function PUT(req: NextRequest) {
       .eq("state_id", stateUp)
       .eq("city_slug", cityLow);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Publication ou dépublication : invalide le cache ISR de la page ville
+    // pour que le changement soit visible immédiatement.
+    if (status === "published" || status === "draft" || guide) {
+      try {
+        revalidatePath(buildCityPath(stateUp, cityLow));
+      } catch (e) {
+        console.error("[city-guide] revalidatePath:", e);
+      }
+    }
 
     // À la publication : renseigne title/meta SEO de la ville (us_cities) s'ils sont vides.
     if (status === "published") {

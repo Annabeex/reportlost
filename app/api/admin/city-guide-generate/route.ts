@@ -4,6 +4,7 @@
 // Le brouillon est enregistré dans city_guides (status: draft) — rien n'est publié
 // sans validation manuelle dans /admin/city-guides.
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { buildCityPath } from "@/lib/slugify";
@@ -208,6 +209,16 @@ ${results}`,
       { onConflict: "state_id,city_slug" }
     );
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+    // 4bis) Publication directe : invalide le cache ISR de la page pour que le
+    // guide apparaisse immédiatement (sinon l'ancienne version reste servie 24h)
+    if (autoPublish) {
+      try {
+        revalidatePath(buildCityPath(stateAbbr, cityName));
+      } catch (e) {
+        console.error("[city-guide] revalidatePath:", e);
+      }
+    }
 
     // 5) Publication directe : renseigne aussi title/meta SEO (us_cities) s'ils sont vides
     if (autoPublish) {
