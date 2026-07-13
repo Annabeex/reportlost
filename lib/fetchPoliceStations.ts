@@ -57,6 +57,9 @@ export async function fetchPoliceStations(
         },
         body: "data=" + encodeURIComponent(query),
         next: { revalidate: 86400 }, // cache 24h : la carte des commissariats bouge peu
+        // ⏱️ 5s max par miroir : un Overpass lent/en panne ne doit JAMAIS
+        // bloquer le rendu de la page (la carte s'affiche alors sans stations).
+        signal: AbortSignal.timeout(5000),
       });
 
       if (!res.ok) {
