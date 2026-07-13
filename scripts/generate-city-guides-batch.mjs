@@ -51,23 +51,32 @@ let ok = 0;
 let ko = 0;
 for (const [i, c] of todo.entries()) {
   process.stdout.write(`  ${i + 1}/${todo.length} ${c.city} (${c.state}), pop. ${c.population?.toLocaleString?.() || "?"} … `);
-  try {
-    const r = await fetch(`${BASE}/api/admin/city-guide-generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: AUTH },
-      body: JSON.stringify({ city: c.city, state: c.state, autoPublish: true }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok) {
-      ok++;
-      console.log("✅ publié (non vérifié)");
-    } else {
-      ko++;
-      console.log(`⚠️ ${j.error || r.status}`);
+  let done = false;
+  for (let attempt = 1; attempt <= 2 && !done; attempt++) {
+    try {
+      const r = await fetch(`${BASE}/api/admin/city-guide-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ city: c.city, state: c.state, autoPublish: true }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        ok++;
+        console.log("✅ publié (non vérifié)");
+      } else {
+        ko++;
+        console.log(`⚠️ ${j.error || r.status}`);
+      }
+      done = true;
+    } catch (e) {
+      if (attempt === 1) {
+        process.stdout.write(`réseau (${e.message}), retry dans 10 s… `);
+        await sleep(10_000);
+      } else {
+        ko++;
+        console.log(`⚠️ ${e.message} (2 tentatives)`);
+      }
     }
-  } catch (e) {
-    ko++;
-    console.log(`⚠️ ${e.message}`);
   }
   if (i < todo.length - 1) await sleep(DELAY_MS);
 }

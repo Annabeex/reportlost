@@ -99,22 +99,42 @@ export async function POST(req: NextRequest) {
       .map((q, i) => `### ${q}\n${sets[i].map((r) => `- ${r.title}\n  ${r.link}\n  ${r.snippet}`).join("\n") || "(aucun résultat)"}`)
       .join("\n\n");
 
-    // 2) Rédaction stricte
+    // 2) Rédaction stricte — avec un "angle" et un ton propres à la ville pour
+    //    que 1000 pages côte à côte ne partagent pas le même squelette verbal.
+    const ANGLES = [
+      "la ville vue par ses habitants du quotidien (trajets, courses, parcs)",
+      "la ville vue par un visiteur de passage (hôtel, restaurants, attractions)",
+      "la ville par ses lieux de flux (transports, parkings, artères principales)",
+      "la ville par ses saisons et événements (matchs, festivals, marchés)",
+      "la ville par ses quartiers et leur caractère",
+      "la ville pratique : qui appeler, où aller, dans quel ordre",
+    ];
+    const TONES2 = ["chaleureux et direct", "posé et précis", "énergique et concret", "complice et local", "sobre et rassurant"];
+    const h2 = Array.from(cityName + stateAbbr).reduce((a, c) => a + c.charCodeAt(0), 0);
+    const angle = ANGLES[h2 % ANGLES.length];
+    const tone2 = TONES2[Math.floor(h2 / 7) % TONES2.length];
+
     const raw = await callClaude(
       `Tu rédiges la page "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
 Tu es un EXPERT EN CONVERSION, pas un blogueur : cette page vend le service d'accompagnement de ReportLost
 (un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale et surveille le web
 pendant 6 à 12 mois). Chaque section doit ramener vers le formulaire de signalement.
 
-Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
-- h1 : orienté action et bénéfice, ex "Lost something in <ville>? Report it and get it back."
-- heroSubtitle : la promesse du service, "One report and we route it to the right <police locale>, the relevant lost & found offices, and active local social channels."
-- steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Automated monitoring finds matches for you), adaptées à la ville. L'étape 3 insiste sur la veille : "Our automated search keeps scanning the entire web, marketplaces and local social channels for matching 'found' posts, so you don't have to check them yourself every day. You're alerted as soon as something credible surfaces."
+⚠️ RÈGLE ANTI-DUPLICATION (prioritaire) : ce texte rejoindra un millier de pages sœurs. Deux pages mises côte à côte ne doivent JAMAIS partager de phrases, d'accroches, de questions FAQ ou de tournures identiques. Écris chaque section À PARTIR DES DONNÉES LOCALES (noms des services trouvés, géographie, caractère de la ville), jamais à partir d'un squelette mémorisé. Si une phrase pourrait s'appliquer telle quelle à une autre ville en changeant juste le nom, reformule-la.
+
+Angle imposé pour CETTE page (structure ta rédaction autour de lui) : ${angle}. Ton : ${tone2}.
+
+Repères de rédaction :
+- h1 : orienté action et bénéfice, formulation propre à la ville (varie les constructions, pas toujours "Lost something in X?").
+- heroSubtitle : la promesse du service exprimée avec les VRAIS noms locaux trouvés (police, transit...), jamais une phrase passe-partout.
+- steps : les 3 étapes DU SERVICE (signalement → routage local → veille qui trouve les matchs), mais chaque body doit citer les canaux locaux par leur nom. L'étape veille explique que la recherche automatisée scanne le web, les marketplaces et les canaux sociaux locaux en continu pour que la personne n'ait pas à le faire elle-même, avec une alerte dès qu'un match crédible sort — reformulé à ta façon, pas récité.
 - ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : la veille automatique. ReportLost surveille tout le web public (annonces, marketplaces, groupes et pages locales) avec des recherches répétées pendant des mois, en croisant description, lieu et date. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, la surveillance tourne pour lui.
 - intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
 - cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
-- midCta / finalCta : le timing est un argument mais JAMAIS anxiogène ni commercial agressif. Pas de "Don't wait!", "The clock is ticking", "before it's too late". Formule positive et rassurante : agir tôt améliore les chances, et une fois le signalement déposé, l'utilisateur peut souffler, l'équipe prend le relais ("The sooner your report is in the system, the better the odds, and once it is, we take it from there", "One report. Every relevant channel in <ville>. You can breathe.").
-- ctaLabel / finalCtaLabel : "Report my lost item →" / "Start my report →".
+- midCta / finalCta : le timing est un argument mais JAMAIS anxiogène ni commercial agressif. Pas de "Don't wait!", "The clock is ticking", "before it's too late". Formule positive et rassurante, DIFFÉRENTE sur chaque page : agir tôt améliore les chances, et une fois le signalement déposé, l'utilisateur peut souffler, l'équipe prend le relais.
+- ctaLabel / finalCtaLabel : des libellés d'action courts avec →, variés d'une page à l'autre ("Report my lost item →", "Start my report →", "File my report →", "Begin the search →", "Get my search started →"...).
+- socialHeading/socialSubtitle/social : courts et reformulés à chaque page ; cite des communautés RÉELLES si les résultats en montrent, sinon reste bref.
+- FAQ : les questions doivent découler des systèmes locaux trouvés (délais de garde précis, où réclamer, quel bureau pour quel cas), pas d'un jeu de questions standard répété de ville en ville. Seule la dernière question (ReportLost est-il officiel ?) est commune, avec une réponse reformulée.
 
 Règles STRICTES de véracité :
 - N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).

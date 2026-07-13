@@ -27,6 +27,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ISR : la page est rendue puis mise en cache 24h — crawl rapide pour Google,
 // et les nouveaux signalements apparaissent au plus tard le lendemain.
 export const revalidate = 86400;
+export const maxDuration = 60; // marge pour le premier rendu (données externes)
 
 // ✅ composants client chargés côté navigateur uniquement
 const CityMap = NextDynamic(() => import("@/components/MapClient").then((m) => m.default), {
