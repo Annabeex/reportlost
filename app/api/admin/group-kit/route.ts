@@ -42,20 +42,29 @@ export async function POST(req: NextRequest) {
 
   const cityUrl = `https://reportlost.org/lost-and-found/${state.toLowerCase()}/${slugify(city)}`;
 
-  // Vrais objets trouvés publics récents (best effort, non bloquant)
+  // Vrais objets/animaux trouvés publics récents (best effort, non bloquant).
+  // Fenêtre "dernière semaine" (freshness qdr:w) + sources variées pour viser 3 posts.
   let foundLeads: { title: string; snippet: string; link: string }[] = [];
   if (process.env.SERPER_API_KEY) {
     try {
-      const r1 = await serperSearch(`found ${city} ${state}`, null as any).catch(() => []);
-      const r2 = await serperSearch(`found ${city} site:facebook.com`, null as any).catch(() => []);
+      const thisWeek = new Date().toISOString(); // -> freshness "qdr:w"
+      const queries = [
+        `found ${city} ${state}`,
+        `"found" ${city} site:facebook.com`,
+        `found dog OR found cat ${city} ${state}`,
+        `found wallet OR found keys OR found phone ${city} ${state}`,
+        `found ${city} ${state} site:craigslist.org OR site:nextdoor.com OR site:reddit.com`,
+      ];
+      const sets = await Promise.all(queries.map((q) => serperSearch(q, thisWeek).catch(() => [])));
       const seen = new Set<string>();
-      foundLeads = [...r1, ...r2]
+      foundLeads = sets
+        .flat()
         .filter((r) => {
           if (seen.has(r.link)) return false;
           seen.add(r.link);
           return /found|lost and found/i.test(`${r.title} ${r.snippet}`);
         })
-        .slice(0, 8)
+        .slice(0, 15)
         .map((r) => ({ title: r.title, snippet: r.snippet, link: r.link }));
     } catch {
       foundLeads = [];
@@ -77,7 +86,7 @@ export async function POST(req: NextRequest) {
   const tone = tones[Math.floor(Math.random() * tones.length)];
 
   const system =
-    "You write fresh, natural, NON-templated Facebook group content for ReportLost.org (a lost & found service). Every output must feel human and unique. Avoid AI clichés and repetitive phrasing. STYLE RULES: never use dashes as punctuation (no em dash, no ' - '), use commas or separate sentences instead; no bullet lists inside the texts. SAFETY RULES: only everyday lost/found items and pets; NEVER mention found bodies, human remains, people, children, weapons, drugs or anything morbid, medical or disturbing — silently skip any lead of that kind. Reply ONLY with valid JSON.";
+    "You write fresh, natural, NON-templated Facebook group content for ReportLost.org (a lost & found service). Every output must feel human and unique. Avoid AI clichés and repetitive phrasing. STYLE RULES: never use dashes as punctuation (no em dash, no ' - '), use commas or separate sentences instead; no bullet lists inside the texts. GLOBALLY BANNED PHRASING (applies to every field, including any close variant): 'reunite ... with ...' in any form ('reunite people with their lost items', 'reunite it with its owner', 'reunite pets with their families'), 'connect people with their belongings', 'connect neighbors with their lost items', 'belongings back home', 'back where it belongs'. Express the idea differently every time (e.g. 'so the owner gets it back fast', 'so it finds its way home', 'to get it back into the right hands', or simply describe the action). SAFETY RULES: only everyday lost/found items and pets; NEVER mention found bodies, human remains, people, children, weapons, drugs or anything morbid, medical or disturbing, silently skip any lead of that kind. Reply ONLY with valid JSON.";
   const user = `City: ${city}, ${state}
 ReportLost city page URL (promote this exact link): ${cityUrl}
 
@@ -88,8 +97,8 @@ Produce JSON in US English:
 {
   "groupName": "a catchy, searchable Facebook group name people would search when they lose/find something in this city. MUST include the city name AND the 2-letter state code (${state}). NEVER use the word 'Exchange'. Good patterns: '<City>, ${state} - Lost & Found', 'Lost & Found <City> ${state}', '<City> ${state} Lost & Found Community'",
   "description": "a ${tone}, natural 110-180 word group description in US English, SPECIFIC to ${city}. FORMAT: 2-3 short paragraphs separated by BLANK LINES (write them as \\n\\n inside the JSON string, never one big block) and 2-4 well-placed emojis (🔑 📱 🐕 📍 etc.). BANNED phrases (never use, nor close variants): 'reunite people with their lost items', 'connect people/neighbors with their lost items', 'come to the right place', 'neighbors helping neighbors', 'neighbors support neighbors', 'we're here to help', 'trusted community', 'belongings back home', 'together we make ... a community', 'beloved pets'. Write fresh human copy; if you know ${city}, name a real local spot or two; invite members to post things they find, lost pets included (the group is for lost items AND lost pets, give both kinds of examples); include this exact link ONCE for reporting a lost item: ${cityUrl}. Vary structure and wording so it never reads like a template.",
-  "posts": ["EXACTLY ONE outstanding PINNED post (the group's welcome + rules + resources, written by a conversion expert). Structure, with \\n\\n between each block and 4-6 well-placed emojis total: (1) a warm 1-2 sentence welcome specific to ${city}; (2) how the group works: post what you LOST or FOUND, item or pet, with a photo, the area and the date; (3) one trust tip presented as the golden rule: if you found something, keep one detail secret (an engraving, the case color, the collar tag) so the real owner can prove it's theirs; (4) a STANDOUT help block introduced by 📌 or ➡️: for more help, to report a loss officially, or to get the search handled for you (local services contacted, alerts posted, months of web monitoring), file a report at ${cityUrl} , make this link impossible to miss; (5) a final line for pet owners: print a free lost pet poster in 2 minutes at https://reportlost.org/lost-pet-poster 🐕. Mix object and pet examples naturally, no dashes as punctuation, avoid the banned clichés, only cheerful ordinary examples, nothing dark."],
-  "foundPosts": ["up to 3 short shareable posts built ONLY from usable real 'found' leads above (everyday items or pets exclusively; silently drop any lead about people, remains or anything disturbing). Each MUST start with 'FOUND ✅', summarize the item or pet and where it was found, add 'seen in a public group, verify before claiming', and include the source URL. If there are no usable leads, return []."]
+  "posts": ["EXACTLY ONE outstanding PINNED post (the group's welcome + rules + resources, written by a conversion expert). CRITICAL: Facebook truncates posts after ~2 lines with 'See more', so the ReportLost link block MUST be the VERY FIRST block of the post, visible without clicking. Structure, with \\n\\n between each block and 3-5 well-placed emojis total: (1) FIRST, a short help block (1-2 sentences, freshly worded each time, never a recycled template) that contains the link ${cityUrl} and gets across that ReportLost can take the search off their hands: report filed, local services contacted, alerts posted, months of monitoring; (2) a warm 1-2 sentence welcome specific to ${city} with a local touch; (3) how the group works: post what you LOST or FOUND, item or pet, with a photo, the area and the date, the more specific the better; (4) the golden rule for finders: keep one detail secret (an engraving, the color of a tag) so whoever claims it can prove it's really theirs; (5) a final line for pet owners: print a free lost pet poster in 2 minutes at https://reportlost.org/lost-pet-poster 🐕. Mix object and pet examples naturally, no dashes as punctuation, respect the globally banned phrasing, only cheerful ordinary examples, nothing dark."],
+  "foundPosts": ["aim for EXACTLY 3 short shareable posts built ONLY from usable real 'found' leads above (everyday items or pets exclusively; silently drop any lead about people, remains or anything disturbing; pick the 3 most local and most recent). Each MUST start with 'FOUND ✅', summarize the item or pet and where it was found, add 'seen in a public group, verify before claiming', and include the source URL. Only return fewer than 3 if the usable leads truly run out; if none, return []."]
 }`;
 
   let kit: any;

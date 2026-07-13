@@ -97,6 +97,18 @@ export function CityGuideExtra({
             </div>
           ))}
         </div>
+        <p className="mt-5 text-center text-xs text-gray-400">
+          <a
+            href={`mailto:support@reportlost.org?subject=${encodeURIComponent(
+              `Incorrect info on the ${guide.badge} page`
+            )}&body=${encodeURIComponent(
+              "Hi, I spotted something incorrect on this page:\n\n(please tell us what should be fixed, thank you!)"
+            )}`}
+            className="hover:text-gray-600 hover:underline"
+          >
+            ⚠️ Spotted incorrect or outdated info on this page? Let us know, we fix it fast.
+          </a>
+        </p>
       </section>
 
       {/* CTA milieu */}
