@@ -337,8 +337,9 @@ export default function LostPetPosterMaker() {
           </div>
 
           {/* Pied */}
-          <div className="bg-gray-100 py-2 text-center text-[11px] text-gray-500">
-            Free poster by ReportLost.org, lost &amp; found assistance in the USA
+          <div className="flex items-center justify-between bg-gray-100 px-4 py-2 text-[11px] text-gray-500">
+            <span>Free poster by ReportLost.org, lost &amp; found assistance in the USA</span>
+            <span>© {new Date().getFullYear()} ReportLost.org, all rights reserved</span>
           </div>
         </div>
       </div>

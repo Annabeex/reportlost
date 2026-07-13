@@ -220,7 +220,11 @@ export default function CityGuidesAdmin() {
                       {c.population ? c.population.toLocaleString("en-US") : "—"}
                     </td>
                     <td className="pl-6">
-                      {done ? (
+                      {c.guide_status === "legacy" ? (
+                        <span className="text-xs font-medium text-gray-400" title="Page dédiée codée en dur, rien à générer">
+                          🏛 page dédiée
+                        </span>
+                      ) : done ? (
                         <button
                           onClick={() => open({ state_id: c.state, city_slug: c.city.toLowerCase(), status: "published", updated_at: "" })}
                           className="font-medium text-green-700"
@@ -297,6 +301,28 @@ export default function CityGuidesAdmin() {
                 🌐 Voir la page
               </a>
             )}
+            <button
+              onClick={async () => {
+                if (!current) return;
+                setInfo("⏳ Génération de l'image (10-20 s)…");
+                try {
+                  const r = await fetch("/api/admin/city-image-generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ city: current.city, state: current.state }),
+                  });
+                  const j = await r.json();
+                  if (!r.ok) throw new Error(j?.error || r.statusText);
+                  setInfo("✅ Image générée — visible dans l'aperçu et sur la page (délai ISR).");
+                } catch (e: any) {
+                  setInfo(`⚠️ ${String(e?.message || e)}`);
+                }
+              }}
+              className="rounded bg-purple-600 px-3 py-1 text-xs font-medium text-white hover:brightness-110"
+              title="(Re)génère uniquement la photo IA de la ville, sans toucher au texte"
+            >
+              🖼️ Générer l'image
+            </button>
           </div>
           <textarea
             className="h-96 w-full rounded border p-3 font-mono text-xs"

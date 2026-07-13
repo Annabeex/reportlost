@@ -35,6 +35,10 @@ export async function GET(req: NextRequest) {
     const statusMap = new Map(
       (guides || []).map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
     );
+    // Les 5 villes à page dédiée codée en dur : jamais à générer
+    for (const k of ["NY/new york", "CA/los angeles", "IL/chicago", "TX/houston", "AZ/phoenix"]) {
+      statusMap.set(k, "legacy");
+    }
     const rows = (cities || []).map((c: any) => ({
       city: c.city_ascii,
       state: c.state_id,

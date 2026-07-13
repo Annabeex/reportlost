@@ -45,7 +45,7 @@ if (!todo.length) {
   process.exit(0);
 }
 
-console.log(`🏙️  ${todo.length} ville(s) à générer (brouillons uniquement) :\n`);
+console.log(`🏙️  ${todo.length} ville(s) à générer et publier (non vérifiées) :\n`);
 
 let ok = 0;
 let ko = 0;

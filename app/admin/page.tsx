@@ -594,6 +594,30 @@ export default function AdminPage() {
                             </a>
                           )}
 
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const label = item.title || item.description || item.id;
+                              if (!window.confirm(`Supprimer définitivement ce signalement ?\n\n"${label}"\n\nIrréversible (dossier, messages et pistes de veille inclus).`)) return;
+                              try {
+                                const r = await fetch('/api/admin/delete-report', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: item.id }),
+                                });
+                                const j = await r.json();
+                                if (!r.ok) throw new Error(j?.error || r.statusText);
+                                setLostItems((prev) => prev.filter((it) => it.id !== item.id));
+                              } catch (e: any) {
+                                alert(`Erreur suppression : ${String(e?.message || e)}`);
+                              }
+                            }}
+                            className="inline-flex items-center rounded-md bg-red-600 text-white px-2.5 py-1.5 text-sm font-medium hover:brightness-110"
+                            title="Supprimer ce signalement (tests)"
+                          >
+                            🗑
+                          </button>
+
                           {ref && (
                             <a
                               href={`/admin/poster/${encodeURIComponent(ref)}`}
