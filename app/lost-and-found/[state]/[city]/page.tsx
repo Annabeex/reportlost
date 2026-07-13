@@ -66,6 +66,38 @@ function formatMonthDay(d: Date) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 
+/**
+ * Résolution robuste d'une ville : correspondance exacte d'abord, puis, pour les
+ * noms à ponctuation perdue dans le slug ("st-louis" → "St Louis" ≠ "St. Louis",
+ * "o-fallon" → "O Fallon" ≠ "O'Fallon"), nouvelle tentative avec jokers entre
+ * les mots (la plus peuplée gagne en cas d'ambiguïté).
+ */
+async function findCityRow<T = any>(
+  client: typeof supabase,
+  stateAbbr: string,
+  cityName: string,
+  columns: string
+): Promise<T | null> {
+  const { data } = await client
+    .from("us_cities")
+    .select(columns)
+    .eq("state_id", stateAbbr)
+    .ilike("city_ascii", cityName)
+    .maybeSingle();
+  if (data) return data as T;
+
+  const fuzzy = cityName.replace(/\s+/g, "%");
+  if (fuzzy === cityName) return null;
+  const { data: rows } = await client
+    .from("us_cities")
+    .select(columns)
+    .eq("state_id", stateAbbr)
+    .ilike("city_ascii", fuzzy)
+    .order("population", { ascending: false })
+    .limit(1);
+  return (rows?.[0] as T) || null;
+}
+
 function canonicalUrl(stateSlug: string, citySlug: string) {
   return `${CANONICAL_BASE}/lost-and-found/${(stateSlug || "").toLowerCase()}/${encodeURIComponent(
     decodeURIComponent(citySlug || "")
@@ -104,15 +136,15 @@ export async function generateMetadata({
   const cityName = cityNameFromParam(citySlug);
 
   try {
-    // STRICT: one page per city, no fuzzy merge.
-    const { data, error } = await supabase
-      .from("us_cities")
-      .select("city_ascii, state_name, state_id, static_title, image_url, static_content")
-      .eq("state_id", stateAbbr)
-      .ilike("city_ascii", cityName) // exact (case-insensitive)
-      .maybeSingle();
+    // Exact d'abord, puis rattrapage ponctuation (St. Louis, O'Fallon...)
+    const data: any = await findCityRow(
+      supabase,
+      stateAbbr,
+      cityName,
+      "city_ascii, state_name, state_id, static_title, image_url, static_content"
+    );
 
-    if (error || !data) {
+    if (!data) {
       return _fallbackMeta(state, citySlug);
     }
 
@@ -151,15 +183,9 @@ export default async function Page({ params }: { params: { state: string; city: 
 
     if (!stateAbbr || !cityName) notFound();
 
-    // 1) Strict lookup: exact city within the state (no fallback that can “merge” cities)
-    const { data: cityData, error } = await supabase
-      .from("us_cities")
-      .select("*")
-      .eq("state_id", stateAbbr)
-      .ilike("city_ascii", cityName) // exact (case-insensitive)
-      .maybeSingle();
+    // 1) Lookup exact, puis rattrapage ponctuation (St. Louis, O'Fallon...)
+    const cityData: any = await findCityRow(supabase, stateAbbr, cityName, "*");
 
-    if (error) console.warn("Supabase error (city lookup):", error.message);
     if (!cityData) notFound();
 
     // 2) Normalise JSON éventuels

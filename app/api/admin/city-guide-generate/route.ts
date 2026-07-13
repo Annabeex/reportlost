@@ -141,14 +141,37 @@ ${GUIDE_SCHEMA}`,
 Résultats de recherche Google :
 
 ${results}`,
-      6000
+      8000
     );
 
-    let guide: any;
-    try {
-      guide = JSON.parse(raw.replace(/```json|```/g, "").trim());
-    } catch {
-      return NextResponse.json({ error: "JSON invalide renvoyé par le modèle — relance la génération", raw: raw.slice(0, 800) }, { status: 502 });
+    const parseGuide = (txt: string): any | null => {
+      const cleaned = txt.replace(/```json|```/g, "").trim();
+      try {
+        return JSON.parse(cleaned);
+      } catch {}
+      const m = cleaned.match(/\{[\s\S]*\}/);
+      if (m) {
+        try {
+          return JSON.parse(m[0]);
+        } catch {}
+      }
+      return null;
+    };
+
+    let guide: any = parseGuide(raw);
+    if (!guide) {
+      // Retry automatique : les grosses villes produisent des guides longs qui
+      // peuvent être tronqués ; on redemande une fois, plus compact.
+      console.warn(`[city-guide] JSON invalide pour ${cityName}, retry...`);
+      const raw2 = await callClaude(
+        `Tu viens de renvoyer un JSON invalide (probablement tronqué). Regénère le même guide CityGuide, PLUS COMPACT : intro et cartes plus courtes, 4 questions FAQ maximum, 4 cartes maximum. Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA}`,
+        `Ville : ${cityName}, ${stateName} (${stateAbbr})\n\nRésultats de recherche Google :\n\n${results}`,
+        8000
+      );
+      guide = parseGuide(raw2);
+    }
+    if (!guide) {
+      return NextResponse.json({ error: "JSON invalide renvoyé par le modèle (2 tentatives) — relance cette ville", raw: raw.slice(0, 500) }, { status: 502 });
     }
 
     // 3) Villes voisines réelles (liens internes) injectées programmatiquement
