@@ -172,13 +172,32 @@ export function CityGuideExtra({
         <h2 className="text-2xl font-bold text-gray-900">{guide.socialHeading}</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">{guide.socialSubtitle}</p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5 text-sm">
-          {guide.social.map(([t, d]) => (
-            <div key={t} className="border border-gray-200 rounded-xl p-4">
-              <strong>{t}</strong>
-              <br />
-              <span className="text-gray-500">{d}</span>
-            </div>
-          ))}
+          {guide.social.map(([t, d]) => {
+            // Robustesse : si le texte contient une URL brute, on l'affiche en
+            // petit lien propre au lieu de laisser déborder l'adresse complète.
+            const url = typeof d === "string" ? d.match(/https?:\/\/\S+/)?.[0] : undefined;
+            const text = url ? d.replace(url, "").replace(/\s+/g, " ").trim() : d;
+            return (
+              <div key={t} className="border border-gray-200 rounded-xl p-4">
+                <strong>{t}</strong>
+                <br />
+                {text && <span className="text-gray-500">{text}</span>}
+                {url && (
+                  <>
+                    {text && <br />}
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="text-xs text-blue-600 underline"
+                    >
+                      Open →
+                    </a>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
