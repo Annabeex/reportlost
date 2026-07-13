@@ -270,9 +270,9 @@ export default function GroupKitPage() {
           <CopyBlock label="Description (avec le lien reportlost)" text={kit.description} />
           <div className="text-xs text-gray-500">Lien promu : {kit.cityUrl}</div>
 
-          <h2 className="text-lg font-semibold text-gray-800 pt-2">Posts de démarrage</h2>
+          <h2 className="text-lg font-semibold text-gray-800 pt-2">📌 Post à épingler</h2>
           {kit.posts.map((p, i) => (
-            <CopyBlock key={`p-${i}`} label={`Post ${i + 1}`} text={p} />
+            <CopyBlock key={`p-${i}`} label={kit.posts.length === 1 ? "Post à épingler" : `Post ${i + 1}`} text={p} />
           ))}
 
           {kit.foundPosts.length > 0 && (

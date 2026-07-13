@@ -221,7 +221,13 @@ export default function AdminPage() {
   const PAGE_SIZE = 10;
 
   // Totaux EXACTS (comptés en base, pas seulement les 200 chargés)
-  const [totals, setTotals] = useState<{ lost: number | null; found: number | null; paid: number | null }>({
+  const [totals, setTotals] = useState<{
+    lost: number | null;
+    found: number | null;
+    paid: number | null;
+    posterPng?: number | null;
+    posterPdf?: number | null;
+  }>({
     lost: null,
     found: null,
     paid: null,
@@ -315,6 +321,8 @@ export default function AdminPage() {
           lost: payload?.lostTotal ?? null,
           found: payload?.foundTotal ?? null,
           paid: payload?.paidTotal ?? null,
+          posterPng: payload?.posterPngTotal ?? null,
+          posterPdf: payload?.posterPdfTotal ?? null,
         });
         setPage(1);
       } catch (e: any) {
@@ -444,6 +452,24 @@ export default function AdminPage() {
               <div className="px-4 py-2">
                 <div className="text-gray-500">TC</div>
                 <div className="font-semibold">{lostCount ? `${conversionRate}%` : '—'}</div>
+              </div>
+
+              {/* Dossiers publiés sans paiement */}
+              <div className="px-4 py-2">
+                <div className="text-gray-500">Free reports</div>
+                <div className="font-semibold text-gray-700">
+                  {totals.lost != null && totals.paid != null ? totals.lost - totals.paid : '—'}
+                </div>
+              </div>
+
+              {/* Affiches animaux téléchargées */}
+              <div className="px-4 py-2" title="Téléchargements du générateur d'affiche (PNG / PDF)">
+                <div className="text-gray-500">🖼️ Posters</div>
+                <div className="font-semibold text-purple-700">
+                  {totals.posterPng != null || totals.posterPdf != null
+                    ? `${(totals.posterPng ?? 0) + (totals.posterPdf ?? 0)} (${totals.posterPng ?? 0} png / ${totals.posterPdf ?? 0} pdf)`
+                    : '—'}
+                </div>
               </div>
             </div>
           </div>

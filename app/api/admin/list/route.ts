@@ -110,6 +110,20 @@ export async function GET(req: Request) {
       .select("id", { count: "exact", head: true })
       .gt("contribution", 0);
 
+    // Compteurs d'usage du générateur d'affiche (table events, non bloquant)
+    let posterPngTotal: number | null = null;
+    let posterPdfTotal: number | null = null;
+    try {
+      const [{ count: png }, { count: pdf }] = await Promise.all([
+        supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "poster_png"),
+        supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "poster_pdf"),
+      ]);
+      posterPngTotal = png ?? null;
+      posterPdfTotal = pdf ?? null;
+    } catch {
+      /* table absente = pas grave */
+    }
+
     // Villes qui apparaissent pour la 1ère fois : le 1er signalement de chaque ville
     // (payé ou non) -> c'est là qu'on propose de créer un groupe Facebook.
     let firstIds = new Set<string>();
@@ -165,6 +179,8 @@ export async function GET(req: Request) {
         lostTotal: lostTotal ?? null,
         foundTotal: foundTotal ?? null,
         paidTotal: paidTotal ?? null,
+        posterPngTotal,
+        posterPdfTotal,
       },
       { status: 200 }
     );

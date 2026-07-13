@@ -99,6 +99,18 @@ export default function LostPetPosterMaker() {
     }
   }
 
+  function track(event: string) {
+    // Compteur anonyme (nom de l'événement uniquement, jamais le contenu de l'affiche)
+    try {
+      fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }
+
   async function downloadPng() {
     setDownloading("png");
     try {
@@ -108,6 +120,7 @@ export default function LostPetPosterMaker() {
       a.download = `lost-${animal.toLowerCase()}${petName ? "-" + petName.toLowerCase() : ""}-poster.png`;
       a.href = canvas.toDataURL("image/png");
       a.click();
+      track("poster_png");
     } finally {
       setDownloading(null);
     }
@@ -125,6 +138,7 @@ export default function LostPetPosterMaker() {
       const imgH = (canvas.height * pageW) / canvas.width;
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, Math.max(0, (pageH - imgH) / 2), pageW, Math.min(imgH, pageH));
       pdf.save(`lost-${animal.toLowerCase()}${petName ? "-" + petName.toLowerCase() : ""}-poster.pdf`);
+      track("poster_pdf");
     } finally {
       setDownloading(null);
     }
