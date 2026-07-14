@@ -26,9 +26,34 @@ export async function GET() {
     if (data.length < PAGE) break;
   }
 
+  // lastmod réel pour les villes dont le guide a été publié/mis à jour :
+  // signale à Google exactement quelles pages ont changé, et quand.
+  const lastmodMap = new Map<string, string>();
+  try {
+    const { data: guides } = await sb
+      .from("city_guides")
+      .select("state_id, city_slug, updated_at")
+      .eq("status", "published");
+    for (const g of guides || []) {
+      lastmodMap.set(
+        `${String(g.state_id).toUpperCase()}/${String(g.city_slug).toLowerCase()}`,
+        new Date(g.updated_at).toISOString()
+      );
+    }
+  } catch {
+    /* non bloquant */
+  }
+
   const urls = rows
     .filter((r) => r.state_id && r.city_ascii)
-    .map((r) => `<url><loc>${BASE}${buildCityPath(r.state_id, r.city_ascii)}</loc><changefreq>weekly</changefreq></url>`)
+    .map((r) => {
+      const lm = lastmodMap.get(
+        `${String(r.state_id).toUpperCase()}/${String(r.city_ascii).trim().toLowerCase()}`
+      );
+      return `<url><loc>${BASE}${buildCityPath(r.state_id, r.city_ascii)}</loc>${
+        lm ? `<lastmod>${lm}</lastmod>` : ""
+      }<changefreq>weekly</changefreq></url>`;
+    })
     .join("");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

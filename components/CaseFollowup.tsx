@@ -115,7 +115,6 @@ export default function CaseFollowup({
               </span>
               <span className="font-semibold text-emerald-900 text-lg">{b.title}</span>
             </div>
-            <span className="text-sm text-emerald-700">Close</span>
           </div>
 
           {/* Corps blanc avec rendu riche */}

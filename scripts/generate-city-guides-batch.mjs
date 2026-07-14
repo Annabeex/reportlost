@@ -30,7 +30,7 @@ const AUTH = "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 1) Liste de travail : villes par population, sans guide existant
-const listRes = await fetch(`${BASE}/api/admin/city-guide?cities=1&limit=1000`, {
+const listRes = await fetch(`${BASE}/api/admin/city-guide?cities=1&limit=6000`, {
   headers: { Authorization: AUTH },
 });
 if (!listRes.ok) {
@@ -41,7 +41,7 @@ const { cities } = await listRes.json();
 const todo = (cities || []).filter((c) => !c.guide_status).slice(0, COUNT);
 
 if (!todo.length) {
-  console.log("🎉 Aucune ville sans guide dans le top 1000 — tout est déjà généré.");
+  console.log("🎉 Aucune ville sans guide dans le top 6000 — tout est déjà généré.");
   process.exit(0);
 }
 

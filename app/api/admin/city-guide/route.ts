@@ -22,18 +22,25 @@ export async function GET(req: NextRequest) {
   // Mode "liste de travail" : villes triées par population + statut de guide
   if (citiesMode) {
     const q = (req.nextUrl.searchParams.get("q") || "").trim();
-    const limit = Math.min(1000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
-    let query = sb
-      .from("us_cities")
-      .select("city_ascii, state_id, population, fb_group_done")
-      .order("population", { ascending: false })
-      .limit(limit);
-    if (q) query = query.ilike("city_ascii", `%${q}%`);
-    const [{ data: cities, error: cErr }, { data: guides }] = await Promise.all([
-      query,
-      sb.from("city_guides").select("state_id, city_slug, status"),
-    ]);
-    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    const limit = Math.min(10000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
+
+    // Pagination (Supabase plafonne ~1000 lignes par requête)
+    const cities: any[] = [];
+    for (let from = 0; from < limit; from += 1000) {
+      let query = sb
+        .from("us_cities")
+        .select("city_ascii, state_id, population, fb_group_done")
+        .order("population", { ascending: false })
+        .range(from, Math.min(from + 999, limit - 1));
+      if (q) query = query.ilike("city_ascii", `%${q}%`);
+      const { data, error: cErr } = await query;
+      if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+      if (!data?.length) break;
+      cities.push(...data);
+      if (data.length < 1000) break;
+    }
+
+    const { data: guides } = await sb.from("city_guides").select("state_id, city_slug, status");
     const statusMap = new Map(
       (guides || []).map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
     );
@@ -41,7 +48,7 @@ export async function GET(req: NextRequest) {
     for (const k of ["NY/new york", "CA/los angeles", "IL/chicago", "TX/houston", "AZ/phoenix"]) {
       statusMap.set(k, "legacy");
     }
-    const rows = (cities || []).map((c: any) => ({
+    const rows = cities.map((c: any) => ({
       city: c.city_ascii,
       state: c.state_id,
       population: c.population ?? null,

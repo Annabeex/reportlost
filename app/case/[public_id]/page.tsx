@@ -115,7 +115,7 @@ export default async function Page({
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, case_followup"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_followup"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -135,7 +135,7 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, case_followup"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_followup"
           )
           .eq("public_id", num)
           .limit(1)
@@ -235,6 +235,85 @@ export default async function Page({
             <p className="mt-2 text-sm text-gray-600">{subtitleParts.join(" • ")}</p>
           )}
         </div>
+
+        {/* Statut du dossier : la valeur du service rendue visible */}
+        {Number(data.contribution || 0) > 0 && (
+          <section className="rounded-2xl border border-emerald-200 bg-white px-6 py-4">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-700">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <strong>
+                  {Number(data.contribution) >= 30
+                    ? "Pet Priority search"
+                    : Number(data.contribution) >= 25
+                    ? "Maximum search"
+                    : "Extended search"}
+                </strong>
+                &nbsp;active
+              </span>
+              {data.created_at && (
+                <span>
+                  🔎 Automated web monitoring until{" "}
+                  <strong>
+                    {new Date(
+                      new Date(data.created_at).getTime() +
+                        (Number(data.contribution) >= 25 ? 365 : 180) * 86400000
+                    ).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </strong>
+                </span>
+              )}
+              <span>
+                ✉️ Questions? Just reply to any of our emails, your case number travels with it.
+              </span>
+            </div>
+          </section>
+        )}
+
+        {/* Planche de stickers QR : incluse à partir de l'offre Maximum (25$) */}
+        {Number(data.contribution || 0) >= 25 && (
+          <section className="rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-indigo-900">
+                <div className="font-semibold">🎁 Your QR sticker sheet is included with this plan</div>
+                <p className="mt-1">
+                  Print it and tag your valuables: anyone who finds a tagged item can scan the code and
+                  reach you instantly through our protected relay, your personal details stay private.
+                </p>
+              </div>
+              <a
+                href={`/api/sticker-sheet?public_id=${encodeURIComponent(publicId)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
+              >
+                ⬇️ Download my sticker sheet (PDF)
+              </a>
+            </div>
+          </section>
+        )}
+
+        {/* Affiche gratuite pour les animaux */}
+        {String(data.primary_category || "").toLowerCase() === "pets" && (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-amber-900">
+                <div className="font-semibold">🐕 Print a lost pet poster (free)</div>
+                <p className="mt-1">
+                  Posters around the neighborhood remain one of the fastest ways to find a pet, make one in
+                  2 minutes with your pet&rsquo;s photo and a scannable QR code.
+                </p>
+              </div>
+              <a
+                href="/lost-pet-poster"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
+              >
+                Make my poster →
+              </a>
+            </div>
+          </section>
+        )}
 
         <section className="mt-4">
           {isEdit ? (

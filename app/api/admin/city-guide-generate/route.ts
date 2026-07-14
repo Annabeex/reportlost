@@ -75,12 +75,23 @@ export async function POST(req: NextRequest) {
     if (!sb) return NextResponse.json({ error: "Supabase non configuré" }, { status: 500 });
 
     const stateAbbr = String(state).toUpperCase();
-    const { data: cityRow } = await sb
+    let { data: cityRow } = await sb
       .from("us_cities")
       .select("id, city_ascii, state_id, state_name, image_url")
       .eq("state_id", stateAbbr)
       .ilike("city_ascii", String(city).trim())
       .maybeSingle();
+    // Rattrapage : noms avec espace final ou suffixe recensement ("Milford city ")
+    if (!cityRow) {
+      const { data: fuzzyRows } = await sb
+        .from("us_cities")
+        .select("id, city_ascii, state_id, state_name, image_url")
+        .eq("state_id", stateAbbr)
+        .ilike("city_ascii", `${String(city).trim()}%`)
+        .order("population", { ascending: false })
+        .limit(1);
+      cityRow = fuzzyRows?.[0] || null;
+    }
     if (!cityRow) return NextResponse.json({ error: `Ville introuvable : ${city}, ${stateAbbr}` }, { status: 404 });
 
     const cityName = cityRow.city_ascii;
