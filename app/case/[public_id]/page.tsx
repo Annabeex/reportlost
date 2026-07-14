@@ -57,6 +57,8 @@ type SupabaseLostRow = {
   first_name?: string | null; // pour le bouton Send (éditeur)
   email?: string | null;
   contribution?: number | null;
+  paid?: boolean | null;
+  primary_category?: string | null;
   case_followup?: any;
 };
 
