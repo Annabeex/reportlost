@@ -436,9 +436,12 @@ Thank you for using ReportLost.`;
         }
       }
 
-      // --- Support notification (⚠️ AWAITED : en SMTP direct, un fire & forget
-      // serait tué au gel de la fonction serverless dès la réponse envoyée) ---
-      try {
+      // --- Support notification (⚠️ AWAITED) ---
+      // Une seule notification par dossier : au moment où le mail client vient
+      // d'être envoyé (email juste capturé). Les sauvegardes suivantes du même
+      // dossier ne re-notifient plus (fini les doublons sur support@).
+      const justEmailed = mail_sent && !existing.mail_sent;
+      if (justEmailed) try {
         const subjectBase = `Lost item : ${other.title || "Untitled"}`;
         const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
         const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");
@@ -504,6 +507,7 @@ Contribution : ${other.contribution ?? 0}`;
         await triggerSlugGeneration(req, clientProvidedId);
 
         // send user confirmation if not already done (avec recheck)
+        let justEmailedById = false;
         if (!existing.mail_sent && (other.email || email)) {
           try {
             const shouldSend = await canSendUserMail(supabase, clientProvidedId);
@@ -578,6 +582,7 @@ Thank you for using ReportLost.`;
               });
 
               if (okUser) {
+                justEmailedById = true;
                 try {
                   await supabase.from("lost_items").update({ mail_sent: true }).eq("id", clientProvidedId);
                   console.log("✅ Confirmation email sent and mail_sent persisted for", clientProvidedId);
@@ -595,8 +600,9 @@ Thank you for using ReportLost.`;
           }
         }
 
-        // --- Support notification (⚠️ AWAITED, cf. commentaire branche existing) ---
-        try {
+        // --- Support notification (⚠️ AWAITED) : une seule par dossier,
+        // au moment où l'email client vient d'être capturé ---
+        if (justEmailedById) try {
           const subjectBase = `Lost item : ${other.title || "Untitled"}`;
           const subject = other.city ? `${subjectBase} à ${other.city}` : subjectBase;
           const dateAndSlot = [other.date, other.time_slot].filter(Boolean).join(" ");

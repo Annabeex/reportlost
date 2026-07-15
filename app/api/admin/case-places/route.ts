@@ -51,16 +51,23 @@ export async function POST(req: NextRequest) {
 
     const { data: item } = await sb
       .from("lost_items")
-      .select("id, public_id, title, description, primary_category, city, state_id, date, time_slot, address, paid")
+      .select(
+        "id, public_id, title, description, primary_category, city, state_id, date, time_slot, address, loss_street, loss_neighborhood, place_type, place_type_other, paid"
+      )
       .eq("id", lostItemId)
       .maybeSingle();
     if (!item) return NextResponse.json({ error: "Dossier introuvable" }, { status: 404 });
     if (!item.paid) return NextResponse.json({ error: "Réservé aux dossiers payants" }, { status: 403 });
 
+    const lossPlace = [item.loss_street, item.loss_neighborhood, (item as any).place_type_other || item.place_type]
+      .filter(Boolean)
+      .join(", ");
     const report = `Objet : ${item.title || item.description || "?"}
 Description : ${item.description || "?"}
 Perdu à : ${item.city || "?"}${item.state_id ? ", " + item.state_id : ""}${item.address ? " — " + item.address : ""}
-Date : ${item.date || "?"} (${item.time_slot || "?"})`;
+Lieu précis : ${lossPlace || "?"}
+Date : ${item.date || "?"} (${item.time_slot || "?"})
+Adresse relais anonyme du dossier : item${item.public_id || ""}@reportlost.org`;
 
     // 1) Génération des requêtes Google adaptées au dossier
     const queriesRaw = await callClaude(
@@ -78,6 +85,11 @@ Date : ${item.date || "?"} (${item.time_slot || "?"})`;
       ];
     }
     queries = queries.slice(0, 5);
+    // Toujours : un bâtiment public proche du lieu de perte (adresse de référence
+    // pour les formulaires de police qui exigent une adresse)
+    queries.push(
+      `${lossPlace ? lossPlace + " " : ""}${item.city} ${item.state_id || ""} public library OR city hall OR post office address`
+    );
 
     // 2) Recherches Serper en parallèle
     const resultSets = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
