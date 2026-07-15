@@ -1,5 +1,5 @@
 // app/lost-and-found/category/[category]/page.tsx
-export const revalidate = 0; // fresh data on every request
+export const revalidate = 3600; // ISR 1h : les signalements récents suffisent à l'heure près
 
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -35,7 +35,9 @@ type Report = {
 // ---------- Supabase ----------
 function getSupabase(): SupabaseClient {
   // 1) admin (service role) if available
-  const admin = getSupabaseAdmin();
+  // fresh:false : lectures cachables, sinon le fetch no-store rendrait la page
+  // dynamique et annulerait l'ISR (même piège que sur les pages ville).
+  const admin = getSupabaseAdmin({ fresh: false });
   if (admin) return admin as unknown as SupabaseClient;
 
   // 2) fallback public vars

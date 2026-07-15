@@ -7,7 +7,13 @@ export const config = {
 
     // UI admin
     "/admin/:path*",
+
+    // Pages de dev/test : jamais publiques (Basic Auth = aussi invisibles pour Google)
     "/poster-preview/:path*",
+    "/dashboardmodule/:path*",
+    "/dev-reportcontribution/:path*",
+    "/vision-tester/:path*",
+    "/scan-demo/:path*",
 
     // APIs sensibles (service-role derrière)
     "/api/admin/:path*",
@@ -63,6 +69,10 @@ export function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/poster-preview") ||
+    pathname.startsWith("/dashboardmodule") ||
+    pathname.startsWith("/dev-reportcontribution") ||
+    pathname.startsWith("/vision-tester") ||
+    pathname.startsWith("/scan-demo") ||
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/api/case_followup") || // 🔒 comptes rendus + notes internes (lecture ET écriture)
     pathname === "/api/stations/update"

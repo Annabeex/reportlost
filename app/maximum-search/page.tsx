@@ -246,8 +246,8 @@ export default function Page({
             <div>
               <h3 className="font-semibold">How long do you keep searching?</h3>
               <p className="mt-2 text-gray-700">
-                We actively run the outreach and monitoring for the period stated during checkout (typically 30 days),
-                and leave your report live for later matches.
+                Your report stays active and keeps searching for a match for the full duration of your plan,
+                6 months with Extended search and 12 months with Maximum search, starting the day it is activated.
               </p>
             </div>
             <div>
