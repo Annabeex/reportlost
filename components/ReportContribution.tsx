@@ -549,7 +549,7 @@ export default function ReportContribution({
                   className="w-5 h-5"
                 />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                  Standard (Free)
+                  Free listing
                 </h3>
               </div>
 

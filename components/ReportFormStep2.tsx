@@ -158,13 +158,21 @@ export default function ReportFormStep2({
     onChange({ target: { name: "consent_authorized", value: checked } });
   };
 
+  // ✅ Validation inline (plus de popup alert())
+  const [formError, setFormError] = useState<string | null>(null);
+  const fail = (msg: string) => {
+    setFormError(msg);
+    return undefined;
+  };
+
   const goToPrefs = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.first_name?.trim()) return alert("Please enter your first name.");
-    if (!formData.last_name?.trim()) return alert("Please enter your last name.");
-    if (!formData.email?.trim()) return alert("Please enter your email address.");
-    if (!emailRegex.test(formData.email.trim())) return alert("Please enter a valid email address.");
-    if (!confirmAll) return alert("Please confirm the checkbox.");
+    if (!formData.first_name?.trim()) return fail("Please enter your first name.");
+    if (!formData.last_name?.trim()) return fail("Please enter your last name.");
+    if (!formData.email?.trim()) return fail("Please enter your email address.");
+    if (!emailRegex.test(formData.email.trim())) return fail("Please enter a valid email address.");
+    if (!confirmAll) return fail("Please confirm the declaration checkbox above.");
+    setFormError(null);
     setStage("prefs");
   };
 
@@ -223,6 +231,9 @@ export default function ReportFormStep2({
                 onChange={onChange as any}
                 className={fieldCls}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Only used for updates about your search — never published.
+              </p>
             </div>
             <div>
               <label className="block font-medium mb-1">Phone number</label>
@@ -239,6 +250,28 @@ export default function ReportFormStep2({
               <input
                 name="address"
                 value={formData.address || ""}
+                onChange={onChange as any}
+                className={fieldCls}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block font-medium mb-1">
+                Date of birth <span className="text-green-700">(optional)</span>
+                <span className="group relative ml-1 inline-block align-middle">
+                  <span className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">
+                    i
+                  </span>
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-72 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    Some police departments ask for a date of birth when we file the lost property
+                    report on your behalf. If left empty, we may have to skip that specific step —
+                    everything else in your plan stays unchanged.
+                  </span>
+                </span>
+              </label>
+              <input
+                type="date"
+                name="birth_date"
+                value={formData.birth_date || ""}
                 onChange={onChange as any}
                 className={fieldCls}
               />
@@ -310,6 +343,12 @@ export default function ReportFormStep2({
               </span>
             </label>
           </div>
+
+          {formError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formError}
+            </div>
+          )}
 
           <div className="flex justify-between pt-2">
             <button

@@ -124,6 +124,38 @@ export async function GET(req: Request) {
       /* table absente = pas grave */
     }
 
+    // 📊 Production : guides publiés (total / 7 jours / 24h) + groupes FB (total / 7 jours)
+    // 📈 Visites 7 jours par provenance (organique / social / IA / direct)
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    const dayAgo = new Date(Date.now() - 86400000).toISOString();
+    const production: Record<string, number | null> = {};
+    const visits: Record<string, number | null> = {};
+    try {
+      const cnt = (q: any) => q.then((r: any) => r.count ?? 0, () => 0);
+      const [gTotal, gWeek, gDay, fbTotal, fbWeek, vOrg, vSoc, vAi, vDir] = await Promise.all([
+        cnt(supabase.from("city_guides").select("id", { count: "exact", head: true }).eq("status", "published")),
+        cnt(supabase.from("city_guides").select("id", { count: "exact", head: true }).eq("status", "published").gte("updated_at", weekAgo)),
+        cnt(supabase.from("city_guides").select("id", { count: "exact", head: true }).eq("status", "published").gte("updated_at", dayAgo)),
+        cnt(supabase.from("us_cities").select("id", { count: "exact", head: true }).eq("fb_group_done", true)),
+        cnt(supabase.from("us_cities").select("id", { count: "exact", head: true }).eq("fb_group_done", true).gte("fb_group_done_at", weekAgo)),
+        cnt(supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "visit_organic").gte("created_at", weekAgo)),
+        cnt(supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "visit_social").gte("created_at", weekAgo)),
+        cnt(supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "visit_ai").gte("created_at", weekAgo)),
+        cnt(supabase.from("events").select("id", { count: "exact", head: true }).eq("event", "visit_direct").gte("created_at", weekAgo)),
+      ]);
+      production.guidesTotal = gTotal;
+      production.guidesWeek = gWeek;
+      production.guidesDay = gDay;
+      production.fbTotal = fbTotal;
+      production.fbWeek = fbWeek;
+      visits.organic = vOrg;
+      visits.social = vSoc;
+      visits.ai = vAi;
+      visits.direct = vDir;
+    } catch {
+      /* non bloquant */
+    }
+
     // Villes qui apparaissent pour la 1ère fois : le 1er signalement de chaque ville
     // (payé ou non) -> c'est là qu'on propose de créer un groupe Facebook.
     let firstIds = new Set<string>();
@@ -181,6 +213,8 @@ export async function GET(req: Request) {
         paidTotal: paidTotal ?? null,
         posterPngTotal,
         posterPdfTotal,
+        production,
+        visits,
       },
       { status: 200 }
     );

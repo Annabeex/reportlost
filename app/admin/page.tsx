@@ -227,6 +227,8 @@ export default function AdminPage() {
     paid: number | null;
     posterPng?: number | null;
     posterPdf?: number | null;
+    production?: Record<string, number | null>;
+    visits?: Record<string, number | null>;
   }>({
     lost: null,
     found: null,
@@ -323,6 +325,8 @@ export default function AdminPage() {
           paid: payload?.paidTotal ?? null,
           posterPng: payload?.posterPngTotal ?? null,
           posterPdf: payload?.posterPdfTotal ?? null,
+          production: payload?.production ?? undefined,
+          visits: payload?.visits ?? undefined,
         });
         setPage(1);
       } catch (e: any) {
@@ -468,6 +472,36 @@ export default function AdminPage() {
                 <div className="font-semibold text-purple-700">
                   {totals.posterPng != null || totals.posterPdf != null
                     ? `${(totals.posterPng ?? 0) + (totals.posterPdf ?? 0)} (${totals.posterPng ?? 0} png / ${totals.posterPdf ?? 0} pdf)`
+                    : '—'}
+                </div>
+              </div>
+
+              {/* Production : guides ville publiés */}
+              <div className="px-4 py-2" title="Pages villes enrichies publiées (total · 7 derniers jours · 24h)">
+                <div className="text-gray-500">🏙️ Guides</div>
+                <div className="font-semibold text-blue-700">
+                  {totals.production?.guidesTotal != null
+                    ? `${totals.production.guidesTotal} (+${totals.production.guidesWeek ?? 0} / 7j · +${totals.production.guidesDay ?? 0} / 24h)`
+                    : '—'}
+                </div>
+              </div>
+
+              {/* Production : groupes Facebook créés */}
+              <div className="px-4 py-2" title="Groupes Facebook créés (total · 7 derniers jours)">
+                <div className="text-gray-500">👥 Groupes FB</div>
+                <div className="font-semibold text-[#1877F2]">
+                  {totals.production?.fbTotal != null
+                    ? `${totals.production.fbTotal} (+${totals.production.fbWeek ?? 0} / 7j)`
+                    : '—'}
+                </div>
+              </div>
+
+              {/* Visites 7 jours par provenance */}
+              <div className="px-4 py-2" title="Sessions des 7 derniers jours par provenance (compteur interne anonyme)">
+                <div className="text-gray-500">📈 Visites 7j</div>
+                <div className="font-semibold text-gray-800">
+                  {totals.visits?.organic != null
+                    ? `${totals.visits.organic ?? 0} orga · ${totals.visits.social ?? 0} social · ${totals.visits.ai ?? 0} IA · ${totals.visits.direct ?? 0} direct`
                     : '—'}
                 </div>
               </div>

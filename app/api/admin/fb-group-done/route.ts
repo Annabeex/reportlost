@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
 
     const { error } = await sb
       .from("us_cities")
-      .update({ fb_group_done: !!done })
+      .update({ fb_group_done: !!done, fb_group_done_at: done ? new Date().toISOString() : null })
       .eq("state_id", String(state).toUpperCase())
       .ilike("city_ascii", String(city).trim());
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

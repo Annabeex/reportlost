@@ -239,11 +239,19 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
     }
   };
 
+  // ✅ Validation inline (plus de popup alert() qui casse le flux, surtout mobile)
+  const [formError, setFormError] = useState<string | null>(null);
+  const fail = (msg: string) => {
+    setFormError(msg);
+    return undefined;
+  };
+
   const goToContextPhase = () => {
     if (!(formData.title || "").trim() || !formData.description?.trim() || !formData.date?.trim()) {
-      alert("Please fill in all required fields.");
+      fail("Please fill in the item, its description and the date of loss to continue.");
       return;
     }
+    setFormError(null);
     setPhase("context");
   };
 
@@ -254,36 +262,37 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
       return;
     }
 
-    if (!formData.city?.trim()) return alert("Please enter the city.");
-    if (!transportAnswer) return alert("Please answer the transport question.");
+    if (!formData.city?.trim()) return fail("Please enter the city.");
+    if (!transportAnswer) return fail("Please answer the transport question just above.");
 
     if (transportAnswer === "yes") {
       const t = (formData.transport_type || "").toLowerCase();
       if (!formData.transport_type && !formData.transport_type_other) {
-        alert("Please select the transport type or enter one.");
+        fail("Please select the transport type or enter one.");
         return;
       }
       if (t === "airplane") {
-        if (!formData.airline_name?.trim()) return alert("Please enter the airline name.");
-        if (!formData.travel_number?.trim()) return alert("Please enter the flight number.");
+        if (!formData.airline_name?.trim()) return fail("Please enter the airline name.");
+        if (!formData.travel_number?.trim()) return fail("Please enter the flight number.");
       }
       if (t === "metro / subway" || t === "tram") {
         if (formData.metro_line_known === true && !formData.metro_line?.trim()) {
-          return alert("Please enter the metro/tram line.");
+          return fail("Please enter the metro/tram line.");
         }
       }
       if (t === "train") {
-        if (!formData.train_company?.trim()) return alert("Please select the train company.");
+        if (!formData.train_company?.trim()) return fail("Please select the train company.");
       }
       if (t === "rideshare (uber/lyft)") {
-        if (!formData.rideshare_platform?.trim()) return alert("Please select the rideshare platform.");
+        if (!formData.rideshare_platform?.trim()) return fail("Please select the rideshare platform.");
       }
     } else {
       if (!formData.place_type?.trim() && !formData.place_type_other?.trim()) {
-        return alert("Please specify the place or add one.");
+        return fail("Please specify the place where you lost it.");
       }
     }
 
+    setFormError(null);
     onNext();
   };
 
@@ -356,6 +365,30 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
               contact details on the next step.
             </div>
           )}
+
+          {/* 🔒 Détail privé vérificateur : jamais publié, sert à filtrer les réclamations */}
+          <div>
+            <label className="block font-medium mb-2">
+              {petMode ? "A private detail about your pet" : "A private detail about your item"}{" "}
+              <span className="text-green-700">(optional, never published)</span>
+            </label>
+            <input
+              type="text"
+              name="private_detail"
+              placeholder={
+                petMode
+                  ? "e.g. the name engraved on the tag, a hidden scar, the vet's name on the chip"
+                  : "e.g. an engraving, what's inside, a scratch only you know about"
+              }
+              value={formData.private_detail || ""}
+              onChange={onChange}
+              className="w-full rounded-lg border border-blue-200 px-3 py-2.5 text-[16px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              This detail stays private. If someone claims they found{" "}
+              {petMode ? "your pet" : "your item"}, we use it to make sure it really is yours.
+            </p>
+          </div>
 
           <div>
             <label className="block font-medium">
@@ -435,6 +468,11 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
             </div>
           )}
 
+          {formError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formError}
+            </div>
+          )}
           <div className="flex justify-end pt-4">
             <button className={btnGreen} onClick={goToContextPhase}>
               Continue
@@ -841,6 +879,11 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
             </>
           )}
 
+          {formError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formError}
+            </div>
+          )}
           <div className="flex justify-between pt-4">
             <button
               type="button"

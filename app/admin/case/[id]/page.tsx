@@ -383,7 +383,13 @@ export default function CasePage() {
             )}
             <div className="mt-1 text-sm text-gray-600">
               👤 {clientName} · {item.email} {item.phone ? `· ${item.phone}` : ""}
+              {(item as any).birth_date ? ` · 🎂 ${(item as any).birth_date}` : ""}
             </div>
+            {(item as any).private_detail && (
+              <div className="mt-1 inline-block rounded bg-rose-50 px-2 py-0.5 text-xs text-rose-700">
+                🔒 Détail privé (jamais publié) : {(item as any).private_detail}
+              </div>
+            )}
           </div>
         </div>
       </div>

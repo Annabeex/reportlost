@@ -222,12 +222,11 @@ export default async function Page({
   const publicId = String(data.public_id || "");
 
   // Sous-titre : "Item … • Location … • Date of loss …"
+  const cityClean = String(data.city || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
   const subtitleParts = [
     data.title || data.description ? `Item: ${data.title || data.description}` : null,
-    data.city || data.state_id
-      ? `Location: ${[data.city, data.state_id].filter(Boolean).join(" (")}${
-          data.state_id ? ")" : ""
-        }`
+    cityClean || data.state_id
+      ? `Location: ${cityClean}${data.state_id ? ` (${data.state_id})` : ""}`
       : null,
     data.date ? `Date of loss: ${data.date}` : null,
   ].filter(Boolean);

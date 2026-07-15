@@ -6,7 +6,15 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED = new Set(["poster_png", "poster_pdf"]);
+const ALLOWED = new Set([
+  "poster_png",
+  "poster_pdf",
+  "visit_organic",
+  "visit_social",
+  "visit_ai",
+  "visit_direct",
+  "visit_referral",
+]);
 
 export async function POST(req: NextRequest) {
   try {

@@ -24,7 +24,7 @@ async function buildContext(lostItemId: string): Promise<string> {
     sb
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, contribution, paid, search_status, last_searched_at"
+        "id, public_id, created_at, title, description, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, birth_date, private_detail, contribution, paid, search_status, last_searched_at"
       )
       .eq("id", lostItemId)
       .maybeSingle(),
@@ -60,7 +60,10 @@ async function buildContext(lostItemId: string): Promise<string> {
 - Client : ${[item.first_name, item.last_name].filter(Boolean).join(" ") || "?"} <${item.email || "?"}>${item.phone ? " tel " + item.phone : ""}
 - Contribution : ${item.contribution ?? 0} $ — payé : ${item.paid ? "oui" : "non"}
 - Signalé le : ${fmtDate(item.created_at)} — veille : ${item.search_status || "?"} (dernier passage ${fmtDate(item.last_searched_at)})
-- Adresse relais anonyme du dossier (à donner aux établissements) : item${item.public_id || ""}@reportlost.org`);
+- Adresse relais anonyme du dossier (à donner aux établissements) : item${item.public_id || ""}@reportlost.org
+- Détail privé vérificateur (⚠️ JAMAIS dans un mail public ni à un établissement, sert uniquement à vérifier une réclamation) : ${(item as any).private_detail || "(non renseigné)"}
+- Date de naissance (pour dépôts police uniquement) : ${(item as any).birth_date || "(non renseignée)"}
+- Adresse postale du client : ${(item as any).address || "(non renseignée)"}`);
 
   if (messages?.length) {
     parts.push(
@@ -121,7 +124,7 @@ SUBJECT: <sujet>
 <<<EMAIL
 <corps du mail>
 EMAIL>>>
-- RÈGLES DE TOUT BROUILLON D'EMAIL : texte brut sans AUCUN symbole markdown (pas de **, pas de #), pas de tirets de ponctuation, jamais de placeholder ([Client Name], [Phone]...). Pour les établissements : l'adresse de contact à communiquer est UNIQUEMENT l'adresse relais anonyme du dossier (item<public_id>@reportlost.org, indiquée dans le contexte), jamais les coordonnées personnelles du client, et la signature est exactement "Anna\nReportLost.org". Pour les clients : signature "Warm regards,\nAnna\nLost Item Investigation Team\nReportLost.org".
+- RÈGLES DE TOUT BROUILLON D'EMAIL : texte brut sans AUCUN symbole markdown (pas de **, pas de #), pas de tirets de ponctuation, jamais de placeholder ([Client Name], [Phone]...). Coordonnées du client : l'email personnel du client peut être transmis UNIQUEMENT aux organismes publics (police, mairie/city hall, animal control) quand c'est utile au dossier ; pour tout établissement privé (hôtel, commerce, restaurant, transport privé...), UNIQUEMENT l'adresse relais anonyme du dossier (item<public_id>@reportlost.org, indiquée dans le contexte). Signature établissements : exactement "Anna\nReportLost.org". Pour les clients : signature "Warm regards,\nAnna\nLost Item Investigation Team\nReportLost.org".
 - Adapte-toi aux consignes d'Anna dans le chat (ton, contenu, geste commercial...). Sois concis.
 - Rien n'est envoyé automatiquement : Anna valide toujours manuellement.
 
