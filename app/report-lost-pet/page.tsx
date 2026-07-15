@@ -11,12 +11,12 @@ const CANONICAL = `${BASE}/report-lost-pet`;
 export const metadata: Metadata = {
   title: "Report a Lost Pet in the USA — Priority Search | ReportLost",
   description:
-    "Lost your dog or cat? File a priority report: we contact local shelters, animal control and rescue services, post in local lost pet groups including private ones, and monitor the web for 12 months.",
+    "Lost your dog or cat? File a priority report: we contact local shelters, animal control and rescue services, post in local lost pet groups including private ones, and your report stays active for 12 months.",
   alternates: { canonical: CANONICAL },
   openGraph: {
     title: "Report a Lost Pet in the USA | ReportLost.org",
     description:
-      "Priority handling for lost pets: shelters and animal control contacted, alert posted in local groups, 12-month monitoring.",
+      "Priority handling for lost pets: shelters and animal control contacted, alert posted in local groups, report active for 12 months.",
     url: CANONICAL,
     siteName: "ReportLost.org",
     type: "website",

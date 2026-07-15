@@ -44,7 +44,7 @@ const FAQ = [
   },
   {
     q: "What else should I do besides posters?",
-    a: "File a report with your local animal shelter and animal control, check their found listings daily, post on Nextdoor and local Facebook groups, and make sure your pet's microchip registration is up to date. ReportLost can also run this outreach for you and monitor the web for months.",
+    a: "File a report with your local animal shelter and animal control, check their found listings daily, post on Nextdoor and local Facebook groups, and make sure your pet's microchip registration is up to date. ReportLost can also run this outreach for you and keep your report active, searching for a match, for up to 12 months.",
   },
   {
     q: "Does ReportLost help find lost pets?",
@@ -139,8 +139,8 @@ export default function LostPetPosterPage() {
           <h2 className="text-2xl font-bold text-gray-900">Want us to run the search with you?</h2>
           <p className="mx-auto mt-2 max-w-2xl text-gray-700">
             ReportLost can contact local shelters and services, publish your alert on social channels including
-            local community groups, and monitor the web for new &ldquo;found pet&rdquo; posts for months — while
-            you cover the neighborhood with posters.
+            local community groups, and keep your report active, checking new &ldquo;found pet&rdquo; posts for a
+            match for up to 12 months — while you cover the neighborhood with posters.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link

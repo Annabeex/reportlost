@@ -370,8 +370,8 @@ export default function ReportContribution({
                       <BulletIcon />
                       <span className="text-gray-800">
                         A dedicated visual is published on local social channels, <strong>including private lost pet
-                        groups our team is a member of</strong>, with <strong>12 months</strong> of web monitoring and
-                        a protected relay email address.
+                        groups our team is a member of</strong>. Your report stays active for <strong>12 months</strong>,
+                        searching for a match the whole time, with a protected relay email address.
                       </span>
                     </li>
                   </ul>
@@ -454,7 +454,7 @@ export default function ReportContribution({
                       Our team manually distributes your report through the appropriate channels, including relevant authorities and official services, and ensures continued monitoring and follow-up actions when applicable.
                       <br />
                       <br />
-                      Our AI monitors the web and social sources for <strong>12 months</strong>, and every potential match is reviewed by a team member before it reaches you. Includes a printable PDF sheet of secure ID stickers.
+                      Your report stays active for <strong>12 months</strong>: our AI keeps checking new online listings for a match the whole time, and every potential match is reviewed by a team member before it reaches you. Includes a printable PDF sheet of secure ID stickers.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
@@ -519,7 +519,7 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      Your report is actively reviewed and searched by our system and team member across major public databases and online sources, with <strong>6 months</strong> of web and social monitoring.
+                      Your report is actively reviewed and searched by our system and team member across major public databases and online sources, and stays active for <strong>6 months</strong>, searching for a match the whole time.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">

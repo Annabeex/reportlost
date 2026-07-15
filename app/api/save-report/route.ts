@@ -361,7 +361,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and monitors the web for you.
+One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -390,7 +390,7 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 14px">
       One last step to publish it: choose your search level on the next page,
       free public listing, or an assisted search where our team files the report locally,
-      posts alerts and monitors the web for months on your behalf.
+      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -527,7 +527,7 @@ Contribution : ${other.contribution ?? 0}`;
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and monitors the web for you.
+One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -556,7 +556,7 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 14px">
       One last step to publish it: choose your search level on the next page,
       free public listing, or an assisted search where our team files the report locally,
-      posts alerts and monitors the web for months on your behalf.
+      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -720,7 +720,7 @@ const { data: foundRows, error: findErr } = await supabase
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and monitors the web for you.
+One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -749,7 +749,7 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 14px">
       One last step to publish it: choose your search level on the next page,
       free public listing, or an assisted search where our team files the report locally,
-      posts alerts and monitors the web for months on your behalf.
+      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>

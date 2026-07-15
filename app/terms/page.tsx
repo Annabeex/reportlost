@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 const termsContent = `
 ## Terms of Use – ReportLost.org
 
-_Last updated: [DATE]_
+_Last updated: July 15, 2026_
 
 Welcome to ReportLost.org. By accessing or using this platform, you agree to the following Terms of Use.
 
@@ -29,9 +29,16 @@ ReportLost.org offers:
 - Publication of reports on ReportLost.org to improve online visibility and searchability.
 
 **B) Optional paid assistance**
-- Human review and manual follow-up actions,
-- Outreach to relevant lost-and-found services or locations,
-- Additional visibility actions depending on the selected assistance plan.
+
+Three assistance plans are offered at checkout, each as a one-time fee:
+
+- **Extended search ($12):** your report is reviewed and distributed through relevant channels, and stays active in our matching search for **6 months** from activation.
+- **Maximum search ($25):** our team manually contacts the relevant local services and establishments, publishes a dedicated social alert, provides a printable sheet of identification stickers, and reviews every potential match before it reaches you. Your report stays active for **12 months** from activation.
+- **Pet Priority ($30):** priority handling for lost pets, including outreach to local shelters, animal control and rescue services, and publication in local lost pet groups. Your report stays active for **12 months** from activation.
+
+A free-choice contribution of $12 or more is handled as the Extended search plan.
+
+Where a police department or public office accepts lost property reports filed by a third party, we file the report on your behalf. Where local rules require the owner to file personally, we provide the appropriate contact details, links and instructions instead.
 
 Details and pricing for paid assistance are clearly displayed before purchase.
 
@@ -52,7 +59,7 @@ ReportLost.org reserves the right to remove or redact content that violates thes
 
 Submitting a report is **free**.
 
-Optional paid assistance plans may be offered. When a paid assistance plan is purchased, fees generally cover work that may begin shortly after purchase (review, preparation, outreach, monitoring, and related actions).
+Paid assistance plans are one-time fees, not subscriptions, and are processed securely by Stripe. When a plan is purchased, the fee covers work that begins shortly after purchase (review, preparation, outreach, keeping the report active in our matching search, and related actions) for the duration stated in the plan (6 or 12 months).
 
 For this reason, paid assistance fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
 

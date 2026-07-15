@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
         .from("us_cities")
         .select("city_ascii, state_id, population, fb_group_done")
         .order("population", { ascending: false })
+        // ⚠️ départage stable : sans lui, les villes à population égale "sautent"
+        // entre les pages et créent des trous dans les lots
+        .order("id", { ascending: true })
         .range(from, Math.min(from + 999, limit - 1));
       if (q) query = query.ilike("city_ascii", `%${q}%`);
       const { data, error: cErr } = await query;

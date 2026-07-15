@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 const privacyContent = `
 ## Privacy Policy – ReportLost.org
 
-_Last updated: [DATE]_
+_Last updated: July 15, 2026_
 
 ### 1. Who We Are
 
@@ -20,9 +20,13 @@ We collect only the information strictly necessary to operate the service:
 
 - Contact details (such as name and email address),
 - Information related to lost or found items (description, location, date),
-- Optional photos or supporting information you choose to provide.
+- Optional photos or supporting information you choose to provide,
+- Optional contact and identification details (phone number, postal address, date of birth). The date of birth is requested only because some police departments require it when we file a lost property report on your behalf,
+- An optional private verification detail about your item, used solely by our team to verify ownership claims. It is **never published**.
 
 All data is provided voluntarily by users.
+
+**What appears publicly:** a published report shows the item description, category, city and date of loss. Your name, email address, phone number, postal address, date of birth and private verification detail are never published. Finders reach you through a protected relay email address, so your personal email is not exposed.
 
 ---
 
@@ -43,10 +47,19 @@ We **do not sell, rent, or monetize** personal data.
 
 We only share personal data when necessary and appropriate:
 
-- With third parties involved in lost-and-found efforts, when authorized by the user,
-- With technical service providers required to operate the platform (such as hosting or payment services).
+- With third parties involved in lost-and-found efforts: as part of paid assistance, we may share your contact details with public organizations (such as a police department, city services or animal control) when filing or following up on your report. Private establishments (hotels, venues, businesses) are given a protected relay address, not your personal email,
+- With technical service providers required to operate the platform.
 
-Payment processing is handled exclusively by **Stripe**, a PCI-DSS compliant payment processor. ReportLost.org does **not store** credit card or payment details.
+Our service providers (subprocessors) are:
+
+- **Stripe** (payments): payment processing is handled exclusively by Stripe, a PCI-DSS compliant processor. ReportLost.org does **not store** credit card or payment details,
+- **Supabase** (database and file storage),
+- **Vercel** (website hosting),
+- **Zoho Mail** and **Mailgun** (sending and receiving email),
+- **Anthropic** (AI assistance used by our team to process report content; this data is not used to train AI models),
+- **Google** (AI generation of city illustration images; no personal data is involved).
+
+Automated match searches use your item's description, city and date of loss on public web sources. They never include your name or contact details.
 
 ---
 
@@ -61,15 +74,17 @@ Users have the right to:
 
 We also apply similar transparency and control principles to users located outside the European Union, including users in the United States.
 
+**California residents (CCPA/CPRA):** you have the right to know what personal information we collect, to request its deletion, and to non-discrimination for exercising these rights. We do **not sell or share** personal information as defined by the CCPA.
+
 To exercise these rights, contact us at: support@reportlost.org
 
 ---
 
 ### 6. Data Retention
 
-We retain report-related data only for as long as necessary to support matching and assistance purposes.
+We retain report-related data only for as long as necessary to support matching and assistance purposes: the active duration of your report (6 or 12 months depending on the plan), plus a reasonable archival period.
 
-In general, data is retained for **up to 24 months**, unless deletion is requested earlier or required by law.
+In general, data is retained for **up to 24 months**, unless deletion is requested earlier or required by law. Correspondence related to paid cases may be kept for the same period to document the work performed.
 
 ---
 
