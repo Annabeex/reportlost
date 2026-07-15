@@ -107,16 +107,30 @@ Adresse relais anonyme du dossier : item${item.public_id || ""}@reportlost.org`;
       `Tu aides Anna (ReportLost.org) à contacter les établissements susceptibles d'avoir reçu un objet perdu.
 Règles STRICTES :
 - Tu ne peux utiliser QUE les informations présentes dans les résultats de recherche fournis. N'invente JAMAIS d'email, d'URL, d'adresse ou de téléphone.
-- Le canal à utiliser pour contacter est EMAIL (préférence) ou FORMULAIRE de contact. Le téléphone n'est jamais un canal de contact, mais si un numéro apparaît dans les résultats, mentionne-le à titre informatif (ligne "📞 info : ...") — Anna peut en avoir besoin pour le client.
-- Idem pour l'adresse postale si elle apparaît dans les résultats ("📍 ...").
-- Si tu trouves un email précis du service lost & found : propose-le.
-- Si tu ne trouves qu'un email générique (info@, contact@, records@...) ou une page contact : propose-le en précisant que le mail demandera un transfert au bon service ("could you kindly forward this to the appropriate department").
-- Si tu ne trouves ni email ni formulaire pour une entité : dis-le et donne le lien le plus utile trouvé.
-- Réponds en français à Anna. Structure : liste priorisée (3-6 entités) avec pour chacune : nom, canal (email trouvé / formulaire URL / page contact URL), source (le lien d'où vient l'info).
-- Termine par UN brouillon de mail type en anglais réutilisable pour ces établissements, sujet contenant #${item.public_id || ""}, avec la variante "please forward to the appropriate department" quand l'adresse est générique. Encadre-le avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.`,
+- L'EMAIL est TOUJOURS le canal préféré. Priorité : 1) email du service lost & found ; 2) sinon N'IMPORTE QUEL email de l'établissement trouvé dans les résultats (info@, contact@, records@, front desk...), en demandant gentiment le transfert au bon service ; 3) le formulaire de contact seulement en COMPLÉMENT, quand on n'est pas sûr que l'email aboutisse.
+- Le téléphone n'est jamais un canal de contact, mais s'il apparaît dans les résultats, mentionne-le à titre informatif ("📞 info : ..."). Idem adresse postale ("📍 ...").
+- Section obligatoire à la fin de la liste : "📍 Adresse de référence près du lieu de perte" : un bâtiment public (bibliothèque, mairie, poste...) trouvé dans les résultats, avec son adresse complète — Anna l'utilise pour les formulaires de police qui exigent une adresse de client ou de lieu quand elle ne l'a pas. Uniquement une adresse présente dans les résultats.
+- Réponds en français à Anna. Structure : liste priorisée (3-6 entités) avec pour chacune : nom, canal (email trouvé / formulaire URL), source (le lien d'où vient l'info).
+- Termine par UN brouillon de mail type en anglais réutilisable pour ces établissements. RÈGLES DU BROUILLON : sujet contenant #${item.public_id || ""} ; texte brut SANS aucun symbole markdown (pas de **, pas de #, pas de tirets de ponctuation) ; l'adresse de contact à communiquer à l'établissement est UNIQUEMENT l'adresse relais anonyme item${item.public_id || ""}@reportlost.org (JAMAIS de placeholder [Client Name] ou [Client Phone/Email], jamais les coordonnées personnelles du client) ; inclure la variante "could you kindly forward this to the appropriate department" quand l'adresse email est générique ; signature exacte :
+Anna
+ReportLost.org
+Encadre-le avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.`,
       `Signalement :\n${report}\n\nRésultats de recherche Google :\n\n${results}`,
       2500
     );
+
+    // 4) Sauvegarde automatique dans le dossier (note interne, visible timeline + contexte IA)
+    try {
+      await sb.from("case_messages").insert({
+        lost_item_id: item.id,
+        public_id: item.public_id,
+        direction: "note",
+        subject: "Recherche établissements (qui contacter)",
+        body_text: reply,
+      });
+    } catch (e) {
+      console.error("[case-places] sauvegarde note:", e);
+    }
 
     return NextResponse.json({ reply, queries });
   } catch (e: any) {

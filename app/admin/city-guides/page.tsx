@@ -11,6 +11,7 @@ type CityRow = { city: string; state: string; population: number | null; guide_s
 
 export default function CityGuidesAdmin() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [totals, setTotals] = useState<{ published: number; verified: number; drafts: number } | null>(null);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,7 +30,10 @@ export default function CityGuidesAdmin() {
     try {
       const r = await fetch("/api/admin/city-guide", { cache: "no-store" });
       const j = await r.json();
-      if (r.ok) setRows(j.rows || []);
+      if (r.ok) {
+        setRows(j.rows || []);
+        if (j.totals) setTotals(j.totals);
+      }
     } catch {}
   }
 
@@ -153,9 +157,20 @@ export default function CityGuidesAdmin() {
         ← Retour à l’admin
       </a>
       <h1 className="mb-1 text-2xl font-bold text-gray-900">Guides ville</h1>
-      <p className="mb-6 text-sm text-gray-600">
+      <p className="mb-2 text-sm text-gray-600">
         Génère un guide enrichi (recherche Google réelle, liens vérifiables), relis-le, corrige, puis publie.
       </p>
+      {totals && (
+        <p className="mb-6 text-sm font-medium">
+          <span className="text-green-700">🏙️ {totals.published} villes publiées</span>
+          <span className="mx-2 text-gray-300">·</span>
+          <span className="text-emerald-700">✓ {totals.verified} vérifiées</span>
+          <span className="mx-2 text-gray-300">·</span>
+          <span className="text-amber-600">📝 {totals.drafts} brouillons</span>
+          <span className="mx-2 text-gray-300">·</span>
+          <span className="text-gray-500">objectif : 6 000</span>
+        </p>
+      )}
 
       <div className="mb-6 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-sm">
         <div>

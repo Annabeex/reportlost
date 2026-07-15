@@ -76,7 +76,19 @@ export async function GET(req: NextRequest) {
     .order("updated_at", { ascending: false })
     .limit(300);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, rows: data || [] });
+
+  // Totaux globaux (au-delà des 300 lignes affichées)
+  const [{ count: published }, { count: verified }, { count: drafts }] = await Promise.all([
+    sb.from("city_guides").select("id", { count: "exact", head: true }).eq("status", "published"),
+    sb.from("city_guides").select("id", { count: "exact", head: true }).eq("verified", true),
+    sb.from("city_guides").select("id", { count: "exact", head: true }).eq("status", "draft"),
+  ]);
+
+  return NextResponse.json({
+    ok: true,
+    rows: data || [],
+    totals: { published: published ?? 0, verified: verified ?? 0, drafts: drafts ?? 0 },
+  });
 }
 
 export async function PUT(req: NextRequest) {

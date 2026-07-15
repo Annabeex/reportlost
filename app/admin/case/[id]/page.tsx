@@ -70,6 +70,29 @@ function extractEmail(text: string): { subject: string | null; body: string | nu
   return { subject, body };
 }
 
+// Nettoie les restes de markdown d'un brouillon avant de le mettre dans le composeur
+function stripMarkdown(s: string): string {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/^#+\s?/gm, "")
+    .trim();
+}
+
+// Rend un texte avec les URLs cliquables (nouvel onglet)
+function renderWithLinks(text: string) {
+  const parts = String(text || "").split(/(https?:\/\/[^\s)>\]]+)/g);
+  return parts.map((p, i) =>
+    /^https?:\/\//.test(p) ? (
+      <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="underline break-all">
+        {p}
+      </a>
+    ) : (
+      p
+    )
+  );
+}
+
 export default function CasePage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
@@ -265,8 +288,8 @@ export default function CasePage() {
 
   function applyDraft(text: string) {
     const { subject: s, body: b } = extractEmail(text);
-    if (s) setSubject(s);
-    setBody(b || text);
+    if (s) setSubject(stripMarkdown(s));
+    setBody(stripMarkdown(b || text));
     setSendInfo(null);
   }
 
@@ -506,7 +529,7 @@ export default function CasePage() {
                     </span>
                   </div>
                   {m.direction !== "note" && <div className="font-medium">{m.subject || "(sans sujet)"}</div>}
-                  <div className="mt-1 whitespace-pre-wrap text-gray-700">{m.body_text}</div>
+                  <div className="mt-1 whitespace-pre-wrap text-gray-700">{renderWithLinks(m.body_text || "")}</div>
                 </div>
               ))}
             </div>
@@ -608,7 +631,7 @@ export default function CasePage() {
                   m.role === "user" ? "ml-8 bg-blue-600 text-white" : "mr-4 bg-gray-100 text-gray-900"
                 }`}
               >
-                {m.content}
+                {renderWithLinks(m.content)}
                 {m.role === "assistant" && extractEmail(m.content).body && (
                   <div className="mt-2">
                     <button

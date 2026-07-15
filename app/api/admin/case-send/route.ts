@@ -49,17 +49,36 @@ export async function POST(req: NextRequest) {
       : supportEmail;
 
     const text = String(body);
-    const html = text
+
+    // Mise en page soignée : gabarit ReportLost (bandeau vert) + paragraphes,
+    // et conversion des lignes "- ..." en vraies listes à puces.
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const blocksHtml = text
       .split(/\n{2,}/)
-      .map(
-        (p) =>
-          `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">${p
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\n/g, "<br/>")}</p>`
-      )
+      .map((block) => {
+        const lines = block.split("\n").filter((l) => l.trim());
+        const isList = lines.length > 0 && lines.every((l) => /^\s*[-•]\s+/.test(l));
+        if (isList) {
+          const items = lines
+            .map((l) => `<li style="margin:0 0 6px 0;">${esc(l.replace(/^\s*[-•]\s+/, ""))}</li>`)
+            .join("");
+          return `<ul style="margin:0 0 14px 0;padding-left:20px;font-size:14px;line-height:1.6;">${items}</ul>`;
+        }
+        return `<p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;">${esc(block).replace(/\n/g, "<br/>")}</p>`;
+      })
       .join("");
+
+    const html = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    ${item.public_id ? `<p style="margin:8px 0 0;font-size:13px;opacity:.95">Case #${item.public_id}</p>` : ""}
+  </div>
+  <div style="padding:22px;color:#111827;background:#fff">${blocksHtml}</div>
+  <div style="padding:12px 16px;background:#f9fafb;border-top:1px solid #f0f2f5;font-size:11px;color:#9ca3af;text-align:center;">
+    ReportLost.org — independent lost &amp; found assistance in the USA
+  </div>
+</div>`;
 
     const tr = buildTransport();
     await tr.sendMail({
@@ -68,7 +87,7 @@ export async function POST(req: NextRequest) {
       replyTo,
       subject: String(subject),
       text,
-      html: `<div style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;max-width:640px;">${html}</div>`,
+      html,
     });
 
     await sb.from("case_messages").insert({

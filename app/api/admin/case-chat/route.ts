@@ -59,7 +59,8 @@ async function buildContext(lostItemId: string): Promise<string> {
 - Perdu à : ${item.city || "?"}${item.state_id ? ", " + item.state_id : ""} le ${item.date || "?"} (${item.time_slot || "heure inconnue"})
 - Client : ${[item.first_name, item.last_name].filter(Boolean).join(" ") || "?"} <${item.email || "?"}>${item.phone ? " tel " + item.phone : ""}
 - Contribution : ${item.contribution ?? 0} $ — payé : ${item.paid ? "oui" : "non"}
-- Signalé le : ${fmtDate(item.created_at)} — veille : ${item.search_status || "?"} (dernier passage ${fmtDate(item.last_searched_at)})`);
+- Signalé le : ${fmtDate(item.created_at)} — veille : ${item.search_status || "?"} (dernier passage ${fmtDate(item.last_searched_at)})
+- Adresse relais anonyme du dossier (à donner aux établissements) : item${item.public_id || ""}@reportlost.org`);
 
   if (messages?.length) {
     parts.push(
@@ -120,6 +121,7 @@ SUBJECT: <sujet>
 <<<EMAIL
 <corps du mail>
 EMAIL>>>
+- RÈGLES DE TOUT BROUILLON D'EMAIL : texte brut sans AUCUN symbole markdown (pas de **, pas de #), pas de tirets de ponctuation, jamais de placeholder ([Client Name], [Phone]...). Pour les établissements : l'adresse de contact à communiquer est UNIQUEMENT l'adresse relais anonyme du dossier (item<public_id>@reportlost.org, indiquée dans le contexte), jamais les coordonnées personnelles du client, et la signature est exactement "Anna\nReportLost.org". Pour les clients : signature "Warm regards,\nAnna\nLost Item Investigation Team\nReportLost.org".
 - Adapte-toi aux consignes d'Anna dans le chat (ton, contenu, geste commercial...). Sois concis.
 - Rien n'est envoyé automatiquement : Anna valide toujours manuellement.
 
