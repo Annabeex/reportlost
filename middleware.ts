@@ -11,6 +11,7 @@ export const config = {
 
     // APIs sensibles (service-role derrière)
     "/api/admin/:path*",
+    "/api/case_followup/:path*",
     "/api/stations/update",
 
     // pages case (lecture publique OK, mais on protège l’édition ?edit=1)
@@ -63,6 +64,7 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/poster-preview") ||
     pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/case_followup") || // 🔒 comptes rendus + notes internes (lecture ET écriture)
     pathname === "/api/stations/update"
   ) {
     const res = requireBasicAuth(req);

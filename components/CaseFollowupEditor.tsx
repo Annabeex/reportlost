@@ -116,10 +116,12 @@ export default function CaseFollowupEditor({
   publicId,
   firstName,
   userEmail,
+  caseToken,
 }: {
   publicId: string;
   firstName?: string;
   userEmail?: string;
+  caseToken?: string;
 }) {
   const [blocks, setBlocks] = React.useState<Block[]>([]);
   const [dirty, setDirty] = React.useState(false);
@@ -397,7 +399,10 @@ export default function CaseFollowupEditor({
 
   // ——— Preview button
   const onPreview = () => {
-    window.open(`/case/${encodeURIComponent(publicId)}`, "_blank");
+    window.open(
+      `/case/${encodeURIComponent(publicId)}${caseToken ? `?t=${encodeURIComponent(caseToken)}` : ""}`,
+      "_blank"
+    );
   };
 
   // ——— Send button (conserve l’UX originale et met à jour followupInfo visuellement)
@@ -417,8 +422,8 @@ export default function CaseFollowupEditor({
       subject: `Your lost item case update — ReportLost.org #${publicId}`,
       text: `Hello ${firstName || ""},
 
-A summary of actions taken for your lost item report is available online:
-https://reportlost.org/case/${publicId}
+A summary of actions taken for your lost item report is available online (secure link):
+https://reportlost.org/case/${publicId}${caseToken ? `?t=${caseToken}` : ""}
 
 We will keep you informed as soon as we have any new information.`.replace(/\n{2,}/g, "\n\n"),
       publicId,

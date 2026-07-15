@@ -59,6 +59,7 @@ type SupabaseLostRow = {
   contribution?: number | null;
   paid?: boolean | null;
   primary_category?: string | null;
+  case_token?: string | null;
   case_followup?: any;
 };
 
@@ -117,7 +118,7 @@ export default async function Page({
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_followup"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -137,7 +138,7 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_followup"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup"
           )
           .eq("public_id", num)
           .limit(1)
@@ -181,6 +182,39 @@ export default async function Page({
       ["1", "true", "yes"].includes(
         String(searchParams.edit[0] || "").toLowerCase()
       ));
+
+  // 🔒 Vue publique : exige le jeton secret (?t=...) du dossier.
+  // Sans lui, aucune donnée n'est affichée (les IDs à 5 chiffres sont énumérables).
+  // Le mode édition (?edit=1) reste protégé par le Basic Auth du middleware.
+  const providedToken =
+    typeof searchParams?.t === "string"
+      ? searchParams.t
+      : Array.isArray(searchParams?.t)
+      ? String(searchParams.t[0] || "")
+      : "";
+  const tokenOk = !!data.case_token && providedToken === data.case_token;
+
+  if (!isEdit && !tokenOk) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-16">
+        <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center">
+          <div className="text-3xl">🔒</div>
+          <h1 className="mt-3 text-xl font-bold text-gray-900">This page is private</h1>
+          <p className="mt-3 text-sm text-gray-600">
+            To protect your personal information, your case page can only be opened through the
+            secure link included in our emails. Please use the most recent link we sent you.
+          </p>
+          <p className="mt-3 text-sm text-gray-600">
+            Lost the link? Write to{" "}
+            <a href="mailto:support@reportlost.org" className="text-emerald-700 underline">
+              support@reportlost.org
+            </a>{" "}
+            from the email address used for your report and we will resend it.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const blocks = Array.isArray((data as any).case_followup)
     ? (data as any).case_followup
@@ -323,6 +357,7 @@ export default async function Page({
               publicId={publicId}
               firstName={data.first_name || ""}
               userEmail={data.email || ""}
+              caseToken={data.case_token || ""}
             />
           ) : (
             <CaseFollowup blocks={blocks} publicId={publicId} hideEditButton />
