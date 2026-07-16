@@ -52,7 +52,8 @@ let ko = 0;
 for (const [i, c] of todo.entries()) {
   process.stdout.write(`  ${i + 1}/${todo.length} ${c.city} (${c.state}), pop. ${c.population?.toLocaleString?.() || "?"} … `);
   let done = false;
-  for (let attempt = 1; attempt <= 2 && !done; attempt++) {
+  const MAX_ATTEMPTS = 4;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS && !done; attempt++) {
     try {
       const r = await fetch(`${BASE}/api/admin/city-guide-generate`, {
         method: "POST",
@@ -63,18 +64,29 @@ for (const [i, c] of todo.entries()) {
       if (r.ok) {
         ok++;
         console.log("✅ publié (non vérifié)");
+        done = true;
       } else {
-        ko++;
-        console.log(`⚠️ ${j.error || r.status}`);
+        const msg = String(j.error || r.status);
+        // API Anthropic saturée (529/429) ou indispo passagère : on attend et on réessaie,
+        // la saturation se dissipe généralement en 1 à 2 minutes.
+        const transient = /529|429|503|overloaded|rate limit/i.test(msg);
+        if (transient && attempt < MAX_ATTEMPTS) {
+          const wait = 30_000 * attempt; // 30 s, 60 s, 90 s
+          process.stdout.write(`API saturée, retry dans ${wait / 1000} s… `);
+          await sleep(wait);
+        } else {
+          ko++;
+          console.log(`⚠️ ${msg}${attempt > 1 ? ` (${attempt} tentatives)` : ""}`);
+          done = true;
+        }
       }
-      done = true;
     } catch (e) {
-      if (attempt === 1) {
+      if (attempt < MAX_ATTEMPTS) {
         process.stdout.write(`réseau (${e.message}), retry dans 10 s… `);
         await sleep(10_000);
       } else {
         ko++;
-        console.log(`⚠️ ${e.message} (2 tentatives)`);
+        console.log(`⚠️ ${e.message} (${MAX_ATTEMPTS} tentatives)`);
       }
     }
   }
