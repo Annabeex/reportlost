@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getPopularCitiesByState } from "@/lib/getPopularCitiesByState";
 import { stateNameFromAbbr } from "@/lib/utils";
 import { buildCityPath } from "@/lib/slugify";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import MaintenanceNotice from "@/components/MaintenanceNotice";
 import cityImages from "@/data/cityImages.json";
 
@@ -37,6 +38,50 @@ function getCityImage(stateAbbr: string, cityName: string) {
   return planned ? `/images/cities/${slug}.jpg` : "/images/cities/default.jpg";
 }
 
+function titleCaseCity(slug: string) {
+  return String(slug)
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+// Villes historiques à page dédiée codée en dur (hors city_guides)
+const LEGACY_BY_STATE: Record<string, string[]> = {
+  NY: ["new york"],
+  CA: ["los angeles"],
+  IL: ["chicago"],
+  TX: ["houston"],
+  AZ: ["phoenix"],
+};
+
+// Toutes les villes de l'état couvertes par un guide publié : c'est le hub
+// qui donne à chaque guide au moins un lien interne stable (sinon les pages
+// enrichies restent orphelines et Google ne les indexe pas).
+async function getCoveredCities(stateAbbr: string): Promise<string[]> {
+  const out = new Set<string>(LEGACY_BY_STATE[stateAbbr] || []);
+  try {
+    const sb = getSupabaseAdmin({ fresh: false });
+    if (sb) {
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await sb
+          .from("city_guides")
+          .select("city_slug")
+          .eq("state_id", stateAbbr)
+          .eq("status", "published")
+          .order("city_slug", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error || !data?.length) break;
+        for (const g of data) if (g.city_slug) out.add(String(g.city_slug));
+        if (data.length < PAGE) break;
+      }
+    }
+  } catch {
+    /* non bloquant : la section est simplement omise */
+  }
+  return Array.from(out).sort();
+}
+
 // --- metadata ---------------------------------------------------------------
 type Props = { params: { state: string } };
 
@@ -54,7 +99,7 @@ export async function generateMetadata({ params }: Props) {
 
   return {
     title: `Lost & Found in ${stateName} - ReportLost.org`,
-    description: `Submit or find lost items in ${stateName}. Our platform helps reconnect lost belongings with their owners through a combination of AI and local networks.`,
+    description: `Submit or find lost items in ${stateName}. One report and we route it to the right local services, with an active match search for the full duration of your plan.`,
     alternates: { canonical: `https://reportlost.org/lost-and-found/${stateSlug}` },
   };
 }
@@ -84,6 +129,8 @@ export default async function StatePage({ params }: Props) {
     } catch {
       cities = [];
     }
+
+    const coveredCities = await getCoveredCities(stateAbbr);
 
     return (
       <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
@@ -131,6 +178,32 @@ export default async function StatePage({ params }: Props) {
           <MaintenanceNotice
             message={`We're still working on listing lost & found services for all cities in ${stateName}. Please check back soon!`}
           />
+        )}
+
+        {/* Hub interne : toutes les villes couvertes de l'état (guides publiés).
+            Chaque guide reçoit ainsi au moins un lien interne stable. */}
+        {coveredCities.length > 0 && (
+          <section className="mt-14">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+              All Cities We Cover in {stateName}
+            </h2>
+            <p className="text-gray-600 text-center max-w-2xl mx-auto mb-6 text-sm">
+              Each city page lists the local lost &amp; found contacts and how to report a loss there.
+            </p>
+            <ul className="columns-2 sm:columns-3 md:columns-4 gap-6 [&>li]:mb-1.5">
+              {coveredCities.map((slug) => (
+                <li key={slug} className="break-inside-avoid">
+                  <Link
+                    prefetch={false}
+                    href={buildCityPath(stateAbbr, slug)}
+                    className="text-sm text-blue-700 hover:underline"
+                  >
+                    {titleCaseCity(slug)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     );

@@ -127,6 +127,8 @@ export async function PUT(req: NextRequest) {
     if (status === "published" || status === "draft" || guide) {
       try {
         revalidatePath(buildCityPath(stateUp, cityLow));
+        // La page état liste les villes couvertes : à rafraîchir aussi
+        revalidatePath(`/lost-and-found/${stateUp.toLowerCase()}`);
       } catch (e) {
         console.error("[city-guide] revalidatePath:", e);
       }

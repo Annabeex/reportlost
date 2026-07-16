@@ -226,6 +226,8 @@ ${results}`,
     if (autoPublish) {
       try {
         revalidatePath(buildCityPath(stateAbbr, cityName));
+        // La page état liste les villes couvertes : à rafraîchir aussi
+        revalidatePath(`/lost-and-found/${stateAbbr.toLowerCase()}`);
       } catch (e) {
         console.error("[city-guide] revalidatePath:", e);
       }
