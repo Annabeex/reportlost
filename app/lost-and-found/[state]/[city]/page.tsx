@@ -2,7 +2,6 @@
 import "@/app/globals.css";
 import Image from "next/image";
 import Link from "next/link";
-import NextDynamic from "next/dynamic"; // renamed to avoid local linter issues
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
@@ -29,18 +28,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 export const revalidate = 86400;
 export const maxDuration = 60; // marge pour le premier rendu (données externes)
 
-// ✅ composants client chargés côté navigateur uniquement
-const CityLostFormBlock = NextDynamic(
-  () => import("@/components/CityLostFormBlock").then((m) => m.default),
-  {
-    ssr: false,
-    // Hauteur réservée : évite le gros décalage de mise en page (CLS)
-    // quand le formulaire se monte au milieu de la page.
-    loading: () => (
-      <div className="min-h-[520px] grid place-items-center text-gray-400">Loading form…</div>
-    ),
-  }
-);
+// ✅ Rendu SERVEUR du bloc ville (titre, récents, carte, guide) : indispensable
+// pour le SEO (contenu dans le HTML initial) et le CLS (rien ne "pop" après coup).
+// ⚠️ Ne JAMAIS repasser ce composant en dynamic ssr:false : ça vidait le HTML
+// de tout le contenu de la page (CLS 0,9 mesuré + guides invisibles pour Google
+// au premier passage). Le formulaire, lui, garde sa protection client interne.
+import CityLostFormBlock from "@/components/CityLostFormBlock";
 
 // ---------- helpers (slug <-> name) ----------
 function cityNameFromParam(cityParam: string) {

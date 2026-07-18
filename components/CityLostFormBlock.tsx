@@ -5,7 +5,14 @@ import dynamic from "next/dynamic";
 
 const ClientReportForm = dynamic(
   () => import("@/components/ClientReportForm").then((m) => m.default),
-  { ssr: false }
+  {
+    ssr: false,
+    // Hauteur réservée : le formulaire se monte côté client, on évite que le
+    // contenu situé en dessous saute quand il apparaît (CLS).
+    loading: () => (
+      <div className="min-h-[560px] grid place-items-center text-gray-400">Loading form…</div>
+    ),
+  }
 );
 
 export default function CityLostFormBlock({
