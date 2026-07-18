@@ -35,9 +35,21 @@ export async function generateCityPhoto(
     console.error("[city-image] pas d'image dans la réponse Gemini");
     return null;
   }
-  const buffer = Buffer.from(img.inlineData.data, "base64");
-  const mime = img.inlineData.mimeType || "image/png";
-  const ext = mime.includes("jpeg") ? "jpg" : "png";
+  let buffer = Buffer.from(img.inlineData.data, "base64");
+  let mime = img.inlineData.mimeType || "image/png";
+  let ext = mime.includes("jpeg") ? "jpg" : "png";
+
+  // 🗜️ Compression : le PNG Gemini fait 1 à 2,5 Mo ; en WebP 1200px q80 on tombe
+  // à ~100 Ko sans différence visible à la taille d'affichage (~600px).
+  try {
+    const sharp = (await import("sharp")).default;
+    buffer = await sharp(buffer).resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+    mime = "image/webp";
+    ext = "webp";
+  } catch (e) {
+    console.error("[city-image] compression sharp échouée, upload brut:", e);
+  }
+
   const path = `${cityRow.state_id.toLowerCase()}/${String(cityRow.city_ascii)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")}.${ext}`;
