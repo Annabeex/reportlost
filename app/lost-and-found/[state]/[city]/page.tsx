@@ -369,7 +369,7 @@ export default async function Page({ params }: { params: { state: string; city: 
           </div>
 
           <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
-            <CityMapSection lat={mapLat} lng={mapLng} />
+            <CityMapSection lat={mapLat} lng={mapLng} cityId={cityData.id} />
           </div>
         </div>
       </section>

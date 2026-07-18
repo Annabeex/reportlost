@@ -6,7 +6,15 @@
 import { useEffect, useState } from "react";
 import MapClient, { type PoliceStation } from "@/components/MapClient";
 
-export default function CityMapSection({ lat, lng }: { lat: number; lng: number }) {
+export default function CityMapSection({
+  lat,
+  lng,
+  cityId,
+}: {
+  lat: number;
+  lng: number;
+  cityId?: string | number;
+}) {
   const [stations, setStations] = useState<PoliceStation[] | null>(null);
 
   useEffect(() => {
@@ -15,7 +23,7 @@ export default function CityMapSection({ lat, lng }: { lat: number; lng: number 
       return;
     }
     let alive = true;
-    fetch(`/api/police-stations?lat=${lat}&lng=${lng}`)
+    fetch(`/api/police-stations?lat=${lat}&lng=${lng}${cityId != null ? `&cityId=${cityId}` : ""}`)
       .then((r) => (r.ok ? r.json() : { stations: [] }))
       .then((j) => {
         if (alive) setStations(Array.isArray(j?.stations) ? j.stations : []);
@@ -26,7 +34,7 @@ export default function CityMapSection({ lat, lng }: { lat: number; lng: number 
     return () => {
       alive = false;
     };
-  }, [lat, lng]);
+  }, [lat, lng, cityId]);
 
   if (stations === null) {
     return (
