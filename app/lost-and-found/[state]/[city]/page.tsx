@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { fetchPoliceStations } from "@/lib/fetchPoliceStations";
+import CityMapSection from "@/components/CityMapSection";
 import { CityGuideTitle, CityGuideExtra } from "@/components/CityGuide";
 import type { CityGuide as CityGuideType } from "@/lib/cityGuides";
 import { NycTitleSection, NycExtraContent } from "@/components/NycContent";
@@ -30,13 +30,16 @@ export const revalidate = 86400;
 export const maxDuration = 60; // marge pour le premier rendu (données externes)
 
 // ✅ composants client chargés côté navigateur uniquement
-const CityMap = NextDynamic(() => import("@/components/MapClient").then((m) => m.default), {
-  ssr: false,
-  loading: () => <div className="text-gray-400">Loading map...</div>,
-});
 const CityLostFormBlock = NextDynamic(
   () => import("@/components/CityLostFormBlock").then((m) => m.default),
-  { ssr: false, loading: () => <div className="text-gray-400">Loading form…</div> }
+  {
+    ssr: false,
+    // Hauteur réservée : évite le gros décalage de mise en page (CLS)
+    // quand le formulaire se monte au milieu de la page.
+    loading: () => (
+      <div className="min-h-[520px] grid place-items-center text-gray-400">Loading form…</div>
+    ),
+  }
 );
 
 // ---------- helpers (slug <-> name) ----------
@@ -174,7 +177,6 @@ export async function generateMetadata({
   }
 }
 
-type PoliceStation = { id?: string; lat: number | null; lon: number | null; name: string | null };
 
 export default async function Page({ params }: { params: { state: string; city: string } }) {
   try {
@@ -302,15 +304,12 @@ export default async function Page({ params }: { params: { state: string; city: 
     const cityImageAlt = cityData.image_alt || `View of ${cityName}`;
     const cityImageCredit = "";
 
-    // 6) Postes de police via Overpass (helper robuste : "out center", ways/relations,
-    //    timeout, miroirs de secours, logs). Corrige le bug "out tags center" qui
-    //    supprimait les coordonnées des nodes.
-    let policeStations: PoliceStation[] = [];
-    try {
-      policeStations = await fetchPoliceStations(Number(cityData.lat), Number(cityData.lng));
-    } catch {
-      policeStations = [];
-    }
+    // 6) Postes de police : chargés côté NAVIGATEUR après le rendu
+    //    (composant CityMapSection → /api/police-stations, cache CDN 7 jours).
+    //    L'appel Overpass bloquait le rendu 10-15 s sur chaque page froide
+    //    (LCP 15,9 s mesuré) : il ne doit plus JAMAIS être await ici.
+    const mapLat = Number(cityData.lat);
+    const mapLng = Number(cityData.lng);
 
     // 7) Texte enrichi
     const enrichedText = `<p>${(text || "")
@@ -370,7 +369,7 @@ export default async function Page({ params }: { params: { state: string; city: 
           </div>
 
           <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
-            <CityMap stations={policeStations} />
+            <CityMapSection lat={mapLat} lng={mapLng} />
           </div>
         </div>
       </section>
