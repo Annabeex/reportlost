@@ -249,8 +249,15 @@ export default function ReportForm({
   // ✅ Scroll fiable en haut du formulaire APRÈS le rendu de la nouvelle étape.
   // (Avant : scroll lancé avant le changement d'étape → on atterrissait en bas
   // de la page suivante sur mobile.)
+  // ⚠️ JAMAIS au premier rendu : sur une page ville, ça scrollerait le visiteur
+  // jusqu'au formulaire dès l'arrivée, en sautant tout le contenu.
+  const stepScrollArmed = useRef(false);
   useEffect(() => {
     setTopError(null);
+    if (!stepScrollArmed.current) {
+      stepScrollArmed.current = true;
+      return;
+    }
     const id = requestAnimationFrame(() => {
       formRef.current?.scrollIntoView({ block: "start" });
     });
@@ -661,9 +668,18 @@ export default function ReportForm({
     setStep((s) => s + 1);
   };
 
+  // ✅ Après paiement : écran de confirmation (plus de popup alert) qui propose
+  // les coordonnées d'action (téléphone / adresse / date de naissance), demandées
+  // UNIQUEMENT aux clients payants. Le webhook Stripe gère la base côté serveur.
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [detailsSaved, setDetailsSaved] = useState(false);
   const handleSuccessfulPayment = async () => {
-    // We don't write to DB from client here — Stripe webhook on server updates DB and sends confirmation.
-    alert("✅ Payment successful. Thank you for your contribution!");
+    setPaymentDone(true);
+    requestAnimationFrame(() => formRef.current?.scrollIntoView({ block: "start" }));
+  };
+  const saveActionDetails = async () => {
+    const ok = await saveReportToDatabase();
+    if (ok) setDetailsSaved(true);
   };
 
   // ✅ envoi email “free submission” une seule fois (NOUVEAU CONTENU)
@@ -957,6 +973,76 @@ setFreeEmailSent(true);
                   ← Back
                 </button>
               </div>
+            </div>
+          </section>
+        ) : paymentDone ? (
+          // ✅ Confirmation après paiement + coordonnées d'action (clients payants uniquement)
+          <section className="w-full bg-white px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <div className="rounded-2xl border border-green-200 bg-[#f2fbf5] px-5 py-4">
+              <h2 className="text-xl font-bold text-[#1f6b3a]">✅ Payment confirmed</h2>
+              <p className="mt-1 text-[#0f2b1c]">
+                Your search is now active. You will receive a confirmation email shortly.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+              <h3 className="font-semibold text-gray-900">
+                Help us act on your behalf <span className="text-green-700 font-normal">(optional)</span>
+              </h3>
+              <p className="mt-1 mb-4 text-sm text-gray-600">
+                A phone number lets an establishment reach you quickly, a postal address is needed
+                if something has to be shipped back, and some police departments ask for a date of
+                birth when we file the report for you. Never published.
+              </p>
+              {detailsSaved ? (
+                <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  Saved, thank you. Our team has everything needed to get started.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-medium mb-1">Phone number</label>
+                      <input
+                        name="phone"
+                        type="tel"
+                        value={formData.phone || ""}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Date of birth</label>
+                      <input
+                        type="date"
+                        name="birth_date"
+                        value={formData.birth_date || ""}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block font-medium mb-1">Postal address</label>
+                      <input
+                        name="address"
+                        value={formData.address || ""}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={saveActionDetails}
+                    disabled={isSubmitting}
+                    className={`mt-4 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-2.5 font-semibold text-white shadow ${
+                      isSubmitting ? "opacity-60 pointer-events-none" : ""
+                    }`}
+                  >
+                    {isSubmitting ? "Saving…" : "Save my details"}
+                  </button>
+                </>
+              )}
             </div>
           </section>
         ) : (

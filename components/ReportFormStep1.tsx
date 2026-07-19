@@ -48,6 +48,18 @@ const TRAIN_COMPANIES_US = [
 
 const RIDESHARE_PLATFORMS_US = ["Uber","Lyft","Via","Other (not listed)"];
 
+// Lieu → type de transport : la question "Was it during a transport?" n'est plus
+// posée, elle est déduite du lieu sélectionné (moins de friction).
+const PLACE_TO_TRANSPORT: Record<string, string> = {
+  "Airplane": "Airplane",
+  "Train station": "Train",
+  "Subway / metro station": "Metro / Subway",
+  "Tram stop": "Tram",
+  "Bus stop": "Bus",
+  "Coach stop": "Coach",
+  "Boat": "Ferry / Boat",
+};
+
 /* =========================================================================
    LocalSuggest — dropdown custom avec le même look qu’ObjectSuggest
    ========================================================================= */
@@ -231,12 +243,37 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
     onChange({ target: { name: "taxi_company", value: "" } } as any);
   };
 
+  // Détails transport ajoutés manuellement (taxi, Uber… : lieux non "transport")
+  const [showTransportExtra, setShowTransportExtra] = useState(
+    !!formData.transport_type && !PLACE_TO_TRANSPORT[formData.place_type || ""]
+  );
+
   const handlePlaceChange = (val: string) => {
     setPlaceIsOther(val === "Other (not listed)");
     onChange({ target: { name: "place_type", value: val } } as any);
     if (val !== "Other (not listed)") {
       onChange({ target: { name: "place_type_other", value: "" } } as any);
     }
+    // Lieu de transport → détails auto ; sinon on nettoie (sauf ajout manuel)
+    const mapped = PLACE_TO_TRANSPORT[val] || "";
+    if (mapped) {
+      setShowTransportExtra(false);
+      setTransportAnswer("yes");
+      onChange({ target: { name: "transport_answer", value: "yes" } } as any);
+      if (formData.transport_type !== mapped) handleTransportChange(mapped);
+    } else if (!showTransportExtra) {
+      setTransportAnswer("no");
+      onChange({ target: { name: "transport_answer", value: "no" } } as any);
+      if (formData.transport_type) handleTransportChange("");
+    }
+  };
+
+  const toggleTransportExtra = () => {
+    const next = !showTransportExtra;
+    setShowTransportExtra(next);
+    setTransportAnswer(next ? "yes" : "no");
+    onChange({ target: { name: "transport_answer", value: next ? "yes" : "no" } } as any);
+    if (!next) handleTransportChange("");
   };
 
   // ✅ Validation inline (plus de popup alert() qui casse le flux, surtout mobile)
@@ -263,33 +300,23 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
     }
 
     if (!formData.city?.trim()) return fail("Please enter the city.");
-    if (!transportAnswer) return fail("Please answer the transport question just above.");
+    if (!formData.place_type?.trim() && !formData.place_type_other?.trim()) {
+      return fail("Please specify the place where you lost it.");
+    }
 
-    if (transportAnswer === "yes") {
-      const t = (formData.transport_type || "").toLowerCase();
-      if (!formData.transport_type && !formData.transport_type_other) {
-        fail("Please select the transport type or enter one.");
-        return;
+    // Détails transport : seuls les indispensables au routage restent requis.
+    const t = (formData.transport_type || "").toLowerCase();
+    if (t === "airplane") {
+      if (!formData.airline_name?.trim()) return fail("Please enter the airline name.");
+      if (!formData.travel_number?.trim()) return fail("Please enter the flight number.");
+    }
+    if (t === "metro / subway" || t === "tram") {
+      if (formData.metro_line_known === true && !formData.metro_line?.trim()) {
+        return fail("Please enter the metro/tram line.");
       }
-      if (t === "airplane") {
-        if (!formData.airline_name?.trim()) return fail("Please enter the airline name.");
-        if (!formData.travel_number?.trim()) return fail("Please enter the flight number.");
-      }
-      if (t === "metro / subway" || t === "tram") {
-        if (formData.metro_line_known === true && !formData.metro_line?.trim()) {
-          return fail("Please enter the metro/tram line.");
-        }
-      }
-      if (t === "train") {
-        if (!formData.train_company?.trim()) return fail("Please select the train company.");
-      }
-      if (t === "rideshare (uber/lyft)") {
-        if (!formData.rideshare_platform?.trim()) return fail("Please select the rideshare platform.");
-      }
-    } else {
-      if (!formData.place_type?.trim() && !formData.place_type_other?.trim()) {
-        return fail("Please specify the place where you lost it.");
-      }
+    }
+    if (t === "rideshare (uber/lyft)") {
+      if (!formData.rideshare_platform?.trim()) return fail("Please select the rideshare platform.");
     }
 
     setFormError(null);
@@ -539,55 +566,67 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
                 />
               </div>
 
-              {/* Transport question */}
-              <div>
-                <p className="block font-medium mb-2">
-                  {petMode ? "Did your pet go missing during a trip or transport?" : "Was it during a transport?"}
-                </p>
-                <div className="flex flex-col gap-2 text-[16px]">
-                  {(["yes", "no", "maybe"] as const).map((v) => (
-                    <label key={v} className={labelRadio}>
-                      <input
-                        type="radio"
-                        name="transport_answer"
-                        value={v}
-                        checked={transportAnswer === v}
-                        onChange={() => {
-                          setTransportAnswer(v);
-                          onChange({ target: { name: "transport_answer", value: v } } as any);
-                        }}
-                        className={radioCls}
-                      />
-                      <span className="capitalize">{v}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Lieu de la perte — toujours visible, remplace la question transport */}
+              <div className="space-y-2">
+                <label className="block font-medium">
+                  {petMode ? "Where was your pet last seen?" : "Where exactly?"}
+                </label>
+                <LocalSuggest
+                  value={formData.place_type || ""}
+                  onChange={(val) => handlePlaceChange(val)}
+                  options={PLACE_OPTIONS}
+                  placeholder="Start typing... (street, cafe, airplane, station…)"
+                />
+                {placeIsOther && (
+                  <input
+                    type="text"
+                    placeholder="Type your place…"
+                    className={inputCls + " mt-2"}
+                    value={formData.place_type_other || ""}
+                    onChange={(e) =>
+                      onChange({ target: { name: "place_type_other", value: e.target.value } } as any)
+                    }
+                  />
+                )}
+                {/* Cas taxi/Uber/bus non couverts par le lieu : ajout manuel discret */}
+                {!PLACE_TO_TRANSPORT[formData.place_type || ""] && (
+                  <button
+                    type="button"
+                    onClick={toggleTransportExtra}
+                    className="text-sm text-[#226638] underline underline-offset-2"
+                  >
+                    {showTransportExtra
+                      ? "Remove transport details"
+                      : "It happened during a ride or trip (taxi, Uber, bus…)? Add details"}
+                  </button>
+                )}
               </div>
 
-              {/* YES -> sélecteurs custom */}
-              {transportAnswer === "yes" && (
+              {/* Détails transport : déduits du lieu, ou ajoutés via le lien */}
+              {(formData.transport_type || showTransportExtra) && (
                 <div className="space-y-4">
-                  {/* Transport type */}
-                  <div>
-                    <label className="block font-medium">Please select the transport type:</label>
-                    <LocalSuggest
-                      value={formData.transport_type || ""}
-                      onChange={(val) => handleTransportChange(val)}
-                      options={TRANSPORT_OPTIONS}
-                      placeholder="Start typing..."
-                    />
-                    {transportIsOther && (
-                      <input
-                        type="text"
-                        placeholder="Type your transport…"
-                        className={inputCls + " mt-2"}
-                        value={formData.transport_type_other || ""}
-                        onChange={(e) =>
-                          onChange({ target: { name: "transport_type_other", value: e.target.value } } as any)
-                        }
+                  {showTransportExtra && (
+                    <div>
+                      <label className="block font-medium">Please select the transport type:</label>
+                      <LocalSuggest
+                        value={formData.transport_type || ""}
+                        onChange={(val) => handleTransportChange(val)}
+                        options={TRANSPORT_OPTIONS}
+                        placeholder="Start typing..."
                       />
-                    )}
-                  </div>
+                      {transportIsOther && (
+                        <input
+                          type="text"
+                          placeholder="Type your transport…"
+                          className={inputCls + " mt-2"}
+                          value={formData.transport_type_other || ""}
+                          onChange={(e) =>
+                            onChange({ target: { name: "transport_type_other", value: e.target.value } } as any)
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
 
                   {/* Airplane */}
                   {formData.transport_type === "Airplane" && (
@@ -841,29 +880,6 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
                 </div>
               )}
 
-
-              {(transportAnswer === "no" || transportAnswer === "maybe") && (
-                <div className="space-y-2">
-                  <label className="block font-medium">Please specify the place</label>
-                  <LocalSuggest
-                    value={formData.place_type || ""}
-                    onChange={(val) => handlePlaceChange(val)}
-                    options={PLACE_OPTIONS}
-                    placeholder="Start typing..."
-                  />
-                  {placeIsOther && (
-                    <input
-                      type="text"
-                      placeholder="Type your place…"
-                      className={inputCls + " mt-2"}
-                      value={formData.place_type_other || ""}
-                      onChange={(e) =>
-                        onChange({ target: { name: "place_type_other", value: e.target.value } } as any)
-                      }
-                    />
-                  )}
-                </div>
-              )}
 
               {/* Circumstances — toujours à la fin */}
               <div>

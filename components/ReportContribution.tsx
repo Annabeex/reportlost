@@ -76,13 +76,21 @@ function TipGauge({
 
   const pct = (value / MAX_TIP) * 100;
 
+  // Poignée du curseur : pastille blanche ombrée avec cœur, verte dès qu'un
+  // montant est choisi (l'ancien cœur gris "flottant" semblait désactivé).
   const HeartKnob = ({ active }: { active: boolean }) => (
-    <svg viewBox="0 0 24 24" width={24} height={24} aria-hidden>
-      <path
-        d="M12 21s-6.716-4.188-9.39-7.07C.97 11.18 1.41 7.87 3.86 6.26c2.05-1.35 4.81-.86 6.14 1.03 1.33-1.89 4.09-2.38 6.14-1.03 2.45 1.61 2.89 4.92 1.25 7.67C18.72 16.81 12 21 12 21z"
-        fill={active ? DARK_GREEN : "#cbd5e1"}
-      />
-    </svg>
+    <span
+      className={`flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md ring-2 transition ${
+        active ? "ring-[#2ea052]" : "ring-gray-300"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden>
+        <path
+          d="M12 21s-6.716-4.188-9.39-7.07C.97 11.18 1.41 7.87 3.86 6.26c2.05-1.35 4.81-.86 6.14 1.03 1.33-1.89 4.09-2.38 6.14-1.03 2.45 1.61 2.89 4.92 1.25 7.67C18.72 16.81 12 21 12 21z"
+          fill={active ? DARK_GREEN : "#9ca3af"}
+        />
+      </svg>
+    </span>
   );
 
   // --- Determine level and dynamic message ---
@@ -164,8 +172,8 @@ function TipGauge({
               aria-valuemax={MAX_TIP}
               aria-valuenow={value}
               tabIndex={0}
-              className="absolute -top-2.5"
-              style={{ left: `calc(${pct}% - 14px)` }}
+              className="absolute -top-1"
+              style={{ left: `calc(${pct}% - 16px)` }}
               onKeyDown={(e) => {
                 if (e.key === "ArrowLeft") setValue(clamp(value - 1));
                 if (e.key === "ArrowRight") setValue(clamp(value + 1));
@@ -173,7 +181,7 @@ function TipGauge({
                 if (e.key === "End") setValue(MAX_TIP);
               }}
             >
-              <div className="w-7 h-7 flex items-center justify-center">
+              <div className="w-8 h-8 flex items-center justify-center">
                 <HeartKnob active={value > 0} />
               </div>
             </div>

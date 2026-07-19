@@ -238,59 +238,9 @@ export default function ReportFormStep2({
               </p>
             </div>
           </div>
-
-          {/* Champs facultatifs regroupés : un seul point info commun (moins de friction) */}
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 md:px-5">
-            <p className="font-medium text-gray-800">
-              The next fields are <span className="text-green-700">optional</span>
-              <span className="group relative ml-1 inline-block align-middle">
-                <span className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">
-                  i
-                </span>
-                <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-80 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                  We only use these to act on your behalf: a phone number lets an establishment
-                  reach you quickly if your item turns up, a postal address is needed if something
-                  has to be shipped back to you, and some police departments ask for a date of
-                  birth when we file the lost property report for you. Anything you leave empty
-                  simply skips that step — nothing else changes.
-                </span>
-              </span>
-            </p>
-            <p className="mt-0.5 mb-3 text-xs text-gray-500">
-              They help us act on your behalf, and are never published.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-medium mb-1">Phone number</label>
-                <input
-                  name="phone"
-                  type="tel"
-                  value={formData.phone || ""}
-                  onChange={onChange as any}
-                  className={fieldCls}
-                />
-              </div>
-              <div>
-                <label className="block font-medium mb-1">Date of birth</label>
-                <input
-                  type="date"
-                  name="birth_date"
-                  value={formData.birth_date || ""}
-                  onChange={onChange as any}
-                  className={fieldCls}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block font-medium mb-1">Postal address</label>
-                <input
-                  name="address"
-                  value={formData.address || ""}
-                  onChange={onChange as any}
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-          </div>
+          {/* ℹ️ Téléphone, adresse et date de naissance ne sont plus demandés ici :
+              ils sont proposés APRÈS le paiement (écran de confirmation), aux
+              seuls clients pour qui on agit vraiment. Formulaire plus léger. */}
 
           {/* File (bouton natif) */}
           <div>
@@ -298,7 +248,23 @@ export default function ReportFormStep2({
               Add a photo of the lost item <span className="text-green-700">(optional)</span>
             </label>
             {!previewUrl && (
-              <input type="file" accept="image/*" onChange={handleFileChange} className="w-full" />
+              <>
+                {/* Input natif masqué : son libellé ("Choisir un fichier…") suit la
+                    langue du navigateur. Bouton custom = rendu propre et constant. */}
+                <input
+                  id="lost-item-photo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="lost-item-photo"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#2ea052] bg-white px-4 py-2.5 font-medium text-[#226638] shadow-sm transition hover:bg-[#f2fbf5]"
+                >
+                  📷 Add a photo
+                </label>
+              </>
             )}
             {uploading && <p className="text-sm text-blue-600">Uploading...</p>}
             {previewUrl && (
