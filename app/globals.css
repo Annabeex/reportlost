@@ -123,3 +123,13 @@ path:hover {
 .animate-spin-slow {
   animation: spin-slow 4s linear infinite;
 }
+
+/* Champs date : iOS/Safari affiche les dates vides en gris délavé, comme si le
+   champ était désactivé. On force un rendu net et clairement cliquable. */
+input[type="date"] {
+  background-color: #fff;
+  color: #111827;
+  -webkit-text-fill-color: currentColor;
+  opacity: 1;
+  min-height: 42px;
+}

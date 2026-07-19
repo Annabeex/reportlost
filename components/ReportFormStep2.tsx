@@ -103,7 +103,9 @@ export default function ReportFormStep2({
     const id = requestAnimationFrame(() => {
       const el = topRef.current;
       if (el && typeof el.scrollIntoView === "function") {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        // "auto" (instantané) : le scroll "smooth" pouvait être interrompu par le
+        // rendu de la nouvelle sous-étape sur mobile et laisser l'écran en bas.
+        el.scrollIntoView({ behavior: "auto", block: "start" });
       } else if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }

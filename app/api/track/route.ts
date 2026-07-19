@@ -14,6 +14,12 @@ const ALLOWED = new Set([
   "visit_ai",
   "visit_direct",
   "visit_referral",
+  // Entonnoir du formulaire de dépôt (diagnostic conversion)
+  "form_view",
+  "form_step1_done",
+  "form_step2_done",
+  "form_contribution_view",
+  "form_completed_free",
 ]);
 
 export async function POST(req: NextRequest) {

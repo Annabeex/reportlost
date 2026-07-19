@@ -243,10 +243,53 @@ export default function ReportForm({
     });
   };
 
+  // ✅ Erreur de validation affichée en bannière (plus de popup alert())
+  const [topError, setTopError] = useState<string | null>(null);
+
+  // ✅ Scroll fiable en haut du formulaire APRÈS le rendu de la nouvelle étape.
+  // (Avant : scroll lancé avant le changement d'étape → on atterrissait en bas
+  // de la page suivante sur mobile.)
+  useEffect(() => {
+    setTopError(null);
+    const id = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   const handleBack = () => {
-    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => Math.max(1, s - 1));
   };
+
+  // 📊 Entonnoir : compteur anonyme par étape (une fois par session et par étape).
+  // Permet de voir OÙ les visiteurs s'arrêtent (vue → étape 1 → étape 2 → offre → fin).
+  const funnelSent = useRef<Set<string>>(new Set());
+  const funnelTrack = (event: string) => {
+    try {
+      if (funnelSent.current.has(event)) return;
+      funnelSent.current.add(event);
+      const k = `rl_f_${event}`;
+      if (sessionStorage.getItem(k)) return;
+      sessionStorage.setItem(k, "1");
+      fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      /* jamais bloquant */
+    }
+  };
+  useEffect(() => {
+    funnelTrack("form_view");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (step === 4) funnelTrack("form_contribution_view");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const buildPhoneDescription = () => {
     if (!formData.isCellphone) return null;
@@ -565,7 +608,7 @@ export default function ReportForm({
         !formData.city?.trim() ||
         !formData.date?.trim()
       ) {
-        alert("Please fill in all required fields.");
+        setTopError("Please fill in all required fields.");
         return;
       }
     }
@@ -575,15 +618,15 @@ export default function ReportForm({
       if (isSubmitting) return; // ✅ déjà en cours
 
       if (!formData.first_name?.trim()) {
-        alert("Please enter your first name.");
+        setTopError("Please enter your first name.");
         return;
       }
       if (!formData.last_name?.trim()) {
-        alert("Please enter your last name.");
+        setTopError("Please enter your last name.");
         return;
       }
       if (!formData.email?.trim()) {
-        alert("Please enter your email.");
+        setTopError("Please enter your email.");
         return;
       }
 
@@ -595,26 +638,26 @@ export default function ReportForm({
       );
 
       if (!consentOK) {
-        alert("Please confirm all required checkboxes.");
+        setTopError("Please confirm all required checkboxes.");
         return;
       }
 
       const success = await saveReportToDatabase();
       if (!success) return;
+      funnelTrack("form_step2_done");
     }
+
+    if (step === 1) funnelTrack("form_step1_done");
 
     // ✅ MODIFICATION ICI : Gestion du mode "Université"
     // Si on est à l'étape 3 (WhatHappensNext) et qu'on est en forceFreeMode,
     // on saute l'étape 4 (Paiement) pour aller direct à 5.
     if (step === 3 && forceFreeMode) {
       setFormData((prev: any) => ({ ...prev, contribution: 0, paymentRequired: false }));
-      if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
       setStep(5);
       return;
     }
 
-    if (formRef.current)
-      formRef.current.scrollIntoView({ behavior: "smooth" });
     setStep((s) => s + 1);
   };
 
@@ -634,6 +677,7 @@ export default function ReportForm({
       formData?.email;
 
     if (!shouldSend) return;
+    funnelTrack("form_completed_free");
 
     (async () => {
       try {
@@ -814,6 +858,27 @@ setFreeEmailSent(true);
           : "w-full min-h-screen px-4 py-6 space-y-4"
       }
     >
+      {/* Barre de progression fine (visuelle, sans numérotation) */}
+      {step <= 4 && (
+        <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden" aria-hidden>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#26723e] to-[#2ea052] transition-all duration-500"
+            style={{ width: `${Math.min(100, (step / 5) * 100)}%` }}
+          />
+        </div>
+      )}
+
+      {/* Erreur de validation (remplace les popups alert) */}
+      {topError && (
+        <div
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+          aria-live="polite"
+        >
+          {topError}
+        </div>
+      )}
+
       {step === 1 && (
         <ReportFormStep1
           formData={formData}
