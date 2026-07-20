@@ -46,6 +46,9 @@ const RULES = [
   [/paid plans?/gi, "assisted searches"],
   [/assisted plans?/gi, "assisted searches"],
   [/subscription/gi, "one-time payment"],
+  [/plan options/gi, "search options"],
+  [/pricing plans?/gi, "search levels"],
+  [/plan levels?/gi, "search levels"],
   [/your plan/gi, "your search period"],
 ];
 
