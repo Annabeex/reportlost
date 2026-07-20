@@ -100,17 +100,23 @@ export default function ReportFormStep2({
   // ✅ scroll auto en haut quand on change de sous-étape (notamment vers "prefs")
   useEffect(() => {
     // petite rafale pour laisser le layout se stabiliser avant scroll
-    const id = requestAnimationFrame(() => {
+    const scrollTop = () => {
       const el = topRef.current;
       if (el && typeof el.scrollIntoView === "function") {
         // "auto" (instantané) : le scroll "smooth" pouvait être interrompu par le
         // rendu de la nouvelle sous-étape sur mobile et laisser l'écran en bas.
         el.scrollIntoView({ behavior: "auto", block: "start" });
       } else if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0 });
       }
-    });
-    return () => cancelAnimationFrame(id);
+    };
+    const id = requestAnimationFrame(scrollTop);
+    // 2e passage : le clavier mobile qui se referme décale la page après coup.
+    const t = setTimeout(scrollTop, 300);
+    return () => {
+      cancelAnimationFrame(id);
+      clearTimeout(t);
+    };
   }, [stage]);
 
   const btnGreen =

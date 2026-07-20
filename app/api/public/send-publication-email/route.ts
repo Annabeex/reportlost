@@ -1,6 +1,7 @@
 // app/api/public/send-publication-email/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendMailDirect } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,13 +65,19 @@ export async function POST(req: NextRequest) {
     const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(reportId)}`;
     const ref5 = String(row.public_id || "").trim();
 
-    const subject = "✅ Publish your report to start the search";
+    const subject = "Your report is published — the search hasn't started yet";
     const text = `Hello ${row.first_name || ""},
 
-We have published your lost item report on reportlost.org.
+Good news: your lost item report is published on reportlost.org and visible to anyone who looks for it.
 
-You can upgrade your assistance level anytime here:
-${contributeUrl}
+One thing to know: a free listing waits. Right now, no one is contacting the local lost & found desks, no report is being filed with the police, and no one is checking new "found" posts against your description.
+
+That's exactly what an assisted search adds. When you activate one, our team gets to work:
+- We contact the relevant local services and establishments on your behalf.
+- We file the lost property report with the police where they accept it.
+- A social alert is published, and your report stays active, searching for a match for the full duration of your plan.
+
+Activate my search: ${contributeUrl}
 
 Your report details:
 - Item: ${row.title || ""}
@@ -78,7 +85,7 @@ Your report details:
 - City: ${row.city || ""}
 ${ref5 ? `- Reference code: ${ref5}\n` : ""}
 
-Thank you for using ReportLost.`;
+Either way, your free listing stays online. Thank you for using ReportLost.`;
 
     const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
@@ -89,8 +96,30 @@ Thank you for using ReportLost.`;
   <div style="padding:20px;color:#111827;line-height:1.6">
     <p style="margin:0 0 12px">Hello <b>${row.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      Your report is published on <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
+      Good news: your report is published on
+      <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>
+      and visible to anyone who looks for it.
     </p>
+
+    <p style="margin:0 0 14px">
+      One thing to know: <b>a free listing waits</b>. Right now, no one is contacting the local
+      lost &amp; found desks, no report is being filed with the police, and no one is checking
+      new &ldquo;found&rdquo; posts against your description.
+    </p>
+
+    <p style="margin:0 0 8px"><b>That's exactly what an assisted search adds:</b></p>
+    <ul style="margin:0 0 18px;padding-left:18px">
+      <li>We contact the relevant local services and establishments on your behalf.</li>
+      <li>We file the lost property report with the police where they accept it.</li>
+      <li>A social alert is published, and your report stays active, searching for a match for the full duration of your plan.</li>
+    </ul>
+
+    <div style="margin:18px 0 22px;text-align:center">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+        Activate my search
+      </a>
+    </div>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
     <ul style="margin:0 16px 18px;padding-left:18px">
@@ -100,40 +129,20 @@ Thank you for using ReportLost.`;
       ${ref5 ? `<li><b>Reference code:</b> ${ref5}</li>` : ""}
     </ul>
 
-    <p style="margin:0 0 18px">
-      <a href="${contributeUrl}"
-         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
-        Upgrade my assistance level
-      </a>
-    </p>
-
-    <p style="margin:0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Either way, your free listing stays online. Thank you for using ReportLost.</p>
   </div>
 </div>`;
 
-    // Appel interne à /api/send-mail avec la clé serveur
-    const mailApiKey = (process.env.MAIL_API_KEY || "").trim();
-    const sendRes = await fetch(`${base}/api/send-mail`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(mailApiKey ? { Authorization: `Bearer ${mailApiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        to: row.email,
-        subject,
-        text,
-        html,
-        fromName: "ReportLost",
-        publicId: ref5 || undefined,
-        kind: "publication",
-      }),
+    // ✅ Envoi SMTP direct (plus de fetch interne vers /api/send-mail, source
+    // des timeouts serverless corrigés partout ailleurs).
+    const sent = await sendMailDirect({
+      to: String(row.email),
+      subject,
+      text,
+      html,
+      fromName: "ReportLost",
     });
-
-    if (!sendRes.ok) {
-      const t = await sendRes.text().catch(() => "");
-      return json({ ok: false, error: "send-mail failed", status: sendRes.status, body: t }, { status: 502 });
-    }
+    if (!sent) return json({ ok: false, error: "send failed" }, { status: 502 });
 
     // Marque DB
     const { error: upErr } = await supabaseAdmin

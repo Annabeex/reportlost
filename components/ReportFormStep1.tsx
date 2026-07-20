@@ -191,6 +191,25 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
   // Phases
   const [phase, setPhase] = useState<"basic" | "context">("basic");
 
+  // ✅ Scroll en haut au passage description → lieu (changement interne,
+  // invisible pour le parent). Jamais au premier rendu. Double passage : le
+  // clavier mobile qui se referme décale la page après le premier scroll.
+  const phaseTopRef = useRef<HTMLDivElement>(null);
+  const phaseScrollArmed = useRef(false);
+  useEffect(() => {
+    if (!phaseScrollArmed.current) {
+      phaseScrollArmed.current = true;
+      return;
+    }
+    const scrollTop = () => phaseTopRef.current?.scrollIntoView({ block: "start" });
+    const id = requestAnimationFrame(scrollTop);
+    const t = setTimeout(scrollTop, 300);
+    return () => {
+      cancelAnimationFrame(id);
+      clearTimeout(t);
+    };
+  }, [phase]);
+
   // États (ordre constant)
   const [showTime, setShowTime] = useState<boolean | null>(null);
   const [transportAnswer, setTransportAnswer] = useState<"yes" | "no" | "maybe" | null>(
@@ -326,7 +345,7 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
   const titleFilled = (formData.title || "").trim().length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={phaseTopRef}>
       {/* ================= PHASE 1 ================= */}
       {phase === "basic" && (
         <>

@@ -258,10 +258,15 @@ export default function ReportForm({
       stepScrollArmed.current = true;
       return;
     }
-    const id = requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ block: "start" });
-    });
-    return () => cancelAnimationFrame(id);
+    const scrollTop = () => formRef.current?.scrollIntoView({ block: "start" });
+    const id = requestAnimationFrame(scrollTop);
+    // 2e passage à 300 ms : sur mobile, le clavier qui se referme après la
+    // saisie décale la page APRÈS le premier scroll.
+    const t = setTimeout(scrollTop, 300);
+    return () => {
+      cancelAnimationFrame(id);
+      clearTimeout(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 

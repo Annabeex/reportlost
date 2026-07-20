@@ -361,7 +361,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
+One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
 Your report details:
 - Item: ${other.title || ""}
@@ -370,7 +370,7 @@ Your report details:
 ${stationLine}${referenceLine}
 ${contributeUrl}
 
-If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
 
 Thank you for using ReportLost.`;
 
@@ -379,7 +379,7 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to publish your report</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
@@ -388,9 +388,9 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to publish it: choose your search level on the next page,
-      free public listing, or an assisted search where our team files the report locally,
-      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
+      One last step to activate your search: our team files the report with the right local
+      services, posts alerts, and keeps searching for a match on your behalf during your entire
+      search period (6 or 12 months).
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -405,19 +405,19 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 18px">
       <a href="${contributeUrl}"
          style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
-        Complete my report
+        Activate my search
       </a>
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
     </p>
   </div>
 </div>`;
 
             const okUser = await sendMailViaApi(req, {
               to: other.email || email || "",
-              subject: "One last step to publish your report",
+              subject: "One last step to activate your search",
               text,
               html,
             });
@@ -527,7 +527,7 @@ Contribution : ${other.contribution ?? 0}`;
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
+One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
 Your report details:
 - Item: ${other.title || ""}
@@ -536,7 +536,7 @@ Your report details:
 ${referenceLine}
 ${contributeUrl}
 
-If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
 
 Thank you for using ReportLost.`;
 
@@ -545,7 +545,7 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to publish your report</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
@@ -554,9 +554,9 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to publish it: choose your search level on the next page,
-      free public listing, or an assisted search where our team files the report locally,
-      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
+      One last step to activate your search: our team files the report with the right local
+      services, posts alerts, and keeps searching for a match on your behalf during your entire
+      search period (6 or 12 months).
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -570,19 +570,19 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 18px">
       <a href="${contributeUrl}"
          style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
-        Complete my report
+        Activate my search
       </a>
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
     </p>
   </div>
 </div>`;
 
               const okUser = await sendMailViaApi(req, {
                 to: other.email || email || "",
-                subject: "✅ One last step to publish your report",
+                subject: "✅ One last step to activate your search",
                 text,
                 html,
               });
@@ -720,7 +720,7 @@ const { data: foundRows, error: findErr } = await supabase
 
 We have saved your lost item report draft on reportlost.org.
 
-One last step to publish it: choose your search level on the next page — free public listing, or an assisted search where our team files the report locally, posts alerts and keeps looking for matches for the full duration of your plan.
+One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
 Your report details:
 - Item: ${other.title || ""}
@@ -729,7 +729,7 @@ Your report details:
 ${referenceLine}
 ${contributeUrl}
 
-If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
 
 Thank you for using ReportLost.`;
 
@@ -738,7 +738,7 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to publish your report</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
@@ -747,9 +747,9 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to publish it: choose your search level on the next page,
-      free public listing, or an assisted search where our team files the report locally,
-      posts alerts and keeps looking for matches on your behalf for the full duration of your plan.
+      One last step to activate your search: our team files the report with the right local
+      services, posts alerts, and keeps searching for a match on your behalf during your entire
+      search period (6 or 12 months).
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -763,19 +763,19 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 18px">
       <a href="${contributeUrl}"
          style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
-        Complete my report
+        Activate my search
       </a>
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      If you choose an assisted plan, payment is processed securely by Stripe (PCI DSS v4.0), and your search is activated right away.
+      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
     </p>
   </div>
 </div>`;
 
           const okUser = await sendMailViaApi(req, {
             to: other.email || email || "",
-            subject: "One last step to publish your report",
+            subject: "One last step to activate your search",
             text,
             html,
           });

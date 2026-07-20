@@ -101,7 +101,7 @@ function TipGauge({
     level = 1;
     messageIntro = "Your report will be published and visible in our public database. ";
     message =
-      "It may, depending on our team’s availability, receive occasional manual research (not guaranteed).";
+      "At this level, no active search is performed: the listing waits for someone to come across it.";
   } else if (value < 25) {
     level = 2;
     message =
@@ -257,8 +257,9 @@ export default function ReportContribution({
   const PRICE = { 1: 0, 2: 12, 3: 25, 4: 30 } as const;
 
   const [step, setStep] = useState<"plans" | "tip">(initialStep ?? "plans");
+  // Présélection : la formule recommandée (Maximum), l'utilisateur reste libre.
   const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
-    initialPlan ?? (petMode ? 4 : 2)
+    initialPlan ?? (petMode ? 4 : 3)
   );
   const [tip, setTip] = useState<number>(
     Math.max(0, Math.min(MAX_TIP, Math.round(initialTip ?? 0)))
@@ -577,7 +578,9 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <BulletIcon />
                     <span className="text-gray-800">
-                      Public publication in our open database, because every report count.
+                      Your report is published in our public database and stays visible to finders.
+                      No outreach, no police filing, no active match search: the listing waits for
+                      someone to come across it.
                     </span>
                   </li>
                 </ul>
