@@ -59,7 +59,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How long does ReportLost monitor potential matches?",
-    a: "6 months with the Standard plan ($12) and 12 months with the Premium plan ($25), starting the day your plan is activated. The search cadence is highest in the first weeks, when recovery odds are best, then continues at a regular rhythm.",
+    a: "6 months with the Standard plan ($12) and 12 months with the Premium plan ($25), starting the day your plan is activated. Both are one-time payments, never a subscription. The search cadence is highest in the first weeks, when recovery odds are best, then continues at a regular rhythm.",
   },
   {
     q: "What happens when ReportLost finds a possible match?",

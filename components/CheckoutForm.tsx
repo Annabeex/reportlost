@@ -185,6 +185,9 @@ export default function CheckoutForm({
         <div className="text-4xl font-bold text-[#1f6b3a]">
           ${total.toFixed(2)}
         </div>
+        <p className="mt-2 text-sm text-gray-600">
+          One-time payment, never a subscription.
+        </p>
       </aside>
 
       <section className="bg-white rounded-xl p-6 border">

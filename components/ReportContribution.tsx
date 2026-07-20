@@ -326,7 +326,7 @@ export default function ReportContribution({
               }}
             />
             <h2 className="text-2xl font-bold text-gray-700 text-center">
-              Choose your plan
+              Choose your search level
             </h2>
           </div>
         )}
@@ -612,7 +612,7 @@ export default function ReportContribution({
 
             <p className="flex items-center gap-2 text-sm text-gray-600 mt-6 ml-1">
               <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="Secure" className="w-4 h-4" />
-              Payments are processed securely by Stripe.com — PCI DSS v4.0 certified.
+              One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0 certified.
             </p>
           </div>
         )}
@@ -624,7 +624,7 @@ export default function ReportContribution({
 
             <p className="flex items-center gap-2 text-sm text-gray-600 mt-1 ml-1">
               <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="Secure" className="w-4 h-4" />
-              Payments are processed securely by Stripe.com — PCI DSS v4.0 certified.
+              One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0 certified.
             </p>
 
             <div className="mt-2 flex items-center justify-between">
