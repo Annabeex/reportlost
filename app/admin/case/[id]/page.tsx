@@ -381,6 +381,12 @@ export default function CasePage() {
             {item.description && (
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{item.description}</p>
             )}
+            {(item as any).circumstances && (
+              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                <span className="font-medium text-gray-800">Circonstances :</span>{" "}
+                {(item as any).circumstances}
+              </p>
+            )}
             <div className="mt-1 text-sm text-gray-600">
               👤 {clientName} · {item.email} {item.phone ? `· ${item.phone}` : ""}
               {(item as any).birth_date ? ` · 🎂 ${(item as any).birth_date}` : ""}

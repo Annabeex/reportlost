@@ -24,7 +24,7 @@ async function buildContext(lostItemId: string): Promise<string> {
     sb
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, birth_date, private_detail, contribution, paid, search_status, last_searched_at"
+        "id, public_id, created_at, title, description, circumstances, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, birth_date, private_detail, contribution, paid, search_status, last_searched_at"
       )
       .eq("id", lostItemId)
       .maybeSingle(),
@@ -56,6 +56,7 @@ async function buildContext(lostItemId: string): Promise<string> {
 - Objet : ${item.title || item.description || "?"}
 - Catégorie : ${item.primary_category || (item.categories || []).join(", ") || "?"}
 - Description : ${item.description || "?"}
+- Circonstances de la perte : ${(item as any).circumstances || "non renseignées"}
 - Perdu à : ${item.city || "?"}${item.state_id ? ", " + item.state_id : ""} le ${item.date || "?"} (${item.time_slot || "heure inconnue"})
 - Client : ${[item.first_name, item.last_name].filter(Boolean).join(" ") || "?"} <${item.email || "?"}>${item.phone ? " tel " + item.phone : ""}
 - Contribution : ${item.contribution ?? 0} $ — payé : ${item.paid ? "oui" : "non"}
