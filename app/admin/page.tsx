@@ -128,6 +128,81 @@ function tzForState(stateId?: string | null) {
   return STATE_TZ[s] || 'America/New_York';
 }
 
+// ✅ Coordonnées client éditables (téléphone, adresse, date de naissance,
+// détail privé) : saisies au fil des réponses client (ex: DOB pour dépôt police).
+function ClientFieldsEditor({ item }: { item: any }) {
+  const [fields, setFields] = useState({
+    phone: item.phone || "",
+    address: item.address || "",
+    birth_date: item.birth_date || "",
+    private_detail: item.private_detail || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const dirty =
+    fields.phone !== (item.phone || "") ||
+    fields.address !== (item.address || "") ||
+    fields.birth_date !== (item.birth_date || "") ||
+    fields.private_detail !== (item.private_detail || "");
+
+  const save = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const r = await fetch("/api/admin/update-report", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, fields }),
+      });
+      if (r.ok) {
+        Object.assign(item, fields); // reflète localement sans re-fetch
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } else {
+        alert("Erreur de sauvegarde");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cls =
+    "w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500";
+  return (
+    <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="text-xs text-gray-600">
+          📞 Phone
+          <input className={cls} value={fields.phone}
+            onChange={(e) => setFields((f) => ({ ...f, phone: e.target.value }))} />
+        </label>
+        <label className="text-xs text-gray-600">
+          🎂 Date de naissance
+          <input type="date" className={cls} value={fields.birth_date}
+            onChange={(e) => setFields((f) => ({ ...f, birth_date: e.target.value }))} />
+        </label>
+        <label className="text-xs text-gray-600 sm:col-span-2">
+          🏠 Adresse postale
+          <input className={cls} value={fields.address}
+            onChange={(e) => setFields((f) => ({ ...f, address: e.target.value }))} />
+        </label>
+        <label className="text-xs text-rose-700 sm:col-span-2">
+          🔒 Détail privé de vérification (jamais publié)
+          <input className={cls + " border-rose-200 bg-rose-50"} value={fields.private_detail}
+            onChange={(e) => setFields((f) => ({ ...f, private_detail: e.target.value }))} />
+        </label>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <button type="button" onClick={save} disabled={!dirty || saving}
+          className={`rounded px-3 py-1 text-sm text-white ${dirty ? "bg-emerald-600 hover:brightness-110" : "bg-gray-300"}`}>
+          {saving ? "Sauvegarde…" : "💾 Enregistrer"}
+        </button>
+        {saved && <span className="text-sm text-emerald-700">✓ Enregistré</span>}
+      </div>
+    </div>
+  );
+}
+
 // ✅ Liste de catégories (pour le picker)
 const ALL_CATEGORIES = [
   "keys","wallet","electronics","glasses","documents",
@@ -591,12 +666,18 @@ export default function AdminPage() {
                         </div>
 
                         {/* ✅ Coordonnées client complètes */}
-                        <div className="text-sm text-gray-700 mb-3 grid sm:grid-cols-2 gap-x-6 gap-y-0.5">
+                        <div className="text-sm text-gray-700 mb-2 grid sm:grid-cols-2 gap-x-6 gap-y-0.5">
                           <div><strong>Name:</strong> {[item.first_name, item.last_name].filter(Boolean).join(' ') || '—'}</div>
                           <div><strong>Email:</strong> {item.email || '—'}</div>
-                          <div><strong>Phone:</strong> {item.phone || '—'}</div>
-                          <div><strong>Address:</strong> {item.address || '—'}</div>
                         </div>
+                        {(item as any).circumstances && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            <strong>Circumstances:</strong> {(item as any).circumstances}
+                          </div>
+                        )}
+                        {/* ✅ Champs client éditables (tél, adresse, DOB, détail privé) */}
+                        <ClientFieldsEditor item={item} />
+
 
                         {/* ✅ État de la veille IA + actions */}
                         <div className="text-xs text-gray-600 mb-2 flex flex-wrap items-center gap-3 border-t pt-2">

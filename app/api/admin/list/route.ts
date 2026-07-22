@@ -45,6 +45,9 @@ export async function GET(req: Request) {
           // ✅ coordonnées complètes + catégories
           "phone",
           "address",
+          "birth_date",
+          "private_detail",
+          "circumstances",
           "paid",
           "primary_category",
           "categories",
