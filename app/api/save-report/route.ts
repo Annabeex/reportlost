@@ -359,7 +359,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
             const text = `Hello ${other.first_name || ""},
 
-We have saved your lost item report draft on reportlost.org.
+Your lost item report is saved on reportlost.org, one step away from going live.
 
 One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
@@ -384,7 +384,7 @@ Thank you for using ReportLost.`;
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have saved your lost item report <em>draft</em> on
+      Your lost item report is saved, one step away from going live, on
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
@@ -525,7 +525,7 @@ Contribution : ${other.contribution ?? 0}`;
 
               const text = `Hello ${other.first_name || ""},
 
-We have saved your lost item report draft on reportlost.org.
+Your lost item report is saved on reportlost.org, one step away from going live.
 
 One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
@@ -550,7 +550,7 @@ Thank you for using ReportLost.`;
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have saved your lost item report <em>draft</em> on
+      Your lost item report is saved, one step away from going live, on
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
@@ -718,7 +718,7 @@ const { data: foundRows, error: findErr } = await supabase
 
           const text = `Hello ${other.first_name || ""},
 
-We have saved your lost item report draft on reportlost.org.
+Your lost item report is saved on reportlost.org, one step away from going live.
 
 One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
 
@@ -743,7 +743,7 @@ Thank you for using ReportLost.`;
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      We have saved your lost item report <em>draft</em> on
+      Your lost item report is saved, one step away from going live, on
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
