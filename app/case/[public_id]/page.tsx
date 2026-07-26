@@ -357,6 +357,7 @@ export default async function Page({
               firstName={data.first_name || ""}
               userEmail={data.email || ""}
               caseToken={data.case_token || ""}
+              lostId={String(data.id || "")}
             />
           ) : (
             <CaseFollowup blocks={blocks} publicId={publicId} hideEditButton />

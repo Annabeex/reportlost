@@ -43,6 +43,12 @@ function toRichHtml(src: string) {
   s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/\*(.+?)\*/g, "<em>$1</em>");
 
+  // ligne "IMAGE:/chemin" → image (visuel WANTED du signalement, etc.)
+  s = s.replace(
+    /(^|\n)IMAGE:([^\s<]+)/g,
+    '$1<img src="$2" alt="Report visual" style="max-width:340px;width:100%;border-radius:12px;margin:10px 0;display:block" />'
+  );
+
   // autoriser explicitement <strong>/<b>/<em>/<i> écrits par l'éditeur
   s = s
     .replace(/&lt;(strong|b)&gt;/g, "<$1>")

@@ -23,12 +23,17 @@ function toSafeHTML(text: string): string {
   s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/&lt;strong&gt;/g, "<strong>").replace(/&lt;\/strong&gt;/g, "</strong>");
+  // ligne "IMAGE:/chemin" → aperçu image (visuel WANTED du signalement)
+  s = s.replace(
+    /(^|\n)IMAGE:([^\s<]+)/g,
+    '$1<img src="$2" alt="Report visual" style="max-width:300px;width:100%;border-radius:12px;margin:8px 0;display:block" />'
+  );
   s = s.replace(/\r?\n/g, "<br />");
   return s;
 }
 
 /** Defaults initiaux (utilisés seulement si l’utilisateur clique “Insert template”) */
-function baseDefaults(publicId?: string): Block[] {
+function baseDefaults(publicId?: string, lostId?: string): Block[] {
   const anon = publicId ? `item${publicId}@reportlost.org` : "your case inbox";
   return [
     { id: uid(), title: "Database & Partners searches", paragraphs: [
@@ -59,6 +64,12 @@ function baseDefaults(publicId?: string): Block[] {
     ]},
     { id: uid(), title: "Social Media & Community Posting", paragraphs: [
       "We post the report to our public Facebook page and local groups, prepare a Nextdoor template, and publish short alerts on X and Instagram. Facebook and Nextdoor are typically the most effective for recoveries; Instagram and TikTok are supplementary.",
+      ...(lostId
+        ? [
+            "We created a dedicated search visual for your report, published alongside the alert so your item is instantly recognizable:",
+            `IMAGE:/api/poster/${lostId}`,
+          ]
+        : []),
       "Facebook wallets group, Facebook NY and lost and found groups",
     ]},
     { id: uid(), title: "Specialist Channels & Partners", paragraphs: [
@@ -117,11 +128,13 @@ export default function CaseFollowupEditor({
   firstName,
   userEmail,
   caseToken,
+  lostId,
 }: {
   publicId: string;
   firstName?: string;
   userEmail?: string;
   caseToken?: string;
+  lostId?: string;
 }) {
   const [blocks, setBlocks] = React.useState<Block[]>([]);
   const [dirty, setDirty] = React.useState(false);
@@ -203,11 +216,52 @@ export default function CaseFollowupEditor({
           }
         };
 
+        // 🔎 Synchronisation auto de l'encart veille IA (pistes étudiées)
+        const syncAiWatch = async (input: any[]): Promise<{ blocks: any[]; changed: boolean }> => {
+          try {
+            const d = await getJSON<any>(`/api/case_followup/${encodeURIComponent(publicId)}/dossier`);
+            const cands = Array.isArray(d?.candidates) ? d.candidates : [];
+            const total = Number(d?.reviewedCount || 0);
+            const last = d?.lastSearchedAt
+              ? new Date(d.lastSearchedAt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+              : null;
+            const verdictLabel = (v: string) =>
+              v === "yes" || v === "maybe"
+                ? "possible match, under verification"
+                : "reviewed by our team, not your item";
+            const lines = cands
+              .slice(0, 6)
+              .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)} — ${verdictLabel(c.verdict)}`)
+              .join("\n");
+            const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
+              last ? ` Latest scan: ${last}.` : ""
+            }${total ? ` Leads reviewed so far: ${total}.` : ""}`;
+            const TITLE = "AI Match Watch — Leads Reviewed";
+            const paragraphs = lines
+              ? [summary, lines]
+              : [summary, "No credible lead has surfaced yet. This is normal at this stage: new posts appear every day and your report keeps matching against them."];
+            const idx = input.findIndex((b: any) => b.title === TITLE);
+            if (idx === -1) return { blocks: [...input, { id: uid(), title: TITLE, paragraphs }], changed: true };
+            const cur = JSON.stringify(input[idx].paragraphs || []);
+            if (cur === JSON.stringify(paragraphs)) return { blocks: input, changed: false };
+            const next = input.slice();
+            next[idx] = { ...next[idx], paragraphs };
+            return { blocks: next, changed: true };
+          } catch {
+            return { blocks: input, changed: false };
+          }
+        };
+        const syncAll = async (input: any[]) => {
+          const a = await syncEstablishments(input);
+          const b = await syncAiWatch(a.blocks);
+          return { blocks: b.blocks, changed: a.changed || b.changed };
+        };
+
         // blocs
         const fromApi = Array.isArray(j?.blocks) ? (j.blocks as any[]) : null;
         if (fromApi && fromApi.length > 0) {
           const withIds = fromApi.map((x: any) => ({ ...x, id: x.id || uid() }));
-          const synced = await syncEstablishments(withIds);
+          const synced = await syncAll(withIds);
           setBlocks(synced.blocks);
           setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
           setDirty(synced.changed); // à sauvegarder si la liste a bougé
@@ -226,7 +280,7 @@ export default function CaseFollowupEditor({
           }
           if (draft) {
             const norm = draft.map((x) => ({ ...x, id: x.id || uid() }));
-            const synced = await syncEstablishments(norm);
+            const synced = await syncAll(norm);
             setBlocks(synced.blocks);
             setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
             setDirty(true);
@@ -234,8 +288,8 @@ export default function CaseFollowupEditor({
           } else {
             // 2) dossier sans compte rendu : modèle complet auto-inséré,
             // établissements déjà synchronisés (plus besoin de "Insert template")
-            const d0 = applyLocalDefaults(baseDefaults(publicId));
-            const synced = await syncEstablishments(d0);
+            const d0 = applyLocalDefaults(baseDefaults(publicId, lostId));
+            const synced = await syncAll(d0);
             setBlocks(synced.blocks);
             setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
             setDirty(true);
@@ -318,7 +372,7 @@ export default function CaseFollowupEditor({
   }, [notes, publicId]);
 
   const insertTemplate = () => {
-    const d = applyLocalDefaults(baseDefaults(publicId));
+    const d = applyLocalDefaults(baseDefaults(publicId, lostId));
     setBlocks(d);
     setEditing(Object.fromEntries(d.map((x) => [x.id, false])));
     setDirty(true);
