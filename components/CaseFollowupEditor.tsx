@@ -291,6 +291,79 @@ export default function CaseFollowupEditor({
     setDirty(true);
   };
 
+  // 🏢 Remplit "Local notifications & Authority outreach" avec les
+  // établissements réellement suivis dans le dossier admin.
+  const [dossierBusy, setDossierBusy] = React.useState(false);
+  const fillEstablishments = async () => {
+    setDossierBusy(true);
+    try {
+      const j = await getJSON<any>(`/api/case_followup/${encodeURIComponent(publicId)}/dossier`);
+      const list = Array.isArray(j?.establishments) ? j.establishments : [];
+      if (!list.length) {
+        alert("Aucun établissement suivi dans le dossier. Ajoute-les via 'Qui contacter ?' dans l'admin d'abord.");
+        return;
+      }
+      const lines = list
+        .map((e: any) => {
+          const parts = [`✅ ${e.name || "Local service"}`];
+          if (e.email) parts.push(`📧 ${e.email}`);
+          if (e.notes) parts.push(String(e.notes));
+          return parts.join("\n");
+        })
+        .join("\n\n");
+      const TITLE = "Local notifications & Authority outreach";
+      const INTRO =
+        "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.";
+      setBlocks((prev) => {
+        const idx = prev.findIndex((b) => b.title === TITLE);
+        if (idx === -1) return [...prev, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }];
+        const next = prev.slice();
+        const intro = next[idx].paragraphs?.[0] || INTRO;
+        next[idx] = { ...next[idx], paragraphs: [intro, lines] };
+        return next;
+      });
+      setDirty(true);
+    } finally {
+      setDossierBusy(false);
+    }
+  };
+
+  // 🔎 Insère/actualise l'encart veille IA + pistes étudiées.
+  const fillAiWatch = async () => {
+    setDossierBusy(true);
+    try {
+      const j = await getJSON<any>(`/api/case_followup/${encodeURIComponent(publicId)}/dossier`);
+      const cands = Array.isArray(j?.candidates) ? j.candidates : [];
+      const total = Number(j?.reviewedCount || 0);
+      const last = j?.lastSearchedAt
+        ? new Date(j.lastSearchedAt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+        : null;
+      const verdictLabel = (v: string) =>
+        v === "yes" || v === "maybe"
+          ? "possible match, under verification"
+          : "reviewed by our team, not your item";
+      const lines = cands
+        .slice(0, 6)
+        .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)} — ${verdictLabel(c.verdict)}`)
+        .join("\n");
+      const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
+        last ? ` Latest scan: ${last}.` : ""
+      }${total ? ` Leads reviewed so far: ${total}.` : ""}`;
+      const TITLE = "AI Match Watch — Leads Reviewed";
+      const paragraphs = lines ? [summary, lines] : [summary, "No credible lead has surfaced yet. This is normal at this stage: new posts appear every day and your report keeps matching against them."];
+      setBlocks((prev) => {
+        const idx = prev.findIndex((b) => b.title === TITLE);
+        if (idx === -1) return [...prev, { id: uid(), title: TITLE, paragraphs }];
+        const next = prev.slice();
+        next[idx] = { ...next[idx], paragraphs };
+        return next;
+      });
+      setDirty(true);
+    } finally {
+      setDossierBusy(false);
+    }
+  };
+
   const save = async () => {
     // Normalisation minimale
     const payload = blocks.map((b) => ({
@@ -508,6 +581,22 @@ We will keep you informed as soon as we have any new information.`.replace(/\n{2
             Insert template
           </button>
         )}
+
+        {/* 🏢 Remplissage auto depuis le dossier admin */}
+        <button
+          className={`rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 ${dossierBusy ? "opacity-50 pointer-events-none" : ""}`}
+          onClick={fillEstablishments}
+          title="Remplit la section Local notifications avec les établissements suivis dans le dossier"
+        >
+          🏢 Établissements du dossier
+        </button>
+        <button
+          className={`rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 ${dossierBusy ? "opacity-50 pointer-events-none" : ""}`}
+          onClick={fillAiWatch}
+          title="Insère l'encart veille IA : recherches et pistes étudiées"
+        >
+          🔎 Veille IA du dossier
+        </button>
 
         {dirty && <span className="text-sm text-amber-700">Unsaved changes</span>}
         {restoredFromDraft && (

@@ -115,25 +115,60 @@ Règles STRICTES :
 - Termine par DEUX brouillons de mail en anglais : (A) pour les organismes PUBLICS (police, mairie, sheriff...) : ton factuel et administratif ; ⚠️ GÉNÉRIQUE et réutilisable TEL QUEL pour tous les organismes de la liste, car Anna envoie le même mail à plusieurs : salutation neutre "Dear Sir or Madam", ne JAMAIS nommer l'organisme dans le sujet ni le corps, et TOUJOURS inclure la phrase "Could you kindly forward this message to the appropriate department or lost and found service?" ; l'email personnel du client peut y figurer si utile ; (B) pour les LIEUX FRÉQUENTÉS par le client (restaurant, bar, hôtel, commerce) : ton chaleureux et humain, mentionner la grande valeur SENTIMENTALE de l'objet pour son propriétaire (adapter : souvenir de famille, cadeau...) SANS JAMAIS parler de valeur monétaire ni de récompense, une touche d'émotion sobre (une phrase), demander gentiment de vérifier auprès de l'équipe si l'objet a été retrouvé ou mis de côté, et UNIQUEMENT l'adresse relais item${item.public_id || ""}@reportlost.org comme contact. RÈGLES COMMUNES : réponse à Anna et intitulés en FRANÇAIS, brouillons en ANGLAIS uniquement ; sujet contenant #${item.public_id || ""} ; texte brut SANS aucun symbole markdown (pas de **, pas de #, pas de tirets de ponctuation) ; JAMAIS de placeholder [Client Name] ou [Client Phone/Email] ; signature exacte :
 Anna
 ReportLost.org
-Encadre chacun avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.`,
+Encadre chacun avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.
+- TOUT À LA FIN de ta réponse, ajoute une ligne machine (elle sera retirée avant affichage) : ENTITIES_JSON: suivie d'un tableau JSON compact des entités listées, format [{"name":"...","email":"" ou email trouvé,"url":"" ou url,"phone":"" ou téléphone,"address":"" ou adresse,"role":"une ligne décrivant son rôle pour ce dossier"}]. Uniquement des infos présentes dans les résultats de recherche.`,
       `Signalement :\n${report}\n\nRésultats de recherche Google :\n\n${results}`,
       2500
     );
 
-    // 4) Sauvegarde automatique dans le dossier (note interne, visible timeline + contexte IA)
+    // 4) Extraction des entités → fiches "Établissements contactés" du dossier
+    //    (alimente le suivi et le bouton "Établissements du dossier" du compte rendu)
+    let cleanReply = reply;
+    try {
+      const m = reply.match(/ENTITIES_JSON:\s*(\[[\s\S]*\])/);
+      if (m) {
+        cleanReply = reply.replace(/ENTITIES_JSON:[\s\S]*$/, "").trim();
+        const entities = JSON.parse(m[1]);
+        if (Array.isArray(entities) && entities.length) {
+          const { data: existing } = await sb
+            .from("case_establishments")
+            .select("name")
+            .eq("lost_item_id", item.id);
+          const known = new Set((existing || []).map((e: any) => String(e.name).toLowerCase().trim()));
+          const rows = entities
+            .filter((e: any) => e?.name && !known.has(String(e.name).toLowerCase().trim()))
+            .slice(0, 8)
+            .map((e: any) => ({
+              lost_item_id: item.id,
+              name: String(e.name).slice(0, 120),
+              email: e.email ? String(e.email).slice(0, 160) : null,
+              url: e.url ? String(e.url).slice(0, 300) : null,
+              notes: [e.address ? `📍 ${e.address}` : "", e.phone ? `📞 ${e.phone}` : "", e.role ? String(e.role) : ""]
+                .filter(Boolean)
+                .join("\n")
+                .slice(0, 600) || null,
+            }));
+          if (rows.length) await sb.from("case_establishments").insert(rows);
+        }
+      }
+    } catch (e) {
+      console.error("[case-places] extraction entités non bloquante:", e);
+    }
+
+    // 5) Sauvegarde automatique dans le dossier (note interne, visible timeline + contexte IA)
     try {
       await sb.from("case_messages").insert({
         lost_item_id: item.id,
         public_id: item.public_id,
         direction: "note",
         subject: "Recherche établissements (qui contacter)",
-        body_text: reply,
+        body_text: cleanReply,
       });
     } catch (e) {
       console.error("[case-places] sauvegarde note:", e);
     }
 
-    return NextResponse.json({ reply, queries });
+    return NextResponse.json({ reply: cleanReply, queries });
   } catch (e: any) {
     console.error("[case-places] fatal:", e);
     return NextResponse.json({ error: String(e?.message || e) }, { status: 500 });
