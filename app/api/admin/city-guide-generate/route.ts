@@ -242,11 +242,12 @@ ${results}`,
           .eq("id", cityRow.id)
           .maybeSingle();
         const stripHtml = (s: string) => String(s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+        // ⚠️ On ÉCRASE toujours l'ancien title/meta : les valeurs héritées des
+        // 31k pages d'origine étaient génériques ou tronquées en pleine phrase,
+        // ce qui plombait le CTR des pages enrichies.
         const seoPatch: Record<string, string> = {};
-        if (seoRow && !seoRow.static_title) {
+        if (seoRow) {
           seoPatch.static_title = `Lost & Found in ${cityName}, ${stateAbbr}: Report a Lost Item`;
-        }
-        if (seoRow && !seoRow.static_content) {
           const desc = stripHtml(guide.heroSubtitle || (Array.isArray(guide.intro) ? guide.intro[0] : "") || "");
           if (desc) seoPatch.static_content = desc.slice(0, 300);
         }

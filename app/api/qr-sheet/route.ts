@@ -1,193 +1,150 @@
-// app/api/sticker-sheet/route.ts
+// app/api/qr-sheet/route.ts
+// Planche A4 de stickers "IF FOUND, SCAN ME" générée entièrement en code
+// (plus de template Canva) : identité visuelle ReportLost (verts), QR vert
+// foncé assortis, découpe le long des bordures.
+// 4 petits (clés, gourde) + 3 moyens (téléphone, ordinateur) + 4 grands
+// (bagage, sac) + 1 bandeau large.
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb } from "pdf-lib";
-// CJS ok en route API Next
-const qrImage = require("qr-image");
+import { PDFDocument, StandardFonts, rgb, PDFFont } from "pdf-lib";
+const QRCode = require("qrcode");
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* ---------- Utils ---------- */
-const mm = (n: number) => (n / 25.4) * 72; // 72pt/in • 25.4 mm/in
+const mm = (n: number) => (n / 25.4) * 72;
+const PAGE_W = mm(210);
+const PAGE_H = mm(297);
 
-/** A4 portrait */
-const PAGE_W_MM = 210;
-const PAGE_H_MM = 297;
-const PAGE_W_PT = mm(PAGE_W_MM);
-const PAGE_H_PT = mm(PAGE_H_MM);
+// Palette ReportLost
+const GREEN_DEEP = rgb(0.096, 0.325, 0.18); // bandeaux
+const GREEN = rgb(0.18, 0.627, 0.322); // #2EA052 bordures
+const GREEN_BG = rgb(0.929, 0.973, 0.941); // fond doux
+const GRAY = rgb(0.42, 0.45, 0.44);
+const WHITE = rgb(1, 1, 1);
+const QR_DARK = "#14532d"; // vert très foncé, contraste suffisant pour le scan
 
-/** Charge la planche modèle depuis /public/templates/planche-QR-code.pdf */
-async function loadTemplate(req: NextRequest): Promise<Uint8Array> {
-  const base =
-    (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
-    `${req.headers.get("x-forwarded-proto") || "https"}://${
-      req.headers.get("x-forwarded-host") || req.headers.get("host")
-    }`;
-  const url = `${base}/templates/planche-QR-code.pdf`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Template introuvable (${res.status})`);
-  return new Uint8Array(await res.arrayBuffer());
-}
-
-/** Génère un PNG QR (sans marge) */
-function makeQrPng(url: string): Buffer {
-  return qrImage.imageSync(url, {
-    type: "png",
-    ec_level: "M",
-    margin: 0,
-  }) as Buffer;
-}
-
-/* ---------- SLOTS : coller ici tes mesures Canva ---------- */
-/**
- * IMPORTANT
- * - Canva t’affiche LARG., HAUT., X, Y (souvent en cm) pour chaque QR maquette.
- * - Convertis-les en mm (cm × 10) et renseigne ci-dessous.
- * - left_mm / top_mm = coin SUPÉRIEUR GAUCHE de la zone QR.
- * - width_mm / height_mm = taille exacte du QR voulu (souvent carré).
- * - Le code convertit automatiquement en coordonnées PDF (origine bas-gauche).
- *
- * Commence avec 2–3 emplacements, vérifie en local (?debug=1), puis complète.
- */
-type SlotTopLeft = {
-  left_mm: number;
-  top_mm: number;
-  width_mm: number;
-  height_mm: number;
-  eraseUnder?: boolean; // masque blanc sous le QR (par défaut true)
-};
-
-// EXEMPLES (à remplacer par tes vraies valeurs Canva) :
-const SLOTS_TOPLEFT: SlotTopLeft[] = [
-  // ---- Ligne 1 (exemples fictifs) ----
-  { left_mm: 22.5,  top_mm: 19.4, width_mm: 18.6, height_mm: 18.3, eraseUnder: true }, // rond 1
-  { left_mm: 71.1, top_mm: 19.2, width_mm: 18.6, height_mm: 18.3, eraseUnder: true }, // rond 2
-  { left_mm: 121.4, top_mm: 20.7, width_mm: 16.4, height_mm: 16.1, eraseUnder: true }, // rond 3
-  { left_mm: 169.9, top_mm: 20.1, width_mm: 16.9, height_mm: 16.6, eraseUnder: true }, // rond 4
-
-  // ---- Ligne 2 (rect. verticaux) ----
-  { left_mm: 27.4,  top_mm: 27, width_mm: 18, height_mm: 81.7, eraseUnder: true },
-  { left_mm: 23.3,  top_mm: 22.9, width_mm: 75, height_mm: 84.1, eraseUnder: true },
-  { left_mm: 18.6, top_mm: 18.3, width_mm: 144.4, height_mm: 59.4, eraseUnder: true },
-
-  // ---- Grand rectangle à droite ----
-  { left_mm: 55.5, top_mm: 54.7, width_mm: 131.8, height_mm: 136, eraseUnder: true },
-
-  // ---- Lignes du bas… (complète avec tes vraies mesures) ----
-  // { left_mm: ..., top_mm: ..., width_mm: ..., height_mm: ..., eraseUnder: true },
-];
-
-/* ---------- Route ---------- */
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const debug = url.searchParams.get("debug") === "1";
-    const onlyIdx = url.searchParams.get("only"); // e.g. ?only=0 pour ne poser qu’un slot
 
-    // public_id : ?public_id=12345 ou via lost_items.id
     const sb = getSupabaseAdmin();
-    if (!sb) {
-      return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
-    }
+    if (!sb) return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
+
     let public_id = url.searchParams.get("public_id");
     if (!public_id) {
       const id = url.searchParams.get("id");
-      if (!id) {
-        return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
-      }
-      const { data, error } = await sb
-        .from("lost_items")
-        .select("public_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (error || !data?.public_id) {
-        return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
-      }
+      if (!id) return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
+      const { data, error } = await sb.from("lost_items").select("public_id").eq("id", id).maybeSingle();
+      if (error || !data?.public_id) return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
       public_id = String(data.public_id);
     }
     if (!/^\d{5}$/.test(public_id)) {
       return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
     }
 
-    // URL scannée
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
-      `${req.headers.get("x-forwarded-proto") || "https"}://${
-        req.headers.get("x-forwarded-host") || req.headers.get("host")
-      }`;
+      `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host")}`;
     const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
+    const relayEmail = `item${public_id}@reportlost.org`;
 
-    // Charger la planche
-    const templateBytes = await loadTemplate(req);
-    const pdf = await PDFDocument.load(templateBytes);
-    const [page] = pdf.getPages();
-    const { width: pw, height: ph } = page.getSize();
+    // QR vert foncé, net (scale élevé), sans marge (le sticker fournit la sienne)
+    const qrPng: Buffer = await QRCode.toBuffer(scanUrl, {
+      errorCorrectionLevel: "M",
+      margin: 0,
+      scale: 12,
+      color: { dark: QR_DARK, light: "#ffffff" },
+    });
 
-    // Sanity : si ton PDF n’est pas exactement A4, on convertit quand même
-    // en proportion de la taille réelle.
-    const scaleX = pw / PAGE_W_PT;
-    const scaleY = ph / PAGE_H_PT;
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([PAGE_W, PAGE_H]);
+    const qr = await pdf.embedPng(qrPng);
+    const helv = await pdf.embedFont(StandardFonts.Helvetica);
+    const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const helvO = await pdf.embedFont(StandardFonts.HelveticaOblique);
 
-    // QR unique
-    const qrPng = makeQrPng(scanUrl);
-    const qrImg = await pdf.embedPng(qrPng);
+    // ---- helpers (coordonnées en mm depuis le HAUT-GAUCHE) ----
+    const text = (t: string, leftMm: number, topMm: number, size: number, font: PDFFont, color = GREEN_DEEP) =>
+      page.drawText(t, { x: mm(leftMm), y: PAGE_H - mm(topMm) - size, size, font, color });
+    const textCenter = (t: string, centerMm: number, topMm: number, size: number, font: PDFFont, color = GREEN_DEEP) => {
+      const w = font.widthOfTextAtSize(t, size);
+      page.drawText(t, { x: mm(centerMm) - w / 2, y: PAGE_H - mm(topMm) - size, size, font, color });
+    };
+    const rect = (leftMm: number, topMm: number, wMm: number, hMm: number, opts: any) =>
+      page.drawRectangle({ x: mm(leftMm), y: PAGE_H - mm(topMm) - mm(hMm), width: mm(wMm), height: mm(hMm), ...opts });
+    const qrAt = (leftMm: number, topMm: number, sizeMm: number) =>
+      page.drawImage(qr, { x: mm(leftMm), y: PAGE_H - mm(topMm) - mm(sizeMm), width: mm(sizeMm), height: mm(sizeMm) });
 
-    // Sélection de slots
-    const slots = SLOTS_TOPLEFT.filter((_, i) =>
-      onlyIdx === null ? true : i === Number(onlyIdx)
-    );
+    // ---- En-tête ----
+    rect(12, 12, 186, 20, { color: GREEN_DEEP });
+    text("ReportLost", 18, 17.5, 18, helvB, WHITE);
+    {
+      const t = `Secure ID stickers  ·  Case #${public_id}`;
+      const w = helv.widthOfTextAtSize(t, 10.5);
+      page.drawText(t, { x: mm(192) - w, y: PAGE_H - mm(20.5) - 10.5, size: 10.5, font: helv, color: WHITE });
+    }
+    text("Stick them on the items you carry every day. A finder scans the code and reaches you through", 12, 35.5, 8, helv, GRAY);
+    text("your protected ReportLost address. Your personal details stay private.", 12, 39.5, 8, helv, GRAY);
 
-    for (const s of slots) {
-      const leftPt = mm(s.left_mm) * scaleX;
-      const topPt = mm(s.top_mm) * scaleY;
-      const wPt = mm(s.width_mm) * scaleX;
-      const hPt = mm(s.height_mm) * scaleY;
+    // ---- Petits stickers (x4) : clés, gourde, étui... ----
+    const drawSmall = (left: number, top: number) => {
+      const w = 42, h = 40;
+      rect(left, top, w, h, { color: WHITE, borderColor: GREEN, borderWidth: 1.2 });
+      rect(left, top, w, 7.5, { color: GREEN_BG });
+      textCenter("IF FOUND, SCAN ME", left + w / 2, top + 2.3, 6.8, helvB);
+      qrAt(left + (w - 24) / 2, top + 10.5, 24);
+      textCenter("reportlost.org", left + w / 2, top + h - 4.6, 6, helv, GRAY);
+    };
+    [0, 1, 2, 3].forEach((i) => drawSmall(12 + i * 48, 46));
 
-      // Conversion top-left (Canva) -> bottom-left (PDF)
-      const x = leftPt;
-      const y = ph - topPt - hPt;
+    // ---- Stickers moyens (x3) : téléphone, ordinateur... ----
+    const drawMedium = (left: number, top: number) => {
+      const w = 58, h = 32;
+      rect(left, top, w, h, { color: WHITE, borderColor: GREEN, borderWidth: 1.2 });
+      qrAt(left + 4, top + 4, 24);
+      text("IF FOUND", left + 32.5, top + 7, 9.5, helvB);
+      text("please scan the code", left + 32.5, top + 13.5, 6.8, helv, GRAY);
+      text("reportlost.org", left + 32.5, top + 21, 7, helvB, GREEN);
+    };
+    [0, 1, 2].forEach((i) => drawMedium(12 + i * 64, 92));
 
-      // Masque blanc pour cacher le QR maquette en dessous
-      if (s.eraseUnder !== false) {
-        page.drawRectangle({
-          x,
-          y,
-          width: wPt,
-          height: hPt,
-          color: rgb(1, 1, 1),
-        });
-      }
+    // ---- Grands stickers (x4) : bagage, sac, poussette... ----
+    const drawLarge = (left: number, top: number) => {
+      const w = 90, h = 52;
+      rect(left, top, w, h, { color: WHITE, borderColor: GREEN, borderWidth: 1.2 });
+      rect(left, top, w, 9, { color: GREEN_DEEP });
+      textCenter("THIS ITEM IS PROTECTED", left + w / 2, top + 2.6, 7.8, helvB, WHITE);
+      qrAt(left + 5, top + 14, 30);
+      text("If found, please scan the code", left + 39.5, top + 17, 8.2, helvB);
+      text("or email us at:", left + 39.5, top + 23.5, 7, helv, GRAY);
+      text(relayEmail, left + 39.5, top + 28.5, 7.6, helvB);
+      text("Thank you for your honesty.", left + 39.5, top + 36, 6.6, helvO, GRAY);
+      textCenter("reportlost.org", left + w / 2, top + h - 5, 6.5, helv, GRAY);
+    };
+    drawLarge(12, 130);
+    drawLarge(108, 130);
+    drawLarge(12, 188);
+    drawLarge(108, 188);
 
-      // Debug : contour rouge
-      if (debug) {
-        page.drawRectangle({
-          x,
-          y,
-          width: wPt,
-          height: hPt,
-          borderWidth: 1,
-          borderColor: rgb(1, 0, 0),
-          color: undefined,
-        });
-      }
-
-      // Coller le QR
-      page.drawImage(qrImg, {
-        x,
-        y,
-        width: wPt,
-        height: hPt,
-      });
+    // ---- Bandeau large (x1) : valise, carton, vélo... ----
+    {
+      const left = 12, top = 246, w = 186, h = 32;
+      rect(left, top, w, h, { color: WHITE, borderColor: GREEN, borderWidth: 1.2 });
+      qrAt(left + 4, top + 4, 24);
+      text("IF FOUND, PLEASE SCAN THE CODE", left + 34, top + 8.5, 13, helvB);
+      text(`or email ${relayEmail}   ·   reportlost.org`, left + 34, top + 19, 8.5, helv, GRAY);
     }
 
+    // ---- Pied de page ----
+    textCenter("Print on adhesive A4 paper and cut along the green borders  ·  reportlost.org", 105, 285, 7.5, helv, GRAY);
+
     const bytes = await pdf.save();
-    const fileName = `stickers_${public_id}.pdf`;
     return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Disposition": `inline; filename="stickers_${public_id}.pdf"`,
         "Cache-Control": "no-store",
       },
     });

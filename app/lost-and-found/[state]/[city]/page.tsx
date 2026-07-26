@@ -254,7 +254,8 @@ export default async function Page({ params }: { params: { state: string; city: 
           .from("lost_items")
           .select("title, city, state_id, created_at, slug")
           .eq("state_id", stateAbbr)
-          .ilike("city", cityData.city_ascii) // stricter than %...%
+          // Le formulaire stocke souvent "Tucson (AZ)" : préfixe requis, pas égalité
+          .ilike("city", `${cityData.city_ascii}%`)
           .gte("created_at", ninetyDaysAgoIso)
           .order("created_at", { ascending: false })
           .limit(3);
@@ -263,8 +264,8 @@ export default async function Page({ params }: { params: { state: string; city: 
           realReports = recentLost.map((r) => {
             const label = (r?.title && String(r.title).trim()) || "Lost item";
             const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : formatMonthDay(new Date());
-            const where =
-              r?.city && r?.state_id ? `${r.city}, ${r.state_id}` : r?.city ? String(r.city) : cityData.city_ascii;
+            const cityClean = String(r?.city || cityData.city_ascii).replace(/\s*\([^)]*\)\s*$/, "").trim();
+            const where = r?.state_id ? `${cityClean}, ${r.state_id}` : cityClean;
             return {
               text: ` ${label} lost in ${where}, ${when}.`,
               slug: r?.slug ? String(r.slug) : null,

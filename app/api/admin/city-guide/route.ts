@@ -155,17 +155,14 @@ export async function PUT(req: NextRequest) {
           .maybeSingle();
         if (g && cityRow) {
           const stripHtml = (s: string) => String(s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-          const seoPatch: Record<string, string> = {};
-          if (!cityRow.static_title) {
-            seoPatch.static_title = `Lost & Found in ${cityRow.city_ascii}, ${stateUp}: Report a Lost Item`;
-          }
-          if (!cityRow.static_content) {
-            const desc = stripHtml(g.heroSubtitle || (Array.isArray(g.intro) ? g.intro[0] : "") || "");
-            if (desc) seoPatch.static_content = desc.slice(0, 300);
-          }
-          if (Object.keys(seoPatch).length) {
-            await sb.from("us_cities").update(seoPatch).eq("id", cityRow.id);
-          }
+          // ⚠️ Écrase toujours l'ancien title/meta hérité des pages d'origine
+          // (génériques/tronqués), qui plombait le CTR des pages enrichies.
+          const seoPatch: Record<string, string> = {
+            static_title: `Lost & Found in ${cityRow.city_ascii}, ${stateUp}: Report a Lost Item`,
+          };
+          const desc = stripHtml(g.heroSubtitle || (Array.isArray(g.intro) ? g.intro[0] : "") || "");
+          if (desc) seoPatch.static_content = desc.slice(0, 300);
+          await sb.from("us_cities").update(seoPatch).eq("id", cityRow.id);
         }
       } catch (e) {
         console.error("[city-guide] maj SEO us_cities non bloquante:", e);

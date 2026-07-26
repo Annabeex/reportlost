@@ -30,6 +30,7 @@ type Report = {
   created_at?: string | null;
   date?: string | null;
   isFake?: boolean; // pour distinguer les seeds
+  slug?: string | null; // page publique /lost/... (vrais signalements)
 };
 
 // ---------- Supabase ----------
@@ -225,7 +226,7 @@ async function searchTable(
 
   const sel =
     table === "lost_items"
-      ? "id,title,city,state_id,object_photo,public_id,date,created_at"
+      ? "id,title,city,state_id,object_photo,public_id,date,created_at,slug"
       : "id,title,city,state_id,image_url,date,created_at";
 
   const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -267,7 +268,7 @@ async function searchTable(
       isFake: false,
     };
     return table === "lost_items"
-      ? { ...base, image: r.object_photo || null, status: "lost" as const }
+      ? { ...base, image: r.object_photo || null, status: "lost" as const, slug: r.slug || null }
       : { ...base, image: r.image_url || null, status: "found" as const };
   });
 }
@@ -693,9 +694,22 @@ function ReportCard({ report }: { report: Report }) {
     </div>
   );
 
-  return (
-    <a href={mailtoHref(report)} className="block group" title="Contact by email">
-      {cardInner}
-    </a>
-  );
+  // TROUVÉS : contact par email (le propriétaire potentiel écrit au trouveur).
+  // PERDUS : pas de "contact by email" (illogique), lien vers la page du
+  // signalement quand il est réel, sinon carte simple.
+  if (report.status === "found") {
+    return (
+      <a href={mailtoHref(report)} className="block group" title="Contact by email">
+        {cardInner}
+      </a>
+    );
+  }
+  if (!report.isFake && report.slug) {
+    return (
+      <Link href={`/lost/${report.slug}`} className="block group" title="View report">
+        {cardInner}
+      </Link>
+    );
+  }
+  return <div className="group">{cardInner}</div>;
 }
