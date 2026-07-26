@@ -77,7 +77,10 @@ async function buildContext(lostItemId: string): Promise<string> {
                 : m.direction === "note"
                 ? "NOTE INTERNE d'Anna (consigne à prendre en compte)"
                 : "ENVOYÉ à " + (m.to_email || "?");
-            return `[${fmtDate(m.created_at)}] ${head} — ${m.subject || "(sans sujet)"}\n${(m.body_text || "").slice(0, 1500)}`;
+            // Les notes internes (dont "qui contacter") peuvent être longues :
+            // on les garde presque entières, sinon les derniers établissements
+            // et consignes disparaissent du contexte de l'assistant.
+            return `[${fmtDate(m.created_at)}] ${head} — ${m.subject || "(sans sujet)"}\n${(m.body_text || "").slice(0, m.direction === "note" ? 5000 : 1500)}`;
           })
           .join("\n---\n")
     );
@@ -131,7 +134,10 @@ EMAIL>>>
 
 ## Le "mail initial d'enquête" (quand Anna demande le mail initial)
 Adapte ce modèle au dossier (objet, ville, lieu, créneau, prénom). Garde ce ton chaleureux et professionnel.
-⚠️ Ce mail reste au niveau VILLE : les circonstances servent au ciblage des contacts, pas à réécrire ce mail. Ne pas y détailler les établissements cités par le client.
+⚠️ RÈGLE D'OR pour la liste "we have reached out to" :
+1) TOUJOURS y mettre d'office le police department local et le city hall de la ville : Anna les contacte systématiquement, pas besoin de confirmation dans le dossier.
+2) AJOUTER les lieux supplémentaires attestés par le dossier : établissements cités dans les notes d'Anna (résultat "qui contacter" inclus), mails déjà ENVOYÉS à d'autres destinataires dans l'historique, établissements suivis marqués contactés, et lieux que le client a cités dans ses circonstances (restaurant, bar, autre ville...).
+3) Si une note d'Anna signale une information manquante ou provisoire pour le dépôt police (date de naissance, adresse...), le mail au client DOIT le traduire en une ligne claire et polie : soit demander l'information manquante ("their form requires your date of birth, simply reply with it"), soit expliquer avec transparence ce qui a été fait et comment le corriger ("a provisional detail was used for the filing, you can ask the police department to update it, here is the case number"). Les notes d'Anna sont des consignes, jamais du décor.
 
 SUBJECT: Your lost item case Update (<public_id>)
 <<<EMAIL
