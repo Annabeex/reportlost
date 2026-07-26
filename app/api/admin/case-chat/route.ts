@@ -160,7 +160,31 @@ ReportLost.org
 EMAIL>>>
 
 ## Suggestions d'établissements à contacter
-Quand Anna demande qui contacter : propose une liste courte et priorisée (3 à 6) adaptée au lieu de perte — police locale, city hall, puis selon le contexte : parc (administration), restaurant/hôtel (directement), transports, aéroport, centre commercial... Pour chacun : nom, moyen de contact probable (email ou formulaire web), et sur demande un brouillon de mail en anglais (sujet contenant #<public_id>). IMPORTANT : tu n'as pas accès au web — signale les adresses, téléphones et emails précis comme "(à vérifier)" plutôt que de les affirmer. Anna les vérifie puis les ajoute à sa liste d'établissements.`;
+Quand Anna demande qui contacter : propose une liste courte et priorisée (3 à 6) adaptée au lieu de perte — police locale, city hall, puis selon le contexte : parc (administration), restaurant/hôtel (directement), transports, aéroport, centre commercial... Pour chacun : nom, moyen de contact probable (email ou formulaire web), et sur demande un brouillon de mail en anglais (sujet contenant #<public_id>). IMPORTANT : tu n'as pas accès au web — signale les adresses, téléphones et emails précis comme "(à vérifier)" plutôt que de les affirmer. Anna les vérifie puis les ajoute à sa liste d'établissements.
+
+## DEUX modèles de mail établissement (choisis selon le destinataire)
+
+### A. Organisme PUBLIC (police, city hall, animal control, transit public)
+Ton factuel et administratif. L'email personnel du client peut y figurer si utile. Structure : signalement de l'objet perdu, description précise, lieu, date et créneau, demande de vérification des registres lost & found ou de transfert au bon service, référence #<public_id>, contact de réponse.
+
+### B. Lieu FRÉQUENTÉ par le client (restaurant, bar, hôtel, commerce, taxi...)
+Ton chaleureux et humain, on s'adresse à une équipe qui peut avoir envie d'aider. Règles : mentionner que l'objet a une grande valeur SENTIMENTALE pour son propriétaire (souvenir de famille, cadeau, compagnon de voyage... adapte à l'objet) SANS JAMAIS évoquer de valeur monétaire ni de récompense ; jouer sur l'émotion avec sobriété, une phrase suffit, pas de pathos ; demander gentiment de vérifier auprès de l'équipe (salle, ménage, comptoir) si l'objet a été retrouvé ou mis de côté ; UNIQUEMENT l'adresse relais item<public_id>@reportlost.org comme contact, jamais l'email du client. Exemple d'esprit (à reformuler à chaque fois, jamais copié tel quel) :
+
+SUBJECT: Lost <objet> at <établissement>, could your team check? (#<public_id>)
+<<<EMAIL
+Hello,
+
+I'm reaching out on behalf of one of our clients who lost a <objet précis> at <établissement> on <date>, likely <moment/contexte : during dinner, at the bar...>.
+
+Beyond the object itself, this <objet court> carries real sentimental value for its owner, <une phrase sobre adaptée : it was her grandmother's, a gift from his late father, it holds years of family photos...>. Getting it back would mean a lot.
+
+Would you mind checking with your team (floor staff, cleaning, front desk) whether it was found or set aside? If it turns up, simply reply to this email: item<public_id>@reportlost.org
+
+Thank you so much for taking a minute for this.
+
+Anna
+ReportLost.org
+EMAIL>>>`;
 
 export async function POST(req: NextRequest) {
   try {

@@ -157,7 +157,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
             display: "flex",
             padding: "40px",
             fontFamily: fam,
-            background: `linear-gradient(135deg, ${hexToRgba(accent, 0.5)} 0%, #ffffff 68%)`,
+            // Cadre coloré sur tout le tour : dégradé léger du plein vers le
+            // pâle, jamais blanc (le coin bas-droit paraissait "vide").
+            background: `linear-gradient(135deg, ${hexToRgba(accent, 0.55)} 0%, ${hexToRgba(accent, 0.22)} 55%, ${hexToRgba(accent, 0.38)} 100%)`,
           }}
         >
           <div
