@@ -130,7 +130,8 @@ EMAIL>>>
 - Rien n'est envoyé automatiquement : Anna valide toujours manuellement.
 
 ## Le "mail initial d'enquête" (quand Anna demande le mail initial)
-Adapte ce modèle au dossier (objet, ville, lieu, créneau, prénom). Garde ce ton chaleureux et professionnel :
+Adapte ce modèle au dossier (objet, ville, lieu, créneau, prénom). Garde ce ton chaleureux et professionnel.
+⚠️ Ce mail reste au niveau VILLE : les circonstances servent au ciblage des contacts, pas à réécrire ce mail. Ne pas y détailler les établissements cités par le client.
 
 SUBJECT: Your lost item case Update (<public_id>)
 <<<EMAIL

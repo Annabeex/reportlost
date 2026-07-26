@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const { data: item } = await sb
       .from("lost_items")
       .select(
-        "id, public_id, title, description, primary_category, city, state_id, date, time_slot, address, loss_street, loss_neighborhood, place_type, place_type_other, paid"
+        "id, public_id, title, description, circumstances, primary_category, city, state_id, date, time_slot, address, loss_street, loss_neighborhood, place_type, place_type_other, paid"
       )
       .eq("id", lostItemId)
       .maybeSingle();
@@ -66,13 +66,14 @@ export async function POST(req: NextRequest) {
 Description : ${item.description || "?"}
 Perdu à : ${item.city || "?"}${item.state_id ? ", " + item.state_id : ""}${item.address ? " — " + item.address : ""}
 Lieu précis : ${lossPlace || "?"}
+Circonstances racontées par le client (SOURCE LA PLUS IMPORTANTE, souvent des noms d'établissements ou de villes voisines) : ${(item as any).circumstances || "non renseignées"}
 Date : ${item.date || "?"} (${item.time_slot || "?"})
 Adresse relais anonyme du dossier : item${item.public_id || ""}@reportlost.org`;
 
     // 1) Génération des requêtes Google adaptées au dossier
     const queriesRaw = await callClaude(
       `Tu génères des requêtes Google pour trouver les canaux de contact (email ou formulaire) des entités locales susceptibles de recevoir un objet trouvé aux États-Unis. Réponds UNIQUEMENT avec un tableau JSON de 3 à 5 chaînes, sans commentaire.`,
-      `Signalement :\n${report}\n\nGénère les requêtes (police department, city hall, et selon le lieu de perte : parc, restaurant, hôtel, transit, aéroport, mall...). Chaque requête doit viser la page de contact / lost and found de l'entité, ex: "Blythe CA police department lost and found contact email".`,
+      `Signalement :\n${report}\n\nGénère les requêtes DANS CET ORDRE : d'abord les organismes publics qui gèrent les objets trouvés du coin (police department, city hall / lost and found municipal), ENSUITE 1 ou 2 établissements ou lieux que le client dit avoir fréquentés dans les circonstances (restaurant, bar, hôtel nommé..., ex: "Woodys restaurant Tupelo MS contact phone"), et si les circonstances citent une autre ville voisine, ajoute la police ou mairie de cette ville. Chaque requête doit viser la page de contact / lost and found de l'entité, ex: "Blythe CA police department lost and found contact email".`,
       400
     );
     let queries: string[] = [];
