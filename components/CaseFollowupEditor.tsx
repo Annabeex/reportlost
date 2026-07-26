@@ -171,42 +171,75 @@ export default function CaseFollowupEditor({
         setNotes(serverNotes);
         lastNotesSent.current = serverNotes;
 
+        // 🏢 Synchronisation auto : la section établissements reflète toujours
+        // la liste du dossier (remplie par "Qui contacter ?" ou à la main).
+        const syncEstablishments = async (input: any[]): Promise<{ blocks: any[]; changed: boolean }> => {
+          try {
+            const d = await getJSON<any>(`/api/case_followup/${encodeURIComponent(publicId)}/dossier`);
+            const list = Array.isArray(d?.establishments) ? d.establishments : [];
+            if (!list.length) return { blocks: input, changed: false };
+            const lines = list
+              .map((e: any) => {
+                const parts = [`✅ ${e.name || "Local service"}`];
+                if (e.email) parts.push(`📧 ${e.email}`);
+                if (e.notes) parts.push(String(e.notes));
+                return parts.join("\n");
+              })
+              .join("\n\n");
+            const TITLE = "Local notifications & Authority outreach";
+            const INTRO =
+              "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.";
+            const idx = input.findIndex((b: any) => b.title === TITLE);
+            if (idx === -1) {
+              return { blocks: [...input, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }], changed: true };
+            }
+            const cur = input[idx].paragraphs?.[1] || "";
+            if (cur === lines) return { blocks: input, changed: false };
+            const next = input.slice();
+            next[idx] = { ...next[idx], paragraphs: [next[idx].paragraphs?.[0] || INTRO, lines] };
+            return { blocks: next, changed: true };
+          } catch {
+            return { blocks: input, changed: false };
+          }
+        };
+
         // blocs
         const fromApi = Array.isArray(j?.blocks) ? (j.blocks as any[]) : null;
         if (fromApi && fromApi.length > 0) {
           const withIds = fromApi.map((x: any) => ({ ...x, id: x.id || uid() }));
-          setBlocks(withIds);
-          setEditing(Object.fromEntries(withIds.map((x: any) => [x.id, false])));
-          setDirty(false);
+          const synced = await syncEstablishments(withIds);
+          setBlocks(synced.blocks);
+          setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
+          setDirty(synced.changed); // à sauvegarder si la liste a bougé
           setRestoredFromDraft(false);
         } else {
-          // tentative de restauration locale
+          // 1) brouillon local non sauvegardé ? on le restaure (filet de sécurité)
+          let draft: Block[] | null = null;
           if (typeof window !== "undefined") {
             const raw = localStorage.getItem(DRAFT_KEY);
             if (raw) {
               try {
                 const parsed = JSON.parse(raw) as Block[];
-                if (Array.isArray(parsed) && parsed.length) {
-                  const norm = parsed.map((x) => ({ ...x, id: x.id || uid() }));
-                  setBlocks(norm);
-                  setEditing(Object.fromEntries(norm.map((x) => [x.id, false])));
-                  setDirty(true);
-                  setRestoredFromDraft(true);
-                } else {
-                  setBlocks([]);
-                  setEditing({});
-                }
-              } catch {
-                setBlocks([]);
-                setEditing({});
-              }
-            } else {
-              setBlocks([]);
-              setEditing({});
+                if (Array.isArray(parsed) && parsed.length) draft = parsed;
+              } catch {}
             }
+          }
+          if (draft) {
+            const norm = draft.map((x) => ({ ...x, id: x.id || uid() }));
+            const synced = await syncEstablishments(norm);
+            setBlocks(synced.blocks);
+            setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
+            setDirty(true);
+            setRestoredFromDraft(true);
           } else {
-            setBlocks([]);
-            setEditing({});
+            // 2) dossier sans compte rendu : modèle complet auto-inséré,
+            // établissements déjà synchronisés (plus besoin de "Insert template")
+            const d0 = applyLocalDefaults(baseDefaults(publicId));
+            const synced = await syncEstablishments(d0);
+            setBlocks(synced.blocks);
+            setEditing(Object.fromEntries(synced.blocks.map((x: any) => [x.id, false])));
+            setDirty(true);
+            setRestoredFromDraft(false);
           }
         }
       } finally {

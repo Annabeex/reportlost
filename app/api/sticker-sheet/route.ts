@@ -1,258 +1,201 @@
-// app/api/sticker-sheet/route.ts
+// app/api/qr-sheet/route.ts
+// Planche A4 de stickers — design "piste B" validé : cartes blanches à coins
+// arrondis, bandeau dégradé signature (#26723e → #2ea052), QR vert foncé.
+// Les dégradés sont rendus en PNG haute résolution via sharp (SVG sans texte,
+// donc aucun problème de police serverless) ; les textes restent en Helvetica
+// native du PDF pour une netteté d'impression parfaite.
 import { NextRequest, NextResponse } from "next/server";
-import { PDFDocument, rgb } from "pdf-lib";
-const qrImage = require("qr-image");
+import { PDFDocument, StandardFonts, rgb, PDFFont, degrees } from "pdf-lib";
+const QRCode = require("qrcode");
+import sharp from "sharp";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
-// ────────────────────────────────────────────────────────────────────────────
-// Units
-// ────────────────────────────────────────────────────────────────────────────
 const mm = (n: number) => (n / 25.4) * 72;
-const cm = (n: number) => mm(n * 10);
+const PAGE_W = mm(210);
+const PAGE_H = mm(297);
 
-// A4
-const A4_W = mm(210);
-const A4_H = mm(297);
+const GREEN_DEEP = rgb(0.078, 0.325, 0.176); // #14532d
+const GREEN = rgb(0.18, 0.627, 0.322); // #2EA052
+const BORDER = rgb(0.843, 0.918, 0.867); // #d7eadd
+const GRAY = rgb(0.36, 0.42, 0.376); // #5c6b60
+const WHITE = rgb(1, 1, 1);
 
-// ────────────────────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────────────────────
-type SlotTL = {
-  left_mm: number;      // Canva: coin haut-gauche (absolu)
-  top_mm: number;       // Canva: coin haut-gauche (absolu)
-  width_mm: number;
-  height_mm: number;
-  eraseUnder?: boolean; // masque blanc
-  nudge_left_mm?: number; // micro-déplacement horizontal (+ → droite)
-  nudge_top_mm?: number;  // micro-déplacement vertical (+ → descend)
-};
+const PX = 12; // pixels par mm (~300 dpi)
 
-type Frame = {
-  x_mm: number;
-  y_mm: number;
-  width_mm: number;
-  height_mm: number;
-  slots: SlotTL[];
-};
-
-// ────────────────────────────────────────────────────────────────────────────
-// FRAMES — coordonnées absolues (Canva), avec mêmes micro-réglages (-7 top)
-// ────────────────────────────────────────────────────────────────────────────
-const FRAMES: Frame[] = [
-  // ========================================================================
-  // FRAME 1 — GRAND BLOC DU HAUT
-  // Canva: X 0.45 / Y 0.66 / L 20.28 / H 22.66
-  // ========================================================================
-  {
-    x_mm: cm(0.45),
-    y_mm: cm(0.66),
-    width_mm: cm(20.28),
-    height_mm: cm(22.66),
-    slots: [
-      { left_mm: mm(22.5),  top_mm: mm(19.4),  width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-      { left_mm: mm(71.1),  top_mm: mm(19.2),  width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-      { left_mm: mm(121.4), top_mm: mm(20.7),  width_mm: mm(16.4), height_mm: mm(16.1), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-      { left_mm: mm(169.9), top_mm: mm(20.1),  width_mm: mm(16.9), height_mm: mm(16.6), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-
-      // 2e ligne — rond
-      { left_mm: mm(144.4), top_mm: mm(59.4),  width_mm: mm(18.6), height_mm: mm(18.3), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-
-      // 2e ligne — rectangulaire #1
-      // Canva : X 1.8 / Y 8.17 / L 2.74 / H 2.7
-      { left_mm: mm(18),    top_mm: mm(81.7),  width_mm: mm(27.4), height_mm: mm(27.0), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-
-      // 2e ligne — rectangulaire #2
-      // Canva : X 7.5 / Y 8.41 / L 2.33 / H 2.29
-      { left_mm: mm(75),    top_mm: mm(84.1),  width_mm: mm(23.3), height_mm: mm(22.9), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-
-      // 3e ligne — rectangulaire gauche
-      // Canva : X 1.8 / Y 15.19 / L 2.74 / H 2.7
-      { left_mm: mm(18),    top_mm: mm(151.9), width_mm: mm(27.4), height_mm: mm(27.0), eraseUnder: true, nudge_left_mm: 0,   nudge_top_mm: -7 },
-
-      // 3e ligne — rectangulaire droite
-      // Canva : X 7.72 / Y 15.61 / L 1.99 / H 1.96
-      { left_mm: mm(77.2),  top_mm: mm(156.1), width_mm: mm(19.9), height_mm: mm(19.6), eraseUnder: true, nudge_left_mm: 0.8, nudge_top_mm: -7 },
-
-      // 3e ligne — grand sticker à droite
-      // Canva : X 13.18 / Y 13.6 / L 5.55 / H 5.47
-      { left_mm: mm(131.8), top_mm: mm(136),   width_mm: mm(55.5), height_mm: mm(54.7), eraseUnder: true, nudge_left_mm: 0.8, nudge_top_mm: -7 },
-
-      // 4e ligne — petit rectangle
-      // Canva : X 8.27 / Y 20.37 / L 2.23 / H 2.2
-      { left_mm: mm(82.7),  top_mm: mm(203.7), width_mm: mm(22.3), height_mm: mm(22.0), eraseUnder: true, nudge_left_mm: 0.8, nudge_top_mm: -7 },
-    ],
-  },
-
-  // ========================================================================
-  // FRAME 2 — BANDEAU BAS GAUCHE (5e ligne — sticker gauche)
-  // (coords Canva du cadre : X 0.45 / Y 23.55 / L 14.35 / H 5.85)
-  // ========================================================================
-  {
-    x_mm: cm(0.45),
-    y_mm: cm(23.55),
-    width_mm: cm(14.35),
-    height_mm: cm(5.85),
-    slots: [
-      // 5e ligne — gauche
-      // Canva : X 10.31 / Y 24.98 / L 3.05 / H 3.00
-      { left_mm: mm(103.1), top_mm: mm(249.8), width_mm: mm(30.5), height_mm: mm(30.0), eraseUnder: true, nudge_left_mm: 0.8, nudge_top_mm: -7 },
-    ],
-  },
-
-  // ========================================================================
-  // FRAME 3 — PETIT BLOC BAS DROIT (5e ligne — sticker droit)
-  // (coords Canva du cadre : X 15.13 / Y 23.8 / L 5.35 / H 5.35)
-  // ========================================================================
-  {
-    x_mm: cm(15.13),
-    y_mm: cm(23.8),
-    width_mm: cm(5.35),
-    height_mm: cm(5.35),
-    slots: [
-      // 5e ligne — droit
-      // Canva : X 16.6 / Y 25.39 / L 2.29 / H 2.25
-      { left_mm: mm(166.0), top_mm: mm(253.9), width_mm: mm(22.9), height_mm: mm(22.5), eraseUnder: true, nudge_left_mm: 0.8, nudge_top_mm: -7 },
-    ],
-  },
-];
-
-// ────────────────────────────────────────────────────────────────────────────
-// Template loader
-// ────────────────────────────────────────────────────────────────────────────
-function getBaseUrl(req: NextRequest) {
-  const fixed = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  if (fixed) return fixed.replace(/\/+$/, "");
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-  return `${proto}://${host}`;
+// Bandeau dégradé en PNG (SVG sans texte → rendu sharp fiable partout)
+async function gradientPng(wMm: number, hMm: number, corners: "top" | "all" | "left"): Promise<Buffer> {
+  const w = Math.round(wMm * PX);
+  const h = Math.round(hMm * PX);
+  const r = Math.round(2.6 * PX);
+  let path = "";
+  if (corners === "all") {
+    path = `M ${r} 0 H ${w - r} Q ${w} 0 ${w} ${r} V ${h - r} Q ${w} ${h} ${w - r} ${h} H ${r} Q 0 ${h} 0 ${h - r} V ${r} Q 0 0 ${r} 0 Z`;
+  } else if (corners === "top") {
+    path = `M ${r} 0 H ${w - r} Q ${w} 0 ${w} ${r} V ${h} H 0 V ${r} Q 0 0 ${r} 0 Z`;
+  } else {
+    path = `M ${r} 0 H ${w} V ${h} H ${r} Q 0 ${h} 0 ${h - r} V ${r} Q 0 0 ${r} 0 Z`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#26723e"/><stop offset="1" stop-color="#2ea052"/></linearGradient></defs><path d="${path}" fill="url(#g)"/></svg>`;
+  return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
-async function loadTemplate(req: NextRequest): Promise<Uint8Array> {
-  const base = getBaseUrl(req);
-  const url = `${base}/templates/planche-QR-code.pdf`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Template introuvable (${res.status}) : ${url}`);
-  return new Uint8Array(await res.arrayBuffer());
+// Contour arrondi (path pt, y vers le bas depuis le point d'ancrage)
+function roundedRectPath(wPt: number, hPt: number, rPt: number): string {
+  const w = wPt, h = hPt, r = rPt;
+  return `M ${r} 0 H ${w - r} Q ${w} 0 ${w} ${r} V ${h - r} Q ${w} ${h} ${w - r} ${h} H ${r} Q 0 ${h} 0 ${h - r} V ${r} Q 0 0 ${r} 0 Z`;
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-function makeQrPng(data: string): Buffer {
-  // même niveau ECC que getQRcode
-  return qrImage.imageSync(data, { type: "png", ec_level: "M", margin: 0 }) as Buffer;
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// MAIN
-// ────────────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
-    const sb = getSupabaseAdmin();
-    if (!sb) {
-      return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
-    }
-
-    // Params: on accepte ?public_id=12345 ou ?id=<uuid>
     const url = new URL(req.url);
-    const id = url.searchParams.get("id");
-    const publicIdParam = url.searchParams.get("public_id");
+    const sb = getSupabaseAdmin();
+    if (!sb) return NextResponse.json({ ok: false, error: "Supabase non configuré" }, { status: 500 });
 
-    // 1) Résoudre public_id
-    let public_id: string | null = publicIdParam;
+    let public_id = url.searchParams.get("public_id");
     if (!public_id) {
-      if (!id) {
-        return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
-      }
-      const { data, error } = await sb
-        .from("lost_items")
-        .select("public_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (error || !data?.public_id) {
-        return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
-      }
+      const id = url.searchParams.get("id");
+      if (!id) return NextResponse.json({ ok: false, error: "Paramètre manquant: id ou public_id" }, { status: 400 });
+      const { data, error } = await sb.from("lost_items").select("public_id").eq("id", id).maybeSingle();
+      if (error || !data?.public_id) return NextResponse.json({ ok: false, error: "Report introuvable" }, { status: 404 });
       public_id = String(data.public_id);
     }
     if (!/^\d{5}$/.test(public_id)) {
       return NextResponse.json({ ok: false, error: "public_id invalide (5 chiffres requis)" }, { status: 400 });
     }
 
-    // 2) Construire l'URL mailto (même contenu que getQRcode)
-    const alias = `${public_id}@scan.reportlost.org`;
-    const subject = encodeURIComponent(`I found an item with your QR tag (ID ${public_id})`);
-    const body = encodeURIComponent(
-      [
-        `Hello,`,
-        ``,
-        `I just found an item that has your Reportlost QR tag (ID ${public_id}).`,
-        ``,
-        `Here are the details:`,
-        `• Where I found it:`,
-        `• Date & time:`,
-        `• Item description:`,
-        ``,
-        `How you can reach me:`,
-        `• Name:`,
-        `• Phone:`,
-        `• Email:`,
-        ``,
-        `Message to you:`,
-        `—`,
-        ``,
-        `Please reply to this email so we can arrange pickup or shipping.`,
-        ``,
-        `Thank you,`,
-        `— Reportlost`,
-      ].join("\n")
-    );
-    const mailto = `mailto:${alias}?subject=${subject}&body=${body}`;
+    const base =
+      (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
+      `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host")}`;
+    const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
+    const relayEmail = `item${public_id}@reportlost.org`;
 
-    // 3) Charger le PDF modèle
-    const templateBytes = await loadTemplate(req);
-    const pdf = await PDFDocument.load(templateBytes);
-    const [page] = pdf.getPages();
+    // Assets image
+    const [qrPng, bandHeader, bandSm, bandMd, bandLg, bandWide] = await Promise.all([
+      QRCode.toBuffer(scanUrl, { errorCorrectionLevel: "M", margin: 0, scale: 12, color: { dark: "#14532d", light: "#ffffff" } }) as Promise<Buffer>,
+      gradientPng(186, 18, "all"),
+      gradientPng(42, 7.5, "top"),
+      gradientPng(58, 6.5, "top"),
+      gradientPng(90, 8.5, "top"),
+      gradientPng(12, 30, "left"),
+    ]);
 
-    // 4) Générer un seul PNG de QR, réutilisé partout
-    const qrPng = makeQrPng(mailto);
-    const qrImg = await pdf.embedPng(qrPng);
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([PAGE_W, PAGE_H]);
+    const qr = await pdf.embedPng(qrPng);
+    const gHeader = await pdf.embedPng(bandHeader);
+    const gSm = await pdf.embedPng(bandSm);
+    const gMd = await pdf.embedPng(bandMd);
+    const gLg = await pdf.embedPng(bandLg);
+    const gWide = await pdf.embedPng(bandWide);
+    const helv = await pdf.embedFont(StandardFonts.Helvetica);
+    const helvB = await pdf.embedFont(StandardFonts.HelveticaBold);
+    const helvO = await pdf.embedFont(StandardFonts.HelveticaOblique);
 
-    // 5) Pose (absolu Canva → PDF bottom-left)
-    for (const f of FRAMES) {
-      for (const s of f.slots) {
-        const nudgeX = s.nudge_left_mm ?? 0;
-        const nudgeT = s.nudge_top_mm ?? 0;
+    const text = (t: string, leftMm: number, topMm: number, size: number, font: PDFFont, color = GREEN_DEEP) =>
+      page.drawText(t, { x: mm(leftMm), y: PAGE_H - mm(topMm) - size, size, font, color });
+    const textCenter = (t: string, centerMm: number, topMm: number, size: number, font: PDFFont, color = GREEN_DEEP) => {
+      const w = font.widthOfTextAtSize(t, size);
+      page.drawText(t, { x: mm(centerMm) - w / 2, y: PAGE_H - mm(topMm) - size, size, font, color });
+    };
+    const img = (im: any, leftMm: number, topMm: number, wMm: number, hMm: number) =>
+      page.drawImage(im, { x: mm(leftMm), y: PAGE_H - mm(topMm) - mm(hMm), width: mm(wMm), height: mm(hMm) });
+    const card = (leftMm: number, topMm: number, wMm: number, hMm: number) =>
+      page.drawSvgPath(roundedRectPath(mm(wMm), mm(hMm), mm(2.6)), {
+        x: mm(leftMm),
+        y: PAGE_H - mm(topMm),
+        color: WHITE,
+        borderColor: BORDER,
+        borderWidth: 1,
+      });
 
-        const x = s.left_mm + nudgeX;
-        const y = A4_H - ((s.top_mm + nudgeT) + s.height_mm);
-
-        if (s.eraseUnder) {
-          const pad = mm(0.4);
-          page.drawRectangle({
-            x: x - pad,
-            y: y - pad,
-            width: s.width_mm + pad * 2,
-            height: s.height_mm + pad * 2,
-            color: rgb(1, 1, 1),
-          });
-        }
-
-        page.drawImage(qrImg, { x, y, width: s.width_mm, height: s.height_mm });
-      }
+    // ---- En-tête ----
+    img(gHeader, 12, 12, 186, 18);
+    text("ReportLost", 18, 17, 16, helvB, WHITE);
+    {
+      const t = `Secure ID stickers  ·  Case #${public_id}`;
+      const w = helv.widthOfTextAtSize(t, 9.5);
+      page.drawText(t, { x: mm(192) - w, y: PAGE_H - mm(19.5) - 9.5, size: 9.5, font: helv, color: WHITE });
     }
+    text("Stick them on the items you carry every day. A finder scans the code and reaches you through", 12, 33.5, 7.5, helv, GRAY);
+    text("your protected ReportLost address. Your personal details stay private.", 12, 37.3, 7.5, helv, GRAY);
+
+    // ---- 4 petits (clés, gourde) ----
+    const drawSmall = (left: number, top: number) => {
+      const w = 42, h = 40;
+      card(left, top, w, h);
+      img(gSm, left, top, w, 7.5);
+      textCenter("SCAN ME", left + w / 2, top + 2.4, 6.5, helvB, WHITE);
+      img(qr, left + (w - 22) / 2, top + 10.5, 22, 22);
+      textCenter("reportlost.org", left + w / 2, top + h - 5, 5.8, helv, GRAY);
+    };
+    [0, 1, 2, 3].forEach((i) => drawSmall(12 + i * 48, 43));
+
+    // ---- 3 moyens (téléphone, ordinateur) ----
+    const drawMedium = (left: number, top: number) => {
+      const w = 58, h = 32;
+      card(left, top, w, h);
+      img(gMd, left, top, w, 6.5);
+      textCenter("IF FOUND, PLEASE SCAN", left + w / 2, top + 2, 5.8, helvB, WHITE);
+      img(qr, left + 4, top + 9.5, 19, 19);
+      text("This item is protected", left + 26.5, top + 12.5, 6.8, helvB, GREEN_DEEP);
+      text("reportlost.org", left + 26.5, top + 19, 6.4, helvB, GREEN);
+    };
+    [0, 1, 2].forEach((i) => drawMedium(12 + i * 64, 89));
+
+    // ---- 4 grands (bagage, sac) ----
+    const drawLarge = (left: number, top: number) => {
+      const w = 90, h = 52;
+      card(left, top, w, h);
+      img(gLg, left, top, w, 8.5);
+      textCenter("IF FOUND, PLEASE SCAN", left + w / 2, top + 2.7, 7, helvB, WHITE);
+      img(qr, left + 5, top + 13.5, 28, 28);
+      text("This item is under", left + 38, top + 16, 8, helvB, GREEN_DEEP);
+      text("ReportLost protection", left + 38, top + 20.5, 8, helvB, GREEN_DEEP);
+      text(relayEmail, left + 38, top + 27, 6.6, helv, GRAY);
+      text("Thank you for your honesty.", left + 38, top + 32.5, 6.2, helvO, GRAY);
+      text("reportlost.org", left + 38, top + 38.5, 6.4, helvB, GREEN);
+    };
+    drawLarge(12, 127);
+    drawLarge(108, 127);
+    drawLarge(12, 185);
+    drawLarge(108, 185);
+
+    // ---- Bandeau large (valise, vélo) ----
+    {
+      const left = 12, top = 243, w = 186, h = 30;
+      card(left, top, w, h);
+      img(gWide, left, top, 12, h);
+      page.drawText("IF FOUND", {
+        x: mm(left + 7.8),
+        y: PAGE_H - mm(top + h - 6),
+        size: 7,
+        font: helvB,
+        color: WHITE,
+        rotate: degrees(90),
+      });
+      img(qr, left + 17, top + 4, 22, 22);
+      text("Please scan the code", left + 44, top + 8, 13, helvB, GREEN_DEEP);
+      text(`or email ${relayEmail}   ·   reportlost.org`, left + 44, top + 17.5, 8, helv, GRAY);
+    }
+
+    // ---- Pied de page ----
+    textCenter("Print on adhesive A4 paper and cut along the rounded borders  ·  reportlost.org", 105, 281, 7, helv, GRAY);
 
     const bytes = await pdf.save();
     return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename=stickers_${public_id}.pdf`,
+        "Content-Disposition": `inline; filename="stickers_${public_id}.pdf"`,
         "Cache-Control": "no-store",
       },
     });
   } catch (e: any) {
-    console.error("[sticker-sheet] error:", e);
+    console.error("[sticker-sheet]", e);
     return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
   }
 }

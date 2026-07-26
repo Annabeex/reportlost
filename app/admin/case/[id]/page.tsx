@@ -370,6 +370,28 @@ export default function CasePage() {
                   View post ↗
                 </a>
               )}
+              {item.public_id && (
+                <a
+                  href={`/case/${item.public_id}?edit=1`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded bg-blue-700 px-2 py-0.5 text-xs font-medium text-white hover:brightness-110"
+                  title="Éditer et envoyer le compte rendu (établissements synchronisés automatiquement)"
+                >
+                  📋 Compte rendu ↗
+                </a>
+              )}
+              {item.public_id && (item as any).case_token && (
+                <a
+                  href={`/case/${item.public_id}?t=${encodeURIComponent((item as any).case_token)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded bg-gray-600 px-2 py-0.5 text-xs font-medium text-white hover:brightness-110"
+                  title="Le lien exact que voit le client (celui envoyé par email)"
+                >
+                  👁 Vue client ↗
+                </a>
+              )}
             </div>
             <div className="mt-1 text-sm text-gray-600">
               {item.primary_category ? `${item.primary_category} · ` : ""}
