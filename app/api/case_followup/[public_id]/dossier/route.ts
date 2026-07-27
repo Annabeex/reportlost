@@ -34,6 +34,9 @@ export async function GET(_req: NextRequest, { params }: { params: { public_id: 
       .from("match_candidates")
       .select("title, source, verdict, created_at")
       .eq("lost_item_id", item.id)
+      // Seules les pistes crédibles sont détaillées au client ; les rejets
+      // n'alimentent que le compteur global.
+      .in("verdict", ["yes", "maybe"])
       .order("created_at", { ascending: false })
       .limit(10),
     sb

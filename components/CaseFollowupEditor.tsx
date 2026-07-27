@@ -191,10 +191,11 @@ export default function CaseFollowupEditor({
             const d = await getJSON<any>(`/api/case_followup/${encodeURIComponent(publicId)}/dossier`);
             const list = Array.isArray(d?.establishments) ? d.establishments : [];
             if (!list.length) return { blocks: input, changed: false };
+            // Côté client : nom, adresse, téléphone et rôle. JAMAIS d'email ni
+            // de formulaire (canaux internes à Anna).
             const lines = list
               .map((e: any) => {
                 const parts = [`✅ ${e.name || "Local service"}`];
-                if (e.email) parts.push(`📧 ${e.email}`);
                 if (e.notes) parts.push(String(e.notes));
                 return parts.join("\n");
               })
@@ -225,13 +226,9 @@ export default function CaseFollowupEditor({
             const last = d?.lastSearchedAt
               ? new Date(d.lastSearchedAt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
               : null;
-            const verdictLabel = (v: string) =>
-              v === "yes" || v === "maybe"
-                ? "possible match, under verification"
-                : "reviewed by our team, not your item";
             const lines = cands
               .slice(0, 6)
-              .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)} — ${verdictLabel(c.verdict)}`)
+              .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)}, possible match, under verification`)
               .join("\n");
             const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
               last ? ` Latest scan: ${last}.` : ""
@@ -251,10 +248,29 @@ export default function CaseFollowupEditor({
             return { blocks: input, changed: false };
           }
         };
+        // 🖼️ Injecte le visuel WANTED dans la section Social des comptes rendus
+        // créés avant l'ajout de l'image au modèle.
+        const syncPosterImage = (input: any[]): { blocks: any[]; changed: boolean } => {
+          if (!lostId) return { blocks: input, changed: false };
+          const idx = input.findIndex((b: any) => b.title === "Social Media & Community Posting");
+          if (idx === -1) return { blocks: input, changed: false };
+          const has = (input[idx].paragraphs || []).some((p: string) => String(p).includes("IMAGE:"));
+          if (has) return { blocks: input, changed: false };
+          const next = input.slice();
+          const ps = (next[idx].paragraphs || []).slice();
+          ps.splice(1, 0,
+            "We created a dedicated search visual for your report, published alongside the alert so your item is instantly recognizable:",
+            `IMAGE:/api/poster/${lostId}`
+          );
+          next[idx] = { ...next[idx], paragraphs: ps };
+          return { blocks: next, changed: true };
+        };
+
         const syncAll = async (input: any[]) => {
           const a = await syncEstablishments(input);
           const b = await syncAiWatch(a.blocks);
-          return { blocks: b.blocks, changed: a.changed || b.changed };
+          const c = syncPosterImage(b.blocks);
+          return { blocks: c.blocks, changed: a.changed || b.changed || c.changed };
         };
 
         // blocs
@@ -393,7 +409,6 @@ export default function CaseFollowupEditor({
       const lines = list
         .map((e: any) => {
           const parts = [`✅ ${e.name || "Local service"}`];
-          if (e.email) parts.push(`📧 ${e.email}`);
           if (e.notes) parts.push(String(e.notes));
           return parts.join("\n");
         })
@@ -425,13 +440,9 @@ export default function CaseFollowupEditor({
       const last = j?.lastSearchedAt
         ? new Date(j.lastSearchedAt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
         : null;
-      const verdictLabel = (v: string) =>
-        v === "yes" || v === "maybe"
-          ? "possible match, under verification"
-          : "reviewed by our team, not your item";
       const lines = cands
         .slice(0, 6)
-        .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)} — ${verdictLabel(c.verdict)}`)
+        .map((c: any) => `🔎 ${String(c.title || c.source || "Online listing").slice(0, 90)}, possible match, under verification`)
         .join("\n");
       const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
         last ? ` Latest scan: ${last}.` : ""

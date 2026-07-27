@@ -116,7 +116,7 @@ Règles STRICTES :
 Anna
 ReportLost.org
 Encadre chacun avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.
-- TOUT À LA FIN de ta réponse, ajoute une ligne machine (elle sera retirée avant affichage) : ENTITIES_JSON: suivie d'un tableau JSON compact des entités listées, format [{"name":"...","email":"" ou email trouvé,"url":"" ou url,"phone":"" ou téléphone,"address":"" ou adresse,"role":"une ligne décrivant son rôle pour ce dossier"}]. Uniquement des infos présentes dans les résultats de recherche.`,
+- TOUT À LA FIN de ta réponse, ajoute une ligne machine (elle sera retirée avant affichage) : ENTITIES_JSON: suivie d'un tableau JSON compact des entités listées, format [{"name":"...","email":"" ou email trouvé,"url":"" ou url,"phone":"" ou téléphone,"address":"" ou adresse,"role":"one line IN ENGLISH describing its role for this case (this text is shown to the client), e.g. They handle lost property reports for incidents within the city"}]. Uniquement des infos présentes dans les résultats de recherche.`,
       `Signalement :\n${report}\n\nRésultats de recherche Google :\n\n${results}`,
       2500
     );
