@@ -43,9 +43,22 @@ export async function GET(req: NextRequest) {
       if (data.length < 1000) break;
     }
 
-    const { data: guides } = await sb.from("city_guides").select("state_id, city_slug, status");
+    // ⚠️ Pagination obligatoire : Supabase plafonne à 1000 lignes par requête.
+    // Sans elle, au-delà de 1000 guides, des villes déjà traitées réapparaissaient
+    // comme "à générer" et les batchs les régénéraient en boucle.
+    const guides: { state_id: string; city_slug: string; status: string }[] = [];
+    for (let gFrom = 0; ; gFrom += 1000) {
+      const { data: gPage, error: gErr } = await sb
+        .from("city_guides")
+        .select("state_id, city_slug, status")
+        .order("id", { ascending: true })
+        .range(gFrom, gFrom + 999);
+      if (gErr || !gPage?.length) break;
+      guides.push(...(gPage as any[]));
+      if (gPage.length < 1000) break;
+    }
     const statusMap = new Map(
-      (guides || []).map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
+      guides.map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
     );
     // Les 5 villes à page dédiée codée en dur : jamais à générer
     for (const k of ["NY/new york", "CA/los angeles", "IL/chicago", "TX/houston", "AZ/phoenix"]) {

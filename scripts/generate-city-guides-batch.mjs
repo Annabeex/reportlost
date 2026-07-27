@@ -29,6 +29,24 @@ const AUTH = "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// 🔒 Verrou anti-lancements parallèles : deux batchs simultanés travaillent sur
+// la même liste et régénèrent les mêmes villes (argent brûlé pour rien).
+const LOCK = "/tmp/reportlost-batch.lock";
+if (fs.existsSync(LOCK)) {
+  const age = (Date.now() - fs.statSync(LOCK).mtimeMs) / 60000;
+  if (age < 360) {
+    console.error(`⛔ Un batch semble déjà en cours (verrou posé il y a ${age.toFixed(0)} min).`);
+    console.error(`   Vérifie avec: ps aux | grep generate-city-guides | grep -v grep`);
+    console.error(`   Si aucun processus ne tourne, supprime le verrou: rm ${LOCK}`);
+    process.exit(1);
+  }
+}
+fs.writeFileSync(LOCK, String(process.pid));
+const releaseLock = () => { try { fs.unlinkSync(LOCK); } catch {} };
+process.on("exit", releaseLock);
+process.on("SIGINT", () => { releaseLock(); process.exit(130); });
+process.on("SIGTERM", () => { releaseLock(); process.exit(143); });
+
 // 1) Liste de travail : villes par population, sans guide existant
 const listRes = await fetch(`${BASE}/api/admin/city-guide?cities=1&limit=6000`, {
   headers: { Authorization: AUTH },
@@ -51,6 +69,20 @@ let ok = 0;
 let ko = 0;
 for (const [i, c] of todo.entries()) {
   process.stdout.write(`  ${i + 1}/${todo.length} ${c.city} (${c.state}), pop. ${c.population?.toLocaleString?.() || "?"} … `);
+  // 🛡️ Re-vérifie juste avant de générer (protège des listes périmées / doublons)
+  try {
+    const chk = await fetch(
+      `${BASE}/api/admin/city-guide?state=${encodeURIComponent(c.state)}&city=${encodeURIComponent(c.city.toLowerCase())}`,
+      { headers: { Authorization: AUTH } }
+    );
+    const cj = await chk.json().catch(() => ({}));
+    if (cj?.row?.status) {
+      console.log(`⏭️ déjà ${cj.row.status}, ignoré`);
+      continue;
+    }
+  } catch {
+    /* en cas de doute on laisse générer */
+  }
   let done = false;
   const MAX_ATTEMPTS = 4;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS && !done; attempt++) {
