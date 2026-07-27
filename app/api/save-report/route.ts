@@ -256,6 +256,7 @@ export async function POST(req: NextRequest) {
       // ✅ Catégorisation (schéma actuel)
       "primary_category",   // text
       "categories",         // text[]
+      "category",           // indice envoyé par le formulaire (ex: "pets"), converti en primary_category
 
       // identifiants/fingerprint
       "fingerprint",
@@ -305,7 +306,14 @@ export async function POST(req: NextRequest) {
     // sécurité: ne jamais remonter ces champs vers l'update payload
     delete other.report_id;
     delete other.report_public_id;
-    delete (other as any).category; // si un vieux client envoie "category", on l'ignore
+
+    // "category" (envoyé par le formulaire, ex: "pets" via /report-lost-pet)
+    // n'est pas une colonne : on le convertit en primary_category avant de l'écarter.
+    const categoryHint = String((other as any).category || "").trim().toLowerCase();
+    delete (other as any).category;
+    if (categoryHint && !other.primary_category) {
+      other.primary_category = categoryHint;
+    }
 
     // Catégorisation automatique si aucune info n'est fournie par le client/admin
     if (!other.primary_category && !other.categories) {
