@@ -392,6 +392,56 @@ export default function CasePage() {
                   👁 Vue client ↗
                 </a>
               )}
+              {item.paid && item.public_id && (
+                <a
+                  href={`/api/sticker-sheet?public_id=${encodeURIComponent(String(item.public_id))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded bg-orange-600 px-2 py-0.5 text-xs font-medium text-white hover:brightness-110"
+                  title="Planche de stickers QR du dossier (PDF)"
+                >
+                  🏷️ Stickers PDF ↗
+                </a>
+              )}
+              {(item as any).search_status !== undefined && (
+                (item as any).search_status === "excluded" ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const r = await fetch("/api/admin/match-toggle", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: item.id, action: "include" }),
+                      });
+                      const j = await r.json().catch(() => null);
+                      if (j?.ok) location.reload();
+                      else alert(`Action échouée: ${j?.error || r.status}`);
+                    }}
+                    className="rounded bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:brightness-110"
+                    title="Réintégrer ce dossier à la veille automatique"
+                  >
+                    ▶️ Réactiver la veille
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const r = await fetch("/api/admin/match-toggle", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: item.id, action: "exclude" }),
+                      });
+                      const j = await r.json().catch(() => null);
+                      if (j?.ok) location.reload();
+                      else alert(`Action échouée: ${j?.error || r.status}`);
+                    }}
+                    className="rounded bg-gray-500 px-2 py-0.5 text-xs font-medium text-white hover:brightness-110"
+                    title="Exclure ce dossier de la veille automatique"
+                  >
+                    ⏸ Exclure de la veille
+                  </button>
+                )
+              )}
             </div>
             <div className="mt-1 text-sm text-gray-600">
               {item.primary_category ? `${item.primary_category} · ` : ""}

@@ -427,9 +427,21 @@ export default function AdminPage() {
 
   // ——— Filtrage : la recherche texte est faite côté serveur (toute la base).
   // Ici on n'applique plus que le filtre "payés uniquement".
+  // Filtres par pastilles : payés / gratuits / sans follow-up / 1re ville
+  const [freeOnly, setFreeOnly] = useState(false);
+  const [noFollowupOnly, setNoFollowupOnly] = useState(false);
+  const [firstCityOnly, setFirstCityOnly] = useState(false);
+  // Ligne dépliée (une seule à la fois)
+  const [openId, setOpenId] = useState<string | null>(null);
+
   const filteredLost = useMemo(() => {
-    return paidOnly ? lostItems.filter(it => Number(it.contribution || 0) > 0) : lostItems;
-  }, [lostItems, paidOnly]);
+    let arr = lostItems;
+    if (paidOnly) arr = arr.filter(it => Number(it.contribution || 0) > 0);
+    if (freeOnly) arr = arr.filter(it => Number(it.contribution || 0) <= 0);
+    if (noFollowupOnly) arr = arr.filter(it => Number(it.contribution || 0) > 0 && !it.followup_email_sent);
+    if (firstCityOnly) arr = arr.filter(it => (it as any).first_in_city && !(it as any).fb_group_done);
+    return arr;
+  }, [lostItems, paidOnly, freeOnly, noFollowupOnly, firstCityOnly]);
 
   // ——— Pagination (LOST)
   const totalPages = Math.max(1, Math.ceil(filteredLost.length / PAGE_SIZE));
@@ -441,7 +453,22 @@ export default function AdminPage() {
   // reset page on filters
   useEffect(() => {
     setPage(1);
-  }, [query, paidOnly, lostItems, view]);
+  }, [query, paidOnly, freeOnly, noFollowupOnly, firstCityOnly, lostItems, view]);
+
+  // Icône par catégorie (ligne compacte)
+  const catIcon = (c?: string | null) => {
+    const k = String(c || "").toLowerCase();
+    if (k.includes("wallet")) return "👛";
+    if (k.includes("jewel")) return "💍";
+    if (k.includes("key")) return "🔑";
+    if (k.includes("electro") || k.includes("phone") || k.includes("laptop")) return "📱";
+    if (k.includes("bag")) return "🎒";
+    if (k.includes("doc")) return "📄";
+    if (k.includes("pet")) return "🐾";
+    if (k.includes("glass")) return "👓";
+    if (k.includes("cloth")) return "🧥";
+    return "📦";
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-12">
@@ -466,139 +493,81 @@ export default function AdminPage() {
           </a>
         </div>
 
-        {/* Controls row: search + stats */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          {/* Search bar (affichée seulement en vue LOST, car elle ne filtre que les lost) */}
-          <div className="w-full md:max-w-md">
-            {view === 'lost' && (
-              <input
-                type="search"
-                placeholder="Search by title, description, city, email or reference…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-              />
-            )}
+        {/* 📊 Stats en 3 familles : Activité / Production / Visites */}
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-gray-400 mb-2">Activité</div>
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              <div><div className="text-lg font-semibold leading-tight">{lostCount}</div><div className="text-xs text-gray-500">Lost</div></div>
+              <div><div className="text-lg font-semibold leading-tight">{foundCount}</div><div className="text-xs text-gray-500">Found</div></div>
+              <div><div className="text-lg font-semibold leading-tight text-emerald-700">{paidCount}</div><div className="text-xs text-gray-500">Payés</div></div>
+              <div><div className="text-lg font-semibold leading-tight">{lostCount ? `${conversionRate}%` : '—'}</div><div className="text-xs text-gray-500">TC</div></div>
+              <div><div className="text-lg font-semibold leading-tight text-gray-600">{totals.lost != null && totals.paid != null ? totals.lost - totals.paid : '—'}</div><div className="text-xs text-gray-500">Gratuits</div></div>
+            </div>
           </div>
-
-          {/* Mini-summary table (cliquer pour filtrer la vue) */}
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <div className="grid grid-cols-4 divide-x divide-gray-200 text-sm">
-              {/* Lost reports (bouton) */}
-              <button
-                type="button"
-                onClick={() => setView('lost')}
-                className={`px-4 py-2 text-left hover:bg-emerald-50 transition ${view === 'lost' ? 'bg-emerald-50' : ''}`}
-                title="Show lost reports"
-              >
-                <div className="text-gray-500">Lost reports</div>
-                <div className="font-semibold">{lostCount}</div>
-              </button>
-
-              {/* Found items (bouton) */}
-              <button
-                type="button"
-                onClick={() => setView('found')}
-                className={`px-4 py-2 text-left hover:bg-emerald-50 transition ${view === 'found' ? 'bg-emerald-50' : ''}`}
-                title="Show found items"
-              >
-                <div className="text-gray-500">Found items</div>
-                <div className="font-semibold">{foundCount}</div>
-              </button>
-
-              {/* Paid customers (toggle) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setView('lost'); // la logique "paid" n'a de sens que sur les lost
-                  setPaidOnly((v) => !v);
-                }}
-                title="Show only paid customers"
-                className="px-4 py-2 text-left hover:bg-emerald-50 transition"
-              >
-                <div className="text-gray-500 flex items-center gap-2">
-                  Paid customers
-                  {paidOnly && view === 'lost' && (
-                    <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                      filter
-                    </span>
-                  )}
-                </div>
-                <div className="font-semibold text-emerald-700">{paidCount}</div>
-              </button>
-
-              {/* TC (taux de conversion) */}
-              <div className="px-4 py-2">
-                <div className="text-gray-500">TC</div>
-                <div className="font-semibold">{lostCount ? `${conversionRate}%` : '—'}</div>
-              </div>
-
-              {/* Dossiers publiés sans paiement */}
-              <div className="px-4 py-2">
-                <div className="text-gray-500">Free reports</div>
-                <div className="font-semibold text-gray-700">
-                  {totals.lost != null && totals.paid != null ? totals.lost - totals.paid : '—'}
-                </div>
-              </div>
-
-              {/* Affiches animaux téléchargées */}
-              <div className="px-4 py-2" title="Téléchargements du générateur d'affiche (PNG / PDF)">
-                <div className="text-gray-500">🖼️ Posters</div>
-                <div className="font-semibold text-purple-700">
-                  {totals.posterPng != null || totals.posterPdf != null
-                    ? `${(totals.posterPng ?? 0) + (totals.posterPdf ?? 0)} (${totals.posterPng ?? 0} png / ${totals.posterPdf ?? 0} pdf)`
-                    : '—'}
-                </div>
-              </div>
-
-              {/* Production : guides ville publiés */}
-              <div className="px-4 py-2" title="Pages villes enrichies publiées (total · 7 derniers jours · 24h)">
-                <div className="text-gray-500">🏙️ Guides</div>
-                <div className="font-semibold text-blue-700">
-                  {totals.production?.guidesTotal != null
-                    ? `${totals.production.guidesTotal} (+${totals.production.guidesWeek ?? 0} / 7j · +${totals.production.guidesDay ?? 0} / 24h)`
-                    : '—'}
-                </div>
-              </div>
-
-              {/* Production : groupes Facebook créés */}
-              <div className="px-4 py-2" title="Groupes Facebook créés (total · 7 derniers jours)">
-                <div className="text-gray-500">👥 Groupes FB</div>
-                <div className="font-semibold text-[#1877F2]">
-                  {totals.production?.fbTotal != null
-                    ? `${totals.production.fbTotal} (+${totals.production.fbWeek ?? 0} / 7j)`
-                    : '—'}
-                </div>
-              </div>
-
-              {/* Visites 7 jours par provenance */}
-              <div className="px-4 py-2" title="Sessions des 7 derniers jours par provenance (compteur interne anonyme)">
-                <div className="text-gray-500">📈 Visites 7j</div>
-                <div className="font-semibold text-gray-800">
-                  {totals.visits?.organic != null
-                    ? `${totals.visits.organic ?? 0} orga · ${totals.visits.social ?? 0} social · ${totals.visits.ai ?? 0} IA · ${totals.visits.direct ?? 0} direct`
-                    : '—'}
-                </div>
-              </div>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-gray-400 mb-2">Production</div>
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              <div><div className="text-lg font-semibold leading-tight text-blue-700">{totals.production?.guidesTotal ?? '—'}</div><div className="text-xs text-gray-500">🏙️ Guides</div></div>
+              <div><div className="text-lg font-semibold leading-tight text-[#1877F2]">{totals.production?.fbTotal ?? '—'}</div><div className="text-xs text-gray-500">👥 Groupes FB</div></div>
+              <div><div className="text-lg font-semibold leading-tight text-purple-700">{totals.posterPng != null || totals.posterPdf != null ? (totals.posterPng ?? 0) + (totals.posterPdf ?? 0) : '—'}</div><div className="text-xs text-gray-500">🖼️ Posters</div></div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3" title="Sessions des 7 derniers jours (compteur interne anonyme)">
+            <div className="text-xs uppercase tracking-wide text-gray-400 mb-2">Visites 7 jours</div>
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              <div><div className="text-lg font-semibold leading-tight">{totals.visits?.organic ?? '—'}</div><div className="text-xs text-gray-500">Organique</div></div>
+              <div><div className="text-lg font-semibold leading-tight">{totals.visits?.social ?? '—'}</div><div className="text-xs text-gray-500">Social</div></div>
+              <div><div className="text-lg font-semibold leading-tight">{totals.visits?.ai ?? '—'}</div><div className="text-xs text-gray-500">IA</div></div>
+              <div><div className="text-lg font-semibold leading-tight">{totals.visits?.direct ?? '—'}</div><div className="text-xs text-gray-500">Direct</div></div>
             </div>
           </div>
         </div>
 
-        {/* Hint paid filter */}
-        {paidOnly && view === 'lost' && (
-          <div className="text-sm">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 border border-emerald-200">
-              Showing paid customers only
-              <button
-                type="button"
-                onClick={() => setPaidOnly(false)}
-                className="underline decoration-dotted hover:opacity-80"
-              >
-                clear
-              </button>
-            </span>
+        {/* 🔍 Recherche + onglets + pastilles de filtre */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex overflow-hidden rounded-lg border border-gray-200 bg-white text-sm">
+            <button type="button" onClick={() => setView('lost')}
+              className={`px-4 py-1.5 ${view === 'lost' ? 'bg-emerald-600 text-white font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+              Lost ({lostCount})
+            </button>
+            <button type="button" onClick={() => setView('found')}
+              className={`px-4 py-1.5 ${view === 'found' ? 'bg-emerald-600 text-white font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+              Found ({foundCount})
+            </button>
           </div>
-        )}
+
+          {view === 'lost' && (
+            <>
+              <button type="button" onClick={() => { setPaidOnly(v => !v); setFreeOnly(false); }}
+                className={`rounded-full px-3 py-1 text-xs border ${paidOnly ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-medium' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                💳 Payés
+              </button>
+              <button type="button" onClick={() => { setFreeOnly(v => !v); setPaidOnly(false); }}
+                className={`rounded-full px-3 py-1 text-xs border ${freeOnly ? 'bg-gray-200 border-gray-400 text-gray-800 font-medium' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                Gratuits
+              </button>
+              <button type="button" onClick={() => setNoFollowupOnly(v => !v)}
+                title="Dossiers payés dont le compte rendu n'a pas encore été envoyé"
+                className={`rounded-full px-3 py-1 text-xs border ${noFollowupOnly ? 'bg-blue-100 border-blue-300 text-blue-800 font-medium' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                ✉️ Sans follow-up
+              </button>
+              <button type="button" onClick={() => setFirstCityOnly(v => !v)}
+                title="Premier signalement de leur ville : groupe Facebook à créer"
+                className={`rounded-full px-3 py-1 text-xs border ${firstCityOnly ? 'bg-amber-100 border-amber-300 text-amber-800 font-medium' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+                🚩 1re ville
+              </button>
+
+              <input
+                type="search"
+                placeholder="Titre, ville, email, référence…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="ml-auto w-full sm:w-72 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+            </>
+          )}
+        </div>
 
         {loading && <div>Loading…</div>}
         {!loading && err && (
@@ -613,7 +582,7 @@ export default function AdminPage() {
               <div>No lost items match your search.</div>
             ) : (
               <>
-                <div className="space-y-6">
+                <div className="space-y-2">
                   {paginatedLost.map((item) => {
                     const ref = isFiveDigits(item.public_id || null) ? String(item.public_id) : null;
                     const tzState = tzForState(item.state_id);
@@ -624,63 +593,108 @@ export default function AdminPage() {
 
                     const followupSent = !!item.followup_email_sent;
 
+                    const isOpen = openId === item.id;
+                    const isPaid = Number(item.contribution || 0) > 0;
+                    const cityClean = String(item.city || '—').replace(/\s*\([^)]*\)\s*$/, '');
+
                     return (
-                      <div key={item.id} className="bg-white border rounded-xl p-6 shadow relative">
-                        {/* ✅ Drapeau “follow-up sent” à gauche */}
-                        {followupSent && (
-                          <div
-                            className="absolute -left-3 top-4 rotate-[-6deg] rounded-md bg-emerald-600 text-white text-xs px-2 py-1 shadow"
-                            title={`Follow-up sent${item.followup_email_sent_at ? ` • ${new Date(item.followup_email_sent_at).toLocaleString()}` : ''}${item.followup_email_to ? ` → ${item.followup_email_to}` : ''}`}
-                          >
-                            Follow-up sent
+                      <div key={item.id} className={`bg-white border rounded-xl shadow-sm transition ${isOpen ? 'border-emerald-300' : 'border-gray-200'} ${!isPaid && !isOpen ? 'opacity-70' : ''}`}>
+                        {/* ── Ligne compacte (cliquer pour déplier) ── */}
+                        <div
+                          className="flex cursor-pointer items-center gap-3 px-4 py-3"
+                          onClick={() => setOpenId(isOpen ? null : item.id)}
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-lg">
+                            {item.object_photo ? (
+                              <Image src={item.object_photo} alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-cover" />
+                            ) : (
+                              catIcon(item.primary_category)
+                            )}
                           </div>
-                        )}
-
-                        <div className="text-lg font-semibold mb-2">
-                          Reference: <span className="font-mono text-blue-700">{ref ?? '—'}</span>
-                        </div>
-
-                        <div className="text-sm text-gray-600 mb-3">
-                          <div>City: {item.city || '—'}{item.state_id ? ` (${item.state_id})` : ''}</div>
-
-                          {/* ✅ Bloc horaires normalisé — sans la première date ISO */}
-                          <div className="mt-1 space-y-0.5">
-                            <div><strong>Created at:</strong></div>
-                            <div><strong>Local time (state):</strong> {createdLocalState}</div>
-                            <div><strong>France time:</strong> {createdFrance}</div>
-                          </div>
-                        </div>
-
-                        <div className="mb-4">
-                          <div className="text-gray-800 font-medium">
-                            {item.title || item.description || 'Untitled'}
-                          </div>
-                          {item.description && (
-                            <div className="text-gray-700 mt-1 text-sm">{item.description}</div>
-                          )}
-                          {(item.date || item.time_slot) && (
-                            <div className="text-sm text-gray-600 mt-2">
-                              <strong>Date of loss:</strong> {item.date || '—'} {item.time_slot ? `(${item.time_slot})` : ''}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="truncate font-medium text-gray-900">{item.title || item.description || 'Untitled'}</span>
+                              {isPaid ? (
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">{item.contribution} $</span>
+                              ) : (
+                                <span className="rounded-full border border-gray-300 px-2 py-0.5 text-[11px] text-gray-500">gratuit</span>
+                              )}
+                              {followupSent && (
+                                <span
+                                  className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-800"
+                                  title={`Follow-up envoyé${item.followup_email_sent_at ? ` • ${new Date(item.followup_email_sent_at).toLocaleString()}` : ''}${item.followup_email_to ? ` → ${item.followup_email_to}` : ''}`}
+                                >
+                                  follow-up ✓
+                                </span>
+                              )}
+                              {(item as any).first_in_city && !(item as any).fb_group_done && (
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Premier signalement de cette ville : groupe FB à créer">
+                                  🚩 1re ville
+                                </span>
+                              )}
                             </div>
+                            <div className="truncate text-xs text-gray-500">
+                              #{ref ?? '—'} · {cityClean}{item.state_id ? `, ${item.state_id}` : ''} · perdu le {item.date || '—'}
+                              {item.first_name ? ` · ${item.first_name} ${(item.last_name || '').charAt(0)}${item.last_name ? '.' : ''}` : ''}
+                            </div>
+                          </div>
+                          {item.paid && (
+                            <a
+                              href={`/admin/case/${encodeURIComponent(item.id)}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="hidden shrink-0 items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 sm:inline-flex"
+                              title="Dossier : échanges, assistant IA, compte rendu, stickers"
+                            >
+                              🗂️ Ouvrir le dossier
+                            </a>
                           )}
+                          <span className="shrink-0 text-gray-400">{isOpen ? '▲' : '▼'}</span>
                         </div>
 
-                        {/* ✅ Coordonnées client complètes */}
-                        <div className="text-sm text-gray-700 mb-2 grid sm:grid-cols-2 gap-x-6 gap-y-0.5">
-                          <div><strong>Name:</strong> {[item.first_name, item.last_name].filter(Boolean).join(' ') || '—'}</div>
-                          <div><strong>Email:</strong> {item.email || '—'}</div>
+                        {/* ── Panneau détaillé ── */}
+                        {isOpen && (
+                        <div className="space-y-4 border-t border-gray-100 px-4 py-4">
+                        {item.paid && (
+                          <a
+                            href={`/admin/case/${encodeURIComponent(item.id)}`}
+                            className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110 sm:hidden"
+                          >
+                            🗂️ Ouvrir le dossier
+                          </a>
+                        )}
+                        <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                        <div className="text-sm text-gray-600 mb-3">
+                          <div className="space-y-0.5">
+                            <div><strong>Créé :</strong> {createdLocalState} <span className="text-gray-400">(heure locale)</span></div>
+                            <div className="text-gray-500">{createdFrance} (France)</div>
+                          </div>
+                          {(item.date || item.time_slot) && (
+                            <div className="mt-1"><strong>Date of loss:</strong> {item.date || '—'} {item.time_slot ? `(${item.time_slot})` : ''}</div>
+                          )}
                         </div>
+                        {item.description && (
+                          <div className="mb-2 text-sm text-gray-700 whitespace-pre-wrap">{item.description}</div>
+                        )}
                         {(item as any).circumstances && (
                           <div className="text-sm text-gray-600 mb-2">
                             <strong>Circumstances:</strong> {(item as any).circumstances}
                           </div>
                         )}
+                        <div className="text-sm text-gray-700 mb-2">
+                          <strong>{[item.first_name, item.last_name].filter(Boolean).join(' ') || '—'}</strong>
+                          {item.email ? ` · ${item.email}` : ''}
+                        </div>
                         {/* ✅ Champs client éditables (tél, adresse, DOB, détail privé) */}
                         <ClientFieldsEditor item={item} />
+                        </div>
+                        <div>
 
 
                         {/* ✅ État de la veille IA + actions */}
-                        <div className="text-xs text-gray-600 mb-2 flex flex-wrap items-center gap-3 border-t pt-2">
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-gray-400">Veille IA</div>
+                          <div className="mb-2 flex flex-wrap items-center gap-3">
                           <span>Veille : <strong>{item.search_status || 'active'}</strong>{item.force_search ? ' (forcé)' : ''}</span>
                           <span>Dernière : {item.last_searched_at ? new Date(item.last_searched_at).toLocaleDateString() : '—'}</span>
                           <span>Prochaine : {item.next_search_at ? new Date(item.next_search_at).toLocaleDateString() : '—'}</span>
@@ -710,10 +724,7 @@ export default function AdminPage() {
                               </button>
                             )
                           )}
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap items-center gap-3">
-                          <strong>Contribution:</strong> {item.contribution ?? 0}
+                          </div>
 
                           <button
                             type="button"
@@ -725,15 +736,33 @@ export default function AdminPage() {
                             {searchingId === item.id ? 'Recherche…' : '🔎 Rechercher en ligne'}
                           </button>
 
-                          {item.paid && (
-                            <a
-                              href={`/admin/case/${encodeURIComponent(item.id)}`}
-                              className="inline-flex items-center rounded-md bg-amber-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                              title="Dossier : échanges groupés + assistant IA (clients payants)"
-                            >
-                              🗂️ Dossier
-                            </a>
+                          {searchResults[item.id] && (
+                            <div className="mt-2 w-full text-xs">
+                              {searchResults[item.id].length === 0 ? (
+                                <div className="text-gray-500">Aucun candidat crédible trouvé pour l&apos;instant.</div>
+                              ) : (
+                                <ul className="list-none space-y-2 pl-0">
+                                  {searchResults[item.id].map((c: any, i: number) => (
+                                    <li key={i} className="border-l-2 border-blue-200 pl-2">
+                                      <span className={c.verdict === 'yes' ? 'font-semibold text-green-700' : 'font-semibold text-amber-700'}>
+                                        {String(c.verdict).toUpperCase()} {c.confidence}%
+                                      </span>{' '}
+                                      <a href={c.link} target="_blank" rel="noreferrer" className="text-blue-600 underline">{c.title}</a>
+                                      <span className="text-gray-400"> ({c.source})</span>
+                                      {c.snippet && <div className="text-gray-600">{c.snippet}</div>}
+                                      <div className="text-xs text-gray-500">🤖 {c.reason}</div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
                           )}
+                        </div>
+                        </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
+                          <span className="text-sm text-gray-700"><strong>Contribution:</strong> {item.contribution ?? 0} $</span>
 
                           <button
                             type="button"
@@ -785,28 +814,6 @@ export default function AdminPage() {
                             </a>
                           )}
 
-                          {searchResults[item.id] && (
-                            <div className="w-full mt-2 text-sm">
-                              {searchResults[item.id].length === 0 ? (
-                                <div className="text-gray-500">Aucun candidat crédible trouvé pour l&apos;instant.</div>
-                              ) : (
-                                <ul className="list-none pl-0 space-y-2">
-                                  {searchResults[item.id].map((c: any, i: number) => (
-                                    <li key={i} className="border-l-2 border-blue-200 pl-2">
-                                      <span className={c.verdict === 'yes' ? 'text-green-700 font-semibold' : 'text-amber-700 font-semibold'}>
-                                        {String(c.verdict).toUpperCase()} {c.confidence}%
-                                      </span>{' '}
-                                      <a href={c.link} target="_blank" rel="noreferrer" className="text-blue-600 underline">{c.title}</a>
-                                      <span className="text-gray-400"> ({c.source})</span>
-                                      {c.snippet && <div className="text-gray-600">{c.snippet}</div>}
-                                      <div className="text-gray-500 text-xs">🤖 {c.reason}</div>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          )}
-
                           {publicUrl ? (
                             <a
                               href={publicUrl}
@@ -825,25 +832,6 @@ export default function AdminPage() {
                               title="Generate public URL"
                             >
                               Generate link
-                            </button>
-                          )}
-
-                          {ref ? (
-                            <a
-                              href={`/case/${encodeURIComponent(ref)}?edit=1`}
-                              className="inline-flex items-center rounded-md bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-                              title="Edit case follow-up"
-                            >
-                              Edit suivi
-                            </a>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled
-                              className="inline-flex items-center rounded-md bg-gray-300 text-gray-600 px-3 py-1.5 text-sm font-medium cursor-not-allowed"
-                              title="No public reference available"
-                            >
-                              Edit suivi
                             </button>
                           )}
 
@@ -891,38 +879,9 @@ export default function AdminPage() {
                             }}
                           />
 
-                          {/* ——— MODIF : lien “Sticker sheet (PDF)” (paid only) */}
-                          {Number(item.contribution || 0) > 0 && ref ? (
-                        <a
-  href={`/api/sticker-sheet?public_id=${encodeURIComponent(ref)}`}
-  target="_blank"
-  rel="noreferrer"
-  className="inline-flex items-center rounded-md bg-orange-600 text-white px-3 py-1.5 text-sm font-medium hover:brightness-110"
-  title="Open sticker sheet (PDF)"
->
-  Sticker sheet (PDF)
-</a>
-                          ) : null}
-                          {/* ——— fin MODIF */}
                         </div>
-
-                        <div className="text-sm text-gray-600 flex items-center gap-3 mt-4">
-                          <div className="flex items-center gap-2">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-gray-400">
-                              <path d="M12 12a5 5 0 100-10 5 5 0 000 10z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M21 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                            <span>
-                              {item.first_name || ''} {item.last_name || ''} {item.email ? `– ${item.email}` : ''}
-                            </span>
-                          </div>
-
-                          {item.object_photo && (
-                            <div className="ml-auto">
-                              <Image src={item.object_photo} alt="photo" width={80} height={80} className="rounded" />
-                            </div>
-                          )}
                         </div>
+                        )}
                       </div>
                     );
                   })}
