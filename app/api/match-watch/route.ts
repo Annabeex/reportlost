@@ -69,6 +69,9 @@ export async function GET(req: NextRequest) {
           last_searched_at: new Date().toISOString(),
           next_search_at: next ? next.toISOString() : null,
           search_status: done ? "done" : "active",
+          // Le passage de veille EST un travail sur le dossier : la page client
+          // affiche donc une date "Last updated" fraîche à chaque passage.
+          case_followup_updated_at: new Date().toISOString(),
         })
         .eq("id", report.id);
 
