@@ -118,7 +118,7 @@ export default async function Page({
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -138,7 +138,7 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at"
           )
           .eq("public_id", num)
           .limit(1)
@@ -360,7 +360,14 @@ export default async function Page({
               lostId={String(data.id || "")}
             />
           ) : (
-            <CaseFollowup blocks={blocks} publicId={publicId} hideEditButton />
+            <CaseFollowup
+              blocks={blocks}
+              publicId={publicId}
+              hideEditButton
+              firstName={data.first_name || null}
+              itemTitle={data.title || null}
+              updatedAt={(data as any).case_followup_updated_at || null}
+            />
           )}
         </section>
       </div>

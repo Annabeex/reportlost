@@ -79,7 +79,11 @@ export async function PUT(
 
   // construit l’objet de mise à jour selon le contenu
   const update: Record<string, any> = {};
-  if (Array.isArray(body.blocks)) update.case_followup = body.blocks;
+  if (Array.isArray(body.blocks)) {
+    update.case_followup = body.blocks;
+    // Horodatage affiché au client ("Last updated") + base du prochain point (J+14)
+    update.case_followup_updated_at = new Date().toISOString();
+  }
   if (typeof body.notes === "string") update.case_notes = body.notes;
 
   if (!Object.keys(update).length)

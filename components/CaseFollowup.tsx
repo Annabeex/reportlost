@@ -65,12 +65,22 @@ export default function CaseFollowup({
   blocks,
   publicId,
   hideEditButton,
+  firstName,
+  itemTitle,
+  updatedAt,
 }: {
   blocks?: any[];
   publicId?: string;
   hideEditButton?: boolean;
+  firstName?: string | null;
+  itemTitle?: string | null;
+  updatedAt?: string | null;
 }) {
   const normalized = normalizeBlocks(blocks);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const updated = updatedAt ? new Date(updatedAt) : null;
+  const nextUpdate = updated ? new Date(updated.getTime() + 14 * 86400000) : null;
 
   // ⛔️ Pas de defaults en public : si vide, on affiche un encart d'information.
   if (!normalized.length) {
@@ -108,6 +118,23 @@ export default function CaseFollowup({
         </div>
       )}
 
+      {/* Intro personnalisée + fraîcheur */}
+      {(firstName || updated) && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          {firstName && (
+            <p className="text-[17px] text-emerald-950">
+              Hello <strong>{firstName}</strong>, here is everything our team has done so far
+              {itemTitle ? <> to find your <strong>{String(itemTitle).toLowerCase()}</strong></> : null}.
+            </p>
+          )}
+          {updated && (
+            <p className={`text-sm text-emerald-800 ${firstName ? "mt-1" : ""}`}>
+              Last updated: <strong>{fmt(updated)}</strong>
+            </p>
+          )}
+        </div>
+      )}
+
       {normalized.map((b, i) => (
         <div
           key={b.id ?? `${b.title}-${i}`}
@@ -135,6 +162,20 @@ export default function CaseFollowup({
           </div>
         </div>
       ))}
+
+      {/* Prochain point + canal de retour */}
+      <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4">
+        {nextUpdate && (
+          <p className="text-gray-900">
+            📅 Your next scheduled update: <strong>around {fmt(nextUpdate)}</strong>. We will reach
+            out sooner if anything new comes up.
+          </p>
+        )}
+        <p className={`text-sm text-gray-600 ${nextUpdate ? "mt-2" : ""}`}>
+          Something to add to your report? Just reply to any of our emails, your case number
+          travels with it.
+        </p>
+      </div>
     </div>
   );
 }

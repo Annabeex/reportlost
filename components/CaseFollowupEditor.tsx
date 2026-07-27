@@ -36,20 +36,13 @@ function toSafeHTML(text: string): string {
 function baseDefaults(publicId?: string, lostId?: string): Block[] {
   const anon = publicId ? `item${publicId}@reportlost.org` : "your case inbox";
   return [
-    { id: uid(), title: "Database & Partners searches", paragraphs: [
-      "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords",
-      [
-        "✅ Search in the Reportmyloss database",
-        "✅ Search in the foundrop database",
-        "✅ Search in the chargerback database",
-        "✅ Search in the iLost.co united states database",
-        "✅ Search in the Lost-and-found.org database",
-      ].join("\n"),
-      "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
-    ]},
     { id: uid(), title: "Local notifications & Authority outreach", paragraphs: [
       "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
       "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office or visit the office in person with proof of ownership if you have.",
+    ]},
+    { id: uid(), title: "Database & Partners searches", paragraphs: [
+      "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords.",
+      "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
     ]},
     { id: uid(), title: "Anonymous Contact Address - Safety & Anti-Scam Measures", paragraphs: [
       `✅ We created a case-specific anonymous inbox: **${anon}**. Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly in the social media.`,

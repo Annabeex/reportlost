@@ -447,6 +447,11 @@ export default function CasePage() {
               {item.primary_category ? `${item.primary_category} · ` : ""}
               {item.city}
               {item.state_id ? `, ${item.state_id}` : ""} · perdu le {item.date || "?"}
+              {item.date ? (
+                <span className="text-gray-500">
+                  {" "}({new Date(`${item.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })})
+                </span>
+              ) : null}
               {item.time_slot ? ` (${item.time_slot})` : ""}
               {item.address ? ` · ${item.address}` : ""}
             </div>
