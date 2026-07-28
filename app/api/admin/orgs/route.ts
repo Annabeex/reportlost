@@ -22,15 +22,21 @@ export async function GET() {
 
   const { data: items } = await sb
     .from("found_items")
-    .select("org_id, status")
-    .not("org_id", "is", null);
+    .select("id, org_id, title, image_url, status, date")
+    .not("org_id", "is", null)
+    .order("created_at", { ascending: false });
   const counts: Record<string, { total: number; stored: number; claims: number }> = {};
+  const preview: Record<string, any[]> = {};
   for (const it of items || []) {
     const k = String(it.org_id);
     counts[k] = counts[k] || { total: 0, stored: 0, claims: 0 };
     counts[k].total++;
     if (it.status === "stored") counts[k].stored++;
     if (it.status === "claim_pending") counts[k].claims++;
+    preview[k] = preview[k] || [];
+    if (preview[k].length < 8) {
+      preview[k].push({ id: it.id, title: it.title, image_url: it.image_url, status: it.status, date: it.date });
+    }
   }
 
   // Email du membre fondateur (compte de connexion), utile quand public_email est vide
@@ -48,6 +54,7 @@ export async function GET() {
     orgs: (orgs || []).map((o) => ({
       ...o,
       counts: counts[String(o.id)] || { total: 0, stored: 0, claims: 0 },
+      items: preview[String(o.id)] || [],
       member_email: memberEmail[String(o.id)] || null,
     })),
   });
