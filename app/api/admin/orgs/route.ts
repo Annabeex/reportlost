@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data: items } = await sb
     .from("found_items")
-    .select("id, org_id, title, image_url, status, date")
+    .select("id, org_id, org_ref, title, image_url, status, date, public_visible")
     .not("org_id", "is", null)
     .order("created_at", { ascending: false });
   const counts: Record<string, { total: number; stored: number; claims: number }> = {};
@@ -34,8 +34,11 @@ export async function GET() {
     if (it.status === "stored") counts[k].stored++;
     if (it.status === "claim_pending") counts[k].claims++;
     preview[k] = preview[k] || [];
-    if (preview[k].length < 8) {
-      preview[k].push({ id: it.id, title: it.title, image_url: it.image_url, status: it.status, date: it.date });
+    if (preview[k].length < 60) {
+      preview[k].push({
+        id: it.id, org_ref: it.org_ref, title: it.title, image_url: it.image_url,
+        status: it.status, date: it.date, public_visible: it.public_visible,
+      });
     }
   }
 
