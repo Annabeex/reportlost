@@ -48,16 +48,21 @@ export async function POST(req: NextRequest) {
   if (process.env.SERPER_API_KEY) {
     try {
       const thisWeek = new Date().toISOString(); // -> freshness "qdr:w"
-      // Priorité aux OBJETS (wallet, bag, phone, keys...) : les posts "found pet"
-      // dominent naturellement les résultats, une seule requête animaux suffit.
+      // Priorité aux OBJETS (wallet, bag, phone, keys...), mais avec des requêtes
+      // génériques en complément : dans les petites villes, les requêtes trop
+      // étroites ne ramènent rien du tout.
       const queries = [
-        `found wallet OR found keys ${city} ${state}`,
-        `found phone OR found bag OR found backpack ${city} ${state}`,
-        `"found" wallet OR keys OR phone ${city} site:facebook.com`,
+        `found wallet OR found keys OR found phone ${city} ${state}`,
+        `"found" ${city} site:facebook.com`,
+        `found ${city} ${state}`,
         `found ${city} ${state} site:craigslist.org OR site:nextdoor.com OR site:reddit.com`,
         `found dog OR found cat ${city} ${state}`,
       ];
-      const sets = await Promise.all(queries.map((q) => serperSearch(q, thisWeek).catch(() => [])));
+      let sets = await Promise.all(queries.map((q) => serperSearch(q, thisWeek).catch(() => [])));
+      // Filet : si la semaine ne donne rien (petite ville), on élargit au mois.
+      if (sets.every((s) => !s.length)) {
+        sets = await Promise.all(queries.map((q) => serperSearch(q, null).catch(() => [])));
+      }
       const seen = new Set<string>();
       const all = sets
         .flat()
