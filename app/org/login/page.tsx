@@ -18,7 +18,11 @@ export default function OrgLoginPage() {
     setMsg(null);
     try {
       if (mode === "signup") {
-        const { error } = await supabaseBrowser.auth.signUp({ email, password });
+        const { error } = await supabaseBrowser.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/org/login` },
+        });
         if (error) throw error;
         setMsg("Account created. Check your inbox to confirm your email, then sign in.");
         setMode("signin");
