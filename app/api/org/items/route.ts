@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
     storage_location: String(b?.storage_location || "").trim().slice(0, 120) || null,
     status: "stored",
     legal_deadline: legalDeadline(found_at, ctx.org.state_id),
+    // Colonnes héritées des dépôts publics (analyse d'image) : NOT NULL en base
+    labels: [] as string[],
+    logos: [] as string[],
+    objects: [] as string[],
+    ocr_text: "",
   };
 
   const { data, error } = await sb.from("found_items").insert(row).select("id, org_ref").single();
