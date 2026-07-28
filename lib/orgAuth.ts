@@ -37,7 +37,7 @@ export async function getOrgContext(req: NextRequest): Promise<OrgContext | null
 
   const { data: membership } = await sb
     .from("org_members")
-    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan)")
+    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan, public_listing)")
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();

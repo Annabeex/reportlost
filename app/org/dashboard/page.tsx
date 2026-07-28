@@ -17,6 +17,8 @@ type Item = {
   status: string | null;
   legal_deadline: string | null;
   created_at: string;
+  public_visible?: boolean;
+  public_label?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -82,6 +84,25 @@ export default function OrgDashboardPage() {
     else alert("Update failed");
   };
 
+  const toggleItemVisibility = async (id: string, next: boolean) => {
+    const r = await authFetch(`/api/org/items/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ public_visible: next }),
+    });
+    if (r.ok) setItems((prev) => prev.map((it) => (it.id === id ? { ...it, public_visible: next } : it)));
+    else alert("Update failed");
+  };
+
+  const togglePublicListing = async () => {
+    const next = !org.public_listing;
+    const r = await authFetch("/api/org/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ public_listing: next }),
+    });
+    if (r.ok) setOrg((o: any) => ({ ...o, public_listing: next }));
+    else alert("Update failed");
+  };
+
   const stats = useMemo(() => {
     const stored = items.filter((i) => i.status === "stored" || i.status === "claim_pending");
     return {
@@ -107,10 +128,21 @@ export default function OrgDashboardPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 truncate">{org.name}</h1>
           <p className="text-sm text-gray-500">
-            reportlost.org/o/{org.slug}
+            {org.verified && org.public_listing ? (
+              <a href={`/o/${org.slug}`} target="_blank" rel="noopener" className="underline hover:text-emerald-700">
+                reportlost.org/o/{org.slug} ↗
+              </a>
+            ) : (
+              <>reportlost.org/o/{org.slug}</>
+            )}
             {org.state_id ? ` · ${org.state_id} holding rules applied` : ""}
           </p>
         </div>
+        <button type="button" onClick={togglePublicListing}
+          title="When off, your public page and all items are hidden from visitors"
+          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${org.public_listing ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
+          {org.public_listing ? "🌐 Public page: on" : "🔒 Public page: off"}
+        </button>
         <Link href="/org/items/new"
           className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
           + Log a found item
@@ -176,6 +208,16 @@ export default function OrgDashboardPage() {
                   Found {it.date || "—"}{it.dropoff_location ? ` · ${it.dropoff_location}` : ""}{it.storage_location ? ` · 📍 ${it.storage_location}` : ""}
                 </div>
               </div>
+              {(it.status === "stored" || it.status === "claim_pending") && (
+                <button type="button"
+                  onClick={() => toggleItemVisibility(it.id, !(it.public_visible !== false))}
+                  title={it.public_visible !== false
+                    ? `Shown on your public page as "${it.public_label || it.title}" — click to hide`
+                    : "Hidden from your public page — click to show"}
+                  className={`rounded-lg border px-2 py-1.5 text-xs ${it.public_visible !== false ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-400"}`}>
+                  {it.public_visible !== false ? "👁" : "🚫"}
+                </button>
+              )}
               <select
                 value={it.status || "stored"}
                 onChange={(e) => setStatus(it.id, e.target.value)}

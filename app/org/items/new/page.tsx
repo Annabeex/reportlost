@@ -14,6 +14,8 @@ export default function OrgNewItemPage() {
     found_location: "",
     storage_location: "",
     photo_url: "",
+    public_label: "",
+    public_visible: true,
   });
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -108,6 +110,27 @@ export default function OrgNewItemPage() {
                 📷 {uploading ? "Uploading…" : "Add a photo"}
               </label>
             </>
+          )}
+        </div>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.public_visible}
+              onChange={(e) => setForm((f) => ({ ...f, public_visible: e.target.checked }))}
+              className="mt-1 h-4 w-4 accent-emerald-600" />
+            <span className="text-sm">
+              <span className="font-medium">List on our public page</span>
+              <span className="block text-xs text-gray-600">
+                Only a generic label, the date and the drop-off location are shown. Details and photo
+                stay private, they are used to verify ownership claims.
+              </span>
+            </span>
+          </label>
+          {form.public_visible && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Shown publicly as</label>
+              <input value={form.public_label} onChange={set("public_label")}
+                placeholder='Keep it generic, e.g. "Phone" or "Wallet"' maxLength={60} className={cls} />
+            </div>
           )}
         </div>
         {err && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}

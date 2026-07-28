@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get("status");
   let q = sb
     .from("found_items")
-    .select("id, org_ref, title, description, image_url, date, dropoff_location, storage_location, status, legal_deadline, created_at")
+    .select("id, org_ref, title, description, image_url, date, dropoff_location, storage_location, status, legal_deadline, public_visible, public_label, created_at")
     .eq("org_id", ctx.org.id)
     .order("created_at", { ascending: false })
     .limit(500);
@@ -55,6 +55,9 @@ export async function POST(req: NextRequest) {
     storage_location: String(b?.storage_location || "").trim().slice(0, 120) || null,
     status: "stored",
     legal_deadline: legalDeadline(found_at, ctx.org.state_id),
+    // Visibilité publique : libellé générique uniquement (jamais la description)
+    public_visible: b?.public_visible !== false,
+    public_label: String(b?.public_label || "").trim().slice(0, 60) || title.split(/\s+/).slice(0, 2).join(" "),
     // Colonnes héritées des dépôts publics (analyse d'image) : NOT NULL en base
     labels: [] as string[],
     logos: [] as string[],
