@@ -19,15 +19,25 @@ export function exampleReports(cityData: any) {
     }
   };
 
-  // Liste de 20 objets avec variantes/synonymes
-  const lostItems = [
+  // Liste pondérée : les objets à forte conversion (wallet, purse, ring,
+  // bracelet, phone, cat, dog) apparaissent 3x plus souvent que les autres.
+  const priorityItems = [
+    ['Wallet with ID', 'Leather wallet', 'Card holder'],
     ['Black leather purse', 'Brown handbag', 'Small shoulder bag'],
+    ['Gold ring', 'Diamond ring', 'Wedding band'],
+    ['Gold bracelet', 'Silver bracelet', 'Charm bracelet'],
     ['iPhone 13', 'Samsung Galaxy S22', 'Android phone'],
+    ['Orange tabby cat', 'Small black cat', 'Gray cat with collar'],
+    ['Golden retriever dog', 'Small brown dog', 'Husky with blue collar'],
+  ];
+  const lostItems = [
+    ...priorityItems,
+    ...priorityItems,
+    ...priorityItems,
     ['Set of house keys', 'Car key fob', 'Bunch of keys'],
     ['Pair of sunglasses', 'Reading glasses', 'Eyeglasses'],
-    ['Wallet with ID', 'Leather wallet', 'Card holder'],
     ['Backpack with books', 'Schoolbag', 'Navy blue backpack'],
-    ['Gold bracelet', 'Silver necklace', 'Earring'],
+    ['Silver necklace', 'Pearl earring', 'Pendant necklace'],
     ['Laptop in gray case', 'MacBook Pro', 'Tablet device'],
     ['Baby stroller', 'Foldable stroller', 'Jogging stroller'],
     ['Passport and travel documents', 'Boarding pass', 'Plane ticket'],

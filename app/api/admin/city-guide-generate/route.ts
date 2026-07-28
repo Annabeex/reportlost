@@ -127,6 +127,8 @@ Tu es un EXPERT EN CONVERSION, pas un blogueur : cette page vend le service d'ac
 (un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale, et le signalement
 reste actif en recherche de correspondances pendant 6 à 12 mois). Chaque section doit ramener vers le formulaire de signalement.
 
+EXEMPLES D'OBJETS : quand tu cites des objets perdus en exemple (intro, FAQ, cartes, étapes), privilégie wallet, purse, ring, bracelet, phone, cat et dog (les objets qui convertissent le mieux) ; keys, laptop, backpack ou glasses seulement de temps en temps pour varier.
+
 ⚠️ PRINCIPE DIRECTEUR : des pages "similaires mais différentes". Garde exactement ce plan de page (le modèle New York ci-dessous), mais REFORMULE chaque phrase : synonymes, constructions retournées, jamais une phrase réutilisable sur une autre ville en changeant juste le nom. Et ajuste le contenu à la réalité locale : ajoute, modifie ou retire des détails selon la ville (pas de carte ni de question FAQ sur le métro s'il n'y a pas de métro, pas d'aéroport s'il n'y en a pas ; à l'inverse, mets en avant ce que CETTE ville a : une plage, un campus, un stade, une gare routière).
 
 Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
