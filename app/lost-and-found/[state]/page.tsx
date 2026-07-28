@@ -9,6 +9,7 @@ import { buildCityPath } from "@/lib/slugify";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import MaintenanceNotice from "@/components/MaintenanceNotice";
 import cityImages from "@/data/cityImages.json";
+import { stateGuides } from "@/lib/stateGuides";
 
 export const revalidate = 86400; // ISR 24h
 
@@ -97,9 +98,14 @@ export async function generateMetadata({ params }: Props) {
     };
   }
 
+  const g = stateGuides[stateSlug.toUpperCase()];
   return {
-    title: `Lost & Found in ${stateName} - ReportLost.org`,
-    description: `Submit or find lost items in ${stateName}. One report and we route it to the right local services, with an active match search for the full duration of your plan.`,
+    title: g
+      ? `Lost & Found in ${stateName}: Laws, Deadlines & How to Report | ReportLost`
+      : `Lost & Found in ${stateName} - ReportLost.org`,
+    description: g
+      ? `How lost & found works in ${stateName}: finder duties, police holding periods, where items end up, and how to report a lost item city by city.`
+      : `Submit or find lost items in ${stateName}. One report and we route it to the right local services, with an active match search for the full duration of your plan.`,
     alternates: { canonical: `https://reportlost.org/lost-and-found/${stateSlug}` },
   };
 }
@@ -131,6 +137,18 @@ export default async function StatePage({ params }: Props) {
     }
 
     const coveredCities = await getCoveredCities(stateAbbr);
+    const guide = stateGuides[stateAbbr];
+    const faqJsonLd = guide
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: guide.faq.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        }
+      : null;
 
     return (
       <div className="bg-white px-6 py-10 max-w-5xl mx-auto">
@@ -178,6 +196,83 @@ export default async function StatePage({ params }: Props) {
           <MaintenanceNotice
             message={`We're still working on listing lost & found services for all cities in ${stateName}. Please check back soon!`}
           />
+        )}
+
+        {/* 📜 Guide État : lois, délais, fonctionnement (rédigé et vérifié à la main) */}
+        {guide && (
+          <section className="mt-14">
+            {faqJsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+              />
+            )}
+
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
+              How Lost &amp; Found Works in {guide.stateName}
+            </h2>
+            <div className="mx-auto max-w-3xl space-y-4 text-gray-700">
+              {guide.intro.map((p, i) => (
+                <p key={i} className="leading-relaxed">{p}</p>
+              ))}
+            </div>
+
+            <h3 className="mt-10 mb-4 text-xl font-semibold text-gray-800 text-center">
+              What the Law Says in {guide.stateName}
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              {guide.law.map((l, i) => (
+                <div key={i} className="rounded-2xl border border-emerald-200 bg-white overflow-hidden">
+                  <div className="flex items-center gap-2 bg-emerald-50 px-4 py-3 border-b border-emerald-200">
+                    <span aria-hidden className="text-xl">{l.icon}</span>
+                    <span className="font-semibold text-emerald-900 text-sm leading-snug">{l.title}</span>
+                  </div>
+                  <p className="px-4 py-4 text-sm leading-relaxed text-gray-700">{l.body}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
+              <h3 className="font-semibold text-gray-900 mb-2">{guide.whereTitle}</h3>
+              <p className="text-sm leading-relaxed text-gray-700">{guide.whereBody}</p>
+            </div>
+
+            {/* CTA formulaire */}
+            <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-6 text-center">
+              <p className="text-lg font-semibold text-white">
+                Lost something in {guide.stateName}?
+              </p>
+              <p className="mt-1 text-sm text-emerald-50">
+                One report, and we route it to the right local services. Your report stays active,
+                searching for a match, for your entire search period.
+              </p>
+              <Link
+                href="/report"
+                className="mt-4 inline-block rounded-lg bg-white px-6 py-2.5 font-semibold text-[#1f6b3a] shadow hover:bg-emerald-50"
+              >
+                Report my lost item →
+              </Link>
+            </div>
+
+            <h3 className="mt-10 mb-4 text-xl font-semibold text-gray-800 text-center">
+              {guide.stateName} Lost &amp; Found FAQ
+            </h3>
+            <div className="mx-auto max-w-3xl space-y-2">
+              {guide.faq.map((f, i) => (
+                <details key={i} className="group rounded-xl border border-gray-200 bg-white px-5 py-3">
+                  <summary className="cursor-pointer list-none font-medium text-gray-900 flex items-center justify-between gap-3">
+                    {f.q}
+                    <span className="text-emerald-700 transition group-open:rotate-45" aria-hidden>+</span>
+                  </summary>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-700">{f.a}</p>
+                </details>
+              ))}
+            </div>
+
+            <p className="mx-auto mt-6 max-w-3xl text-center text-xs text-gray-400">
+              {guide.disclaimer} Last reviewed: {guide.updated}.
+            </p>
+          </section>
         )}
 
         {/* Hub interne : toutes les villes couvertes de l'état (guides publiés).
