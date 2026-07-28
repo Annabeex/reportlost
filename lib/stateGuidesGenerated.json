@@ -1,1 +1,172 @@
-{}
+{
+  "AL": {
+    "stateName": "Alabama",
+    "updated": "July 2026",
+    "intro": [
+      "Alabama is one of the few states that actually wrote a lost property law into its civil code. Title 35, Chapter 12 of the Code of Alabama spells out what a finder must do with something lost, and Alabama Code Section 35-12-3 even sets out that a finder is entitled to compensation for expenses reasonably incurred in preserving the item, not a reward, but reimbursement for costs like care or storage. Keep something you know belongs to someone else, though, and you cross into Alabama's criminal code: Sections 13A-8-6 through 13A-8-8.1 create the crime of theft of lost property, graded by value, first degree above $2,500 and lower degrees for smaller amounts.",
+      "That combination, a civil duty to deal honestly with found property and a criminal statute punishing those who do not, shapes how police, airports, and venues across the state handle a lost wallet, phone, or bag. Cities also run their own timelines, Alabama Code Section 11-47-116 holds unclaimed municipal proceeds for six months before conversion, and the state Treasury's Uniform Disposition of Unclaimed Property Act mails a notice to the apparent owner within 12 months of receiving property it holds. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Lost or Unclaimed Property, Ala. Code § 35-12-3",
+        "body": "Alabama's civil code addresses found property directly. A finder is not obligated to take charge of lost items, but if they do, they are entitled to compensation for expenses necessarily incurred in preserving the property, not a discretionary reward. This is the legal backbone for how finders and owners are expected to deal with each other before a reward is even discussed."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of Lost Property, Ala. Code §§ 13A-8-6 to 13A-8-8.1",
+        "body": "It is a criminal offense in Alabama to actively obtain or exert control over property you know was lost or mislaid, without making reasonable efforts to return it. The charge is graded by value, exceeding $2,500 is theft of lost property in the first degree, and smaller amounts above $500 fall into lower degrees, so keeping a found item that clearly belongs to someone else can carry real consequences."
+      },
+      {
+        "icon": "🕒",
+        "title": "Municipal holding period, Ala. Code § 11-47-116",
+        "body": "When a city or town in Alabama ends up holding property or its proceeds, the code requires those proceeds be held for six months for the account of the owner before they can be converted to municipal use. This is the kind of local clock that varies by department but has a baseline in state law."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Treasury Unclaimed Property Act",
+        "body": "Alabama's Uniform Disposition of Unclaimed Property Act, administered by the State Treasurer, requires a postcard notice be mailed to the apparent owner within 12 months of the Treasury receiving unclaimed property. This mainly covers financial assets and valuables that escheat to the state, separate from the everyday lost wallet or phone a local police department handles."
+      }
+    ],
+    "whereTitle": "Where items end up in Alabama",
+    "whereBody": "A lost item in Alabama might pass through Birmingham-Shuttlesworth International Airport, Huntsville International Airport, Montgomery Regional Airport, or Mobile Regional Airport, through transit systems like the Birmingham-Jefferson County Transit Authority, or through university campuses such as the University of Alabama and Auburn, football stadiums, the Robert Trent Jones Golf Trail, or the beaches of Gulf Shores and Orange Beach. Each of these runs its own lost and found separate from city police departments. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "What happens if I keep something I found in Alabama?",
+        "a": "You could be charged under Alabama's theft of lost property statutes, Ala. Code §§ 13A-8-6 through 13A-8-8.1. If you know the item was lost and you exert control over it instead of trying to return it, the degree of the charge depends on its value, over $2,500 is first degree, over $500 is a lower degree. Turning it in to police or making a genuine effort to find the owner avoids all of this."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Departments typically ask for a description that includes one detail only the true owner would know, a serial number, a photo stored on the device, or something inside a bag, before releasing it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Alabama?",
+        "a": "No. Alabama Code § 35-12-3 entitles a finder to reimbursement for expenses they necessarily incurred preserving the property, that is not the same as a mandatory reward. Offering one is always your choice, never a legal requirement to get your item back."
+      },
+      {
+        "q": "How long will Alabama hold my property before it's disposed of?",
+        "a": "It depends on who is holding it. Municipal proceeds are held six months for the owner under Ala. Code § 11-47-116 before conversion. Property that escheats to the State Treasury under the Uniform Disposition of Unclaimed Property Act gets a postcard notice within 12 months of receipt. Individual police departments and venues often set their own shorter windows, so checking directly matters."
+      },
+      {
+        "q": "What if I lost something at an airport, stadium, or beach in Alabama?",
+        "a": "Airports, transit agencies, universities, and venues like the Gulf Shores beaches each run their own lost and found, separate from city police. ReportLost identifies the right one for the location you lost your item and files with them directly, alongside the local department."
+      }
+    ],
+    "disclaimer": "This page provides general information about Alabama law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "AK": {
+    "stateName": "Alaska",
+    "updated": "July 2026",
+    "intro": [
+      "If you lose something in Alaska, from a phone left on the Alaska Marine Highway ferry to a wallet dropped at a Fairbanks gas station, the state actually has something many states lack: a real statute that spells out what a finder is supposed to do with your property, and what happens if they don't do it.",
+      "Alaska Statutes Title 12 tells a finder to turn property over to a law enforcement agency and sets a one year clock before that finder can ever claim it as their own. Alaska Statutes Title 11 backs that up with a criminal charge for anyone who knowingly pockets lost or mislaid property instead. On top of that statewide framework, each city, from Anchorage to Juneau to Fairbanks, runs its own police property room with its own local holding periods. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "AS 12.36.045, When the Finder Becomes the Owner",
+        "body": "Alaska's civil code says that when a private person finds property that is lost, mislaid, or delivered by mistake, delivering it to a law enforcement agency is the required step. If the true owner remains unknown or does not claim the property within one year, the finder can become the owner. That one year window is longer than the holding period in most states, which is good news if you are slow to file a report."
+      },
+      {
+        "icon": "🚔",
+        "title": "AS 11.46.160, Theft of Lost or Mislaid Property",
+        "body": "Alaska criminal law makes it a crime, not just bad manners, to keep something you know belongs to someone else because it was lost, mislaid, or delivered to you by mistake. This is the statute Alaska police departments point to when they remind the public that finders keepers is not actually the law here."
+      },
+      {
+        "icon": "🕒",
+        "title": "Local Holding Periods Set the Real Clock",
+        "body": "Underneath the state statute, individual departments run their own property rooms with their own timelines. Juneau Police Department holds unclaimed property for 90 days and unclaimed money for 6 months, with a written notice required if a finder wants to claim it. Anchorage Police Department can hold property anywhere from 10 days to 50 years or longer depending on the type of case, municipal code, and other legal holds involved. Always check with the specific department handling your item."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Unclaimed Property Program (AS 34.45.280)",
+        "body": "Separate from police lost and found, Alaska's Department of Revenue runs a statewide unclaimed property program for things like uncashed checks, dormant accounts, and other holder-reported property. Holders must file by November 1 each year for property held as of the prior June 30, and dormancy periods run from 1 to 15 years depending on the property type, with due diligence notices required once a property's value reaches 100 dollars."
+      }
+    ],
+    "whereTitle": "Where items end up in Alaska",
+    "whereBody": "Lost items in Alaska tend to surface through a small number of predictable channels: Ted Stevens Anchorage International Airport, Fairbanks International Airport, and Juneau International Airport lost and found offices, the Alaska Marine Highway System ferries that connect coastal communities, cruise ship terminals during the summer season, local transit like Anchorage's People Mover and Juneau's Capital Transit, and city police department property rooms in Anchorage, Fairbanks, and Juneau. Hotels, museums, and rideshare drivers round out the rest. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, if you can prove it is yours. Departments typically ask you to describe the item and provide one detail only the true owner would know, like a specific mark, a photo stored on the phone, or what is inside a bag, before releasing it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Alaska?",
+        "a": "No. Alaska law does not require you to pay a reward for the return of lost property. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "Under AS 11.46.160, a person who knowingly keeps property they know is lost or mislaid can be charged with theft of lost or mislaid property. Reporting the loss promptly to police creates a record that matters if this comes up later."
+      },
+      {
+        "q": "How long will Alaska police hold my item before it's disposed of?",
+        "a": "It depends on the department. Juneau holds property for 90 days and cash for 6 months. Anchorage can hold items anywhere from 10 days to 50 years depending on the case. Statewide, AS 12.36.045 gives a finder up to one year before they can claim unclaimed property as their own, so you generally have time, but check with the specific department that has your item."
+      },
+      {
+        "q": "What if my lost cash or property ends up reported to the state instead of a police department?",
+        "a": "Financial property like uncashed checks or dormant funds can end up with Alaska's Unclaimed Property Division rather than a police property room. Dormancy periods there run from 1 to 15 years depending on the property type, and you can search and claim through the state's unclaimed property program."
+      }
+    ],
+    "disclaimer": "This page provides general information about Alaska law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "AR": {
+    "stateName": "Arkansas",
+    "updated": "July 2026",
+    "intro": [
+      "Arkansas has no single statewide statute that tells a stranger what to do with your dropped phone or backpack. There is no Arkansas version of California's Civil Code lost property sections. What Arkansas does have is a criminal law that makes it illegal to knowingly keep something you find once you realize it belongs to someone else, plus a separate state system for unclaimed financial property, and a patchwork of city police department policies for physical items turned in at the counter.",
+      "That gap between criminal law and everyday practice is where most lost items actually get resolved, city by city, department by department. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Common law governs physical lost property",
+        "body": "Arkansas has not enacted a dedicated lost-and-found statute covering ordinary found items like wallets, phones, or bags. Ownership and finder obligations for that kind of property are governed by common law principles: the true owner keeps legal title, and a finder does not automatically get to keep what they pick up."
+      },
+      {
+        "icon": "🚔",
+        "title": "Ark. Code § 5-36-105, theft of lost or mislaid property",
+        "body": "Arkansas criminal law directly addresses this situation. A person who comes into control of property they know or should know is lost, mislaid, or delivered by mistake, and fails to take reasonable measures to return it to the owner, can be charged with theft under Ark. Code § 5-36-105. It is a Class D felony if the property is worth $1,000 or more, and a misdemeanor below that."
+      },
+      {
+        "icon": "🏢",
+        "title": "City police departments hold found items locally",
+        "body": "Most Arkansas police departments, including in Little Rock, Fayetteville, and Fort Smith, accept found property at a records or property division and log it for a holding period set by local policy before unclaimed items are disposed of or auctioned. There is no single statewide holding period, so the timeline depends on which department has your item."
+      },
+      {
+        "icon": "📮",
+        "title": "Unclaimed Property Act covers money, not backpacks",
+        "body": "Arkansas Code Title 18, Chapter 28 creates the Unclaimed Property Act, run by the Arkansas Auditor of State. It applies to financial property such as bank accounts, uncashed checks, and stock, not physical items lost in public. Holders must send a due diligence notice giving owners at least 90 days to respond, and property generally becomes reportable as abandoned three to seven years after it goes dormant."
+      },
+      {
+        "icon": "🕒",
+        "title": "No fixed statewide clock for physical items",
+        "body": "Because there is no dedicated statute for found personal property, how long a department keeps your item before it is released, auctioned, or donated depends on that city's own rules, not a single Arkansas deadline. This is exactly why continuous, city-specific follow up matters more in Arkansas than in states with a set statutory holding period."
+      }
+    ],
+    "whereTitle": "Where items end up in Arkansas",
+    "whereBody": "Lost items in Arkansas typically surface at one of a few predictable points: Clinton National Airport in Little Rock, Northwest Arkansas National Airport (XNA), or Fort Smith Regional Airport if you were traveling; Rock Region Metro or Ozark Regional Transit if you were on a bus; and venue lost and found desks at places like Walton Arena, the Walmart AMP, Oaklawn in Hot Springs, or Razorback Stadium if you were at an event. Restaurants, hotels, and retail stores each keep their own found-item box or drawer, separate from any city system. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, if it was turned in to a police department, transit agency, airport, or venue, you can generally reclaim it once you prove ownership. That usually means describing the item accurately and providing one private verification detail, such as a passcode, a specific mark, or the contents of a bag, that only the real owner would know."
+      },
+      {
+        "q": "Is a reward mandatory in Arkansas?",
+        "a": "No. Arkansas has no statute requiring a reward for the return of lost property. Offering one is always your choice, never a legal obligation, and most items are returned without any reward changing hands."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "Arkansas criminal law addresses this directly. Under Ark. Code § 5-36-105, a person who knowingly keeps property they realize is lost or mislaid, without making a reasonable effort to return it, can be charged with theft, a Class D felony if the item is worth $1,000 or more."
+      },
+      {
+        "q": "Is there a state deadline before my item is sold or disposed of?",
+        "a": "There is no single statewide deadline for physical lost items. Each Arkansas police department or venue sets its own holding period before unclaimed property is auctioned or donated. A separate rule applies to unclaimed financial property under the Unclaimed Property Act, which generally becomes reportable three to seven years after it goes dormant."
+      },
+      {
+        "q": "What about lost cash, checks, or financial property specifically?",
+        "a": "That is a different track from a dropped wallet or phone. Uncashed checks, forgotten accounts, and similar financial property fall under the Arkansas Unclaimed Property Act, administered by the Auditor of State. You can search for and claim that kind of property directly through the state's ClaimItAR system."
+      }
+    ],
+    "disclaimer": "This page provides general information about Arkansas law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  }
+}

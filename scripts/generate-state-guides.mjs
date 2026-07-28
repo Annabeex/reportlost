@@ -58,14 +58,31 @@ async function claude(system, user) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": ANTHROPIC, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 3500, system, messages: [{ role: "user", content: user }] }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 6000, system, messages: [{ role: "user", content: user }] }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
   const data = await res.json();
-  const txt = String(data?.content?.[0]?.text ?? "");
-  const m = txt.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("réponse sans JSON");
-  return JSON.parse(m[0]);
+  // ⚠️ la réponse peut contenir plusieurs blocs (le texte n'est pas forcément le 1er)
+  const txt = (data?.content || [])
+    .filter((b) => b?.type === "text")
+    .map((b) => b.text)
+    .join("");
+  if (data?.stop_reason === "max_tokens") throw new Error("réponse tronquée (max_tokens)");
+  // Extraction par comptage d'accolades : ignore tout texte avant/après le JSON
+  const start = txt.indexOf("{");
+  if (start === -1) throw new Error(`réponse sans JSON → début de la réponse : "${txt.slice(0, 150).replace(/\n/g, " ")}"`);
+  let depth = 0, inStr = false, esc = false, end = -1;
+  for (let i = start; i < txt.length; i++) {
+    const c = txt[i];
+    if (esc) { esc = false; continue; }
+    if (c === "\\") { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "{") depth++;
+    else if (c === "}") { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end === -1) throw new Error("JSON incomplet dans la réponse");
+  return JSON.parse(txt.slice(start, end + 1));
 }
 
 const SYSTEM = `You write the "How lost & found works in {State}" page for ReportLost.org, matching the exact structure and voice of the handwritten California and Texas pages.
