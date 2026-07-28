@@ -64,10 +64,10 @@ export default function OrgDashboardPage() {
       const r = await authFetch("/api/org/items");
       const j = await r.json();
       setItems(Array.isArray(j.items) ? j.items : []);
+      setLoading(false); // ⚠️ uniquement quand on a une org : sinon on reste
+      // en "Loading…" pendant la redirection (org.name planterait le rendu)
     } catch {
       router.push("/org/login");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -99,7 +99,7 @@ export default function OrgDashboardPage() {
     return arr;
   }, [items, filter, query]);
 
-  if (loading) return <main className="p-10 text-gray-500">Loading…</main>;
+  if (loading || !org) return <main className="p-10 text-gray-500">Loading…</main>;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
