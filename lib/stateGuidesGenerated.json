@@ -168,5 +168,470 @@
       }
     ],
     "disclaimer": "This page provides general information about Arkansas law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "CO": {
+    "stateName": "Colorado",
+    "updated": "July 2026",
+    "intro": [
+      "Colorado does not have one statewide lost and found statute that covers every city the way some states do. Instead, what happens to your lost item depends on which police department or agency picked it up. Denver, Northglenn, Pueblo, Weld County, Rangely and college campuses like Colorado State University each run their own found property ordinance, with their own claim windows and notice rules. The one statewide law that touches lost items directly is Colorado Revised Statutes 18-4-405, which says property obtained through theft must be restored to its owner regardless of who currently holds it.",
+      "There is also a completely separate system, the Colorado Unclaimed Property Program run by the State Treasurer, but that handles dormant financial accounts and business holdings, not the phone you left at a restaurant or the bag you left on the bus. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single statewide lost property statute, but CRS 18-4-405 protects owners",
+        "body": "Colorado Revised Statutes 18-4-405 states that property obtained by theft, robbery or burglary must be restored to its owner and that no sale can cut off the true owner's right to it. This backs up your claim if a found item resurfaces through a pawnshop, private sale or resale platform, but it does not set out a finder's duty to turn property in. That job falls to city and county ordinances."
+      },
+      {
+        "icon": "🏢",
+        "title": "City and county ordinances actually run the process",
+        "body": "Municipal codes like Northglenn's Article 6-14 Disposition of Personal Property, Pueblo's Chapter 4.32 Lost and Abandoned Property, Weld County's Charter and County Code, and the Town of Rangely's Police Property ordinance each spell out how a local department logs, holds, notifies and eventually disposes of found items. Which ordinance applies depends entirely on which department took custody of your item."
+      },
+      {
+        "icon": "🕒",
+        "title": "Claim windows differ by department",
+        "body": "Under Northglenn's ordinance a written claim generally must come in within a 30 day claim period after notice, Pueblo treats property as abandoned 30 days after written notice is sent to the owner's last known address, Rangely requires the claimant to appear no less than 60 days after the item was surrendered, and Colorado State University's police policy holds found property and safekeeping property for a minimum of 90 days. There is no single statewide clock, so the department that has your item controls the deadline."
+      },
+      {
+        "icon": "📮",
+        "title": "Colorado's Unclaimed Property Program is a different system",
+        "body": "The Colorado Unclaimed Property Program, run through the State Treasurer, holds dormant financial property such as bank accounts, checks and business holdings valued at $25 or more, and companies must report and remit by November 1 each year. It exists to reunite people with forgotten financial assets, not with a lost wallet, phone or bag, which stays under local police or venue lost and found rules instead."
+      }
+    ],
+    "whereTitle": "Where items end up in Colorado",
+    "whereBody": "Lost property in Colorado moves through a lot of different hands depending on where you were. Denver International Airport and Colorado Springs Airport each run their own lost and found desks for items left at security, gates or baggage claim. RTD, Denver's regional transit agency, along with Bustang intercity buses, log items found on buses, light rail and at stations. City police departments, from Denver PD to smaller departments like Northglenn, Pueblo and Rangely, take custody of items found in public and on private property when a finder turns them in. College campuses such as Colorado State University run their own police property units, and major venues like Coors Field, Ball Arena, Red Rocks Amphitheatre and ski resorts across the state hold items separately under their own house policies. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Colorado departments generally will not hand an item over on a description alone, especially once a formal claim period has opened under a city ordinance. Be ready to describe a private detail that would not be obvious from looking at the item, such as a lock screen photo, a case scratch in a specific spot, or what is saved inside a bag pocket, along with matching ID if the department asks for it."
+      },
+      {
+        "q": "Is a reward mandatory in Colorado?",
+        "a": "No. Colorado law does not require you to offer a reward to get your property back, and no ordinance in the search results sets a mandatory reward rule. Any reward is entirely your choice, and it can help motivate a faster return, but it is never a legal condition for getting your item back."
+      },
+      {
+        "q": "How long will a Colorado police department hold my found item?",
+        "a": "It depends on which department has it. Some cities, like Northglenn, work off a 30 day claim window after written notice, Rangely gives claimants at least 60 days, and Colorado State University's campus police hold items for a minimum of 90 days. There is no one statewide holding period, so check with the specific department or let ReportLost confirm it for you."
+      },
+      {
+        "q": "What happens if nobody claims my lost item in Colorado?",
+        "a": "Once the local claim period runs out without a valid claim, most Colorado ordinances allow the department to treat the item as abandoned. From there it may be sold, donated, destroyed, or in the case of unclaimed currency handled under the city's own rule, such as Northglenn's threshold for found currency of $100 or more. The exact outcome depends on the ordinance in the city that has your item."
+      },
+      {
+        "q": "Do I have to turn in something I find in Colorado?",
+        "a": "Local ordinances in cities like Northglenn and Pueblo direct finders to report or hand over found property to the police department or another designated custodian rather than keep it. Holding onto something you know belongs to another person can also expose you to Colorado's theft statutes, since CRS 18-4-405 confirms that the true owner's right to stolen or improperly kept property is never cut off."
+      }
+    ],
+    "disclaimer": "This page provides general information about Colorado law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "CT": {
+    "stateName": "Connecticut",
+    "updated": "July 2026",
+    "intro": [
+      "Connecticut is one of the few states with a dedicated lost property statute still on the books. Connecticut General Statutes Chapter 859, Section 50-10, spells out exactly what a finder has to do: if you pick up an article worth a dollar or more, you are required to report it to the police department. That single sentence, unchanged for decades, is the backbone of how lost and found works across every city and town in the state.",
+      "From there, local police departments in Hartford, New Haven, Stamford, Bridgeport and every other municipality carry out the actual holding, logging and, if nobody claims it, disposal of found items. Separately, Connecticut's Treasurer runs a much larger system for unclaimed financial property like old bank accounts and uncashed checks through CTBiglist.gov, but that program is not where your lost phone or backpack ends up. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Duty to report (CGS § 50-10)",
+        "body": "Anyone who finds and takes possession of an article worth one dollar or more is legally required to report the find to the police department. This is not optional courtesy, it is written into Chapter 859 of the state statutes, and it is the reason honest finders in Connecticut usually end up at a police station rather than keeping an item quietly."
+      },
+      {
+        "icon": "🕒",
+        "title": "Six month holding period",
+        "body": "Once a police department receives a found article, Chapter 859 gives the original owner six months from that receipt date to come forward and claim it. If nobody claims it within that window, the department has two weeks after the deadline to move the property along, typically toward disposal or sale, so timing your report matters."
+      },
+      {
+        "icon": "🚔",
+        "title": "Larceny for keeping what you know isn't yours (CGS § 53a-119(4))",
+        "body": "Connecticut's penal code folds lost and mislaid property directly into its larceny statute. Knowingly holding onto property you understand to be lost, mislaid, or delivered by mistake, instead of trying to return it or turning it in, can be charged as larceny, not just an ethical lapse."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Treasurer's unclaimed property program",
+        "body": "Separate from physical lost and found, Connecticut's Treasurer holds unclaimed financial property, old checks, dormant accounts and similar assets, through the CTBiglist.gov system, generally presumed abandoned after three or more years and payable within 90 days once a claim under CGS § 3-70a is verified. This is a different track from a lost wallet or phone, but it is worth checking if you are owed money you forgot about."
+      },
+      {
+        "icon": "🏪",
+        "title": "Local department and venue policies fill in the rest",
+        "body": "Airports, transit agencies, stadiums and stores in Connecticut are not bound by Chapter 859's exact procedures, but they generally funnel found items to the nearest police department or their own lost and found desk, following the same spirit of holding items for the owner before disposing of them."
+      }
+    ],
+    "whereTitle": "Where items end up in Connecticut",
+    "whereBody": "Lost items in Connecticut tend to surface at a handful of predictable places. Bradley International Airport near Hartford and Tweed New Haven Airport both run their own lost and found operations for anything left at security, gates or baggage claim. CTtransit buses, Metro-North Railroad and Shore Line East trains each have separate lost and found contacts, since a phone left on a New Haven line train does not go to the same office as one left on a Hartford city bus. Large venues like Foxwoods Resort Casino, Mohegan Sun, the XL Center and Yale's athletic facilities keep their own logs for items left behind by visitors. Outside of these transit and venue systems, most found property in Connecticut cities and towns is reported directly to the local police department under Section 50-10. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "What happens if I find something worth more than a dollar in Connecticut?",
+        "a": "Under CGS § 50-10, you are required to report the find to the police department. This applies to any article valued at a dollar or more, which in practice covers almost everything from wallets and phones to jewelry."
+      },
+      {
+        "q": "How long does a Connecticut police department hold a found item before it moves on?",
+        "a": "Chapter 859 gives the owner six months from the date the police department receives the item to come forward and claim it. If that period passes with no claim, the department has two weeks to dispose of the property, so reporting early gives you the best chance."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Departments typically ask for a private detail only the true owner would know, like a specific mark, a passcode, or the contents of a bag, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Connecticut?",
+        "a": "No. Offering a reward is always your choice, not a legal requirement under Connecticut law. Some people offer one to encourage a faster return, but nothing in the statute obligates it."
+      },
+      {
+        "q": "Can I get in trouble for keeping something I found instead of reporting it?",
+        "a": "Yes. Connecticut's larceny statute, CGS § 53a-119(4), specifically covers acquiring property you know to have been lost or mislaid and treats knowingly keeping it as a form of theft, separate from the finder's duty to report under Section 50-10."
+      }
+    ],
+    "disclaimer": "This page provides general information about Connecticut law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "DE": {
+    "stateName": "Delaware",
+    "updated": "July 2026",
+    "intro": [
+      "Delaware does not have a single, dedicated lost and found statute like some larger states. Instead, the state's approach to a lost wallet, phone, or bag is built from two different pieces of law: a criminal statute that makes it theft to knowingly keep someone else's lost or mislaid property, and a separate statute telling state police what to do with property that ends up in their custody. Everything else, from a coffee shop's lost and found box to a casino's security office, runs on internal policy rather than a state mandate.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single statewide finder statute",
+        "body": "Delaware has not enacted a standalone civil code section spelling out what a finder must do with lost property, the kind of statute some other states have. What exists instead is a criminal rule about keeping what is not yours, and a rule about what happens to property police are already holding, described below."
+      },
+      {
+        "icon": "🚔",
+        "title": "11 Del. Code § 842, theft of lost or mislaid property",
+        "body": "Delaware's theft statute directly addresses this situation: a person commits theft when they come into control of lost or mislaid property and, knowing who the owner is or how to find out, keeps it with intent to deprive them of it, instead of taking reasonable steps to return it. Under Title 11's theft grading, this is a class A misdemeanor if the property is worth less than $1,500, and rises to a class G felony at $1,500 or more."
+      },
+      {
+        "icon": "🏢",
+        "title": "29 Del. Code § 8026, property held by the Department",
+        "body": "When the Delaware State Police or another state department ends up holding lost, abandoned, or stolen property, this statute governs how it is handled if the owner cannot be located or does not come forward to claim it, including the eventual disposition of the item."
+      },
+      {
+        "icon": "🏪",
+        "title": "Local department and venue policy fills the rest",
+        "body": "How long a Wilmington precinct, a beach town police desk, or a shopping mall security office holds an item, and what paperwork you need to get it back, is set by that department or business rather than by state law, so the exact process depends on where the item was found."
+      }
+    ],
+    "whereTitle": "Where items end up in Delaware",
+    "whereBody": "Lost items in Delaware tend to land in a handful of predictable places: local police departments in cities like Wilmington, Dover, and Newark, DART First State buses and stations, the Wilmington Amtrak and SEPTA rail station, New Castle Airport and Wilmington Airport, the Rehoboth Beach and Dewey Beach boardwalk area, Dover International Speedway and Dover Downs Hotel and Casino, and University of Delaware campus buildings. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove it is yours. Departments and venues generally ask for a description that includes at least one private detail, such as a passcode, a specific mark, or what is inside a bag, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Delaware?",
+        "a": "No. Delaware law does not require finders or owners to offer a reward. Offering one is always your choice, and it can help encourage a faster return, but it is never legally owed."
+      },
+      {
+        "q": "Is it actually a crime to keep a lost phone or wallet I found in Delaware?",
+        "a": "Yes. Under 11 Del. Code § 842, keeping lost or mislaid property when you know or could find out who the owner is, instead of taking reasonable steps to return it, is theft. Depending on the value, that can be charged as a misdemeanor or, at $1,500 or more, a felony."
+      },
+      {
+        "q": "How long will Delaware police hold my item before it is disposed of?",
+        "a": "There is no single statewide holding period written into Delaware law for ordinary lost personal property. State police handle disposition of property in their custody under 29 Del. Code § 8026, but the practical timeline, notices, and claim window are set by each department, so you should confirm directly with the department holding your item."
+      },
+      {
+        "q": "What if my lost item was actually left in a store or rented space rather than turned in to police?",
+        "a": "Businesses, landlords, and venues typically log items in an internal lost and found rather than sending them straight to police, and hold them for a period set by their own policy. Filing a report helps because it lets us alert those specific locations on your behalf, in addition to any relevant department."
+      }
+    ],
+    "disclaimer": "This page provides general information about Delaware law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "HI": {
+    "stateName": "Hawaii",
+    "updated": "July 2026",
+    "intro": [
+      "Hawaii is one of the few states where lost property is not left to guesswork. The legislature actually wrote down what a finder has to do, how long the police have to hold an item, and what happens if nobody claims it. Chapter 52D of the Hawaii Revised Statutes spells out the duty of finders, and a companion rule in Title 8 of the Hawaii Administrative Rules tells the county police departments exactly how many days to hold something before it can be released or disposed of.",
+      "Because the islands run on county government rather than one statewide police force, the department you deal with depends on where you lost the item, the Honolulu Police Department on Oahu, Maui Police, Hawaii Police on the Big Island, or Kauai Police. Add in a huge volume of visitors moving through airports, resorts, beaches, and rental cars, and the practical challenge is less about the law and more about knowing who to call first. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Duty and right of finders, HRS §52D-14",
+        "body": "Under Hawaii Revised Statutes section 52D-14, anyone who finds money or property must report or deliver it to the chief of police of the county where it was found. This is a statutory duty, not just a suggestion, and it applies across all four counties."
+      },
+      {
+        "icon": "🕒",
+        "title": "The 45 day holding period",
+        "body": "Once turned in, the property is held by the chief of police for forty five days, or until someone claiming it establishes title or right of custody. Hawaii Administrative Rules section 8-50-3 confirms that if no owner comes forward and establishes a claim, the item is returned to the finder after that forty five day window closes."
+      },
+      {
+        "icon": "🚔",
+        "title": "Keeping lost or mislaid property can be theft, HRS §708-830",
+        "body": "Hawaii's theft statute, section 708-830, makes it a crime to knowingly obtain or exert unauthorized control over property you know to have been lost or mislaid. This is why the state pushes finders toward the police department rather than letting them decide on their own to keep something valuable."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Program, HRS Chapter 523A",
+        "body": "When property or funds are held by a business, bank, or institution rather than found on the street, Hawaii's separate unclaimed property law takes over. The Department of Budget and Finance administers this program under Chapter 523A, and for smaller unclaimed funds under one hundred dollars, Act 184 requires the claim to be made within ten years of the deposit into the trust fund."
+      },
+      {
+        "icon": "🏖️",
+        "title": "Venue specific rules, HRS §109-8",
+        "body": "Hawaii even legislates lost and found at specific venues. Under section 109-8, money or property found at the stadium must be reported or delivered to stadium officials and is held for forty five days, mirroring the general finder statute. It is a reminder that in Hawaii, the rules can vary by the exact location where you lost something."
+      }
+    ],
+    "whereTitle": "Where items end up in Hawaii",
+    "whereBody": "Losses on Oahu often route through Daniel K. Inouye International Airport, TheBus system, Honolulu rideshares, hotels in Waikiki, or the Honolulu Police Department's found property desk. On Maui, Kahului Airport and resort lost and found offices are common stops, while the Big Island funnels through Ellison Onizuka Kona International or Hilo, and Kauai centers on Lihue Airport. Beaches, tour boats, luaus, and rental car counters across all four islands are frequent places where visitors realize something is missing. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to establish title or right of custody as HRS §52D-14 requires. In practice this means describing the item with one private detail that was not visible or listed publicly, such as what is stored inside a bag pocket or a specific mark on the item, so the county police department can confirm you are the true owner before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in Hawaii?",
+        "a": "No. Nothing in Hawaii's finder statute or theft law requires you to pay a reward to get your property back. Offering one is always your choice, and many people do it informally to thank a finder, but it is never a legal condition of recovery."
+      },
+      {
+        "q": "What happens if nobody claims my lost item within 45 days?",
+        "a": "Under Hawaii Administrative Rules section 8-50-3, if no owner establishes a claim within the forty five day holding period set by HRS §52D-14, the property is returned to the person who found it. This is why reporting a loss quickly matters, since the clock is already running once an item reaches the police."
+      },
+      {
+        "q": "Which police department do I contact if I lost something on a different island?",
+        "a": "Hawaii does not have one statewide lost and found desk. Oahu losses go through the Honolulu Police Department, Maui through Maui Police, the Big Island through Hawaii Police, and Kauai through Kauai Police. Each county holds and processes found property under the same forty five day rule, but through its own department."
+      },
+      {
+        "q": "What if I lost something at the airport or on a tour?",
+        "a": "Airports, tour operators, and venues like the stadium under HRS §109-8 often keep their own lost and found separate from the county police, at least for the first days after a loss. It is worth checking both the venue and the county police department, since unclaimed items are frequently turned over once the venue's own holding period ends."
+      }
+    ],
+    "disclaimer": "This page provides general information about Hawaii law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "DC": {
+    "stateName": "District of Columbia",
+    "updated": "July 2026",
+    "intro": [
+      "Washington DC runs its lost and found through the Metropolitan Police Department's Property Clerk system, a real statute most states its size do not have. D.C. Code § 5-119.02 gives police custody over property that is lost, stolen, or abandoned within the District, and a companion section, § 5-119.18, spells out what happens when nobody comes to claim it. MPD's Evidence Control Division then holds recovered items for a minimum of 180 days while it tries to track down the owner, after which unclaimed property is advertised and can be disposed of.",
+      "This is a different track from the DC Office of Finance's Unclaimed Property program, which handles dormant bank accounts, uncashed checks, and other financial assets under the Revised Uniform Unclaimed Property Act of 2021, not the phone you left on the Metro or the bag you left at a museum. Knowing which system your item falls under matters, because searching the wrong database wastes the days you have to act. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Property Clerk custody (D.C. Code § 5-119.02)",
+        "body": "Any property that is lost, stolen, or believed to be feloniously obtained and recovered within the District is taken into the custody of the Metropolitan Police Property Clerk, not held informally by whichever officer or station happened to find it. This centralizes lost and found intake across the city into one system."
+      },
+      {
+        "icon": "🕒",
+        "title": "Minimum 180 day holding period",
+        "body": "MPD's Evidence Control Division holds found and unattended property for a minimum of 180 days while it works to locate the rightful owner. Property that stays unclaimed past that window is treated as abandoned under § 5-119.18 and can be advertised and disposed of by the department."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft and receiving stolen property (D.C. Code §§ 22-3211, 22-3232)",
+        "body": "D.C.'s general theft statute makes it a crime to wrongfully obtain or use another person's property with intent to deprive them of it, which covers someone who finds an item and simply keeps it. Knowingly receiving or holding onto property known to be stolen is a separate offense under § 22-3232, punishable by a fine under § 22-3571.01 or up to 180 days imprisonment."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act is a separate track",
+        "body": "The Revised Uniform Unclaimed Property Act of 2021, administered by the DC Office of Finance, governs dormant financial property like uncashed checks and inactive accounts, generally presumed abandoned after three years and reportable at $50 or more. It is custodial with no deadline to claim, but it does not cover a lost wallet, bag, or phone, those go through MPD's Property Clerk process instead."
+      },
+      {
+        "icon": "📮",
+        "title": "Court limits on how long police can hold items",
+        "body": "DC's appeals court has ruled that police cannot hold a person's personal property for an unreasonable amount of time once it is no longer needed as evidence, reinforcing that the 180 day minimum is a floor for locating owners, not an open-ended excuse to keep items indefinitely."
+      }
+    ],
+    "whereTitle": "Where items end up in District of Columbia",
+    "whereBody": "Items lost around the National Mall, Smithsonian museums, and Capitol Hill often route to MPD's Property Clerk, while anything left on WMATA's Metrorail or Metrobus system goes through Metro Transit Police lost and found. Ronald Reagan Washington National Airport (DCA) and Washington Dulles International Airport (IAD) both run their own lost and found desks separate from city police, and hotels, Union Station, and event venues around the District typically hold items briefly before turning them over to local authorities. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you need to prove it is yours. MPD's Property Clerk will typically ask for a description that includes a private detail, like a specific mark, a saved contact, or a serial number, that would not be obvious to someone who simply found the item."
+      },
+      {
+        "q": "Is a reward mandatory in District of Columbia?",
+        "a": "No. Offering a reward is always your choice, not a legal requirement anywhere in DC's lost property statutes. Some people offer one to encourage a faster return, but MPD and transit lost and found offices do not require it."
+      },
+      {
+        "q": "How long does MPD hold found property before it's considered abandoned?",
+        "a": "D.C.'s Evidence Control Division holds recovered property for a minimum of 180 days while attempting to locate the owner. After that, under § 5-119.18, unclaimed items are advertised as abandoned and may be disposed of, so it pays to file a report as soon as possible."
+      },
+      {
+        "q": "Should I search DC's Unclaimed Property website for my lost bag or phone?",
+        "a": "No, that database is for financial assets like old bank accounts and uncashed checks under the Revised Uniform Unclaimed Property Act. A lost personal item recovered in the city goes through MPD's Property Clerk system instead, not the Office of Finance's unclaimed money search."
+      },
+      {
+        "q": "What happens if I don't report my item lost right away?",
+        "a": "The clock on MPD's 180 day holding period starts running as soon as an item is logged as found, whether or not you've reported it missing. Waiting to report only shortens your realistic window to match with an item before it can be treated as abandoned."
+      }
+    ],
+    "disclaimer": "This page provides general information about District of Columbia law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "ID": {
+    "stateName": "Idaho",
+    "updated": "July 2026",
+    "intro": [
+      "Idaho actually has a statewide statute for this, which puts it in a different category than states that rely only on common law. Idaho Code Title 55 tells sheriffs and city police departments what to do with abandoned or unclaimed property that comes into their custody, including selling it at public auction once the holding period runs out. Idaho's criminal code goes a step further than most states by spelling out, in the theft statute itself, that keeping something you know was lost or mislaid by someone else is theft, not finders keepers.",
+      "What Idaho does not do is set one statewide clock for how long a police department must hold your wallet, phone, or bag before it can be disposed of. That is left to each city. Moscow gives a finder thirty days before the item is released to them if unclaimed. Fruitland holds property for six months. Spirit Lake holds found property for one hundred eighty days before disposing of it. So the practical answer to how long you have to claim something in Idaho depends on which police department picked it up. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Idaho Code § 55-403, Property in General",
+        "body": "This statute authorizes sheriffs and city police departments to take custody of abandoned or unclaimed property and, after the applicable holding period, sell it at public auction. It is the legal basis local departments in Idaho point to when they eventually clear out a found property room."
+      },
+      {
+        "icon": "🕒",
+        "title": "Local holding periods set by city ordinance",
+        "body": "Idaho does not fix one statewide number of days. Moscow's municipal code gives a finder thirty days to claim property before it can be released to them. Fruitland holds all found items for six months before auction or disposal. Spirit Lake's ordinance sets a one hundred eighty day window. Which clock applies to your item depends on which department has it, which is why it matters that a report reaches the correct city desk."
+      },
+      {
+        "icon": "🚔",
+        "title": "Idaho Code § 18-2403, Theft",
+        "body": "Idaho's theft statute explicitly defines acquiring lost property, stating a person commits theft when they exercise control over property they know to have been lost or mislaid and fail to take reasonable steps to return it. This gives police a direct criminal hook when someone pockets a found phone or wallet instead of turning it in."
+      },
+      {
+        "icon": "🏢",
+        "title": "Idaho State Treasurer, Unclaimed Property Division",
+        "body": "Cash, accounts, and other financial property that goes unclaimed are handled separately under Idaho's Uniform Unclaimed Property Act, with the Treasurer's office running the statewide database at yourmoney.idaho.gov. Holders generally must attempt to contact an owner before turning over property worth fifty dollars or more, but this track is for financial instruments, not the phone or backpack you left at a restaurant."
+      }
+    ],
+    "whereTitle": "Where items end up in Idaho",
+    "whereBody": "In the Boise area, lost items move through Boise Airport, Valley Regional Transit buses, Boise State's stadium and event venues, and downtown restaurants and hotels. In eastern Idaho, Idaho Falls Regional Airport and Pocatello Regional Airport have their own lost and found desks, and in the north, travelers often route through Spokane International Airport just across the state line. Ski resorts around Sun Valley and McCall, state parks, and university campuses each run their own found property process separate from city police departments. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Idaho departments typically ask for a description that includes at least one private verification detail, something like a specific mark, a passcode, or the contents of a bag, that would not be visible to the person who found it or to a stranger reading a lost report."
+      },
+      {
+        "q": "Is a reward mandatory in Idaho?",
+        "a": "No. Idaho law does not require finders to be paid, and nothing in the state's found property or theft statutes sets a mandatory reward. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "How long will the police hold my lost item in Idaho?",
+        "a": "It depends entirely on which city's department has it, since Idaho leaves the holding period to local ordinance. Moscow allows thirty days before releasing an unclaimed item to the finder, Fruitland holds items for six months, and Spirit Lake holds found property for one hundred eighty days before disposal."
+      },
+      {
+        "q": "What happens if no one claims my lost item?",
+        "a": "Under Idaho Code § 55-403, once the local holding period expires, the police department or sheriff's office can sell the property at public auction. Some cities instead release it to the finder or donate it, depending on their own ordinance."
+      },
+      {
+        "q": "Is keeping a lost item a crime in Idaho?",
+        "a": "It can be. Idaho Code § 18-2403 specifically defines theft to include acquiring lost or mislaid property when you know it was lost and do not make a reasonable effort to return it to the owner, so knowingly keeping someone's found phone or wallet is not a legal gray area here."
+      }
+    ],
+    "disclaimer": "This page provides general information about Idaho law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "IN": {
+    "stateName": "Indiana",
+    "updated": "July 2026",
+    "intro": [
+      "Indiana does not hand every lost item to one clean statute the way a few states do. Instead the state splits the job three ways. Indiana State Police have their own code section for property that comes into an officer's hands as stolen, lost, or abandoned. Property connected to a criminal case follows a separate evidence statute with its own hold and destruction timeline. And anything that turns into unclaimed cash, deposits, or business-held funds falls under Indiana's Unclaimed Property Act, run out of the Attorney General's office, not the police department down the street.",
+      "For everyday items, a dropped phone at Gainbridge Fieldhouse, a bag left on an IndyGo bus, Indiana leans on old-fashioned common law duty to return plus whatever policy the individual police department, airport, or venue has posted, and Indiana courts have even ruled that simply taking money someone else lost is not automatically a crime under the state's theft statute. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Delivery of Stolen, Lost, and Abandoned Property (IC 10-11-5-2)",
+        "body": "When money, goods, or other property that has been stolen, lost, or abandoned comes into the possession of an Indiana State Police employee, this section governs what happens to it next. It is the closest thing Indiana has to a dedicated state lost and found statute, but it applies to ISP custody, not to every city or county department, which each set their own intake and hold procedures."
+      },
+      {
+        "icon": "🚔",
+        "title": "Property Held as Evidence (IC 35-33-5-5)",
+        "body": "Property connected to a criminal investigation follows a different timeline. Once the case concludes, the statute allows for disposition after ninety days, and property whose possession is unlawful can be destroyed sixty days after that. This is why an item recovered during a police report or investigation may take longer to get back than something simply turned in at a front desk."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act (IC 32-34-1.5)",
+        "body": "Indiana's Unclaimed Property Division, run through the Attorney General's office at indianaunclaimed.gov, handles property held by businesses, banks, and other holders once it goes dormant. Holders must send due diligence mailings on property valued at fifty dollars or more, and unclaimed funds can be held by the state for years before they are considered permanently unclaimed. This track is mostly about money and accounts, not a dropped wallet or backpack."
+      },
+      {
+        "icon": "📰",
+        "title": "Theft Statute and Case Law (IC 35-43-4-2)",
+        "body": "Indiana's general theft statute makes it a Class A misdemeanor to knowingly exert unauthorized control over someone else's property, but the Indiana Court of Appeals ruled in 2020 that simply taking money that was lost or mislaid is not automatically a crime under this statute. Indiana has not enacted a separate 'theft of lost or mislaid property' offense the way some other states have, so intent and circumstances matter a great deal in how a finder's conduct is treated."
+      },
+      {
+        "icon": "🏪",
+        "title": "Local Department Found Property Policies",
+        "body": "Below the state statutes, day to day lost and found work in Indiana runs through individual department policy. Westfield Police Department, for example, maintains its own found property list and requires callers to verify details by phone before pickup. Other cities, campuses, and transit agencies each keep their own logs, hold periods, and verification steps."
+      }
+    ],
+    "whereTitle": "Where items end up in Indiana",
+    "whereBody": "Lost items in Indiana tend to land with whoever was running the place you were in. Indianapolis International Airport, South Bend International Airport, Fort Wayne International Airport, and Evansville Regional Airport each keep their own lost and found desks separate from airline counters. IndyGo handles transit-related lost items in Indianapolis, while Indianapolis Metropolitan Police, county sheriffs, and smaller city departments like Westfield or Carmel each maintain their own found property intake. Large venues such as Lucas Oil Stadium, Gainbridge Fieldhouse, the Indiana State Fairgrounds, and the Indianapolis Motor Speedway typically hold items found on site before anything reaches a police department. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "What happens if no one claims my lost item in Indiana?",
+        "a": "It depends on who is holding it. Property in Indiana State Police custody follows IC 10-11-5-2, evidence property follows the ninety day and sixty day timeline in IC 35-33-5-5, and money or accounts held by businesses can escheat to the state's Unclaimed Property Division after a dormancy period. Ordinary found items, like a phone or a jacket, are usually handled under whatever hold period the local department or venue sets on its own."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove it is yours. Departments and the Unclaimed Property Division both require identification, and for physical items you will typically also be asked for one private verification detail, such as a case color, a lock screen photo, or a serial number, that only the true owner would know before they release it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Indiana?",
+        "a": "No. Indiana law does not require a reward for returning lost property. Offering one is always your choice, and plenty of items are returned in Indiana with no reward involved at all."
+      },
+      {
+        "q": "Does Indiana have a specific lost and found statute?",
+        "a": "Not one single law covering every situation. Indiana State Police custody is covered by IC 10-11-5-2, evidence property by IC 35-33-5-5, and business-held unclaimed funds by the Unclaimed Property Act, but day to day found items at airports, transit agencies, and venues are governed by each department's own policy rather than one statewide lost and found statute."
+      },
+      {
+        "q": "Is keeping a found item against the law in Indiana?",
+        "a": "It can be, but Indiana's theft statute is narrower here than in some states. Courts have held that simply taking money that was lost or mislaid is not automatically a crime under IC 35-43-4-2, though knowingly keeping an item after learning who owns it can still expose you to theft charges or civil liability depending on the facts, so turning it in to the local department is the safest move."
+      }
+    ],
+    "disclaimer": "This page provides general information about Indiana law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "IA": {
+    "stateName": "Iowa",
+    "updated": "July 2026",
+    "intro": [
+      "Iowa is one of the few states with an actual lost property statute still on its books. Chapter 556F, the Lost Property Act, sets out what a finder is supposed to do with money, goods, bank notes, or anything else of value that turns up without an owner in sight, right down to a newspaper notice requirement for higher value items. That puts Iowa in a different category from states that rely only on common law or a general theft statute.",
+      "In practice, most day to day recoveries in Iowa run through city police department property and evidence units, which hold unclaimed items for a set period before disposing of them, alongside the statewide Great Iowa Treasure Hunt program that handles unclaimed financial property under Chapter 556. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Iowa's Lost Property Act (Chapter 556F)",
+        "body": "Chapter 556F is Iowa's dedicated lost property statute. It covers any lost goods, money, bank notes, or other things of value and lays out what a finder must do to give the true owner a fair chance to reclaim the item, rather than leaving the matter to informal custom."
+      },
+      {
+        "icon": "📰",
+        "title": "Newspaper notice for items over $40",
+        "body": "Under Chapter 556F, if the found property is worth more than forty dollars, the finder is required to publish notice of the find once a week for three consecutive weeks in a local newspaper, so the owner has a documented chance to come forward."
+      },
+      {
+        "icon": "🕒",
+        "title": "Twelve month claim window",
+        "body": "Once proof of the find has been given under Chapter 556F, the original owner generally has twelve months to appear and prove ownership. If nobody claims the property and proves ownership within that window, the statute allows the finder's claim to move forward."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local police department holding periods",
+        "body": "City departments handle most everyday lost and found turn ins separately from Chapter 556F. Departments such as Cedar Rapids and Clinton police hold property with an unknown owner for a ninety day period before it is disposed of, and other Iowa departments follow similar internal timelines."
+      },
+      {
+        "icon": "🏢",
+        "title": "Great Iowa Treasure Hunt and Chapter 556",
+        "body": "Iowa's Treasurer of State runs the Great Iowa Treasure Hunt for unclaimed financial property, such as forgotten bank accounts, under Chapter 556, with a dormancy period of about three years for most property types. This track is separate from physical items lost in public places or businesses."
+      }
+    ],
+    "whereTitle": "Where items end up in Iowa",
+    "whereBody": "Lost items in Iowa typically surface at the place they were left, whether that is a Des Moines International Airport gate, the Eastern Iowa Airport in Cedar Rapids, a DART bus in Des Moines, a CyRide bus in Ames, a University of Iowa or Iowa State University building, a Wells Fargo Arena event, a Hy-Vee store, or a local casino floor. From there items get logged by venue staff or handed to the city police department's property and evidence unit under local policy. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, once you can prove it is yours. Departments and venues in Iowa typically ask for a description plus one detail only the owner would know, such as a specific mark, a saved photo on a phone, or the contents of a bag, before releasing it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Iowa?",
+        "a": "No. Offering a reward is always your choice, not a legal requirement under Iowa law, though a modest reward can sometimes speed up a return."
+      },
+      {
+        "q": "What happens if no one claims my lost item in Iowa?",
+        "a": "It depends on where it was turned in. Items handled under Chapter 556F may follow a formal notice and twelve month claim process for higher value finds, while items turned in to a city police department are usually held for around ninety days and then disposed of if the owner is unknown."
+      },
+      {
+        "q": "How long does Iowa law require finders to hold onto property?",
+        "a": "Chapter 556F sets specific steps for finders, including publishing notice for items over forty dollars for three consecutive weeks and giving the owner up to twelve months to come forward with proof. Local police departments run their own separate holding periods, commonly about ninety days, for property turned in to them."
+      },
+      {
+        "q": "Where should I report a lost item in Iowa?",
+        "a": "Start with the police department covering the city where you lost it, since that is where most finders and venues turn items in, and also contact the specific airport, transit agency, or business you visited. ReportLost sends your report to those local contacts on your behalf."
+      }
+    ],
+    "disclaimer": "This page provides general information about Iowa law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
   }
 }

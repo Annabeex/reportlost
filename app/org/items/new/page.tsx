@@ -18,8 +18,36 @@ export default function OrgNewItemPage() {
     public_visible: true,
   });
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // ✨ Saisie par photo : l'IA pré-remplit les champs encore vides,
+  // sans jamais écraser ce que l'agent a déjà tapé.
+  const analyze = async (photoUrl: string) => {
+    setAnalyzing(true);
+    try {
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (!session) return;
+      const r = await fetch("/api/org/analyze-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ image_url: photoUrl }),
+      });
+      const j = await r.json();
+      if (!r.ok) return; // silencieux : l'agent remplit à la main comme avant
+      setForm((f) => ({
+        ...f,
+        title: f.title || j.title || "",
+        description: f.description || j.description || "",
+        public_label: f.public_label || j.public_label || "",
+      }));
+    } catch {
+      // silencieux
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -31,7 +59,9 @@ export default function OrgNewItemPage() {
       const { error } = await supabaseBrowser.storage.from("images").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabaseBrowser.storage.from("images").getPublicUrl(path);
-      setForm((f) => ({ ...f, photo_url: data?.publicUrl || "" }));
+      const publicUrl = data?.publicUrl || "";
+      setForm((f) => ({ ...f, photo_url: publicUrl }));
+      if (publicUrl) analyze(publicUrl); // ✨ remplissage auto en arrière-plan
     } catch (e: any) {
       setErr(`Photo upload failed: ${e?.message || e}`);
     } finally {
@@ -68,9 +98,29 @@ export default function OrgNewItemPage() {
     <main className="mx-auto max-w-md px-6 py-10">
       <h1 className="text-2xl font-bold text-gray-900">Log a found item</h1>
       <p className="mt-1 text-sm text-gray-600">
-        A reference number and the legal holding deadline are assigned automatically.
+        Snap a photo and the form fills itself. Reference number and legal holding deadline are
+        assigned automatically.
       </p>
       <form onSubmit={submit} className="mt-6 space-y-4">
+        <div>
+          <label className="block font-medium mb-1">Photo <span className="text-green-700">(recommended, fills the form for you)</span></label>
+          {form.photo_url ? (
+            <div className="flex items-center gap-3">
+              <img src={form.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover border" />
+              {analyzing && <span className="text-sm text-emerald-700">✨ Reading the photo…</span>}
+              <button type="button" className="text-sm text-red-600 underline"
+                onClick={() => setForm((f) => ({ ...f, photo_url: "" }))}>Remove</button>
+            </div>
+          ) : (
+            <>
+              <input id="org-photo" type="file" accept="image/*" capture="environment" onChange={upload} className="hidden" />
+              <label htmlFor="org-photo"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#2ea052] bg-white px-4 py-2.5 font-medium text-[#226638] shadow-sm hover:bg-[#f2fbf5]">
+                📷 {uploading ? "Uploading…" : "Take a photo"}
+              </label>
+            </>
+          )}
+        </div>
         <div>
           <label className="block font-medium mb-1">What was found?</label>
           <input required value={form.title} onChange={set("title")} placeholder="e.g. Brown leather wallet" className={cls} />
@@ -93,24 +143,6 @@ export default function OrgNewItemPage() {
         <div>
           <label className="block font-medium mb-1">Storage location <span className="text-green-700">(optional)</span></label>
           <input value={form.storage_location} onChange={set("storage_location")} placeholder="Shelf B3, locker A1…" className={cls} />
-        </div>
-        <div>
-          <label className="block font-medium mb-1">Photo <span className="text-green-700">(optional)</span></label>
-          {form.photo_url ? (
-            <div className="flex items-center gap-3">
-              <img src={form.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover border" />
-              <button type="button" className="text-sm text-red-600 underline"
-                onClick={() => setForm((f) => ({ ...f, photo_url: "" }))}>Remove</button>
-            </div>
-          ) : (
-            <>
-              <input id="org-photo" type="file" accept="image/*" onChange={upload} className="hidden" />
-              <label htmlFor="org-photo"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#2ea052] bg-white px-4 py-2.5 font-medium text-[#226638] shadow-sm hover:bg-[#f2fbf5]">
-                📷 {uploading ? "Uploading…" : "Add a photo"}
-              </label>
-            </>
-          )}
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
           <label className="flex items-start gap-2 cursor-pointer">

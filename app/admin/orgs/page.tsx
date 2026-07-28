@@ -143,6 +143,11 @@ export default function AdminOrgsPage() {
           title={o.verified ? "Voir la page publique" : "La page sera visible après validation"}>
           👁 Page publique
         </a>
+        <a href={`/api/org/poster?slug=${o.slug}`} target="_blank" rel="noopener"
+          className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
+          title="Affiche QR à imprimer pour leur guichet">
+          🖨️ Affiche
+        </a>
         {o.verified ? (
           <button type="button" disabled={busyId === o.id} onClick={() => setVerified(o, false)}
             className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">

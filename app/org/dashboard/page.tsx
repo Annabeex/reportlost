@@ -143,6 +143,11 @@ export default function OrgDashboardPage() {
           className={`rounded-full border px-3 py-1.5 text-xs font-medium ${org.public_listing ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
           {org.public_listing ? "🌐 Public page: on" : "🔒 Public page: off"}
         </button>
+        <a href={`/api/org/poster?slug=${org.slug}`} target="_blank" rel="noopener"
+          title="Print this poster for your front desk: visitors scan the QR code to file their lost item report"
+          className="rounded-lg border border-[#2ea052] bg-white px-3 py-2.5 text-sm font-medium text-[#226638] hover:bg-[#f2fbf5]">
+          🖨️ QR poster
+        </a>
         <Link href="/org/items/new"
           className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
           + Log a found item
