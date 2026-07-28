@@ -180,5 +180,9 @@ Produce JSON in US English:
     description: kit.description || "",
     posts: Array.isArray(kit.posts) ? kit.posts : [],
     foundPosts: Array.isArray(kit.foundPosts) ? kit.foundPosts : [],
+    // Diagnostic : nombre de pistes brutes ramenées par Serper (0 = problème
+    // de recherche/crédits, >0 avec foundPosts vide = problème de prompt)
+    foundLeadsCount: foundLeads.length,
+    serperConfigured: !!process.env.SERPER_API_KEY,
   });
 }

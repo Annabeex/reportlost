@@ -8,6 +8,8 @@ type Kit = {
   description: string;
   posts: string[];
   foundPosts: string[];
+  foundLeadsCount?: number;
+  serperConfigured?: boolean;
 };
 
 function CopyBlock({ label, text }: { label: string; text: string }) {
@@ -275,13 +277,22 @@ export default function GroupKitPage() {
             <CopyBlock key={`p-${i}`} label={kit.posts.length === 1 ? "Post à épingler" : `Post ${i + 1}`} text={p} />
           ))}
 
-          {kit.foundPosts.length > 0 && (
+          {kit.foundPosts.length > 0 ? (
             <>
               <h2 className="text-lg font-semibold text-gray-800 pt-2">Posts « FOUND ✅ » (à vérifier avant de poster)</h2>
               {kit.foundPosts.map((p, i) => (
                 <CopyBlock key={`f-${i}`} label={`FOUND ${i + 1}`} text={p} />
               ))}
             </>
+          ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              Aucun post FOUND généré.{" "}
+              {!kit.serperConfigured
+                ? "⚠️ SERPER_API_KEY absente sur le serveur."
+                : (kit.foundLeadsCount ?? 0) === 0
+                ? "⚠️ Serper n'a renvoyé aucune piste (vérifie le solde de crédits sur serper.dev)."
+                : `ℹ️ ${kit.foundLeadsCount} piste(s) trouvée(s) mais aucune jugée exploitable par le modèle — régénère ou signale-le.`}
+            </div>
           )}
         </div>
       )}

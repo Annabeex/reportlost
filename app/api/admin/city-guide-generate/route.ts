@@ -107,6 +107,15 @@ export async function POST(req: NextRequest) {
       `${cityName} ${stateAbbr} lost and found facebook group OR reddit`,
     ];
     const sets = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
+    // 🛑 Garde-fou : sans AUCUN résultat de recherche (crédits Serper épuisés,
+    // clé invalide...), on refuse de générer un guide dégradé sans vrais
+    // contacts locaux, plutôt que de brûler des tokens pour une page vide.
+    if (sets.every((s) => !s.length)) {
+      return NextResponse.json(
+        { error: "Serper n'a renvoyé aucun résultat (crédits épuisés ?). Génération annulée pour ne pas produire un guide sans données locales." },
+        { status: 503 }
+      );
+    }
     const results = queries
       .map((q, i) => `### ${q}\n${sets[i].map((r) => `- ${r.title}\n  ${r.link}\n  ${r.snippet}`).join("\n") || "(aucun résultat)"}`)
       .join("\n\n");
