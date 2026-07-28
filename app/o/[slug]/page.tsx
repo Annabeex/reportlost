@@ -9,7 +9,7 @@ import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import OrgClaimForm from "@/components/OrgClaimForm";
 
-export const revalidate = 900; // 15 min
+export const revalidate = 60; // 1 min : les ajouts/retraits d'objets doivent apparaître vite
 
 const TYPE_LABEL: Record<string, string> = {
   police: "Police department",
