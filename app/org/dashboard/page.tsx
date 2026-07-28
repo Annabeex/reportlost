@@ -39,6 +39,24 @@ function daysLeft(deadline?: string | null) {
   return Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000);
 }
 
+// Image de catégorie du site (fallback quand pas de photo), déduite du titre
+const CAT_IMAGES: [RegExp, string][] = [
+  [/wallet|purse|billfold/i, "wallet.jpg"],
+  [/phone|iphone|samsung|android/i, "phone.jpg"],
+  [/key/i, "keys.jpg"],
+  [/bag|backpack|luggage|suitcase/i, "bag-suitcase.jpg"],
+  [/ring|bracelet|necklace|jewel|watch|earring/i, "jewelry.jpg"],
+  [/laptop|macbook|computer|tablet|ipad|camera|headphone|airpod|earbud|drive|usb|charger|kindle/i, "electronic-devices.jpg"],
+  [/glasses|sunglass/i, "glasses.jpg"],
+  [/passport|license|document|card|id\b/i, "documents.jpg"],
+  [/cat\b|dog\b|pet/i, "pets.jpg"],
+  [/jacket|coat|hoodie|sweater|scarf|hat\b|cap\b|glove|shirt|shoe|cloth/i, "clothes.jpg"],
+];
+function catImage(title?: string | null) {
+  for (const [re, img] of CAT_IMAGES) if (re.test(title || "")) return `/images/categories/${img}`;
+  return "/images/categories/others.jpg";
+}
+
 export default function OrgDashboardPage() {
   const router = useRouter();
   const [org, setOrg] = useState<any>(null);
@@ -183,60 +201,62 @@ export default function OrgDashboardPage() {
           className="ml-auto w-full sm:w-64 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-3">
         {visible.length === 0 && (
           <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">
             No items here yet. Log your first found item, it takes 30 seconds.
           </div>
         )}
-        {visible.map((it) => {
-          const d = daysLeft(it.legal_deadline);
-          return (
-            <div key={it.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-                {it.image_url ? <img src={it.image_url} alt="" className="h-10 w-10 object-cover" /> : "📦"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-gray-400">{it.org_ref}</span>
-                  <span className="truncate font-medium text-gray-900">{it.title}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_STYLE[it.status || "stored"]}`}>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {visible.map((it) => {
+            const d = daysLeft(it.legal_deadline);
+            return (
+              <div key={it.id} className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div className="relative h-24 bg-gray-50">
+                  <img src={it.image_url || catImage(it.title)} alt="" className="h-full w-full object-cover" />
+                  <span className={`absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLE[it.status || "stored"]}`}>
                     {STATUS_LABEL[it.status || "stored"]}
                   </span>
-                  {d !== null && (it.status === "stored" || it.status === "claim_pending") && (
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${d <= 7 ? "bg-amber-100 text-amber-800 font-medium" : "text-gray-400"}`}>
-                      {d > 0 ? `${d} days left` : "disposal allowed"}
+                  {d !== null && (it.status === "stored" || it.status === "claim_pending") && d <= 7 && (
+                    <span className="absolute right-1.5 top-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                      {d > 0 ? `${d}d left` : "disposal ok"}
                     </span>
                   )}
                 </div>
-                <div className="truncate text-xs text-gray-500">
-                  Found {it.date || "—"}{it.dropoff_location ? ` · ${it.dropoff_location}` : ""}{it.storage_location ? ` · 📍 ${it.storage_location}` : ""}
+                <div className="px-2.5 pt-2">
+                  <div className="truncate text-sm font-medium text-gray-900" title={it.title || ""}>{it.title || "—"}</div>
+                  <div className="truncate text-[11px] text-gray-400"
+                    title={`Found ${it.date || "—"}${it.dropoff_location ? ` · ${it.dropoff_location}` : ""}${it.storage_location ? ` · 📍 ${it.storage_location}` : ""}`}>
+                    {it.org_ref || ""}{it.date ? ` · ${it.date}` : ""}{it.storage_location ? ` · 📍 ${it.storage_location}` : ""}
+                  </div>
+                </div>
+                <div className="mt-auto flex items-center gap-1.5 px-2.5 py-2">
+                  <select
+                    value={it.status || "stored"}
+                    onChange={(e) => setStatus(it.id, e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-gray-300 px-1.5 py-1 text-[11px]"
+                    title="Change status"
+                  >
+                    <option value="stored">In storage</option>
+                    <option value="claim_pending">Claim pending</option>
+                    <option value="returned">Returned</option>
+                    <option value="disposed">Disposed</option>
+                  </select>
+                  {(it.status === "stored" || it.status === "claim_pending") && (
+                    <button type="button"
+                      onClick={() => toggleItemVisibility(it.id, !(it.public_visible !== false))}
+                      title={it.public_visible !== false
+                        ? `Shown on your public page as "${it.public_label || it.title}" — click to hide`
+                        : "Hidden from your public page — click to show"}
+                      className={`rounded-lg border px-2 py-1 text-[11px] ${it.public_visible !== false ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-400"}`}>
+                      {it.public_visible !== false ? "👁" : "🚫"}
+                    </button>
+                  )}
                 </div>
               </div>
-              {(it.status === "stored" || it.status === "claim_pending") && (
-                <button type="button"
-                  onClick={() => toggleItemVisibility(it.id, !(it.public_visible !== false))}
-                  title={it.public_visible !== false
-                    ? `Shown on your public page as "${it.public_label || it.title}" — click to hide`
-                    : "Hidden from your public page — click to show"}
-                  className={`rounded-lg border px-2 py-1.5 text-xs ${it.public_visible !== false ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-400"}`}>
-                  {it.public_visible !== false ? "👁" : "🚫"}
-                </button>
-              )}
-              <select
-                value={it.status || "stored"}
-                onChange={(e) => setStatus(it.id, e.target.value)}
-                className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
-                title="Change status"
-              >
-                <option value="stored">In storage</option>
-                <option value="claim_pending">Claim pending</option>
-                <option value="returned">Returned</option>
-                <option value="disposed">Disposed</option>
-              </select>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </main>
   );

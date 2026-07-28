@@ -633,5 +633,240 @@
       }
     ],
     "disclaimer": "This page provides general information about Iowa law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "KS": {
+    "stateName": "Kansas",
+    "updated": "July 2026",
+    "intro": [
+      "Kansas does not have one statewide civil code section that spells out exactly what a store, airport, or transit agency must do with something you left behind. Instead, Kansas handles lost property mostly through its criminal code and through local city ordinances. The starting point is K.S.A. 21-5802, which makes it a crime to keep property you know is lost, mislaid, or delivered by mistake once you know or can learn who the owner is.",
+      "Because there is no single statewide civil lost-and-found statute, the practical rules come from two places: the criminal theft statute that pressures finders to hand items over, and city-level ordinances (police department policies and municipal codes) that set holding periods and auction procedures for property that ends up in police custody. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Theft of lost or mislaid property, K.S.A. 21-5802",
+        "body": "Kansas criminal law treats failing to take reasonable measures to return lost, mislaid, or misdelivered property to its owner as theft. Penalties scale with value: property worth $100,000 or more is a severity level 5 nonperson felony, at least $25,000 is a lower felony tier, and property valued under $1,000 is a class A nonperson misdemeanor. This statute is the main legal lever pushing finders in Kansas to turn items in rather than keep them."
+      },
+      {
+        "icon": "🕒",
+        "title": "City-set holding periods before disposal",
+        "body": "Individual Kansas cities, not one state law, decide how long an item sits in police custody before it can be sold or disposed of. Beloit's municipal code, for example, requires unclaimed property to be held for a minimum of 90 days before public auction. Other Kansas cities set their own timelines in local code, so the exact wait depends on where the item was turned in."
+      },
+      {
+        "icon": "🚔",
+        "title": "Police department found-property policies",
+        "body": "Kansas police departments run their own internal procedures for items found or turned in for safekeeping. The Kansas City, Kansas Police Department, for instance, has a written found, safekeeping, and evidentiary property policy directing officers to log and secure items as soon as they take possession. Smaller Kansas departments follow comparable local procedures rather than a single statewide rulebook."
+      },
+      {
+        "icon": "📮",
+        "title": "Evidence held under K.S.A. 22-2512",
+        "body": "If your lost item was seized in connection with a criminal case, K.S.A. 22-2512 allows police to keep it in custody for as long as it may be needed as evidence. Once no charges are filed or a prosecution is declined, the statute requires the property to be returned to its rightful owner or disposed of according to the same section."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Treasurer's unclaimed property program",
+        "body": "The Kansas State Treasurer administers a separate unclaimed property program for financial assets like uncashed checks, dormant accounts, and similar intangible property, generally using a dormancy period of around five years. This program is distinct from physical items lost at an airport, store, or transit stop, which stay under local police and city ordinance rules."
+      }
+    ],
+    "whereTitle": "Where items end up in Kansas",
+    "whereBody": "Lost items in Kansas typically surface at Kansas City International Airport (MCI), Wichita Dwight D. Eisenhower National Airport, city bus systems like the Kansas City Area Transportation Authority, university campuses such as the University of Kansas and Kansas State University, and venues including Children's Mercy Park and Intrust Bank Arena. Each of these tends to run its own lost and found desk before anything reaches a police department's custody. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, once you prove it is yours. Kansas police departments and venue lost and found desks generally ask for a description plus one private verification detail, such as a specific mark, a saved photo on the device, or the contents of a bag, before releasing property to you."
+      },
+      {
+        "q": "Is a reward mandatory in Kansas?",
+        "a": "No. Kansas law does not require you to pay a reward to get your item back. Offering one is always your choice, and Kansas's theft-of-lost-property statute focuses on the finder's duty to return the item, not on any reward obligation from the owner."
+      },
+      {
+        "q": "What happens if someone in Kansas just keeps what they found?",
+        "a": "It can be a crime. Under K.S.A. 21-5802, keeping property you know is lost or mislaid, once you know or can find out who owns it, is theft. The charge level depends on value, ranging from a class A nonperson misdemeanor for items under $1,000 up to a felony for higher-value property."
+      },
+      {
+        "q": "How long will Kansas police hold my item before disposing of it?",
+        "a": "It depends on the city, since Kansas has no single statewide holding period for ordinary lost property. Some municipal codes, like Beloit's, set a 90-day minimum hold before public auction. Check with the specific department or city that has your item for its local timeline."
+      },
+      {
+        "q": "What if my lost item was seized as evidence?",
+        "a": "If police kept your property because it relates to a criminal case, K.S.A. 22-2512 allows them to hold it as long as it may be needed for trial. Once charges are resolved or declined, the statute requires the property to be returned to you or disposed of under the same section."
+      }
+    ],
+    "disclaimer": "This page provides general information about Kansas law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "KY": {
+    "stateName": "Kentucky",
+    "updated": "July 2026",
+    "intro": [
+      "Kentucky doesn't have one statute that walks a finder through what to do with a lost phone or wallet. Instead, the state relies on a mix of criminal law that punishes keeping what isn't yours, local police property rooms that each set their own rules, and a separate State Treasury program for unclaimed financial assets like old bank accounts and uncashed checks.",
+      "That patchwork means your outcome depends heavily on which city you lost something in and which department ends up holding it. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No statewide lost property statute, KRS 514.050 fills the gap",
+        "body": "Kentucky has no single law spelling out what a finder must do with a lost wallet or phone. Instead, the criminal code addresses it through KRS 514.050, Theft of property lost, mislaid, or delivered by mistake, which makes it a crime to keep property you know isn't yours without taking reasonable steps to return it. It's a Class B misdemeanor unless the property is worth $500 or more, which pushes the charge higher."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local police property units set the real timeline",
+        "body": "Because state law doesn't fix a holding period for physical items, individual departments do. Lexington's Property and Evidence Unit, for example, holds found property for 90 days before it's released, auctioned, or otherwise disposed of. Louisville, Bowling Green, and other Kentucky cities run their own property rooms with their own intake and disposal rules, so the department holding your item is the one whose clock actually matters."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Treasury handles unclaimed money, not lost objects",
+        "body": "Kentucky's Unclaimed Property program, run by the State Treasury, is built for financial assets, dormant bank accounts, uncashed checks, stocks, insurance payouts, not a lost backpack or set of keys. Holders must turn over dormant accounts after a dormancy period of about three years, and the Treasury keeps those funds searchable with no deadline to claim them. A backpack left at a restaurant or on a TARC bus goes through the finder or the local police department, not the Treasury."
+      },
+      {
+        "icon": "📰",
+        "title": "Finder's keepers is not a legal defense",
+        "body": "A popular myth holds that finders can keep what they find. Kentucky law addresses this directly: keeping something you found while knowing it belongs to someone else is theft of property lost, mislaid, or delivered by mistake under KRS 514.050. Turning an item over to police or making a genuine effort to locate the owner is what keeps a finder out of that exposure."
+      }
+    ],
+    "whereTitle": "Where items end up in Kentucky",
+    "whereBody": "Items go missing across Louisville Muhammad Ali International Airport, Cincinnati/Northern Kentucky International Airport, and Blue Grass Airport in Lexington, on transit systems like TARC in Louisville and Lextran in Lexington, and at venues from Rupp Arena and Kentucky Speedway to the hotels, restaurants, and racetracks that draw crowds during Derby season. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you'll need to prove ownership. Departments typically ask you to describe the item and provide one detail only the true owner would know, like a passcode, a photo stored inside, or an engraving, before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in Kentucky?",
+        "a": "No. Kentucky law doesn't require finders to be paid a reward for returning lost property. It's always your choice, though offering one can sometimes speed up a return."
+      },
+      {
+        "q": "How long will Lexington or Louisville police hold my item?",
+        "a": "Lexington's Property and Evidence Unit holds found property for 90 days before disposing of it. Louisville and other Kentucky departments set their own windows, so it's worth calling the specific department directly to confirm."
+      },
+      {
+        "q": "What happens if no one claims my lost item?",
+        "a": "After the local holding period ends, the department disposes of it per its own policy, which can mean auction, donation, or destruction. Unclaimed financial property instead moves to the State Treasury, which keeps it available to claim indefinitely."
+      },
+      {
+        "q": "Can someone be charged with a crime for keeping what I lost?",
+        "a": "Yes. Under KRS 514.050, keeping lost, mislaid, or misdelivered property you know isn't yours is theft. It's a Class B misdemeanor unless the property is worth $500 or more, which raises the offense."
+      }
+    ],
+    "disclaimer": "This page provides general information about Kentucky law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "LA": {
+    "stateName": "Louisiana",
+    "updated": "July 2026",
+    "intro": [
+      "Louisiana does not have one tidy lost and found statute the way a few other states do. What you get instead is a patchwork: a Civil Code and common law tradition that puts a duty on a finder to make a real effort to locate the owner, a criminal theft statute that turns keeping a lost item into a crime once you know it is not yours, and a set of Revised Statutes that tell police departments and sheriffs how long they must hold property before they can dispose of it. Which rule applies to your bag, phone, or ring depends on where it turned up and who has it now.",
+      "That patchwork matters in practice. A wallet handed to a French Quarter bar back gets logged under that business's own policy. A phone turned in at a NOPD district station falls under the 150 day holding rule in the Revised Statutes. A backpack seized as possible evidence during a police stop can sit under a different, one year rule while a criminal case plays out. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single lost property statute, common law duty applies",
+        "body": "Unlike states with a dedicated Civil Code provision spelling out exactly what a finder must do, Louisiana leans on common law principles. A finder who picks up lost property is expected to make reasonable efforts to identify and notify the owner rather than simply keep it. There is no statewide form or waiting period built for this scenario, it is a background duty that shapes how honest finders and local departments are expected to act."
+      },
+      {
+        "icon": "🕒",
+        "title": "La. R.S. 33:2333: 150 day holding period for police departments",
+        "body": "When noncontraband property is turned in to a municipal police department, the statute says it cannot be disposed of before 150 days have passed. If the owner has not claimed it by then, the department can move to dispose of it under the procedure set out in that section. That 150 day window is the closest thing Louisiana has to a statewide lost and found clock."
+      },
+      {
+        "icon": "🚔",
+        "title": "La. Code Crim. Proc. art. 228.3 and 228.4: property tied to investigations",
+        "body": "Property seized in connection with a criminal investigation, rather than simply found and turned in, follows a different track. If it remains unclaimed and is not needed for any criminal proceeding, a sheriff may petition the court after the lapse of one year to dispose of it. This is the rule most likely to apply if your item was recovered during an arrest or a police stop rather than handed in at a counter."
+      },
+      {
+        "icon": "📰",
+        "title": "La. R.S. 14:67: keeping lost property can be theft",
+        "body": "Louisiana's theft statute covers the misappropriation of property you know belongs to someone else, which includes lost or mislaid items a finder decides to keep instead of trying to return. Penalties scale with value, misappropriation of less than one thousand dollars can carry up to six months in jail plus a fine, with steeper penalties as the value climbs. This is the legal backbone behind the duty to try to return what you find."
+      },
+      {
+        "icon": "🏢",
+        "title": "Local department policies fill in the rest",
+        "body": "Outside of the 150 day and one year rules, cities and parishes set their own procedures for logging, storing, and releasing found property, and those procedures vary from New Orleans to Baton Rouge to Shreveport. Knowing which department has your item, and what its intake desk actually requires, matters as much as knowing the statute."
+      }
+    ],
+    "whereTitle": "Where items end up in Louisiana",
+    "whereBody": "In New Orleans, items go missing through Louis Armstrong New Orleans International Airport, on RTA buses and the St. Charles Avenue streetcar line, in the French Quarter's bars and hotels, and around the Superdome and Caesars Superdome event crowds. Baton Rouge routes lost property through Baton Rouge Metropolitan Airport and the Capital Area Transit System, while Shreveport, Lafayette, and other cities each have their own regional airport and transit lost and found desks plus casino and riverboat security offices. Mardi Gras season alone generates its own wave of reports from parade routes, French Quarter venues, and hotel lobbies. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, if you can show it is yours. Departments in Louisiana typically ask for a description plus one private detail only the owner would know, such as a lock screen photo, a serial number, or what is inside a bag's zip pocket. That detail is what separates a real owner from someone guessing."
+      },
+      {
+        "q": "Is a reward mandatory in Louisiana?",
+        "a": "No. Louisiana law does not require you to offer or pay a reward to get your property back. Offering one is always your choice, and it can sometimes speed things along, but no statute or department policy makes it mandatory."
+      },
+      {
+        "q": "How long will police in Louisiana hold my lost item?",
+        "a": "For property turned in to a municipal police department, La. R.S. 33:2333 sets a minimum 150 day holding period before the department can dispose of unclaimed noncontraband property. Property tied to an active criminal case can be held longer, up to a year or more, under a separate rule in the Code of Criminal Procedure."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "Once a finder knows an item belongs to someone else and decides to keep it anyway, that can amount to theft under La. R.S. 14:67. Penalties depend on the value of the item, with misdemeanor level penalties for lower value property and steeper felony exposure as value rises."
+      },
+      {
+        "q": "I lost something at Louis Armstrong airport or on a New Orleans streetcar, what do I do?",
+        "a": "Airport lost and found desks and RTA's transit lost and found handle these separately from NOPD, and each keeps its own log and holding timeline. File with ReportLost as soon as you notice the loss, since we send your report to the specific desk that matches where and how you traveled."
+      }
+    ],
+    "disclaimer": "This page provides general information about Louisiana law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MD": {
+    "stateName": "Maryland",
+    "updated": "July 2026",
+    "intro": [
+      "Maryland does not have one all-purpose lost property statute like some states. Instead, the rules around a found phone, wallet, or bag come from a mix of sources: a criminal statute that makes it illegal to knowingly keep something you know isn't yours, a courts and judicial proceedings law that governs how police release property once they have it, and individual policies set by each police department, from Baltimore to Easton to the Maryland Capitol Police.",
+      "That patchwork means a lot depends on which department ends up holding your item and what that department's own claim window looks like. A separate, unrelated track exists for unclaimed financial property, like uncashed checks or old bank accounts, held by the Comptroller's office indefinitely, but that is not the system that handles a backpack left on a MARC train or a phone turned in at BWI. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Criminal Law § 7-104, theft of lost or mislaid property",
+        "body": "Maryland makes it a crime to obtain or keep control over property you know was lost, mislaid, or delivered by mistake, once you know who the owner is. Penalties scale with the value of the property, up to a felony charge at $100,000 or more. This is the legal backbone that discourages people from simply pocketing what they find."
+      },
+      {
+        "icon": "🚔",
+        "title": "Courts and Judicial Proceedings § 3-505, police custody and release",
+        "body": "Once police take custody of property, the law requires notification to the owner, who then has up to 30 days to secure its release. This 30-day window is the closest thing Maryland has to a statewide found-property clock, though it governs the release process rather than setting one uniform holding period for every department."
+      },
+      {
+        "icon": "🏢",
+        "title": "Local department policies fill in the gaps",
+        "body": "Beyond § 3-505, each department runs its own claim process. Baltimore Police generally requires scheduling an appointment with about 5 days lead time. Maryland Capitol Police policy calls for holding property roughly 10 days past the date listed on a notification letter. Smaller jurisdictions, like Easton, have their own municipal code sections covering custody and disposition of abandoned, lost, or seized property. Always check with the specific department holding your item."
+      },
+      {
+        "icon": "📮",
+        "title": "Unclaimed property is a separate system",
+        "body": "The Comptroller's Unclaimed Property program, searchable at claimitmd.gov, covers dormant financial assets like old bank accounts and uncashed checks reported by businesses. Maryland law treats this property as custodial, meaning there is no statute of limitations for the original owner or their heirs to claim it. It has nothing to do with a lost purse or laptop turned in to a police desk."
+      },
+      {
+        "icon": "🕒",
+        "title": "No fixed statewide hold time for evidence",
+        "body": "When property is connected to an open investigation, Maryland courts have recognized that police can hold it as long as reasonably necessary, with no set statewide time limit. This can extend well beyond the 30-day release window that applies to ordinary found property once an investigation is involved."
+      }
+    ],
+    "whereTitle": "Where items end up in Maryland",
+    "whereBody": "Lost items in Maryland typically surface at a handful of predictable places: Baltimore/Washington International Thurgood Marshall Airport (BWI), MARC train stations and Maryland Transit Administration (MTA) buses and light rail, WMATA Metro stations for commuters in Montgomery and Prince George's counties, stadiums like Camden Yards and M&T Bank Stadium in Baltimore, shopping centers, hotels, and beach boardwalks in Ocean City during summer travel season. Each of these has its own lost and found desk or contracted lost property vendor, separate from the police department property rooms described above. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, once you can prove ownership. Departments typically ask for a description that only the true owner would know, like a specific mark, a passcode, or what's inside a bag's inner pocket, before releasing the item under the § 3-505 process."
+      },
+      {
+        "q": "Is a reward mandatory in Maryland?",
+        "a": "No. Maryland law does not require a reward for the return of lost property. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "What happens if no one claims the item?",
+        "a": "Under § 3-505, the owner generally has up to 30 days after notification to claim property held by police. After that, disposition depends on the holding department's own policy, which can include auction, donation, or, in some departments, release to the finder."
+      },
+      {
+        "q": "Can I get in trouble for keeping something I found?",
+        "a": "Yes. Criminal Law § 7-104 makes it a crime to knowingly keep property you know was lost, mislaid, or delivered by mistake, once the owner's identity is known. Penalties increase with the value of the item, up to felony charges for high-value property."
+      },
+      {
+        "q": "How long will police hold my lost item?",
+        "a": "There is no single statewide number. Maryland courts have noted there's no fixed limit for property tied to an investigation, while ordinary found property is generally governed by the 30-day release window under § 3-505, and each department, from Baltimore to the Capitol Police, layers on its own appointment and hold procedures."
+      }
+    ],
+    "disclaimer": "This page provides general information about Maryland law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
   }
 }
