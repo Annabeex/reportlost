@@ -1,6 +1,6 @@
 # 📘 ReportLost.org — Documentation technique
 
-> **Comment maintenir ce document** : après chaque chantier, demander à l'assistant « mets à jour DOCUMENTATION.md avec ce qu'on vient de faire ». Dernière mise à jour : **13 juillet 2026**.
+> **Comment maintenir ce document** : après chaque chantier, demander à l'assistant « mets à jour DOCUMENTATION.md avec ce qu'on vient de faire ». Dernière mise à jour : **28 juillet 2026**.
 
 ---
 
@@ -9,35 +9,26 @@
 1. [Vue d'ensemble](#1-vue-densemble)
 2. [Pages publiques](#2-pages-publiques)
 3. [Pages admin](#3-pages-admin)
-4. [Routes API](#4-routes-api)
-5. [Automatisations](#5-automatisations)
-6. [Circuit des emails](#6-circuit-des-emails)
-7. [Base de données (Supabase)](#7-base-de-données-supabase)
-8. [Prompts IA](#8-prompts-ia)
-9. [Scripts locaux](#9-scripts-locaux)
-10. [SEO](#10-seo)
-11. [Variables d'environnement](#11-variables-denvironnement)
-12. [Pannes connues et leçons apprises](#12-pannes-connues-et-leçons-apprises)
+4. [Portail établissements](#4-portail-établissements)
+5. [Routes API](#5-routes-api)
+6. [Automatisations](#6-automatisations)
+7. [Circuit des emails](#7-circuit-des-emails)
+8. [Base de données (Supabase)](#8-base-de-données-supabase)
+9. [Prompts IA et règles éditoriales](#9-prompts-ia-et-règles-éditoriales)
+10. [Scripts locaux](#10-scripts-locaux)
+11. [SEO](#11-seo)
+12. [Variables d'environnement](#12-variables-denvironnement)
+13. [Pannes connues et leçons apprises](#13-pannes-connues-et-leçons-apprises)
 
 ---
 
 ## 1. Vue d'ensemble
 
-**Stack** : Next.js 14 (App Router) sur Vercel · Supabase (base + storage) · Stripe (paiements) · Zoho Mail (emails, `support@reportlost.org`) · Mailgun (emails entrants sur `*@scan.reportlost.org`) · FreeScout auto-hébergé sur inbox.pas-bete.com (support client, appli mobile) · Serper (recherches Google) · Anthropic Claude (rédaction, veille) · Gemini (images de villes).
+**Stack** : Next.js 14 (App Router) sur Vercel · Supabase (base + storage + **auth du portail établissements**) · Stripe (paiements uniques, jamais d'abonnement) · Zoho Mail (`support@reportlost.org`) · Mailgun (entrants `*@scan.reportlost.org`) · FreeScout auto-hébergé (inbox.pas-bete.com) · Serper (recherches Google, **auto top-up à vérifier coché**) · Anthropic Claude · Gemini (images de villes) · sharp (compression images, dégradés PDF).
 
-**Le produit** : les gens signalent un objet ou animal perdu ; publication gratuite, accompagnement payant (12 $ Extended / 25 $ Maximum / 30 $ Pet Priority). L'équipe contacte police + établissements, publie sur les réseaux, et une veille automatique cherche des « found » correspondants pendant 6 mois (12 mois à partir de 25 $, seuil `MATCH_PREMIUM_CONTRIB`).
+**Le produit** : signalement d'objet/animal perdu ; publication gratuite, accompagnement payant (12 $ Extended 6 mois / 25 $ Maximum 12 mois + stickers + vérification humaine / 30 $ Pet Priority 12 mois ; contribution libre ≥ 12 $ = Extended). Formulation client : « your report stays active, searching for a match » — jamais « plan » ni « monitors the web for months ». Nouveau volet B2B : portail gratuit de gestion d'objets trouvés pour établissements (cf. §4).
 
-**Arborescence utile** :
-
-```
-app/               pages + API (App Router)
-components/        composants React
-lib/               logique partagée (mailer, veille, supabase, slugs…)
-scripts/           scripts à lancer en local (node scripts/xxx)
-public/            statiques (robots.txt, sitemap index, images)
-*.sql              migrations à exécuter dans le SQL editor Supabase
-vercel.json        crons
-```
+**Arborescence** : `app/` pages+API · `components/` · `lib/` · `scripts/` (node local) · `public/` · `*.sql` (migrations à exécuter dans Supabase) · `vercel.json` (crons).
 
 ---
 
@@ -45,190 +36,195 @@ vercel.json        crons
 
 | Route | Rôle |
 |---|---|
-| `/` | Accueil. Blocs How It Works (titre → page assistance) / Why / Who Is This For. |
-| `/report` | Formulaire principal (objets). 5 étapes : description → lieu → contact → contribution → paiement. |
-| `/report-lost-pet` | Formulaire **animaux** : libellés adaptés (petMode) + formule unique Pet Priority 30 $. |
-| `/lost-item-recovery-assistance-usa` | **Page canonique de l'offre** (SEO + ChatGPT Search) : prestations, 3 formules, FAQ conversationnelle, JSON-LD Service/Offer/FAQ. |
-| `/lost-pet-poster` | **Générateur d'affiche animal gratuit** (client-side : photo jamais uploadée). Exemple pré-rempli, QR mailto, export PNG/PDF (html-to-image). Compteur anonyme via `/api/track`. |
-| `/lost-and-found/[state]` | Page État (ISR 24h). |
-| `/lost-and-found/[state]/[city]` | **Page ville** (ISR 24h, maxDuration 60). Ordre : hero → signalements récents réels (90 j, liés aux `/lost/slug`) + carte commissariats → formulaire → guide (si publié) ou gabarit générique. Résolution robuste des noms à ponctuation (St. Louis). 5 grandes villes = composants dédiés en dur (`NycContent`…). |
-| `/lost-and-found/category/[category]` | Pages catégories d'objets. |
-| `/lost/[slug]` | Page publique d'un signalement (ISR 1h). Contenu frais unique → SEO longue traîne. |
-| `/case/[public_id]` | **Compte rendu client** : bandeau statut (formule + date de fin de veille), carte stickers QR (≥ 25 $), carte poster animaux (catégorie pets), blocs de suivi rédigés. `?edit=1` = éditeur (admin, Basic Auth via middleware). |
-| `/qr/[token]`, `/stickers`, `/scan-demo` | Produit stickers QR (relais trouveur → propriétaire). |
-| `/universities/...` | Programme universités (formulaire gratuit, `forceFreeMode`). |
-| Autres : `/about`, `/contact`, `/how-it-works`, `/helpcenter`, `/legal`, `/terms`, `/privacy`, `/cookies`. |
+| `/` | Accueil. Catégories pondérées conversion (wallet, purse, ring, bracelet, phone, cat, dog en tête). |
+| `/report` | Formulaire principal. Étapes : description → **lieu (pilote le transport : choisir Airplane/Train station/Subway… ouvre les détails ; lien discret taxi/Uber)** → contact (prénom/nom/email seulement) → What's next → offres → paiement → **écran post-paiement qui collecte téléphone/adresse/date de naissance (payés uniquement)**. Barre de progression, validations inline (plus d'alert()), scroll fiable aux transitions (jamais à l'arrivée sur la page), bouton photo custom. Entonnoir tracké (`form_view/step1_done/step2_done/contribution_view/completed_free`). |
+| `/report-lost-pet` | Formulaire animaux (petMode, Pet Priority 30 $). La catégorie envoyée par le formulaire devient `primary_category`. |
+| `/lost-item-recovery-assistance-usa` | Page canonique de l'offre (JSON-LD Service/Offer/FAQ). Mention « one-time payments, never a subscription ». |
+| `/lost-pet-poster` | Générateur d'affiche gratuit (client-side). |
+| `/lost-and-found/[state]` | **Hub État** : vignettes 6 villes populaires → **guide juridique de l'État** (si présent dans `lib/stateGuides.ts` : lois vérifiées, cartes ⚖️🕒🚔, CTA formulaire, FAQ accordéons + JSON-LD FAQPage, title/meta dédiés) → liste de toutes les villes couvertes (guides publiés, lien interne par guide). Revalidée à chaque publication de guide. |
+| `/lost-and-found/[state]/[city]` | Page ville ISR 24 h. **Tout le contenu est rendu serveur** (ne JAMAIS repasser `CityLostFormBlock` en ssr:false). Commissariats chargés côté navigateur via `/api/police-stations` (cache permanent en base + CDN 7 j) : plus aucun appel externe au rendu. Signalements récents réels cliquables (`ilike city%` car le formulaire stocke « Tucson (AZ) »), complétés d'exemples pondérés conversion. Metas title/meta **écrasés à chaque publication** de guide. |
+| `/lost-and-found/category/[category]` | Catégories, ISR 1 h (`fresh:false`). Cartes Lost : lien vers le post réel (plus de mailto) ; cartes Found : contact par email. |
+| `/lost/[slug]` | Page publique d'un signalement (ISR 1 h). |
+| `/case/[public_id]` | Compte rendu client, **noindex total**, accès par jeton `?t=` uniquement. Intro personnalisée (prénom + objet) + « Last updated » + bloc final « next update around J+14 » + rappel réponse par email. `?edit=1` = éditeur (Basic Auth). |
+| `/o/[slug]` | (Phase 1b, à venir) page publique d'un établissement. |
+| `/org/*` | Portail établissements (cf. §4). |
+| `/en-ca` | Brouillon Canada (noindex, canonical self). |
+| Pages dev (`/dashboardmodule`, `/dev-reportcontribution`, `/vision-tester`, `/scan-demo`, `/poster-preview`) | **Derrière Basic Auth** (middleware). |
+
+`/terms` et `/privacy` sont alignés sur l'offre réelle : 3 formules chiffrées, durées 6/12 mois, paiement unique, police « where accepted », sous-traitants nommés, rétention 24 mois, ligne CCPA.
 
 ---
 
 ## 3. Pages admin
 
-Protégées par **Basic Auth** (middleware, `ADMIN_USER`/`ADMIN_PASS`) sur `/admin/*` et `/api/admin/*`.
+Basic Auth (middleware) sur `/admin/*`, `/api/admin/*`, `/api/case_followup/*`, pages dev.
 
 | Route | Rôle |
 |---|---|
-| `/admin` | Liste des signalements. Stats : lost/found/paid/TC/**free reports**/**posters téléchargés**. Boutons par ligne : 🔎 recherche, 📸 image sociale, 👥 kit FB (1ʳᵉ ville non cochée), 🗂️ Dossier (payés), View post, Edit suivi, 🗑 suppression. En-tête : 👥 Kits Facebook, 🏙️ Guides ville. |
-| `/admin/case/[id]` | **Page dossier** (payés) : timeline des échanges (emails archivés, notes) + assistant IA avec contexte complet + composeur (Valider & envoyer). Boutons rapides : ✉️ mail initial, 🏢 qui contacter (recherche web), 📋 résumé. Suivi établissements (cases mail/formulaire). Liens cliquables partout. |
-| `/admin/city-guides` | **Générateur de guides ville**. Compteur global (publiées/vérifiées/brouillons/objectif 6000). Tableau top 6000 par population avec statut. Éditeur JSON + aperçu + 🌐 voir la page + 🖼️ générer l'image + badge « à vérifier » + ✓ marquer vérifié. |
-| `/admin/city-guides/preview` | Aperçu d'un guide (brouillon inclus) avec la vraie structure de page (placeholders formulaire/carte). Lit la base en direct (pas de cache). |
-| `/admin/group-kit` | **Kit groupe Facebook** : nom (ville + État, sans « Exchange »), description aérée, 📌 post à épingler (lien en tête), posts FOUND réels (semaine, 3 visés), bannière (image de base + « VILLE, ST » une ligne). Case « groupe créé » + tableau des villes par population. |
-| `/admin/poster/[id]` | Image sociale « WANTED » d'un signalement + légende EN/FR structurée. |
+| `/admin` | **Refonte 07/2026** : stats en 3 cartes (Activité : lost/found/payés/TC/gratuits · Production : guides/groupes FB/posters en totaux · Visites 7 j : organique/social/IA/direct) ; onglets Lost/Found + pastilles de filtre (💳 Payés, Gratuits, ✉️ Sans follow-up = payés sans compte rendu envoyé, 🚩 1ʳᵉ ville) + recherche ; **lignes compactes dépliables** (icône catégorie/photo, badges, gratuits estompés). Panneau déplié : infos + circonstances + **coordonnées client éditables** (tél, adresse, 🎂 date de naissance, 🔒 détail privé → `/api/admin/update-report`) + bloc Veille IA (statut, exclure/forcer, recherche en ligne) + actions réduites (Contribution, 🗑, 📸, Kit FB, View post, catégories). Bouton principal : 🗂️ Ouvrir le dossier. |
+| `/admin/case/[id]` | Dossier : date de perte en double format (`2026-07-01 (1 July 2026)`), circonstances affichées, boutons **📋 Compte rendu** (édition), **👁 Vue client** (lien tokenisé exact), **🏷️ Stickers PDF**, **⏸/▶️ veille**. Assistant IA : notes lues en entier (5 000 car.), deux modèles de mail établissement (A public générique « Dear Sir or Madam » + demande de transfert ; B lieux fréquentés, chaleureux, valeur **sentimentale** sans jamais de valeur monétaire ni récompense, relais uniquement), mail initial = police+mairie d'office + ajouts attestés par le dossier + **les notes sont des consignes** (info manquante → demande polie au client). |
+| `/admin/city-guides` | Générateur de guides ville (compteurs, tableau top 6000, vérification). |
+| `/admin/group-kit` | Kit FB. Posts FOUND : 2 objets + 1 animal max (priorité wallet/bag/phone/keys), requêtes élargies + repli sur le mois, **encart de diagnostic** si aucun FOUND (clé absente / Serper muet = crédits / prompt). Lien ville garanti dans description et post épinglé (vérification + réparation auto). Variation réelle : tirages ton × ouverture × structure. |
+| `/admin/poster/[id]` | Image sociale WANTED (cadre dégradé complet, plus de coin blanc). |
 
 ---
 
-## 4. Routes API
+## 4. Portail établissements
+
+**Phase 1a en production** (07/2026). Objectif : gestion gratuite des objets trouvés pour police, mairies, universités, hôtels… ; page publique et matching en phases 1b/2 ; gratuité police/mairies assumée (coût marginal ~centimes), monétisation ultérieure par fonctionnalités ajoutées (jamais retirées).
+
+- **Auth** : Supabase Auth email+mot de passe (`lib/supabaseBrowser`, sessions persistantes — distinct de `lib/supabaseClient` persistSession:false des formulaires publics). Réglage Supabase requis : Site URL = `https://reportlost.org` + redirect `/org/login`.
+- **Pages** : `/org/login` (connexion/inscription) → `/org/onboarding` (création de l'organisation, statut « à vérifier ») → `/org/dashboard` (4 compteurs, filtres statut, recherche, compte à rebours légal ambré < 7 j, changement de statut) → `/org/items/new` (enregistrement 30 s, photo, référence F-#### auto, **date limite légale calculée par État** via `lib/legalHolding.ts` dérivé des guides États : AZ 30 j, WA 60, CA/FL/NY 90, IL 180, défaut 90).
+- **API** `/api/org/*` (me, create, items GET/POST, items/[id] PATCH) : session Bearer vérifiée (`lib/orgAuth.getOrgContext`) + appartenance à l'organisation ; service role côté serveur. Chaque transition de statut alimente `org_item_events` (registre d'audit).
+- **À venir** : 1b page publique `/o/[slug]` + réclamation « I think it's mine » ; 1c onglet admin « Organisations » (validation manuelle avant page publique) ; phase 2 matching inventaire ↔ signalements perdus.
+
+---
+
+## 5. Routes API
 
 ### Cœur du produit
 | Route | Rôle |
 |---|---|
-| `POST /api/save-report` | Enregistre/actualise un signalement. Anti-doublon par **empreinte journalière** (titre+desc+ville+date+email+jour). Reprise brouillon par `rid` (URL toujours, localStorage < 24 h). Envoie le mail client « Publish your report » (une fois, flag `mail_sent`) et **une seule** notification support (à la capture de l'email). Emails via `lib/mailer` (SMTP direct). |
-| `POST /api/create-payment-intent` | Crée le PaymentIntent Stripe. |
-| `POST /api/stripe-webhook` | Confirme le paiement : `paid=true`, mail de confirmation client (direct SMTP, flag `payment_email_sent`). |
-| `POST /api/inbound-email` | **Webhook Mailgun** (`*@scan.reportlost.org`). `12345@scan` : relais trouveur→propriétaire (BCC support@) + archivage dossier. Réponse du propriétaire : transmise à support@ (pas de boucle). `archive@scan` : archivage pur des copies support@ (transfert Zoho entrant + Auto Bcc FreeScout sortant), rattachement par `#12345` (sujet/corps) ou email du correspondant, **payés uniquement**. |
-| `POST /api/send-mail` | Route email générique (auth `MAIL_API_KEY`, rate limit). Utilisée par le front et les follow-ups. Les envois internes n'y passent plus (→ `lib/mailer`). |
+| `POST /api/save-report` | Enregistre/actualise. Empreinte journalière anti-doublon, reprise par `rid`. Accepte `category` (converti en `primary_category` — le formulaire pet envoie « pets »). Mail « brouillon » réécrit : objet « One last step to activate your search », sans le mot draft, sans mention du gratuit, « one-time payment, never a subscription », CTA « Activate my search ». |
+| `POST /api/public/send-publication-email` | Mail post-dépôt **gratuit** (le vrai — l'ancien texte côté client est mort) : contraste honnête « a free listing waits / that's what an assisted search adds », SMTP direct (`sendMailDirect`), flag `mail_sent`. |
+| `POST /api/stripe-webhook`, `create-payment-intent`, `inbound-email`, `send-mail` | Inchangés (cf. §7). |
+| `GET /api/police-stations` | Commissariats Overpass **hors rendu** : cache permanent `us_cities.police_stations` (refresh 180 j) + CDN 7 j. |
+| `POST /api/track` | Compteurs anonymes : poster_png/pdf, `visit_*` (organic/social/ai/direct/referral, via `components/VisitTracker`), `form_*` (entonnoir). |
 
 ### Dossiers (admin)
 | Route | Rôle |
 |---|---|
-| `GET /api/admin/case-data` | Contexte complet d'un dossier (signalement, messages, candidats veille, établissements). |
-| `POST /api/admin/case-chat` | Chat Claude avec contexte dossier (payés). |
-| `POST /api/admin/case-places` | « Qui contacter » : requêtes Serper réelles → synthèse email-first + 📍 adresse de référence (bâtiment public) + brouillon (adresse relais `item{id}@reportlost.org`, signé Anna). **Sauvegardé automatiquement en note**. |
-| `POST /api/admin/case-send` | Envoi depuis le dossier : from `support@`, **Reply-To `{public_id}@scan.reportlost.org`** (les réponses reviennent seules au dossier), gabarit HTML ReportLost (bandeau vert + puces), archivage `case_messages`. |
-| `case-note`, `case-establishment`, `case-message-delete` | Notes internes, suivi établissements (CRUD), suppression d'un message. |
+| `case-data` | Contexte complet (+ circonstances, case_token, private_detail, birth_date). |
+| `case-chat` | Assistant (règles §9). |
+| `case-places` | « Qui contacter » : publics d'abord (police, mairie) puis 1-2 lieux cités dans les **circonstances** (source prioritaire) + ville voisine. **Crée automatiquement les fiches `case_establishments`** (ENTITIES_JSON : nom, email, url, 📍 adresse, 📞 tél, rôle EN ANGLAIS) sans doublon. Deux brouillons de mail (A/B). Sauvegarde en note (sans le bloc machine). |
+| `case-send`, `case-note`, `case-establishment`, `case-message-delete`, `update-report` | Envois, notes, établissements, suppression, **édition des coordonnées client** (allowlist stricte). |
+| `list` | Liste admin + totaux (production guides/FB/posters, visites 7 j par provenance). |
 
 ### Guides ville (admin)
 | Route | Rôle |
 |---|---|
-| `POST /api/admin/city-guide-generate` | 6 recherches Serper → guide CityGuide (JSON) avec retry anti-troncature → photo Gemini si pas d'image (remplace Pexels) → upsert + `autoPublish` (publication directe non vérifiée) + **revalidatePath** + title/meta SEO si vides. |
-| `GET/PUT /api/admin/city-guide` | Liste (+ totaux, + mode `?cities=1&limit=6000` paginé pour la liste de travail), sauvegarde, publication/dépublication (revalidation ISR), flag `verified`. |
-| `POST /api/admin/city-image-generate` | (Re)génère uniquement la photo IA d'une ville. |
-| `POST /api/admin/group-kit`, `GET/PUT /api/admin/fb-group-done` | Kit Facebook + suivi « groupe créé » (`us_cities.fb_group_done`). |
+| `city-guide-generate` | 6 recherches Serper → **refus si zéro résultat** (garde anti-guides dégradés) → rédaction → photo Gemini une seule fois par ville (sautée si image IA existante) **compressée WebP 1200px q80** → publication + revalidation ville **et État** + **title/meta toujours écrasés**. |
+| `city-guide` | Liste de travail : villes paginées **avec tri stable (population, id)** et carte des guides **paginée sans plafond 1000** (deux bugs coûteux, cf. §13). |
 
-### Veille (crons Vercel, cf. §5)
-`GET /api/match-watch` (7h UTC) · `GET /api/match-digest` (8h30 UTC) — protégés par `CRON_SECRET`.
+### Compte rendu
+`GET/PUT /api/case_followup/[public_id]` (blocs + `case_followup_updated_at` à chaque sauvegarde) · `/notes` · **`/dossier`** (établissements + pistes veille filtrées yes/maybe + compteur total, pour le pré-remplissage).
 
-### Divers
-`/api/banner` (bannière FB) · `/api/poster/[id]` + `/api/admin/poster-caption/[id]` (image sociale + légende) · `/api/sticker-sheet`, `/api/qr-sheet` (planches QR) · `/api/og/*` (images OpenGraph) · `/api/recent-lost` · `/api/object-suggest` · `/api/generate-report-slug` · `/api/admin/list` · `/api/admin/resend-publish-email` · `/api/track` (compteurs anonymes poster) · `/api/test-mail`, `/api/test-mail-direct` (diagnostics SMTP) · `/api/apivision` (Google Vision) · `/api/pexels`.
+### Portail org
+Cf. §4. Divers : `/api/sticker-sheet` (**route canonique** de la planche, design « piste B » : bandeaux dégradés rendus par sharp, QR vert foncé `qrcode`, textes Helvetica natifs ; `/api/qr-sheet` = simple redirection) · `/api/banner` · `/api/poster/[id]` · `/api/og/*` · etc.
 
 ---
 
-## 5. Automatisations
+## 6. Automatisations
 
-### Veille objets perdus (match-watch) — `lib/matchWatch/*`
-1. **Cron 7h UTC** `/api/match-watch` : dossiers payés ≥ seuil (`MATCH_MIN_CONTRIB`) ou `force_search`, dus selon `next_search_at`. Par dossier : Haiku génère 1-3 requêtes « trouveur » → Serper (web + facebook) → Haiku juge chaque résultat (`yes/maybe/no`) → `match_candidates` (anti-doublon URL). Cadence dégressive : quotidien (7 j) → hebdo (30 j) → mensuel ; arrêt à **180 j** (365 j si contribution ≥ 25).
-2. **Cron 8h30 UTC** `/api/match-digest` : envoie à `MATCH_DIGEST_TO` (= `veille@reportlost.org` → dossier Zoho « Veille » → mailbox FreeScout dédiée, sans notifications) les candidats non encore envoyés + liens de recherche FB prêts à cliquer.
+### Veille (crons Vercel)
+- 7h UTC `/api/match-watch` : payés (+ forcés), cadence quotidienne (7 j) → hebdo (30 j) → mensuelle ; 180 j / 365 j (≥ 25 $). 2 requêtes Serper/passage (+2 si repli lieu), 5 candidats jugés max (Haiku). Coût ≈ 0,5 centime/passage, ~0,10-0,15 $/dossier à vie. **Chaque passage rafraîchit `case_followup_updated_at`** (le « Last updated » client vit tout seul).
+- 8h30 UTC `/api/match-digest` : digest vers `veille@`.
 
-### Génération de guides ville (campagne SEO)
-`node scripts/generate-city-guides-batch.mjs 150` : prend les villes **sans guide** dans le top 6000 par population, appelle l'API de génération (auto-publish, non vérifié), retry réseau. Lots séquentiels (jamais en parallèle). Photo IA générée dans la foulée si `GEMINI_API_KEY`. Relecture a posteriori via badge orange.
+### Guides ville
+`node scripts/generate-city-guides-batch.mjs 500` — protections empilées : **verrou anti-parallèle** (`/tmp/reportlost-batch.lock`), **re-vérification ville par ville** avant génération (⏭️ si déjà publié), retry 529/429 (30/60/90 s), retry réseau, refus serveur si Serper muet. Un seul batch à la fois, `nohup … >> batch.log` conseillé. Reste ~4 500 villes ≈ 250 $ Anthropic + 35 $ Serper.
 
-### Archivage des emails dans les dossiers
-Tout mail envoyé/reçu autour d'un dossier payé atterrit dans `case_messages` : envois admin (direct), réponses (Reply-To tracké → Mailgun), mails spontanés support@ (transfert Zoho → archive@ → rattachement par `#id` ou email), envois FreeScout (Auto Bcc → archive@).
+### Guides États
+`node scripts/generate-state-guides.mjs` (5 par défaut, `--state=XX`) : Serper (4 requêtes juridiques) + **Sonnet** (`STATE_GUIDE_MODEL`), interdiction d'inventer un statut/délai/montant absent des résultats, motif « no statewide statute » sinon. Écrit `lib/stateGuidesGenerated.json` — **RELECTURE OBLIGATOIRE avant commit** (contenu juridique). Les 10 entrées écrites main dans `lib/stateGuides.ts` (CA NY WA FL TX AZ PA IL OH GA, sources en commentaire) ont toujours priorité.
 
-### Revalidation ISR
-Publication/dépublication d'un guide → `revalidatePath` de la page ville. Un déploiement purge tout le cache ISR.
-
----
-
-## 6. Circuit des emails
-
-**Sortants** (SMTP Zoho direct via `lib/mailer`, from `support@reportlost.org`) :
-| Déclencheur | Mail | Garde-fou |
-|---|---|---|
-| Email client capturé (formulaire) | « Publish your report » au client + notification support | flags `mail_sent` / une notif par dossier |
-| Paiement confirmé (webhook Stripe) | « Payment received » au client | `payment_email_sent` |
-| Envoi depuis un dossier admin | mail au destinataire (HTML brandé) | Reply-To tracké |
-| Cron digest | digest veille → `veille@` | `emailed` sur les candidats |
-| Relais QR (`12345@scan`) | message du trouveur → propriétaire | BCC support@ |
-
-**Entrants** :
-- `support@reportlost.org` (Zoho) → FreeScout (IMAP, mailbox clients) **et** transfert copie → `archive@scan.reportlost.org` → webhook → archivage dossier.
-- `veille@reportlost.org` (alias) → filtre Zoho → dossier « Veille » → mailbox FreeScout Veille (IMAP folder `Veille`).
-- `*@scan.reportlost.org` (MX Mailgun) → route unique `store+notify` vers le webhook (**pas de forward** : quota 1 route, et le forward créait une boucle avec le transfert Zoho).
-
-⚠️ **Règles à ne pas casser** : jamais de `fetch` HTTP interne pour envoyer un mail (timeouts) → `sendMailDirect` ; jamais de fire & forget pour un envoi SMTP en serverless (la fonction gèle) → toujours `await`.
+### Compte rendu client
+À l'ouverture de l'éditeur : modèle auto-inséré si vide, section établissements synchronisée avec les fiches du dossier (nom + notes 📍📞 rôle, **jamais d'email côté client, tout en anglais**), encart « AI Match Watch — Leads Reviewed » actualisé (pistes yes/maybe détaillées, rejets comptés seulement), visuel WANTED injecté dans la section Social (`IMAGE:/api/poster/{id}` — les blocs savent afficher des images). Ordre du modèle : Local notifications d'abord, Database searches ensuite (sans liste de bases exemple).
 
 ---
 
-## 7. Base de données (Supabase)
+## 7. Circuit des emails
 
-| Table | Rôle |
+Inchangé dans sa mécanique (SMTP direct `lib/mailer`, Mailgun entrant, FreeScout, relais `item{id}@reportlost.org`, Reply-To tracké `{public_id}@scan`). Évolutions de contenu : les trois mails du tunnel (brouillon, publication gratuite, confirmation) parlent « activation », « search period », « one-time payment, never a subscription » ; l'email personnel du client n'est transmissible qu'aux **organismes publics** (police, mairie, animal control), les établissements privés reçoivent l'adresse relais.
+
+⚠️ Règles intangibles : jamais de fetch HTTP interne pour un mail, jamais de fire & forget SMTP, toujours `await sendMailDirect`.
+
+---
+
+## 8. Base de données (Supabase)
+
+| Table | Rôle / colonnes récentes |
 |---|---|
-| `lost_items` | Signalements (+ QR stickers). Colonnes clés : `public_id` (5 chiffres), `fingerprint` (anti-doublon journalier), `mail_sent`, `payment_email_sent`, `paid`, `contribution`, `slug`, veille (`search_status`, `next_search_at`, `last_searched_at`, `force_search`), `case_followup` (blocs compte rendu). |
-| `found_items` | Objets trouvés déclarés. |
-| `us_cities` | Villes US : SEO (`static_title`, `static_content`), image (`image_url`, `image_alt`), `fb_group_done`, population, lat/lng… |
-| `match_candidates` | Pistes de veille par dossier (verdict, confiance, `emailed`). |
-| `case_messages` | Timeline des dossiers : `direction` in/out/note, sujet, corps. |
-| `case_establishments` | Établissements contactés par dossier (cases mail/formulaire). |
-| `city_guides` | Guides ville : `guide` (JSON CityGuide), `status` draft/published, `verified`. |
-| `events` | Compteurs anonymes (poster_png, poster_pdf). |
+| `lost_items` | + `case_token` (accès page client), `private_detail` (jamais publié), `birth_date` (dépôts police), `circumstances`, `case_followup_updated_at`. |
+| `found_items` | Dépôts publics **et inventaire des établissements** : + `org_id`, `org_ref`, `storage_location`, `status` (stored/claim_pending/returned/disposed), `legal_deadline`, `returned_at`. ⚠️ `labels/logos/objects/ocr_text` NOT NULL (fournir vides). |
+| `organizations`, `org_members`, `org_item_events` | Portail établissements (§4). |
+| `us_cities` | + `police_stations` (jsonb, cache Overpass), `police_stations_at`, `fb_group_done_at`. |
+| `city_guides` | Guides ville (1 500+ publiés). |
+| `events` | poster_*, visit_*, form_*. |
+| `case_messages`, `case_establishments`, `match_candidates` | Inchangés (fiches établissements désormais créées par « qui contacter »). |
 
-Storage : bucket public `city-images` (photos IA des villes). RLS activé partout (accès serveur via service role uniquement). Migrations : fichiers `*.sql` à la racine.
-
----
-
-## 8. Prompts IA
-
-| Où | Modèle | Ce qu'il fait |
-|---|---|---|
-| `app/api/admin/city-guide-generate/route.ts` | `CITY_GUIDE_MODEL` (déf. Haiku) | Guide ville « similaire mais différent » : plan modèle NYC, reformulation par ville, cartes ajustées au réel (pas de métro sans métro), liens = structures officielles ou entreprises concernées (jamais de concurrents), carte pet → lien `/report-lost-pet`, veille mise en avant, ton rassurant, pas de tirets, pas de « guide », pas de « reunite/connect ». |
-| `app/api/admin/case-chat/route.ts` | `CASE_CHAT_MODEL` (déf. Haiku) | Assistant de dossier : contexte complet + template mail initial (modèle Blythe) + suggestions établissements. Emails : texte brut sans markdown, adresse relais pour les établissements, signatures fixes. |
-| `app/api/admin/case-places/route.ts` | idem | Qui contacter : requêtes Serper puis synthèse **email-first** stricte (rien d'inventé), adresse de référence pour formulaires police, brouillon relais anonyme. |
-| `app/api/admin/group-kit/route.ts` | `ANTHROPIC_MODEL` | Kit FB : nom (ville+État, sans Exchange), description aérée avec emojis, 📌 post épinglé (lien en premier), posts FOUND réels (semaine). Bannis globaux : « reunite/connect… », tirets, contenus sombres. |
-| `lib/matchWatch/core.ts` | Haiku | Veille : génération de requêtes « trouveur » + jugement des candidats (+ description de la photo du dossier). |
-| `app/api/poster/[id]/route.tsx` + `poster-caption` | Haiku | Titre court du poster (type d'objet 1-2 mots) + légende sociale structurée 5 blocs. |
-| `lib/cityImage.ts` | `GEMINI_IMAGE_MODEL` (déf. gemini-2.5-flash-image) | Photo réaliste de la ville (sans texte/personnes), stockée dans `city-images`. |
+Storage : `city-images` (WebP ~100 Ko depuis la conversion sharp ; script de conversion du stock exécuté, 2,9 Go → ~200 Mo) · `images` (photos formulaires + `org_items/`). Migrations récentes : `case-token.sql`, `private-detail-birthdate.sql`, `fb-group-done-at.sql`, `police-stations-cache.sql`, `followup-updated-at.sql`, `org-portal-supabase.sql`.
 
 ---
 
-## 9. Scripts locaux
+## 9. Prompts IA et règles éditoriales
+
+Règles transverses (tous les prompts) : pas de tirets de ponctuation ; jamais « reunite … with … » ni « connect people with their belongings » ; jamais « plan » ni vocabulaire d'abonnement côté client (« search period », « one-time payment ») ; formulation veille = « your report stays active, keeps searching for a match » (jamais « monitors the web for months ») ; exemples d'objets orientés conversion (wallet, purse, ring, bracelet, phone, cat, dog en priorité, keys/laptop occasionnels).
+
+| Où | Spécificités |
+|---|---|
+| `city-guide-generate` | « Similaires mais différentes », modèle NYC, réalité locale, liens officiels uniquement, refus sans résultats Serper. |
+| `case-chat` | Deux modèles de mail A/B (§3), mail initial fidèle au dossier, notes = consignes actives, détail privé jamais dans un mail. |
+| `case-places` | Publics d'abord puis lieux des circonstances, ENTITIES_JSON (rôle en anglais), email-first, rien d'inventé. |
+| `group-kit` | 2 objets + 1 animal max, lien garanti (réparation auto), diagnostic visible, variation ton×ouverture×structure. |
+| `generate-state-guides` (script, Sonnet) | Interdiction absolue d'inventer du juridique ; relecture humaine obligatoire. |
+
+---
+
+## 10. Scripts locaux
 
 | Script | Usage |
 |---|---|
-| `generate-city-guides-batch.mjs` | `node scripts/generate-city-guides-batch.mjs 150` — campagne guides (cf. §5). |
-| `fetch-pet-example.mjs` | (Obsolète : image d'exemple posée à la main dans `public/images/lost-pet-example.jpg`.) |
-| `batch-fill-city-images.ts`, `regen-city-image.ts` | Anciennes images Pexels. |
-| `generate-sitemap.ts` | Obsolète (sitemaps dynamiques, cf. §10). |
-| autres (`backfill-slugs`, `seed-hotspots`, `populateStaticContent`) | one-shots historiques. |
+| `generate-city-guides-batch.mjs` | Campagne guides (protections §6). |
+| `generate-state-guides.mjs` | Guides États restants (relecture obligatoire). |
+| `purge-free-photos.mjs` | Supprime les photos des signalements gratuits > 30 j (simulation par défaut, `--apply`). |
+| `optimize-city-images.mjs` | Conversion WebP du bucket city-images (déjà exécuté). |
+| `fix-guides-plan-wording.mjs` | Correction du vocabulaire « plan » dans les guides (déjà exécuté, 515 corrigés). |
+| `refresh-city-seo.mjs` | Régénère title/meta des villes enrichies depuis leur guide. **Volontairement non exécuté** (choix : garder les anciennes metas, seules les futures publications écrasent). |
+
+Convention : simulation par défaut, `--apply` pour agir ; les blocs ```sql``` vont dans le SQL editor Supabase, les ```bash``` dans le terminal.
 
 ---
 
-## 10. SEO
+## 11. SEO
 
-- **Sitemaps** : `public/sitemap.xml` (index) → `/sitemap-cities.xml` (toutes les villes, cache 24 h, **lastmod réel** pour les villes à guide publié) + `/sitemap-reports.xml` (signalements publics, lastmod, cache 1 h).
-- **ISR** : villes 24 h, signalements 1 h, État 24 h. `getSupabaseAdmin({ fresh:false })` obligatoire dans les pages ISR (un fetch no-store rend la page dynamique).
-- **robots.txt** : tout autorisé sauf admin/api ; `OAI-SearchBot`, `PerplexityBot`, `ClaudeBot` explicitement autorisés (ChatGPT Search…).
-- **JSON-LD** : BreadcrumbList (villes), FAQPage (guides), Service/Offer (page assistance), WebApplication (poster).
-- **Stratégie** : remplacer le gabarit générique des 31k pages par des guides documentés (campagne en cours, objectif 6000), pages signalements = longue traîne, page canonique pour l'intention commerciale. KPI hebdo : pages indexées GSC / impressions / dépôts / TC.
+- **Sitemaps pilotés par la qualité** : `sitemap.xml` (index) → `sitemap-static.xml` (pages fixes, catégories, 51 États) + `sitemap-cities.xml` (**uniquement villes à guide publié** + 5 historiques, lastmod réel) + `sitemap-reports.xml` (signalements < 12 mois avec description ≥ 80 car.). `public/sitemap-1.xml` (31k URLs périmées) supprimé — le retirer aussi de GSC s'il y est soumis.
+- **Maillage** : hubs États (liste des villes couvertes + guides juridiques), villes voisines, breadcrumbs. À faire : nearby cities enrichies d'abord, hubs catégorie, lien ville → guide État.
+- **Performance = indexation** : les pages ville rendaient un HTML vide (ssr:false) avec 15 s de TTFB (Overpass) → corrigé (contenu serveur, LCP ~1-2 s, CLS réservé). C'était une cause majeure du « Crawled, not indexed ».
+- **Metas** : title/meta écrasés à chaque publication de guide (les valeurs héritées des 31k pages étaient génériques/tronquées).
+- **État GSC (28/07)** : 798 pages indexées (589 début juillet), impressions en forte hausse, position ~11 ; validation « Crawled, not indexed » relancée après correctifs. KPI : indexées / impressions / CTR par page / dépôts / TC.
+- **Guides États** : contenu juridique unique par État (FAQ JSON-LD), requêtes « found property law {state} ». Idée en réserve : page nationale comparant les 51 fenêtres de réclamation (aimant à liens).
 
 ---
 
-## 11. Variables d'environnement
+## 12. Variables d'environnement
 
 | Variable | Rôle |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase. |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase (l'anon key sert aussi à l'auth du portail org). |
 | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe. |
-| `ZOHO_USER`, `ZOHO_PASS` | SMTP/IMAP Zoho (support@). |
-| `MAILGUN_SIGNING_KEY` | Signature du webhook entrant. |
-| `MAIL_API_KEY`, `MAIL_ALLOWED_ORIGINS`, `MAIL_RATE_LIMIT_PER_HOUR` | Route `/api/send-mail`. |
-| `ANTHROPIC_API_KEY` (+ `ANTHROPIC_MODEL`, `CASE_CHAT_MODEL`, `CITY_GUIDE_MODEL`) | Claude. |
-| `SERPER_API_KEY` | Recherches Google (auto top-up activé). |
-| `GEMINI_API_KEY` (+ `GEMINI_IMAGE_MODEL`) | Images de villes. |
-| `CRON_SECRET` | Protège les crons. |
+| `ZOHO_USER`, `ZOHO_PASS` (ou `SMTP_*`) | SMTP Zoho (support@). |
+| `MAILGUN_SIGNING_KEY` | Webhook entrant. |
+| `MAIL_API_KEY`, `MAIL_ALLOWED_ORIGINS`, `MAIL_RATE_LIMIT_PER_HOUR` | `/api/send-mail`. |
+| `ANTHROPIC_API_KEY` (+ `ANTHROPIC_MODEL`, `CASE_CHAT_MODEL`, `CITY_GUIDE_MODEL`, `STATE_GUIDE_MODEL`) | Claude (guides États : Sonnet par défaut). |
+| `SERPER_API_KEY` | Recherches Google. ⚠️ **Vérifier que l'auto top-up est réellement coché** sur serper.dev : une panne de crédits est silencieuse (veille aveugle, kits sans FOUND, guides dégradés). |
+| `GEMINI_API_KEY` (+ `GEMINI_IMAGE_MODEL`) | Images de villes (1 image par ville, WebP). |
+| `CRON_SECRET` | Crons. |
 | `MATCH_DIGEST_TO`, `MATCH_MIN_CONTRIB`, `MATCH_PREMIUM_CONTRIB`, `MATCH_BATCH`, `MATCH_MAX_JUDGE` | Veille. |
-| `ADMIN_USER`, `ADMIN_PASS` | Basic Auth admin. |
-| `NEXT_PUBLIC_SITE_URL` | `https://reportlost.org` (⚠️ jamais localhost en prod — protégé par code). |
+| `ADMIN_USER`, `ADMIN_PASS` | Basic Auth admin (lus aussi par les scripts locaux). |
+| `NEXT_PUBLIC_SITE_URL` | `https://reportlost.org` (jamais localhost en prod). |
 | `PEXELS_API_KEY`, `GOOGLE_VISION_API_KEY`, `PAYMENT_API_KEY`, `NEXT_PUBLIC_GA_ID` | Divers. |
+
+Réglage hors variables : Supabase Auth → URL Configuration → Site URL `https://reportlost.org` + redirect `/org/login` (portail établissements).
 
 ---
 
-## 12. Pannes connues et leçons apprises
+## 13. Pannes connues et leçons apprises
 
-- **Mails qui n'arrivent plus** → tester `/api/test-mail-direct?to=...` (chemin exact de save-report). Ne jamais réintroduire de fetch HTTP interne ni de fire & forget SMTP.
-- **Page ville « ancienne » après publication** → cache ISR ; la publication revalide désormais ; un déploiement purge tout.
-- **Moulinette infinie sur une page ville** → Overpass (carte commissariats) : plafonné à 5 s/miroir.
-- **404 sur une ville** → noms à ponctuation ou suffixe recensement : résolution fuzzy en place.
-- **Tests du formulaire** : changer email OU titre OU jour (empreinte journalière) ; le rid localStorage expire en 24 h.
-- **Doublons support@** → une notification par dossier (à la capture de l'email).
-- **`NEXT_PUBLIC_SITE_URL=127.0.0.1` copié en prod** → cassait les mails ; ignoré par code désormais.
-- **Suppression de fichiers de guides** : `DELETE FROM city_guides WHERE verified = false;` remet les villes en file de génération.
+- **Plafond Supabase 1 000 lignes** : nous a piégés **deux fois** (pagination des villes, puis carte des guides → les batchs régénéraient en boucle ~500 villes déjà faites). Toute requête susceptible de dépasser 1 000 lignes DOIT être paginée avec un tri stable (`.order(...)` + `id`).
+- **Crédits Serper épuisés en silence** : auto top-up jamais coché → veille aveugle, kits sans FOUND, et un batch de guides **dégradés générés sans données** (210 villes supprimées et refaites). Garde-fous en place : refus de génération sans résultats, diagnostic visible dans le kit. Les Activity logs serper.dev datent une panne à la seconde.
+- **Batchs parallèles** : nohup rend la main immédiatement → doublons coûteux. Verrou + re-vérification en place ; un seul batch à la fois.
+- **ssr:false sur un bloc qui contient toute la page** : HTML vide pour Google + CLS 0,9. Ne jamais désactiver le SSR d'un conteneur de contenu.
+- **Deux routes pour un même besoin** (`qr-sheet`/`sticker-sheet`) : on a redessiné la mauvaise. Vérifier `grep` des liens avant de modifier une route.
+- **Dates US** : l'admin affiche désormais les deux formats ; ne jamais mettre de date de naissance inventée dans un dépôt police (demander au client, une ligne dans le mail de suivi).
+- **Le mot « draft »** dans un mail client = les gens cherchent une rubrique Brouillons. « Plan » = abonnement. Vocabulaire à surveiller à chaque nouveau texte.
+- **Champ SQL NOT NULL hérité** (`found_items.labels` etc.) : fournir des valeurs vides quand on greffe un nouveau flux sur une table existante.
+- Historique conservé : mails (fetch interne/fire&forget interdits), ISR (revalidation au publish, `fresh:false`), Overpass 5 s/miroir (désormais hors rendu), fuzzy villes à ponctuation, empreinte journalière des tests formulaire, `NEXT_PUBLIC_SITE_URL` jamais localhost.
