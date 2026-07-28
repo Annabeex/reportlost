@@ -484,13 +484,22 @@ export default function AdminPage() {
               👥 Kits Facebook
             </a>
           </div>
-          <a
-            href="/admin/city-guides"
-            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
-            title="Générer et publier les guides ville (SEO)"
-          >
-            🏙️ Guides ville
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href="/admin/orgs"
+              className="inline-flex items-center rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+              title="Valider ou suspendre les organisations du portail établissements"
+            >
+              🏛️ Organisations
+            </a>
+            <a
+              href="/admin/city-guides"
+              className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+              title="Générer et publier les guides ville (SEO)"
+            >
+              🏙️ Guides ville
+            </a>
+          </div>
         </div>
 
         {/* 📊 Stats en 3 familles : Activité / Production / Visites */}
