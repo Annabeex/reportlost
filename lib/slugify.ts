@@ -16,6 +16,15 @@ export const toStateIdSlug = (s: string) => (s || "").toLowerCase();
 export const buildCityPath = (state_id: string, city_ascii: string) =>
   `/lost-and-found/${toStateIdSlug(state_id)}/${toCitySlug(city_ascii)}`;
 
+// Un "lieu" qui décrit en réalité un objet (pochette, sac, étui…) ne doit
+// apparaître ni dans les slugs ni affiché après "at" : les clients mettent
+// parfois un contenant dans le champ lieu.
+export function looksLikeObjectNotPlace(s?: string | null): boolean {
+  return /pouch|purse|wallet|sleeve|holder|charger|watch|ring|bracelet|necklace|earring|backpack|suitcase|luggage|stroller|cover|strap|glasses|sunglass|headphone|airpod|laptop|tablet|kindle|umbrella|jacket|coat|scarf|glove/i.test(
+    s || ""
+  );
+}
+
 // === Slug principal des objets perdus ===
 export function buildReportSlug(payload: {
   title?: string | null;
@@ -26,12 +35,15 @@ export function buildReportSlug(payload: {
   place_type?: string | null;
   place_type_other?: string | null;
 }) {
+  // place_type(_other) filtré : jamais un objet/contenant dans le slug
+  const placeDetail =
+    [payload.place_type_other?.trim(), payload.place_type?.trim()].find(
+      (p) => p && !looksLikeObjectNotPlace(p)
+    ) || "";
   const detail =
     payload.transport_type_other?.trim() ||
     payload.transport_type?.trim() ||
-    payload.place_type_other?.trim() ||
-    payload.place_type?.trim() ||
-    "";
+    placeDetail;
 
   // 1️⃣ Nettoyer la ville : enlever "(PA)" ou équivalent
   const rawCity = (payload.city || "").trim();

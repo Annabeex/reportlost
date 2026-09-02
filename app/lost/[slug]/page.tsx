@@ -21,6 +21,7 @@ import NextDynamic from "next/dynamic";
 const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), { ssr: false });
 
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
+import { looksLikeObjectNotPlace } from "@/lib/slugify";
 import { MapPin } from "lucide-react";
 import { headers as nextHeaders } from "next/headers";
 
@@ -63,8 +64,8 @@ function pickPlace(data: any) {
   const src =
     (data?.transport_type_other?.trim?.() && { label: data.transport_type_other.trim() }) ||
     (data?.transport_type?.trim?.() && { label: data.transport_type.trim() }) ||
-    (data?.place_type_other?.trim?.() && { label: data.place_type_other.trim() }) ||
-    (data?.place_type?.trim?.() && { label: data.place_type.trim() });
+    (data?.place_type_other?.trim?.() && !looksLikeObjectNotPlace(data.place_type_other) && { label: data.place_type_other.trim() }) ||
+    (data?.place_type?.trim?.() && !looksLikeObjectNotPlace(data.place_type) && { label: data.place_type.trim() });
 
   if (src?.label) {
     const val = (src.label || "").toLowerCase();
@@ -179,11 +180,13 @@ export async function generateMetadata(
   const url = `${baseUrl}/lost/${params.slug}`;
 
   const city = stripStateFromCity(data.city ?? "");
+  const placeFiltered = [data.place_type_other, data.place_type].find(
+    (p: any) => p?.trim?.() && !looksLikeObjectNotPlace(p)
+  );
   const place =
     data.transport_type_other?.trim?.() ||
     data.transport_type?.trim?.() ||
-    data.place_type_other?.trim?.() ||
-    data.place_type?.trim?.() ||
+    placeFiltered?.trim() ||
     undefined;
 
   // Titre/desc pour les aperçus

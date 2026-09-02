@@ -149,14 +149,28 @@ for (const code of todo) {
       .map((q, i) => `### ${q}\n${sets[i].map((r) => `- ${r.title}\n  ${r.link}\n  ${r.snippet}`).join("\n") || "(no results)"}`)
       .join("\n\n");
 
-    const guide = await claude(
-      SYSTEM.replaceAll("{State}", name),
-      `State: ${name} (${code})\n\nSearch results (your ONLY source of legal facts):\n\n${results}`
-    );
+    const validate = (g) => {
+      if (!g?.stateName) return "stateName manquant";
+      if (!Array.isArray(g.intro) || g.intro.length < 1) return "intro manquante";
+      if (!Array.isArray(g.law) || g.law.length < 2) return `law: ${g.law?.length ?? 0} entrée(s), minimum 2`;
+      if (!Array.isArray(g.faq) || g.faq.length !== 5) return `faq: ${g.faq?.length ?? 0} entrée(s), exactement 5 requises`;
+      if (!g.whereBody || !g.disclaimer) return "whereBody ou disclaimer manquant";
+      return null;
+    };
 
-    // validation minimale
-    if (!guide?.stateName || !Array.isArray(guide.law) || guide.law.length < 2 || !Array.isArray(guide.faq) || guide.faq.length !== 5) {
-      console.log("⚠️ JSON incomplet, État sauté (relance-le seul avec --state=" + code + ")");
+    const basePrompt = `State: ${name} (${code})\n\nSearch results (your ONLY source of legal facts):\n\n${results}`;
+    let guide = await claude(SYSTEM.replaceAll("{State}", name), basePrompt);
+    let bad = validate(guide);
+    if (bad) {
+      // 2e tentative : on dit au modèle précisément quoi corriger
+      guide = await claude(
+        SYSTEM.replaceAll("{State}", name),
+        `${basePrompt}\n\nYour previous reply was INVALID: ${bad}. Reply again with the complete valid JSON only, fixing that issue. The faq array must contain exactly 5 items.`
+      );
+      bad = validate(guide);
+    }
+    if (bad) {
+      console.log(`⚠️ JSON incomplet (${bad}), État sauté (relance-le seul avec --state=${code})`);
       continue;
     }
     generated[code] = guide;

@@ -54,8 +54,17 @@ async function loadFont(weight: number): Promise<ArrayBuffer | null> {
   }
 }
 
+// Un "lieu" qui ressemble à un objet (pochette, sac, étui…) ne doit jamais
+// finir après "AT" sur le poster : mieux vaut pas de lieu qu'un lieu absurde.
+function looksLikeObject(place: string): boolean {
+  return /pouch|bag|purse|wallet|case|sleeve|box|holder|phone|charger|watch|ring|bracelet|necklace|keys?\b|backpack|suitcase|luggage|cover|strap/i.test(
+    place
+  );
+}
+
 async function aiClean(row: any): Promise<{ title: string; colorKey: string; place: string }> {
-  const rawPlace = clean(row.place_type_other || row.place_type || "", 50);
+  let rawPlace = clean(row.place_type_other || row.place_type || "", 50);
+  if (looksLikeObject(rawPlace)) rawPlace = "";
   const fallback = {
     title: clean(row.primary_category || row.title || "Item", 20),
     colorKey: fallbackColorKey(`${row.primary_category} ${row.categories} ${row.title} ${row.description}`),
@@ -78,7 +87,7 @@ async function aiClean(row: any): Promise<{ title: string; colorKey: string; pla
             content: `Lost item: "${raw}". Place where lost (raw): "${rawPlace}".
 Return JSON:
 {"title":"the OBJECT TYPE ONLY, 1-2 words max, Title Case (e.g. 'Camera','Wallet','Gold Bracelet','Baby Book') — never brand+model+type together, it must fit big on a poster",
- "place":"a very short natural place, 1-4 words (e.g. 'the beach','Central Park','a taxi') or '' if unknown",
+ "place":"a very short natural PHYSICAL LOCATION, 1-4 words (e.g. 'the beach','Central Park','a taxi') or '' if unknown. If the raw place text describes an object or container (a pouch, a bag, a case...) and not a location, return '' — never put an object after 'at'",
  "colorKey":"one of: jewelry, watch, electronics, bag, wallet, documents, keys, other"}`,
           },
         ],
@@ -92,7 +101,7 @@ Return JSON:
     return {
       title: clean(j.title || fallback.title, 18),
       colorKey: COLORS[j.colorKey] ? j.colorKey : fallback.colorKey,
-      place: typeof j.place === "string" ? clean(j.place, 32) : fallback.place,
+      place: typeof j.place === "string" && !looksLikeObject(j.place) ? clean(j.place, 32) : "",
     };
   } catch {
     return fallback;

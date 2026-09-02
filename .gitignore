@@ -10,3 +10,6 @@ node_modules/
 .DS_Store
 *.log
 .vercel
+
+# documents de travail (données clients, jamais versionnées)
+_travail/

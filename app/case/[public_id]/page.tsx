@@ -304,6 +304,35 @@ export default async function Page({
           </section>
         )}
 
+        {/* Attestation de déclaration de perte : tout dossier payant.
+            Le PDF est généré par /api/loss-confirmation et exige le case_token. */}
+        {Number(data.contribution || 0) > 0 && tokenOk && (
+          <section className="rounded-2xl border border-emerald-200 bg-white px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-gray-700">
+                <div className="font-semibold text-gray-900">
+                  📄 Your loss report confirmation
+                </div>
+                <p className="mt-1">
+                  A dated document confirming that you reported this loss to us, with your
+                  reference number and the details as you declared them. Insurers ask for a
+                  record of the loss, and this is yours. Keep it with your file.
+                </p>
+              </div>
+              <a
+                href={`/api/loss-confirmation?public_id=${encodeURIComponent(
+                  publicId
+                )}&t=${encodeURIComponent(providedToken)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
+              >
+                ⬇️ Download my confirmation (PDF)
+              </a>
+            </div>
+          </section>
+        )}
+
         {/* Planche de stickers QR : incluse à partir de l'offre Maximum (25$) */}
         {Number(data.contribution || 0) >= 25 && (
           <section className="rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-4">

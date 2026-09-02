@@ -868,5 +868,1505 @@
       }
     ],
     "disclaimer": "This page provides general information about Maryland law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MA": {
+    "stateName": "Massachusetts",
+    "updated": "July 2026",
+    "intro": [
+      "Massachusetts is one of the few states with a real, on the books statute for what a police department has to do with property someone hands in. General Law Chapter 135, Section 8 spells out the finder's duty, the reporting steps, and even a fine for a finder who ignores them. That gives Massachusetts a clearer paper trail than most states, at least on paper.",
+      "In practice, what happens to your phone, bag, or wallet after it is found in Boston, Worcester, or Springfield still depends heavily on which department picked it up and how that department's own property room policy works. Some hold items for a month, some for a year. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "The finder's duty statute, G.L. c. 135, §8",
+        "body": "Massachusetts law requires a finder to report lost money or goods, and covers what a police department does with unclaimed property once it is turned in. A finder who does not comply can face a fine of not less than fifty dollars. This is the backbone of how a Massachusetts lost and found report actually gets handled once you file it with a department."
+      },
+      {
+        "icon": "🕒",
+        "title": "Holding periods vary by department",
+        "body": "Chapter 135, Section 8 references a one month unclaimed period as a trigger point in the process, but individual departments set their own practical hold times on top of that. Marshfield Police, for example, holds found property for one year before it can become the property of the finder, and Wakefield's property unit describes a similar one year mark for private holders who file a timely report. Falmouth handles arrest related property differently, on a 30 day cycle. Always confirm the actual hold time with the department that has your item."
+      },
+      {
+        "icon": "🚔",
+        "title": "Larceny risk under G.L. c. 266, §30",
+        "body": "Massachusetts larceny law covers stealing, embezzling, or converting someone else's personal property, and keeping something you know is not yours after finding it can fall under this statute rather than simple lost and found. Property valued under 250 dollars is typically charged as petty larceny, a misdemeanor, which is one more reason departments push finders to report rather than keep."
+      },
+      {
+        "icon": "🏢",
+        "title": "A separate track for money and financial property",
+        "body": "Massachusetts also runs the Unclaimed Property Law under G.L. c. 200A, handled through the State Treasurer's findmassmoney.gov site. This covers abandoned bank accounts, uncashed checks, and similar financial property, not the phone you left on the T. It is a completely separate system from a police department's found property room, and it is worth checking if you are searching for money rather than a physical item."
+      }
+    ],
+    "whereTitle": "Where items end up in Massachusetts",
+    "whereBody": "Logan International Airport in Boston runs its own lost and found through Massport, separate from any city police department, and if your item was left on a plane the airline holds a different piece of it. The MBTA, covering the Boston subway, buses, and commuter rail, has its own transit lost and found process, and regional agencies elsewhere in the state run their own. Local police departments across Massachusetts, from Boston down to smaller cities and towns, hold found property under their own version of the Chapter 135 process. Big venues, museums, Fenway Park, TD Garden, and downtown retail districts each have their own house policies for anything left behind. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours before a Massachusetts police department or venue will release it. That usually means matching a serial number, showing a photo with metadata, or naming a specific detail about the item's contents or condition that only the owner would know. Departments hold found property specifically so they can verify this before handing anything over."
+      },
+      {
+        "q": "Is a reward mandatory in Massachusetts?",
+        "a": "No. Massachusetts law does not require a reward for returning lost property. Offering one is entirely up to you, and plenty of items get returned with nothing more than a thank you."
+      },
+      {
+        "q": "How long will a Massachusetts police department hold my lost item?",
+        "a": "It depends on the department. Chapter 135, Section 8 sets a one month unclaimed mark as part of the legal process, but many departments hold property much longer in practice, Marshfield and Wakefield both point to roughly one year before unclaimed property can pass to the finder. Contact the specific department holding your item for its actual policy."
+      },
+      {
+        "q": "What happens if someone finds my item and just keeps it?",
+        "a": "That can cross into larceny under G.L. c. 266, §30, which covers stealing or converting someone else's property, including property that was simply found rather than taken. Items worth under 250 dollars are typically charged as petty larceny, a misdemeanor, which is part of why Massachusetts law pushes finders to report rather than keep what they pick up."
+      },
+      {
+        "q": "What if I am searching for lost money or a financial account, not a physical item?",
+        "a": "That falls under a different Massachusetts system entirely, the Unclaimed Property Law, G.L. c. 200A, run by the State Treasurer through findmassmoney.gov. It covers things like dormant bank accounts and uncashed checks, not physical items in a police department's property room, so it is worth checking separately if that is what you are missing."
+      }
+    ],
+    "disclaimer": "This page provides general information about Massachusetts law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MN": {
+    "stateName": "Minnesota",
+    "updated": "July 2026",
+    "intro": [
+      "Minnesota is one of the few states where lost property has its own statute instead of just a mash of city ordinances. Minnesota Statutes 345.15 and 345.16 spell out what happens when personal property turns up abandoned on a public way, sidewalk, or other public premises, including a sheriff's power to seize it, a minimum three month hold before it can be sold at public auction, and a 90 day window for the rightful owner to reclaim it after notice by paying any expenses incurred.",
+      "Cities and counties layer their own lost and found ordinances on top of that framework. Departments in places like West St. Paul, Minnetonka, and Isanti hold found property for at least 90 days unless someone claims it with satisfactory proof of ownership, and county sheriff's offices such as Anoka County publish retention schedules that stretch to six months for valuables. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Sheriff seizure of abandoned property (Sec. 345.15)",
+        "body": "Under Minnesota Statutes 345.15, a county sheriff may seize and retain personal property abandoned on a public way, sidewalk, or other public premises. The sheriff must hold the property for at least three months before selling it at public auction, and reasonable public notice of the sale has to be given first."
+      },
+      {
+        "icon": "🕒",
+        "title": "Owner's 90 day reclaim window (Sec. 345.16)",
+        "body": "Minnesota Statutes 345.16 gives the rightful owner 90 days from notice to reclaim seized or abandoned property, as long as they pay any expenses the agency incurred processing and storing it. Miss that window and the property can move to sale or disposal."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local police lost and found ordinances",
+        "body": "Most Minnesota police departments run their own lost and found program layered on top of state law. Ordinances in cities such as West St. Paul, Minnetonka, and Isanti require the chief of police to keep found property in a safe place for a period of at least 90 days, and it only goes back to the finder or gets released to a new owner if the true owner does not step forward with satisfactory proof."
+      },
+      {
+        "icon": "📰",
+        "title": "Theft of lost or mislaid property (Sec. 609.52)",
+        "body": "Minnesota's theft statute, Sec. 609.52, applies to someone who keeps property they know is lost or mislaid instead of turning it in. Penalties scale with value, misdemeanor theft covers property worth less than $500, and the statute lays out higher felony tiers as the dollar amount climbs."
+      },
+      {
+        "icon": "🏢",
+        "title": "County retention schedules vary",
+        "body": "Retention periods are not identical everywhere. Anoka County's lost and found policy, for example, holds valuable and crucial items for six months, longer than the 90 day minimum set by many city ordinances, so how long your item sits in a property room depends on which department has it."
+      }
+    ],
+    "whereTitle": "Where items end up in Minnesota",
+    "whereBody": "A phone left at Minneapolis-St. Paul International Airport (MSP) routes through airport lost and found, not the city police property room. A bag left on a Metro Transit bus or light rail line goes through Metro Transit's own lost and found, separate from Minneapolis or St. Paul police. Items left at Mall of America, US Bank Stadium, Target Center, or Xcel Energy Center typically go to venue or private security lost and found before anything reaches a municipal department, and county sheriff's offices handle property recovered from public ways and county parks under Sec. 345.15. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Departments in Minnesota generally require satisfactory proof of ownership before releasing found property, so be ready to describe a serial number, a passcode, a photo stored on the device, or some other private detail only the real owner would know."
+      },
+      {
+        "q": "Is a reward mandatory in Minnesota?",
+        "a": "No. Offering a reward is always your choice in Minnesota, not a legal requirement. Some finders and departments appreciate a token of thanks, but nothing in state law or local ordinance forces you to pay one to get your property back."
+      },
+      {
+        "q": "How long will my local police department hold my item?",
+        "a": "It depends on the department. Many Minnesota cities hold found property for at least 90 days under local ordinance, while some counties, like Anoka County, extend that to six months for valuables. Statewide, Sec. 345.16 gives you 90 days from notice to reclaim seized property before it can be sold."
+      },
+      {
+        "q": "What happens if nobody claims my lost item?",
+        "a": "Under Sec. 345.15, a sheriff who has held abandoned property for at least three months can sell it at public auction after giving reasonable public notice. Local police departments generally follow a similar path, holding property for their required period and then disposing of it or turning proceeds over to the city or county."
+      },
+      {
+        "q": "Can I be in trouble for keeping something I found?",
+        "a": "Yes, potentially. Minnesota's theft statute, Sec. 609.52, covers keeping lost or mislaid property you know is not yours, with penalties that scale by value starting at misdemeanor theft for items worth less than $500. Turning found items in to police or the property's owner is the safer route."
+      }
+    ],
+    "disclaimer": "This page provides general information about Minnesota law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MS": {
+    "stateName": "Mississippi",
+    "updated": "July 2026",
+    "intro": [
+      "Mississippi does not run its lost and found rules through one single statute the way some states do. Instead, the state splits the job in two. Miss. Code § 21-39-21 gives municipalities the authority to take in, hold and eventually dispose of lost, stolen, abandoned or misplaced personal property that turns up in their jurisdiction, which is why what happens to a wallet handed to Jackson PD can look different from what happens in Gulfport or Southaven. Separately, Mississippi's Unclaimed Property Act, under Title 89, Chapter 12, forces banks, businesses and other holders to report money and intangible property to the State Treasurer once it has sat dormant for five years, with annual reports due before November 1.",
+      "For everyday items like phones, bags, jewelry or laptops, no state law fixes a mandatory holding period, so the clock and the claim process are set by whichever police department, airport, stadium or transit agency actually has your item. Mississippi's theft statutes do not spell out a separate crime for keeping something you found, so common law rules about lost, mislaid and abandoned property still shape whether holding onto someone else's item crosses into theft. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Disposition of Lost, Stolen, Abandoned or Misplaced Property (Miss. Code § 21-39-21)",
+        "body": "This is the closest thing Mississippi has to a general lost and found statute. It authorizes municipal police departments to take custody of lost, stolen, abandoned or misplaced personal property, hold it, and eventually dispose of it if no owner comes forward. It does not set one statewide claim window, so the specifics are filled in city by city."
+      },
+      {
+        "icon": "🕒",
+        "title": "Unclaimed Property Act, Title 89, Chapter 12, Five Year Dormancy",
+        "body": "Banks, businesses and other holders of unclaimed funds or intangible property must report to the State Treasurer once property has been dormant for five years, with reports due before November 1 each year. Written notice is required at least 60 days before reporting for property valued over $50. This track exists for financial accounts and similar holdings, not for a phone or a suitcase someone turns in at a hotel front desk."
+      },
+      {
+        "icon": "🚔",
+        "title": "No Separate Crime for Keeping a Found Item",
+        "body": "Mississippi's theft code, Title 97, does not carve out a distinct offense for finding something and simply keeping it. Common law distinctions between lost, mislaid and abandoned property still apply, and knowingly holding onto an item you know belongs to someone else can support a theft charge under general theft law depending on the facts."
+      },
+      {
+        "icon": "🏢",
+        "title": "Local Departments Set the Day to Day Rules",
+        "body": "Because § 21-39-21 leaves the details to municipalities, police departments across Mississippi, from Jackson to Gulfport to Southaven, each set their own intake forms, holding periods and release procedures for lost property. There is no single statewide claim form or deadline that applies everywhere."
+      }
+    ],
+    "whereTitle": "Where items end up in Mississippi",
+    "whereBody": "Lost items in Mississippi tend to land wherever they were dropped. That means Jackson-Medgar Wiley Evers International Airport and Gulfport-Biloxi International Airport lost and found offices for anything left at security or on a flight, city transit systems like JATRAN in Jackson and the Coast Transit Authority on the Gulf Coast for anything left on a bus, and local police departments for items found on the street or in a park. Gulf Coast casinos, hotels, restaurants, and university venues around Ole Miss and Mississippi State each run their own internal lost and found desks. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "If it was turned in to a police department or a venue, you will usually need to prove ownership before they release it. That typically means describing the item accurately and giving one detail only the real owner would know, like a passcode, a serial number, or what is inside a bag, before staff hand it over."
+      },
+      {
+        "q": "Is a reward mandatory in Mississippi?",
+        "a": "No. Mississippi law does not require you to pay a reward for the return of a lost item. Offering one is always your choice, and many people find it speeds up how quickly someone bothers to turn something in."
+      },
+      {
+        "q": "What happens if I turn something in to the police in Mississippi?",
+        "a": "Under Miss. Code § 21-39-21, municipal police departments can take custody of lost, stolen, abandoned or misplaced property, log it, and hold it while they try to locate the owner. If no one claims it, the department follows its own local disposal procedure, which varies by city."
+      },
+      {
+        "q": "How long will Mississippi police hold my lost item before it is disposed of?",
+        "a": "There is no single statewide deadline. Mississippi law leaves the holding period up to each municipality's police department, so a phone held in Jackson may follow a different timeline than one held in Biloxi. The five year dormancy period under the Unclaimed Property Act applies to money and intangible holdings reported by businesses, not to a bag turned in at a police station."
+      },
+      {
+        "q": "Does Mississippi have one statewide lost and found law?",
+        "a": "Not exactly. Miss. Code § 21-39-21 covers how municipalities handle lost, stolen, abandoned or misplaced personal property, while a separate Unclaimed Property Act under Title 89 handles dormant funds and intangible property held by banks and businesses. Everyday personal items fall back on common law and whatever policy the local department or venue has in place."
+      }
+    ],
+    "disclaimer": "This page provides general information about Mississippi law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "ME": {
+    "stateName": "Maine",
+    "updated": "July 2026",
+    "intro": [
+      "Maine has an actual statute for this, which puts it ahead of many states. Title 25, Chapter 401 spells out what a finder and a law enforcement agency are supposed to do with lost, mislaid or stolen personal property, including a specific waiting period before anyone else can claim it. Maine also has a criminal statute that covers what happens when someone keeps property they know isn't theirs.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Property returned to finder (25 M.R.S. §3507)",
+        "body": "Maine law lets any person who finds property surrender it to a law enforcement agency. That agency then becomes responsible for logging it and trying to locate the owner, which is why filing a report with the department nearest to where you lost something matters."
+      },
+      {
+        "icon": "🕒",
+        "title": "30 day holding period (25 M.R.S. Chapter 401)",
+        "body": "Once property is turned in, Maine's statute requires the owner or another person entitled to possession to be identified within a set window, at least 30 days from the initial date the property is logged, before the department can move toward disposing of it. This gives a real, if modest, window to file a report and get matched."
+      },
+      {
+        "icon": "🚔",
+        "title": "Custody and return duties (25 M.R.S. §3502)",
+        "body": "Property believed to be abandoned, lost or stolen must be retained in custody by the chief of police or the law enforcement agency that received it. That custody requirement is the backbone of why calling or filing with the department directly is more useful in Maine than waiting and hoping."
+      },
+      {
+        "icon": "🏢",
+        "title": "Theft of lost, mislaid or mistakenly delivered property (17-A M.R.S. §356-A)",
+        "body": "Maine's criminal code makes it a crime to knowingly keep lost, mislaid or mistakenly delivered property instead of trying to return it to its owner. The offense is treated more seriously when the property is worth more than $10,000 or when it is a firearm, which shows how much Maine law leans toward returning property rather than letting a finder keep it."
+      },
+      {
+        "icon": "📮",
+        "title": "Statewide unclaimed property program",
+        "body": "Maine's Unclaimed Property program, run out of the Treasurer's Office, handles unclaimed financial accounts and similar assets separately from personal items found in public. It is a useful backstop for things like old accounts, but it is not where your lost phone or wallet will show up. Local police property rooms are."
+      }
+    ],
+    "whereTitle": "Where items end up in Maine",
+    "whereBody": "Lost items in Maine tend to surface at Portland International Jetport, Bangor International Airport, on Greater Portland METRO buses, at ferry terminals serving the islands, at L.L. Bean and other retail anchors, at Acadia National Park and other state park sites, and at hotels, restaurants and event venues across Portland, Bangor, Augusta and the coastal tourist towns. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, once you can prove ownership. Departments in Maine typically ask for a description, and it helps to be ready with a private verification detail such as a serial number, an engraving, a saved photo, or the contents of a bag, something only the real owner would know."
+      },
+      {
+        "q": "Is a reward mandatory in Maine?",
+        "a": "No. Maine's statute doesn't require a reward for a finder or a police department to offer one. Offering a reward is always your choice, and it can sometimes speed up a return, but it is never required by law."
+      },
+      {
+        "q": "How long does a police department in Maine have to hold my item before it's considered unclaimed?",
+        "a": "Under Title 25, Chapter 401, at least 30 days from the initial date the property is logged before the department can treat it as unclaimed and move toward disposal. Practices on exactly how disposal happens can vary by department."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "Maine's theft statute, 17-A M.R.S. §356-A, makes it a crime to knowingly retain lost, mislaid or mistakenly delivered property instead of trying to return it. The offense is more serious when the value is over $10,000 or the item is a firearm."
+      },
+      {
+        "q": "Should I go straight to the airport or transit agency instead of the police?",
+        "a": "Both are worth contacting. Airports, transit agencies and venues often keep their own lost and found logs before an item is ever surrendered to a law enforcement agency under §3507, so checking both routes gives you the best chance of a match."
+      }
+    ],
+    "disclaimer": "This page provides general information about Maine law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MI": {
+    "stateName": "Michigan",
+    "updated": "July 2026",
+    "intro": [
+      "Michigan is one of the few states with a dedicated lost property law on the books. Under the Michigan Compiled Laws, Chapter 434, a person who finds lost property has a legal duty to report the finding or deliver the property to a law enforcement agency in the jurisdiction where it was found. That duty, spelled out in MCL 434.22, sets Michigan apart from states that rely only on common law or local policy, and it shapes how police departments, airports, and businesses across the state actually handle turned-in items.",
+      "Once property reaches a Michigan law enforcement agency, the clock starts running under specific statutory timelines, and property of major value or collectible currency triggers extra reporting steps within 48 hours. Airports, transit agencies, stadiums, and retailers layer their own lost and found procedures on top of this state framework, which means where your item was lost often determines which office and which deadline actually apply. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Michigan's Lost Property Statute (MCL 434.21 et seq.)",
+        "body": "Michigan Compiled Laws Chapter 434 is a true lost and found statute, not just an unclaimed property or theft law. It governs how finders, police departments, and owners are supposed to handle lost property found anywhere in the state, from a wallet on a sidewalk to a bag left at a bus stop."
+      },
+      {
+        "icon": "🚔",
+        "title": "Duty to Report or Deliver (MCL 434.22)",
+        "body": "Anyone who finds lost property in Michigan is required to report the find or deliver the property to a law enforcement agency in the jurisdiction where it was found. This is a legal obligation, not just good manners, which is why filing a police report in the right city matters even for everyday items."
+      },
+      {
+        "icon": "📰",
+        "title": "Major Value Property Gets Extra Steps (MCL 434.23)",
+        "body": "When the found property qualifies as being of major value or is collectible currency, the receiving law enforcement agency must complete additional reports within 48 hours of the finder's report or delivery. Owners of higher value property may also receive a formal notice letter giving them roughly 6 months from the date of that letter to claim the item before it is treated as abandoned."
+      },
+      {
+        "icon": "🕒",
+        "title": "3-Month Holding Period (MCL 434.24)",
+        "body": "For most found property, if the legal owner has not claimed it within 3 months of it being reported or delivered to police, the holding law enforcement agency is permitted to dispose of it in any manner it chooses. This 3-month window is the general statutory baseline, though major value property follows the longer notice process above."
+      },
+      {
+        "icon": "🏢",
+        "title": "Separate Track: Michigan Unclaimed Property (MCL 567.238)",
+        "body": "Financial assets like uncashed checks, forgotten accounts, and business-held funds move through a different system entirely, the Michigan Department of Treasury's Uniform Unclaimed Property Act. Holders generally report property valued over $50 after a dormancy period, commonly three years, and Treasury holds it for owners to claim later. This track does not apply to physical lost items like phones, bags, or jewelry, which stay under Chapter 434 and local police custody."
+      }
+    ],
+    "whereTitle": "Where items end up in Michigan",
+    "whereBody": "Detroit Metropolitan Airport (DTW), Gerald R. Ford International Airport in Grand Rapids, Bishop International in Flint, and Cherry Capital Airport in Traverse City each run their own lost and found desks that work alongside airline and TSA procedures. Transit riders lose items with DDOT and SMART in metro Detroit, The Rapid in Grand Rapids, and Ann Arbor's TheRide, all of which log found property separately from city police departments. Sports and entertainment venues like Ford Field, Comerica Park, and Little Caesars Arena, plus casinos such as MGM Grand Detroit and MotorCity Casino, and university campuses including the University of Michigan and Michigan State, all maintain their own lost and found points on top of the local police department that has jurisdiction under MCL 434.22. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove ownership before a Michigan police department, airport, or venue releases the item to you. That usually means matching a description to one private detail about the item, such as an engraving, a photo on the device, or a receipt, that only the true owner would know."
+      },
+      {
+        "q": "Is a reward mandatory in Michigan?",
+        "a": "No. Michigan's lost property statute does not require owners to pay a reward to whoever finds and reports their property. Offering one is always your choice, and many people do so as a thank you, but it is never a legal condition for getting your item back."
+      },
+      {
+        "q": "What happens if someone finds my item but does not report it?",
+        "a": "Under MCL 434.22, the finder is legally required to report the find or turn the property over to local law enforcement. Knowingly keeping property that belongs to someone else instead of reporting it can expose the finder to consequences well beyond the lost and found process."
+      },
+      {
+        "q": "How long do I have to claim my lost item in Michigan?",
+        "a": "For most found property held by a Michigan law enforcement agency, you generally have about 3 months from when it was reported or delivered before the agency can dispose of it. Property classified as major value follows a longer notice process, giving owners roughly 6 months from a formal letter before it is considered abandoned."
+      },
+      {
+        "q": "Where should I file a report first if I lost something in Michigan?",
+        "a": "Start with the law enforcement agency in the jurisdiction where you lost the item, since that is the agency Michigan law designates to receive found property under MCL 434.22. If you lost it at an airport, transit stop, or venue, also file with that location's own lost and found desk, since many operate independently before anything is handed to police."
+      }
+    ],
+    "disclaimer": "This page provides general information about Michigan law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "MO": {
+    "stateName": "Missouri",
+    "updated": "July 2026",
+    "intro": [
+      "Missouri is one of the few states that actually wrote a lost property statute into its books. RSMo 447.010 spells out a duty for anyone who finds lost money or goods, and Chapter 447 goes on to build an entire state system for property that never gets claimed, run by the Missouri State Treasurer's Unclaimed Property Division rather than left to city hall. That split matters: a phone left on a MetroLink train or a bag found at a Cardinals game is handled by a local police department or venue lost and found desk, while cash, safe deposit box contents, and similar financial property that sits unclaimed for years eventually escheats to the state and shows up in the ShowMeMoney.com database.",
+      "On top of the finder's duty statute, Missouri's stealing law, RSMo 570.030, makes it a crime to knowingly keep property you know or should know is lost or mislaid, with penalties that scale by value, so 'finders keepers' is not actually the law here. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Duty of Finders (RSMo 447.010)",
+        "body": "Missouri law directly addresses what a finder of lost money or goods is supposed to do, unlike states that rely purely on common law. This statute is the backbone of how local departments and courts in Missouri treat a found item and who is entitled to it if the owner never comes forward."
+      },
+      {
+        "icon": "🚔",
+        "title": "Stealing Statute (RSMo 570.030)",
+        "body": "Knowingly keeping property you know or learn was lost or mislaid can be charged as stealing under RSMo 570.030. Penalties scale with value, from misdemeanor level for lower value items up to a Class C felony for property worth $25,000 or more, so returning a found item is not just courtesy, it avoids real criminal exposure."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Program (RSMo Chapter 447)",
+        "body": "Financial property such as uncashed checks or safe deposit contents that goes unclaimed for a period generally described as three to five years, depending on the property type, is turned over to the Missouri State Treasurer. There is no time limit for the original owner or heir to file a claim, and the office even pays interest on cash property held for up to seven years."
+      },
+      {
+        "icon": "🕒",
+        "title": "Claim Windows and Disposal (15 CSR 50-3.090)",
+        "body": "State regulations set concrete windows for acting on a claim: if proof of ownership is not presented promptly, property may be disposed of within one year, and a claimant is generally given thirty days to file paperwork once a claim process starts. Missing these windows can mean the difference between getting an item back and losing it to disposal."
+      },
+      {
+        "icon": "📰",
+        "title": "Lost Versus Mislaid Property",
+        "body": "Missouri courts distinguish between property that is truly lost and property that is merely mislaid, meaning intentionally set down and forgotten. Under this line of cases, the owner of the premises where an item was mislaid, not a random finder, is often the one entitled to hold it for the true owner, which affects where you should actually look first."
+      }
+    ],
+    "whereTitle": "Where items end up in Missouri",
+    "whereBody": "Missouri's two major air hubs, Kansas City International (MCI) and St. Louis Lambert International (STL), each run their own lost and found operations, as do regional transit systems like the Kansas City Area Transportation Authority (KCATA), the KC Streetcar, and St. Louis's Metro Transit under Bi-State Development. Sports and event venues add another layer entirely, from Arrowhead Stadium and Kauffman Stadium in Kansas City to Busch Stadium and the Enterprise Center in St. Louis, plus hotels, rideshare drivers, and restaurants across both metro areas and smaller cities like Springfield and Columbia. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove ownership. Departments and venues in Missouri typically ask for a private detail only the real owner would know, like a serial number, a specific photo on the phone, or what is inside a wallet, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Missouri?",
+        "a": "No. Nothing in Missouri's finder statute or its theft law requires a reward. Offering one is always your choice, and plenty of items are returned in Missouri with nothing more than a thank you."
+      },
+      {
+        "q": "What happens to my lost item if no one claims it in Missouri?",
+        "a": "For physical items, local departments and venues generally hold property for a set period before disposing of it or donating it. For money and financial property specifically, Missouri law sends it to the State Treasurer's Unclaimed Property Division after a dormancy period of roughly three to five years, where it can be searched and claimed with no time limit."
+      },
+      {
+        "q": "Can someone get in trouble for keeping something I lost?",
+        "a": "Yes. Under RSMo 570.030, knowingly keeping property you know or learn is lost or mislaid can be charged as stealing, with penalties that increase based on the value of the item, up to a Class C felony for property worth $25,000 or more."
+      },
+      {
+        "q": "Do I have to file with police before checking an airport or transit lost and found?",
+        "a": "No, you can do both at the same time. Airports like MCI and STL, transit agencies like KCATA and Metro, and local police departments each keep separate lost and found records in Missouri, so filing everywhere at once gives your item the best chance of turning up."
+      }
+    ],
+    "disclaimer": "This page provides general information about Missouri law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "NE": {
+    "stateName": "Nebraska",
+    "updated": "July 2026",
+    "intro": [
+      "Nebraska is one of the few states where keeping something you find is spelled out as a crime in the criminal code itself. Neb. Rev. Stat. section 28-514 makes it theft to take control of property you know is lost, mislaid, or delivered by mistake and then fail to take reasonable steps to return it to its owner. That single sentence shapes almost everything else in the state: if a stranger hands your dropped wallet to a store clerk or a police officer, the law expects that item to move toward you, not into someone else's pocket.",
+      "On the government side, when property ends up in the hands of a county sheriff, sections 69-1330 and 69-1331 set the clock: if it sits unclaimed for at least one hundred eighty days, the sheriff can sell it. Separately, Nebraska's Uniform Unclaimed Property Act runs on a much longer five year dormancy period, but that track is built for cash, checks, and business-held funds sitting at the State Treasurer's unclaimed property division, not for the phone you left in a booth at a Lincoln diner. City police departments, airports, and transit agencies layer their own retention windows on top of these statutes. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Theft of lost or mislaid property (Neb. Rev. Stat. § 28-514)",
+        "body": "Nebraska criminal law directly addresses your situation. Anyone who comes into control of lost, mislaid, or misdelivered property and knows who it likely belongs to, but fails to take reasonable measures to return it, can be charged with theft. This gives you real leverage: a finder who ignores your identifying tags, receipts, or engraved initials is not just being unhelpful, they may be breaking the law."
+      },
+      {
+        "icon": "🚔",
+        "title": "County sheriff custody and sale (§§ 69-1330, 69-1331)",
+        "body": "Property that comes into a county sheriff's possession is held for at least one hundred eighty days. If no owner claims it within that window, the sheriff may sell it. This is the practical deadline that matters most if your item was turned in to a sheriff's office rather than a city police department."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act (Neb. Rev. Stat. § 69-1310 and related sections)",
+        "body": "Cash, checks, and other property held by businesses and institutions follows a different, longer track. Nebraska's general dormancy period is five years before a holder must report the property to the State Treasurer's unclaimed property division, with shorter periods for things like wages and security deposits. This system exists for financial accounts, not for the backpack you left on a bus, but it explains why a bank or employer may hold funds far longer than a police department holds a physical item."
+      },
+      {
+        "icon": "📮",
+        "title": "Local department policies fill the gaps",
+        "body": "There is no single statewide statute telling every Nebraska police department exactly how long to hold a found wallet, phone, or bag before disposing of it, or how to log it. Cities such as Omaha and Lincoln, along with university police, transit agencies, and airport operators, each set their own intake, storage, and disposal timelines within the boundaries set by state theft and sheriff statutes."
+      }
+    ],
+    "whereTitle": "Where items end up in Nebraska",
+    "whereBody": "In Omaha, lost items most often surface at Eppley Airfield, with Metro transit buses and streetcars, at the CHI Health Center, or in the Old Market and stadium district around Nebraska football game days. In Lincoln, Lincoln Airport, StarTran buses, Memorial Stadium during Cornhuskers games, and the University of Nebraska-Lincoln campus police are common holding points. Statewide, county sheriff's offices, city police departments, hotels, and retail chains each keep their own found property logs. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove ownership. Departments in Nebraska typically ask for a description that matches an internal detail they will not read aloud, such as a lock screen photo, a case contents list, or a serial number, along with the date and location you lost it."
+      },
+      {
+        "q": "Is a reward mandatory in Nebraska?",
+        "a": "No. Nebraska law does not require you to pay a reward to get your property back. Offering one is always your choice, and it can sometimes speed up a return, but it is never a legal condition for reclaiming an item."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "Under Neb. Rev. Stat. section 28-514, a person who knowingly keeps lost or mislaid property without making a reasonable effort to return it to its owner can be charged with theft. This is one of the more direct legal protections a Nebraska resident has when trying to recover a specific dropped item."
+      },
+      {
+        "q": "How long will a Nebraska sheriff's office or police department hold my item before disposing of it?",
+        "a": "If your item ends up with a county sheriff, sections 69-1330 and 69-1331 set a minimum one hundred eighty day holding period before it can be sold. City police departments, airports, and transit agencies set their own shorter or longer internal retention windows for lost property, so timing varies by exactly where you lost it."
+      },
+      {
+        "q": "Does Nebraska have one statewide lost and found law like some other states?",
+        "a": "Not a single dedicated statute. Instead, Nebraska combines a criminal theft provision for lost or mislaid property, sheriff custody and sale rules, and a separate Unclaimed Property Act for cash and business-held funds. Local police departments and venues then apply their own procedures on top of that framework."
+      }
+    ],
+    "disclaimer": "This page provides general information about Nebraska law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "NV": {
+    "stateName": "Nevada",
+    "updated": "July 2026",
+    "intro": [
+      "Nevada does not have a single statewide statute that tells a stranger what to do the moment they pick up your phone or wallet. Instead, Nevada relies on its theft statute to create the incentive, NRS 205.0832(d) makes it a crime to keep lost, mislaid or misdelivered property when the circumstances give the finder a way to figure out who the true owner is. On top of that criminal backstop, individual cities and counties, along with the airports, casinos and transit agencies that see the heaviest foot traffic on the Strip and around Reno, run their own lost and found desks under local policy rather than one uniform state code.",
+      "There is a separate track for property that sits unclaimed inside a business or institution, bank accounts, safe deposit boxes, uncashed checks. That falls under NRS Chapter 120A, the Uniform Unclaimed Property Act, administered by the Nevada Unclaimed Property program, and it works on a multi year abandonment clock that is very different from a wallet dropped on a casino floor. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Theft of Lost Property, NRS 205.0832(d)",
+        "body": "Nevada's theft statute covers more than shoplifting. Under NRS 205.0832(d), a person commits theft if they come into control of lost, mislaid or misdelivered property under circumstances that give them a means of inquiry as to the true owner, and they keep it instead of trying to return it. Reported values matter for the charge, theft of property under $1,200 is a misdemeanor, and value between roughly $1,200 and $4,999 can be charged as grand larceny, a category D felony. This is the legal pressure that pushes most honest finders in Nevada to hand items to a business, venue or police department rather than keep them."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act, NRS Chapter 120A",
+        "body": "Property that goes unclaimed inside a business, bank, or other holder, rather than being physically found by a person, is governed by the Uniform Unclaimed Property Act. Under this chapter property is generally presumed abandoned after 3 years with no owner activity, and holders must send written notice to the apparent owner before that presumption applies. The state's unclaimed property program, run through the Nevada Treasurer's office, is the right place to search if what you lost was money or a financial asset rather than a physical item someone might have picked up."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local department and municipal ordinances",
+        "body": "Because Nevada has no single statewide lost and found statute for finders on the street, cities fill the gap with their own rules. Elko's municipal code, for example, spells out the duty of city officers and employees who find lost money or property in a public place. Las Vegas Metropolitan Police, Reno Police, Henderson Police and the airport and transit authorities across the state each run their own intake procedures, holding periods, and claim verification steps, which is why the exact process for getting an item back depends heavily on which department or venue is holding it."
+      },
+      {
+        "icon": "🕒",
+        "title": "No uniform statewide holding period",
+        "body": "Nevada law does not set one holding period that applies to every found item. Under NRS 120A property held by businesses is presumed abandoned after 3 years, but a phone or bag turned in at a casino, airport terminal, or police substation is governed by that specific department's own retention policy, which can run anywhere from a matter of weeks to several months before the item is logged as unclaimed and disposed of or auctioned."
+      }
+    ],
+    "whereTitle": "Where items end up in Nevada",
+    "whereBody": "In the Las Vegas area, lost items commonly surface at Harry Reid International Airport, at one of the Strip's casino resorts and their security or valet desks, or with the Las Vegas Metropolitan Police Department and the RTC transit system. In the north, Reno-Tahoe International Airport, RTC Washoe transit, and Reno or Sparks police departments handle their own found property. Smaller cities and counties, from Henderson to Elko, run their own municipal lost and found desks under local ordinance. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Is there a Nevada law that requires someone to turn in something they find?",
+        "a": "There is no single statewide statute that forces a finder to hand an item to police the moment they pick it up. Instead, Nevada's theft statute, NRS 205.0832(d), makes it a crime to keep lost, mislaid or misdelivered property when there is a reasonable way to identify the true owner, which is what pushes most finders to turn items in to a venue, transit agency or police department."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Most departments and venues in Nevada ask you to describe the item and provide at least one private detail that was not visible to whoever found it, such as a lock screen photo, a specific serial number, or what is inside a bag, before they release it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Nevada?",
+        "a": "No. Nevada does not require a reward for the return of lost property. Offering one is always your choice, not a legal obligation, and plenty of items are returned with no reward at all."
+      },
+      {
+        "q": "How long will a Nevada department or venue hold my item before disposing of it?",
+        "a": "It depends on who is holding it. There is no single statewide holding period for street level finds, each city, airport, casino, or transit agency sets its own retention window under local policy. Property held by businesses under the state's unclaimed property law is presumed abandoned after 3 years, but that applies to financial assets, not a phone or backpack sitting in a police property room."
+      },
+      {
+        "q": "Does it matter how much my lost item is worth?",
+        "a": "It can matter if someone is caught keeping it rather than returning it. Nevada's theft of lost property statute treats value under $1,200 as a misdemeanor, and value between about $1,200 and $4,999 can be charged as grand larceny, a category D felony, which is one more reason most people who find something valuable in Nevada choose to turn it in."
+      }
+    ],
+    "disclaimer": "This page provides general information about Nevada law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "NH": {
+    "stateName": "New Hampshire",
+    "updated": "July 2026",
+    "intro": [
+      "New Hampshire is one of the few states with a lost property statute that actually spells out numbers. RSA 471-C:13 tells police departments what to do with lost or abandoned personal property that comes through their doors, sets a dollar line at $250, and gives a 180 day holding period for higher value items before a department can dispose of them. The same chapter reaches into airport property rooms, and a separate criminal statute, RSA 637:6, makes it a theft offense to keep something you know was lost or mislaid instead of trying to return it. On top of that, the State Treasury runs a formal abandoned property program for financial assets like uncashed checks and forgotten accounts, which is a different track from a wallet or phone turned in at a police station.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Police Custody of Lost Property (RSA 471-C:13)",
+        "body": "When someone turns lost or abandoned personal property into a New Hampshire police department, the statute sets the rules for what happens next. Property valued at $250 or more must be held for at least 180 days before the department can dispose of it, giving an owner a real window to claim it. Lower value items are handled on a faster timeline set by the individual department, so it pays to call the exact station that has your item as soon as you realize it is missing."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of Lost or Mislaid Property (RSA 637:6)",
+        "body": "New Hampshire criminal law does not treat a found wallet as finders keepers. Under RSA 637:6, a person who obtains property they know to be lost, mislaid, or delivered by mistake commits theft if they do not make a reasonable, good faith attempt to return it to the owner. That legal duty is a big part of why calling local departments and businesses quickly, rather than assuming an item is gone for good, actually matters in this state."
+      },
+      {
+        "icon": "✈️",
+        "title": "Airport Lost and Found (RSA 471-C:13)",
+        "body": "The same statute that governs municipal police departments extends to airport property rooms. An airport director or designee can dispose of noncontraband lost or abandoned property after it has sat unclaimed for 180 days, the same benchmark used elsewhere in the chapter. If you left something at a New Hampshire airport, that 180 day clock is your practical deadline to get a claim in."
+      },
+      {
+        "icon": "🏢",
+        "title": "State Treasury Abandoned Property Division (RSA 471-C:2)",
+        "body": "Physical items and financial property follow different rules in New Hampshire. Intangible property such as uncashed checks, dormant accounts, and similar assets is presumed abandoned after five years and escheats to the state, managed through the Treasury's Abandoned Property Division at findnhmoney.gov. That system is separate from a police department's lost and found bin, so a missing phone and a forgotten account are not searched for in the same place."
+      }
+    ],
+    "whereTitle": "Where items end up in New Hampshire",
+    "whereBody": "A lost item in New Hampshire can land in several different systems depending on where it disappeared. Air travelers move through Manchester-Boston Regional Airport, Portsmouth International Airport at Pease, and often Boston Logan just across the border, each running its own lost and found under airport property room rules. Riders use the Manchester Transit Authority and COAST on the Seacoast, and venues from SNHU Arena to Bank of NH Pavilion, state parks, and college campuses like UNH and Dartmouth each keep their own lost and found with different holding periods. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you need to prove it is yours. New Hampshire police departments and venues typically ask for a description that includes a private detail, like a specific mark, contents, or serial number, that would not be visible from a photo alone. That step protects your property from being handed to the wrong person."
+      },
+      {
+        "q": "Is a reward mandatory in New Hampshire?",
+        "a": "No. Nothing in New Hampshire law requires you to offer a reward for the return of lost property. It is always your choice, and plenty of items are returned with a simple thank you."
+      },
+      {
+        "q": "How long will the police hold my item before it's disposed of or donated?",
+        "a": "Under RSA 471-C:13, items valued at $250 or more must be held for at least 180 days before a department can dispose of them. Items under that value are handled on a shorter, department set schedule, so confirm the exact timeline with the specific station holding your property."
+      },
+      {
+        "q": "What happens if someone keeps something they found instead of turning it in?",
+        "a": "New Hampshire treats that as theft. RSA 637:6 makes it a crime to knowingly keep property you know was lost or mislaid without making a reasonable effort to return it, which is part of why reporting to local police and nearby businesses is worth doing right away."
+      },
+      {
+        "q": "What if my lost item was found at the airport?",
+        "a": "Airport property rooms in New Hampshire follow the same 180 day holding rule under RSA 471-C:13 as municipal police departments. Contact the specific airport's lost and found directly, since airlines and airport authorities often run separate intake systems for items found in terminals versus on aircraft."
+      }
+    ],
+    "disclaimer": "This page provides general information about New Hampshire law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "MT": {
+    "stateName": "Montana",
+    "updated": "July 2026",
+    "intro": [
+      "Montana does not run its found property system through a single lost-and-found statute the way some states do. Instead, the state relies on its criminal theft code to discourage people from pocketing what they find, and on a formal unclaimed property program at the Department of Revenue to take custody of items and money nobody claims. Local police departments, university police, and venues each set their own hold times and intake procedures on top of that framework.",
+      "If you lost something in Montana, the practical path usually runs through whichever police department, transit agency, or venue actually has it, followed by the state's Unclaimed Property Program if enough time passes with no owner found. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Theft of lost or mislaid property, MCA 45-6-302",
+        "body": "Montana makes it a crime to keep lost or mislaid property instead of trying to return it to the owner or turning it in. A person convicted under this section can be fined up to $500 or jailed in the county jail for up to 6 months, so finders in Montana have a real legal reason to report what they pick up rather than keep it."
+      },
+      {
+        "icon": "🏢",
+        "title": "Report of abandoned property, MCA 70-9-808",
+        "body": "When a holder has property valued at $50 or more that is presumed abandoned, Montana law requires written notice to the apparent owner sent not more than 120 days and not less than 60 days before the holder files a report with the state. This due diligence step is meant to catch owners before their property moves into the state's custody."
+      },
+      {
+        "icon": "🔄",
+        "title": "Montana Unclaimed Property Program",
+        "body": "Property and money that goes unclaimed long enough is transferred to the Department of Revenue's Unclaimed Property Program, which holds it in safekeeping until the owner or an heir is located. You can search and file a claim directly through the state portal at revenue.mt.gov, or by calling the program."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local department hold periods vary",
+        "body": "Outside the state statutes, actual hold times depend on the department. Great Falls, for example, has an Evidence Technician follow up on claims within about 5 business days, while Montana State University police post found items and dispose of anything still unclaimed after 3 months. Always check with the specific department or venue holding your item."
+      },
+      {
+        "icon": "🕒",
+        "title": "Item-specific hold rules at institutions",
+        "body": "Some Montana institutions set different hold windows by item type rather than a single statewide rule. Montana State University's lost and found policy, for instance, lists specific hold times such as 30 days for books before items are processed for disposal, so the clock can differ depending on what you lost and where."
+      }
+    ],
+    "whereTitle": "Where items end up in Montana",
+    "whereBody": "Lost items in Montana tend to land with whichever agency covers the spot where you lost them: airports like Bozeman Yellowstone International, Billings Logan International, Missoula International, Glacier Park International in Kalispell, and Helena Regional Airport all keep their own found property logs, as do transit systems like Mountain Line in Missoula, Streamline serving Bozoman and Big Sky, and MET Transit in Billings. Venues such as Yellowstone and Glacier National Park facilities, university campuses like the University of Montana and Montana State University, ski resorts including Big Sky and Whitefish Mountain Resort, and local police property rooms each run their own intake and hold periods. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "What should I do if I find lost property in Montana?",
+        "a": "Montana law does not let you simply keep something you find. Under MCA 45-6-302, holding onto lost or mislaid property instead of trying to return it or turning it in to police can be charged as theft, punishable by a fine up to $500 or up to 6 months in county jail, so report it to the local police department or the venue where you found it."
+      },
+      {
+        "q": "How long will a Montana police department hold my item before I can claim it?",
+        "a": "There is no single statewide hold period, it depends on the department. Great Falls police typically have an Evidence Technician follow up on a claim within about 5 business days, while campus police at Montana State hold found items and may dispose of them after roughly 3 months if nobody claims them. Always confirm the specific timeline with the department holding your property."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you need to prove it is yours. Departments generally ask for a description that includes at least one private detail not visible from the outside, such as a passcode, a case contents list, an engraving, or a specific serial number, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Montana?",
+        "a": "No. Montana law does not require finders or owners to pay a reward. Offering one is always your choice, and plenty of items are returned with nothing more than a thank you."
+      },
+      {
+        "q": "What happens if my lost item is never claimed?",
+        "a": "If a holder cannot locate you and your property is valued at $50 or more, Montana law requires written notice before the item or money is reported and eventually transferred to the state's Unclaimed Property Program at the Department of Revenue. You can search for and claim property held there directly through revenue.mt.gov."
+      }
+    ],
+    "disclaimer": "This page provides general information about Montana law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "NJ": {
+    "stateName": "New Jersey",
+    "updated": "July 2026",
+    "intro": [
+      "New Jersey is one of the few states with a real, purpose built lost property statute. The Legislature passed a dedicated law, often cited as the Lost or Abandoned Property Act and codified at N.J.S.A. 46:30C, that spells out exactly what a finder must do, how long an owner has to come forward, and what happens if nobody claims the item. That structure changes how a search in Newark, Jersey City, or along the Shore actually works, because the clock and the paperwork are defined by statute rather than left entirely to each department's own policy.",
+      "On top of the finders statute, New Jersey backs it with a criminal law, N.J.S.A. 2C:20-6, that makes it theft to keep property you know was lost, mislaid, or delivered by mistake once you know or can reasonably find out who owns it. Municipal police departments layer their own procedures on top under N.J.S.A. 40A:14-157, covering how unclaimed money and property move through a station before a public auction. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Reasonable efforts to return it, N.J.S.A. 46:30C-4",
+        "body": "New Jersey's finders law says a person may only claim lost property after making reasonable efforts to locate and notify the owner. Simply picking something up and holding onto it does not create any right to keep it, the statute requires an actual attempt to get it back to whoever lost it."
+      },
+      {
+        "icon": "🕒",
+        "title": "The 120 day window",
+        "body": "Under New Jersey's lost or abandoned property act, if the owner does not reclaim an item within 120 days of the finder starting those reasonable efforts, the property can pass to the finder. That 120 day mark is the practical deadline that matters most for anyone trying to get an item back before someone else gains a legal claim to it."
+      },
+      {
+        "icon": "🚔",
+        "title": "Municipal police holding property, N.J.S.A. 40A:14-157",
+        "body": "When a New Jersey police department takes in unclaimed money, it must turn it over to the municipal treasurer within 48 hours. Unclaimed property generally cannot be disposed of or auctioned for six months, and motor vehicles are held for that same six month period before the town can move on them."
+      },
+      {
+        "icon": "📰",
+        "title": "Theft of lost or mislaid property, N.J.S.A. 2C:20-6",
+        "body": "New Jersey treats keeping someone else's lost or mislaid property as a form of theft once the finder knows, or reasonably could learn, who the owner is. This is the criminal backstop that gives the civil finders rules teeth, and it is why departments and honest finders take turning items in seriously."
+      }
+    ],
+    "whereTitle": "Where items end up in New Jersey",
+    "whereBody": "Lost items in New Jersey tend to funnel through a handful of predictable systems. Newark Liberty International Airport and Atlantic City International Airport each run their own lost and found operations, separate from the airlines and from TSA checkpoints. NJ Transit, which covers commuter rail, light rail, and buses statewide, and PATH, which connects Jersey City, Hoboken, Newark, and Manhattan, each log found items by line and station. Large venues like MetLife Stadium, Prudential Center, and the boardwalks and beaches of the Jersey Shore have their own lost and found desks, and every municipal police department follows the state's 48 hour and six month holding rules under N.J.S.A. 40A:14-157 for anything turned in locally. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. New Jersey's finders statute puts the responsibility on the finder to try to return property to its rightful owner, and departments will typically ask you to describe a specific detail, like a case, an engraving, or a photo timestamp, that only the real owner would know before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in New Jersey?",
+        "a": "No. New Jersey law does not require owners to pay a reward to get lost property back. Offering one is always your choice, and while it can sometimes speed up a return, it has no bearing on your legal right to reclaim your own property."
+      },
+      {
+        "q": "How long do I have to claim my lost item in New Jersey?",
+        "a": "The state's lost property act gives a finder 120 days from when they begin making reasonable efforts to locate you before the item can legally pass to the finder. Separately, many municipal police departments hold property for up to six months under N.J.S.A. 40A:14-157 before it goes to public auction, so acting quickly matters either way."
+      },
+      {
+        "q": "What happens if nobody claims a found item in New Jersey?",
+        "a": "If the 120 day reasonable efforts period passes with no owner found, the finder can acquire the property under New Jersey's lost or abandoned property law. Items held by municipal police instead follow N.J.S.A. 40A:14-157, which keeps them for at least six months before the town can auction them off."
+      },
+      {
+        "q": "Is it a crime to keep something you found in New Jersey?",
+        "a": "It can be. N.J.S.A. 2C:20-6 makes it theft to hold onto lost, mislaid, or mistakenly delivered property once you know, or could reasonably find out, who the owner is. Turning an item in to police or making a genuine attempt to return it is what keeps a finder on the right side of that law."
+      }
+    ],
+    "disclaimer": "This page provides general information about New Jersey law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "NM": {
+    "stateName": "New Mexico",
+    "updated": "July 2026",
+    "intro": [
+      "New Mexico does not have one all purpose lost property law that tells every finder exactly what to do with a stray phone or wallet. Instead the state's rules are split across three places: a law enforcement statute that lets police take custody of unclaimed personal property, a criminal statute that specifically targets people who keep a lost credit card, and the Revised Uniform Unclaimed Property Act, which governs abandoned money and financial assets through the Taxation and Revenue Department rather than physical items found on the street.",
+      "Because there is no single filing system for a lost backpack or set of keys, what happens to your item depends heavily on where you lost it and which department or business picked it up. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Unclaimed Property Held by Police (NM Stat. § 29-1-14)",
+        "body": "When personal property with a fair market value greater than fifty dollars goes unclaimed by its true owner and is no longer needed as evidence, New Mexico law lets the holding law enforcement agency take custody of it and move toward disposition. This is the closest thing New Mexico has to a general found property statute, and it applies mainly to items that pass through a police department's property room."
+      },
+      {
+        "icon": "🚔",
+        "title": "Lost Credit Cards Are a Criminal Matter (NM Stat. § 30-16-27)",
+        "body": "New Mexico specifically criminalizes possessing a credit card that was stolen, lost, mislaid, or delivered by mistake. Holding onto someone else's card instead of turning it in or destroying it is a petty misdemeanor, which shows the state does expect finders to act in good faith even without a broad lost property code."
+      },
+      {
+        "icon": "🏢",
+        "title": "Revised Uniform Unclaimed Property Act (NMSA Chapter 7, Article 8A)",
+        "body": "This act covers abandoned financial property such as uncashed checks, dormant accounts, and refunds, not physical items like phones or luggage. Holders must report property valued at fifty dollars or more to the Taxation and Revenue Department, which reviews claims within 90 days of filing plus an additional period before payment. It is searchable through the state's database and MissingMoney.com, but it will not help you locate a lost wallet."
+      },
+      {
+        "icon": "🕒",
+        "title": "General Theft Statute Fills the Gap",
+        "body": "For everyday lost items that are not credit cards or financial property, New Mexico relies on its general theft statute. Petty theft involving property valued at $250 or less can carry fines up to $500 and up to six months in jail, which applies to someone who knowingly keeps a lost item rather than returning it."
+      },
+      {
+        "icon": "🏪",
+        "title": "Local Department and Venue Policies Govern the Rest",
+        "body": "Because state law does not set a uniform turn-in procedure for phones, bags, or keys, what happens next depends on the police department, airport, transit agency, or business that recovers the item. Most keep found items for a set internal holding period before donating or disposing of them, so timing and the right point of contact matter."
+      }
+    ],
+    "whereTitle": "Where items end up in New Mexico",
+    "whereBody": "Lost items in New Mexico tend to land with whichever authority controls the location, since there is no statewide intake system. Albuquerque International Sunport and Santa Fe Municipal Airport each run their own lost and found desks, as do transit systems like ABQ RIDE and Rio Metro Regional Transit District. Venues such as Isotopes Park, Sandia Casino, and University of New Mexico facilities typically hold items briefly before handing them to campus or local police, and city police departments across Albuquerque, Santa Fe, and Las Cruces maintain their own property rooms under the state's unclaimed property statute. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove ownership. Departments typically ask for a description that includes one private detail, such as a lock screen photo, a specific mark, or the contents of a bag, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in New Mexico?",
+        "a": "No. New Mexico has no statute requiring a reward for returned property. Offering one is always your choice, and many people find items are returned without any reward at all."
+      },
+      {
+        "q": "What happens if no one claims my lost item?",
+        "a": "If police are holding it under the unclaimed property statute, they can move toward disposition once it is no longer needed as evidence. If it was cash or a financial instrument reported to the state, it may eventually be processed as unclaimed property with the Taxation and Revenue Department instead."
+      },
+      {
+        "q": "Can I be in legal trouble for keeping something I found?",
+        "a": "Potentially, yes. Knowingly keeping a lost credit card is a specific petty misdemeanor under New Mexico law, and keeping other lost property you know belongs to someone else can fall under the general theft statute depending on its value."
+      },
+      {
+        "q": "How long do New Mexico police departments hold found property?",
+        "a": "There is no single statewide number. Chapter 29 allows disposition once property is unclaimed and no longer needed as evidence, but the practical holding period is set by each department's own policy, so it is worth confirming directly with the department involved."
+      }
+    ],
+    "disclaimer": "This page provides general information about New Mexico law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "NC": {
+    "stateName": "North Carolina",
+    "updated": "July 2026",
+    "intro": [
+      "North Carolina actually writes found property procedure into its General Statutes, which puts it in a different position than states that rely only on local policy. Chapter 15, Article 2 tells a finder and a law enforcement agency what happens next: the property is logged, a notice is published, and the owner has a window to come forward before the item can be released or disposed of.",
+      "On top of that criminal procedure chapter, North Carolina also treats failing to look for an owner as a form of theft, and it runs a separate statewide system, the Unclaimed Property Act, for money and financial assets that sit dormant with banks, courts and other holders. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Found property held by law enforcement (G.S. 15-11, Chapter 15, Article 2)",
+        "body": "When a North Carolina law enforcement agency takes possession of found property, the statute requires publication of a notice to the owner. If nobody comes forward within 30 days after that publication, the agency can move toward releasing or disposing of the item, so acting fast and filing a report matters."
+      },
+      {
+        "icon": "🕒",
+        "title": "180 day hold on seized and found items (G.S. 15-12)",
+        "body": "Sheriffs and police departments in North Carolina are generally required to hold most confiscated and found property for 180 days after it comes into their custody before they can sell it or otherwise dispose of it, giving an owner a real window to claim it."
+      },
+      {
+        "icon": "🚔",
+        "title": "Keeping lost property can be charged as larceny (G.S. 14-72)",
+        "body": "North Carolina law treats someone who has a reasonable way to find the owner of lost property, but makes no attempt to do so, as potentially guilty of theft. Larceny of property worth more than $1,000 is a Class H felony, and lesser amounts are prosecuted as a Class 1 misdemeanor, which is part of why turning items in to police rather than keeping them matters here."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act for money and financial assets (Chapter 116B)",
+        "body": "Separately from lost personal items, North Carolina runs a statewide unclaimed property system through the State Treasurer for things like uncashed checks, safe deposit box contents and court funds. Dormancy periods vary by property type, generally around one year for government holders and up to five years for other property, and unclaimed funds are searchable through NCCash.gov."
+      }
+    ],
+    "whereTitle": "Where items end up in North Carolina",
+    "whereBody": "Lost items in North Carolina move through a mix of city police departments, county sheriffs, transit systems and private venues, and each one follows its own intake process on top of the state framework above. Charlotte Douglas International Airport, Raleigh-Durham International Airport and Piedmont Triad International Airport all run their own lost and found desks, as do transit systems like the Charlotte Area Transit System (CATS), GoTriangle and GoRaleigh. Arenas and stadiums such as Spectrum Center, PNC Arena and Bank of America Stadium, along with university campuses, hotels and rideshare drivers, each hold onto found items under their own house policies before anything reaches a city or county department. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. North Carolina departments and venues typically ask for a description that includes a private detail, something not visible from the outside, like what is saved on the lock screen, a mark inside a bag, or a specific accessory packed with the item, before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in North Carolina?",
+        "a": "No. North Carolina law does not require a reward for the return of lost property. Offering one is always your choice, and plenty of items are returned without any reward at all."
+      },
+      {
+        "q": "How long will a North Carolina police department hold my item?",
+        "a": "Under Chapter 15, Article 2, an agency generally has to publish notice of found property, and the owner then has 30 days from that publication to claim it. Separately, G.S. 15-12 requires most seized or found property to be held for 180 days after it is taken into custody before disposal, so North Carolina gives owners more time than many states that have no statute at all."
+      },
+      {
+        "q": "What if someone finds my item and just keeps it?",
+        "a": "North Carolina treats that as a potential crime. If a finder has a reasonable way to identify and locate the owner but makes no attempt to do so, that can be charged as larceny under G.S. 14-72, a felony above $1,000 in value and a misdemeanor below it. That legal backdrop is one reason it is worth filing a report and following up with police directly."
+      },
+      {
+        "q": "Should I check NCCash.com for a lost item?",
+        "a": "NCCash.com is North Carolina's unclaimed property database, but it covers money and financial assets like uncashed checks, refunds and safe deposit box contents under Chapter 116B, not physical lost items like phones, bags or jewelry. For a physical item, your report needs to go to the local police department, transit agency or venue where it was lost, which is exactly what ReportLost handles."
+      }
+    ],
+    "disclaimer": "This page provides general information about North Carolina law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "ND": {
+    "stateName": "North Dakota",
+    "updated": "July 2026",
+    "intro": [
+      "North Dakota is unusual among the states ReportLost covers because it actually has a dedicated lost property statute on the books. North Dakota Century Code Chapter 60-01 spells out what happens when someone finds property that belongs to another person, including a specific rule about how long a law enforcement agency must hold it before the finder's claim is settled.",
+      "North Dakota also treats keeping someone else's lost property as a crime in its own right, not just a civil matter, under the state's theft code. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Lost Property Deposits (N.D.C.C. 60-01-41)",
+        "body": "North Dakota's lost property chapter sets out what happens when found property or money is placed in the custody of a law enforcement agency. If the owner does not claim it within two years, the finder's claim against the original owner is exonerated by that surrender, meaning the two year window is the benchmark departments in North Dakota generally work from."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of Lost or Mislaid Property (N.D.C.C. 12.1-23-04)",
+        "body": "North Dakota makes it a crime to retain or dispose of property that you know has been lost, mislaid, or delivered by mistake, once you know or learn who the owner is or how to find them. This is the same theft statute used for shoplifting and other property crimes, so keeping a lost phone, wallet, or bag instead of turning it in can be charged as theft, a felony if the value tops $1,000 and a lesser offense below that."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property and Escheatment (Title 47, Chapters 47-30.1 and 47-30.2)",
+        "body": "Separate from a finder picking something up off the street, North Dakota law also covers property that banks, employers, and other businesses are holding for someone who never came back for it. Most property types are presumed abandoned after two or three years, safe deposit box contents after three years, and holders must report it to the North Dakota Unclaimed Property Division, which sends notices for amounts of $25 or more before turning funds over to the state."
+      },
+      {
+        "icon": "🕒",
+        "title": "Why the timeline matters",
+        "body": "Because North Dakota actually names a two year holding period in Chapter 60-01, and a separate two to three year dormancy period for money held by businesses under Title 47-30.2, the practical answer to how long you have to claim something depends on whether a person or a department is holding it versus whether a bank or business is holding uncashed funds."
+      }
+    ],
+    "whereTitle": "Where items end up in North Dakota",
+    "whereBody": "Lost items in North Dakota tend to surface at Hector International Airport in Fargo, Bismarck Airport, and Grand Forks International Airport, along with transit systems like Fargo's MATBUS and Bis-Man Transit, university campuses such as NDSU and UND, and venues like the Fargodome, Bismarck Event Center, and the state's casinos and hotels. Local police departments also log found property under Chapter 60-01, and banks and employers escheat unclaimed funds to the state's Unclaimed Property Division. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. North Dakota departments typically ask for a description plus one detail only the true owner would know, such as a lock screen photo, a serial number, or what is inside a bag pocket, before releasing property."
+      },
+      {
+        "q": "Is a reward mandatory in North Dakota?",
+        "a": "No. Offering a reward is always your choice under North Dakota law, not a legal requirement. Some finders appreciate one, but you are never obligated to offer money to get your own property back."
+      },
+      {
+        "q": "How long will the police hold my item in North Dakota?",
+        "a": "Under N.D.C.C. 60-01-41, once found property or money is placed in a law enforcement agency's custody, the general benchmark is two years before an unclaimed item's status changes. Individual departments may have their own shorter storage practices, so check locally."
+      },
+      {
+        "q": "What happens if someone keeps my lost item instead of turning it in?",
+        "a": "North Dakota's theft statute, N.D.C.C. 12.1-23-04, makes it a crime to retain or dispose of property you know is lost or mislaid once you can identify the owner. Depending on the value, this can be charged as a felony or a misdemeanor."
+      },
+      {
+        "q": "What about cash or property that ends up with a bank or business instead of a finder?",
+        "a": "That falls under North Dakota's separate unclaimed property law. Most property is presumed abandoned after two or three years of no owner contact, and the holder must report it to the North Dakota Unclaimed Property Division, which you can search directly if a bank or employer says they escheated your funds."
+      }
+    ],
+    "disclaimer": "This page provides general information about North Dakota law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "OK": {
+    "stateName": "Oklahoma",
+    "updated": "July 2026",
+    "intro": [
+      "Oklahoma treats a lost wallet, phone, or bag differently than most states because the state actually criminalizes keeping what you find. Under 21 O.S. §1702, a person who comes into possession of lost property and fails to make a reasonable effort to locate the owner can be charged with larceny of lost property, a misdemeanor if the item is worth less than $1,000 and a felony above that. That statute gives Oklahoma finders a real incentive to turn things in, and it gives you, the owner, a state law working in your favor the moment something goes missing.",
+      "Once an item is turned in, what happens next depends on which department has it. Local police property rooms, from Oklahoma City to Tulsa to smaller municipalities, operate under their own retention rules, and separate provisions in Title 22 and Title 60 govern how sheriffs, campus police, and the state Treasurer handle property nobody claims. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Larceny of Lost Property, 21 O.S. §1702",
+        "body": "If someone finds your property and knows or can reasonably discover who owns it, but keeps it anyway without a reasonable attempt to return it, they can be prosecuted. Items under $1,000 in value make it a misdemeanor, and higher values can push the charge into felony territory with penalties reported as high as eight years. This statute is the backbone of Oklahoma's lost property law and it applies statewide, not just in one city."
+      },
+      {
+        "icon": "🚔",
+        "title": "Finder's Option to Retain or Relinquish, Title 11 §34-104G",
+        "body": "Oklahoma statute requires officers who take in found property to give the finder a choice, either they can retain a future claim to the item if it goes unclaimed, or they relinquish that claim entirely. This affects how Tulsa and other departments log found items and matters if you are trying to identify who found your property and where it went."
+      },
+      {
+        "icon": "🕒",
+        "title": "Holding periods set locally, disposal under 22 O.S. §1325",
+        "body": "There is no single statewide holding period for found property. Oklahoma City's Police Department Property Management Unit keeps unclaimed items a minimum of three months, and often longer. Other cities set their own windows under local ordinances, some as short as ten to thirty days, before property held by a sheriff's office or campus police agency can be sold, donated, or destroyed under 22 O.S. §1325."
+      },
+      {
+        "icon": "🏢",
+        "title": "Uniform Unclaimed Property Act, Title 60",
+        "body": "Cash, checks, and other financial property that go unclaimed for a statutory period end up reported to the Oklahoma State Treasurer under the Uniform Unclaimed Property Act. There is no deadline to claim property once it lands in this system, and the Treasurer maintains a free searchable database at yourmoney.ok.gov. This track is separate from physical lost items handled by police property rooms."
+      }
+    ],
+    "whereTitle": "Where items end up in Oklahoma",
+    "whereBody": "Lost items in Oklahoma tend to surface through a handful of predictable channels. Will Rogers World Airport in Oklahoma City and Tulsa International Airport both run their own lost and found desks for anything left at security, gates, or baggage claim. EMBARK in Oklahoma City and Tulsa Transit handle items left on buses and at stops, and city police property rooms, from OKC to Tulsa to Norman, are the default destination for anything turned in from a sidewalk, park, or store. Add in the usual venues, arenas, hotels, and college campuses with their own campus police, and the number of possible drop off points adds up fast. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you need to prove ownership first. Departments typically ask for a description that includes something only the real owner would know, like a serial number, a specific mark, or the contents of a bag. Once you clear that step, the property room releases the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Oklahoma?",
+        "a": "No. Oklahoma law does not require owners to pay a reward for the return of lost property. Offering one is always your choice, and plenty of items are returned with nothing more than a thank you."
+      },
+      {
+        "q": "What happens if someone keeps what they find instead of reporting it?",
+        "a": "They can be charged under 21 O.S. §1702, larceny of lost property. Value determines severity, under $1,000 is a misdemeanor, and higher amounts can be charged as a felony. Knowing this statute exists is useful leverage if you can identify who found your property."
+      },
+      {
+        "q": "How long will the police hold my item before disposing of it?",
+        "a": "It depends on the department. Oklahoma City's Property Management Unit holds items a minimum of three months and often longer, while some smaller municipalities work on shorter windows, sometimes ten to thirty days, before selling or disposing of unclaimed property under state and local rules. Check with the specific department holding your item."
+      },
+      {
+        "q": "What if my lost item was cash, a check, or another financial instrument?",
+        "a": "That falls under the Uniform Unclaimed Property Act rather than a police property room. Search the Oklahoma State Treasurer's free database at yourmoney.ok.gov, there is no deadline to claim property once it has been reported to the state."
+      }
+    ],
+    "disclaimer": "This page provides general information about Oklahoma law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "OR": {
+    "stateName": "Oregon",
+    "updated": "July 2026",
+    "intro": [
+      "Oregon is one of the few states with a detailed statute built specifically for lost property. ORS Chapter 98 spells out what a finder has to do, what happens to money or goods worth $250 or more, and how a police department or city eventually disposes of items nobody claims. That statute, plus a separate criminal law making it theft to keep something you know is lost or mislaid, shapes how lost and found actually works from Portland to Bend.",
+      "Because the state law sets a real duty to report a find and a real dollar threshold, Oregon lost and found is less about vague 'best practices' and more about following a specific process, then layering city and county policies on top of it for how long an item sits in a property room. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Finder's duty for items worth $250 or more (ORS 98.005)",
+        "body": "If someone finds money or goods valued at $250 or more and the owner is unknown, Oregon law requires the finder to give notice within 10 days of finding it, and to publish notice once a week for two consecutive weeks. This is the backbone of Oregon lost and found law and is why many local police departments, from Beaverton to Lane County, walk finders through this exact notice process."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of lost or mislaid property (ORS 164.065)",
+        "body": "Oregon treats keeping someone else's lost or mislaid property as theft if you know, or have good reason to know, it belongs to another person and you fail to take reasonable steps to return it. This is a criminal statute, not just a moral rule, which is part of why turning found items in to police or a venue is the expected practice statewide."
+      },
+      {
+        "icon": "🏢",
+        "title": "Disposition of unclaimed property (ORS 98.245)",
+        "body": "Once property found, seized, or held by a city or county goes unclaimed, ORS 98.245 governs how that agency can dispose of it, whether that means auctioning it, donating it, or otherwise closing out the file. Several Oregon cities reference this section directly in their own municipal codes for police property rooms."
+      },
+      {
+        "icon": "🕒",
+        "title": "Local holding periods before disposal",
+        "body": "Individual departments set their own timelines within the state framework. Some cities hold unclaimed property for 90 days after it is turned in, others count 60 days following the conclusion of any related criminal case, and still others require a claim within 30 days after a notice is sent. There is no single statewide number, so the clock that matters is the one set by the department actually holding your item."
+      },
+      {
+        "icon": "📮",
+        "title": "Where to start a claim",
+        "body": "Because Oregon does not run lost and found through a single statewide portal, the practical starting point is always the specific city police department, county sheriff's office, or transit and venue lost and found line that would plausibly have picked up the item, which is why local contacts matter more than a general state number."
+      }
+    ],
+    "whereTitle": "Where items end up in Oregon",
+    "whereBody": "In Portland, items go through Portland Police Bureau property units, TriMet lost and found for buses, MAX light rail and the streetcar, and Portland International Airport (PDX) lost and found. In Eugene, Lane County Sheriff's Office and Eugene Police Department handle turned in property, alongside Eugene Airport (EUG) and Lane Transit District. Salem, Bend, and other cities route items through their own police departments and city hall, plus airport counters at Eugene or Portland if travel was involved, and countless items surface at malls, stadiums, hotels, and rideshare dropoffs across the state. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "You have to show it is actually yours. Departments generally ask for a description that includes at least one private detail, like a specific mark, a passcode, or contents inside a bag, that would not be obvious to someone who only saw the item from the outside."
+      },
+      {
+        "q": "Is a reward mandatory in Oregon?",
+        "a": "No. Oregon's finder statute focuses on notice and claim procedures, not on requiring a reward. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "What happens if I find something worth $250 or more in Oregon?",
+        "a": "Under ORS 98.005, you are required to give notice within 10 days of finding it and to publish notice once a week for two consecutive weeks if the owner is unknown. Many people simply hand the item to local police, who can walk you through this process."
+      },
+      {
+        "q": "How long will a police department in Oregon hold my lost item?",
+        "a": "It depends on the department. Some cities hold property for 90 days, others count 60 days after any related criminal case ends, and some require a claim within 30 days of a notice being sent. Always confirm the specific holding period with the department that has your item."
+      },
+      {
+        "q": "Can I get in trouble for keeping something I found in Oregon?",
+        "a": "Yes. ORS 164.065 makes it theft to keep property you know or have good reason to know is lost or mislaid, without taking reasonable steps to return it. This is why prompt reporting matters, both for the owner's sake and the finder's."
+      }
+    ],
+    "disclaimer": "This page provides general information about Oregon law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "RI": {
+    "stateName": "Rhode Island",
+    "updated": "July 2026",
+    "intro": [
+      "In Rhode Island, what happens to something you lose depends on which door it walks through. Hand a wallet to a beat cop in Providence and it lands under Rhode Island General Laws Title 6, Chapter 53, which sets a fourteen day holding period starting the moment the police chief's office logs the report. Turn in money or goods and a separate statute, Title 33, Chapter 21.2, gives the finder a six month window to establish a claim before the property can be treated as abandoned. Airports, colleges, and transit agencies layer their own written policies on top of that, often with their own value thresholds and hold times, so the same lost backpack can be governed by two or three different rules depending on where it surfaces.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "🕒",
+        "title": "Fourteen day police holding period (R.I. Gen. Laws § 6-53-5)",
+        "body": "Once a police chief's office receives and logs a report of found property, the fourteen day holding clock starts running from that delivery date, not from when the item was actually found. This is the window during which an owner should come forward at the department that logged the report."
+      },
+      {
+        "icon": "⚖️",
+        "title": "Finder's claim window (R.I. Gen. Laws § 33-21.2-4)",
+        "body": "When money or goods are delivered to police, the person who found them has up to six months from the date of that report and delivery to file a claim. If nobody, including the finder, claims the property within six months, it can be disposed of under the statute."
+      },
+      {
+        "icon": "🚔",
+        "title": "Larceny and mislaid property (R.I. Gen. Laws Title 11, Chapter 41 and § 11-49-3)",
+        "body": "Rhode Island's larceny statute covers property taken or kept without the owner's consent, with penalties scaled to value, for example theft of $1,500 or less can carry up to one year imprisonment and a fine up to $500. A separate provision, § 11-49-3, makes it a crime to knowingly keep or use a credit card you know was lost, mislaid, or delivered by mistake, which is the state's clearest statement on knowingly holding onto someone else's mislaid item."
+      },
+      {
+        "icon": "🏢",
+        "title": "Local department and campus policies",
+        "body": "Agencies fill in the gaps the state statutes leave open. Rhode Island College's lost and abandoned property policy, for example, holds items worth more than $100 for a full year from the date they are delivered to the department, well beyond the fourteen day or six month statutory windows, so always check the specific policy of the department or venue holding your item."
+      },
+      {
+        "icon": "📮",
+        "title": "State Treasury unclaimed property (findrimoney.gov)",
+        "body": "Cash equivalents, safe deposit contents, and other intangible unclaimed property valued at $50 or more eventually get reported to the Rhode Island Office of the General Treasurer and can be searched or claimed through findrimoney.gov, separate from the item recovery process handled by local police."
+      }
+    ],
+    "whereTitle": "Where items end up in Rhode Island",
+    "whereBody": "Lost items in Rhode Island tend to collect at a handful of predictable spots: T.F. Green International Airport in Warwick, RIPTA buses and the Providence intermodal transit hub, the MBTA commuter rail line running between Providence and Boston, college campuses like Brown, URI, and Rhode Island College, and venues such as the Dunkin' Donuts Center and Twin River Casino. Each keeps its own lost and found desk, on its own hold schedule, before an unclaimed item is turned over to city police or, for cash and valuables, the state Treasury. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, once you prove ownership. Departments typically ask you to describe the item and confirm one private detail that would not be obvious from looking at it, such as what is saved in a phone's lock screen or a specific mark inside a bag, before releasing it to you."
+      },
+      {
+        "q": "Is a reward mandatory in Rhode Island?",
+        "a": "No. Nothing in Rhode Island's found property or larceny statutes requires a reward. Offering one is always your choice, and finders are not entitled to demand payment before returning an item."
+      },
+      {
+        "q": "How long will the police hold my lost item before it's considered abandoned?",
+        "a": "It depends on the track. Under R.I. Gen. Laws § 6-53-5, the police holding period is fourteen days from when the report was delivered to the chief's office. If money or goods were formally reported and delivered under § 33-21.2-4, the finder's claim window runs six months. Some venues, like college campuses, set their own longer holds, so always confirm with the specific department."
+      },
+      {
+        "q": "What if the person who found my item just keeps it?",
+        "a": "Rhode Island's larceny law in Title 11, Chapter 41 applies to property kept without the owner's consent, and § 11-49-3 specifically criminalizes knowingly keeping a lost or mislaid credit card. If you can identify who has your property and they refuse to return it, file a police report describing the item and the circumstances."
+      },
+      {
+        "q": "Where do I check for lost cash or valuables that were never claimed?",
+        "a": "If an item was cash, a check, or similar unclaimed property valued at $50 or more, it may eventually be reported to the Rhode Island Office of the General Treasurer. You can search or file a claim directly through findrimoney.gov."
+      }
+    ],
+    "disclaimer": "This page provides general information about Rhode Island law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "SC": {
+    "stateName": "South Carolina",
+    "updated": "July 2026",
+    "intro": [
+      "South Carolina is one of the few states that actually wrote a found property statute into its code instead of leaving the whole question to common law. Title 27, Chapter 21 tells a sheriff or police chief what to do once someone turns an item in, including a notice deadline and a claim window, so if you lost something in Charleston, Columbia, Greenville, or Myrtle Beach, there is an actual state law timeline running in the background, not just department habit.",
+      "South Carolina also runs a completely separate system, the Uniform Unclaimed Property Act, for money and financial assets like dormant bank accounts or uncashed checks, which is a different track from the wallet you dropped at a stadium or the phone left in a rideshare. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "S.C. Code Title 27, Chapter 21, found property",
+        "body": "South Carolina's found property statute requires a sheriff or chief of police who takes in found property to provide notice within fifteen days. This is a real, codified duty, not just internal department policy, which sets South Carolina apart from states that have no dedicated lost property statute at all."
+      },
+      {
+        "icon": "🕒",
+        "title": "The sixty day claim window",
+        "body": "Under the same chapter, if the property is not reclaimed within sixty days of that mailed notice, its status changes under state law. That sixty day mark is the number to watch if you are trying to get an item back from a South Carolina police department, and it lines up with what departments actually apply on the ground."
+      },
+      {
+        "icon": "🚔",
+        "title": "How departments apply it, Columbia PD example",
+        "body": "Columbia Police Department's own Evidence and Property Control policy states that found or recovered property that has not been claimed will be disposed of after sixty days at the discretion of the Evidence Supervisor, matching the state law timeline. Other departments across the state run their own evidence rooms the same way, so always confirm the specific hold period and required proof with the department that has your item."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed Property Act, Title 27, Chapter 18, a different track",
+        "body": "South Carolina's Uniform Unclaimed Property Act, administered by the State Treasurer, deals with money and financial holdings, not the phone or bag you left somewhere. Property under that Act is presumed abandoned after a set number of years and can be sold at public sale within three years of the state receiving it under Section 27-18-230. If you lost a physical item, Chapter 21 and local police property rooms are the right place to look, not the Treasurer's unclaimed funds search."
+      }
+    ],
+    "whereTitle": "Where items end up in South Carolina",
+    "whereBody": "Lost items in South Carolina move through a mix of airports, transit systems, and tourist infrastructure. Charleston International Airport, Columbia Metropolitan Airport, Greenville-Spartanburg International Airport, and Myrtle Beach International Airport each run their own lost and found desks. Transit riders deal with CARTA in Charleston, the COMET in Columbia, and Greenlink in Greenville, all separate from city police property rooms. Add in the beaches of Myrtle Beach and Hilton Head, historic sites like Fort Sumter, hotels, stadiums, and rideshare vehicles, and an item can land in several different systems depending on exactly where it was dropped. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Departments in South Carolina typically ask for a description that includes at least one private detail, like a lock screen photo, a serial number, or what is inside a bag, before they release it to you."
+      },
+      {
+        "q": "Is a reward mandatory in South Carolina?",
+        "a": "No. South Carolina law does not require a reward for returned property. Offering one is always your choice, and plenty of items get returned with a simple thank you."
+      },
+      {
+        "q": "How long will a South Carolina police department hold my found item?",
+        "a": "Under Title 27, Chapter 21, a sheriff or chief of police must give notice within fifteen days of taking in found property, and if it is not reclaimed within sixty days of that notice its status changes under the statute. Local practice, like Columbia's evidence policy, follows that same sixty day mark, but always confirm directly with the department holding your item."
+      },
+      {
+        "q": "What is the difference between lost and found property and South Carolina's Unclaimed Property Program?",
+        "a": "They are two different systems. Title 27, Chapter 21 and local police property rooms handle physical items like phones, bags, and jewelry. The Unclaimed Property Act, run by the State Treasurer, handles money and financial assets such as dormant bank accounts or uncashed checks. Searching the Treasurer's database will not help you find a lost phone or wallet."
+      },
+      {
+        "q": "What should I do first if I lost something in South Carolina?",
+        "a": "File a report with the police department covering where you lost it, and separately contact the airport, transit agency, or venue involved, since each keeps its own found property log. ReportLost files with the right ones and keeps checking on your behalf."
+      }
+    ],
+    "disclaimer": "This page provides general information about South Carolina law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities."
+  },
+  "SD": {
+    "stateName": "South Dakota",
+    "updated": "July 2026",
+    "intro": [
+      "South Dakota is one of the few states with an actual lost and found statute on the books, not just borrowed theft law. SDCL Chapter 43-41, titled Lost and Found Property, spells out what a finder is supposed to do and puts the burden on the person claiming the item to prove it is actually theirs before it gets handed back.",
+      "That second part matters more in South Dakota than in most states. A finder who knowingly keeps something they know was lost, strayed, or mislaid can be charged under SDCL 22-30A-6, theft of lost or mislaid property, so the statute gives people a real incentive to turn things in rather than pocket them. From there, how long a department holds an item before it is released, donated, or disposed of is set locally, city by city, not by one statewide clock. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Lost and Found Property, SDCL Chapter 43-41",
+        "body": "South Dakota's own lost property chapter sets the duty of a person who finds lost personal property and requires a claimant to prove ownership before the item is returned. It is a rare thing for a state to spell out this directly, and it is the backbone of how South Dakota handles turned-in property."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of Lost or Mislaid Property, SDCL 22-30A-6",
+        "body": "Anyone who comes into control of property they know to have been lost, strayed, or mislaid and keeps it instead of trying to return it can be charged with theft under this section. It applies whether the item was picked up on a sidewalk, left on a bar counter, or found in a parked car."
+      },
+      {
+        "icon": "🕒",
+        "title": "Local holding periods, city by city",
+        "body": "South Dakota does not set one statewide hold time for turned-in property. Cities set their own rules through municipal ordinance. Tea, South Dakota, for example, allows its police department to dispose of abandoned property after it has been held 30 days unclaimed. Sioux Falls, Rapid City, and other departments run on their own internal schedules, so the real answer depends on which department has your item."
+      },
+      {
+        "icon": "🏢",
+        "title": "South Dakota Unclaimed Property Act, SDCL 43-41B",
+        "body": "When lost value takes the form of dormant bank accounts, uncashed checks, or forgotten safe deposit box contents rather than a physical item handed to police, it falls under this chapter instead. Holders must mail notice for property worth fifty dollars or more, and the state treasurer's office holds the funds through cash.sd.gov until an owner or heir files a claim, with no deadline to come forward."
+      },
+      {
+        "icon": "📰",
+        "title": "Value thresholds under South Dakota theft law",
+        "body": "If a found item's value becomes a factor in a criminal case, South Dakota grades theft by dollar amount. Property worth 401 to 1,000 dollars is petty theft in the first degree, a class 1 misdemeanor, one more reason South Dakota law pushes finders toward turning items in rather than keeping them."
+      }
+    ],
+    "whereTitle": "Where items end up in South Dakota",
+    "whereBody": "Lost items in South Dakota tend to surface at a handful of predictable places. Sioux Falls Regional Airport, known locally as Joe Foss Field, and Rapid City Regional Airport both run their own lost and found desks separate from airline counters. Transit riders on Sioux Falls Transit should check with the agency directly, and anything left at Mount Rushmore, Crazy Horse Memorial, Badlands National Park, or the casinos and hotels around Deadwood usually goes to that specific site's office rather than city police. Arenas like the Denny Sanford Premier Center in Sioux Falls hold items from concerts and games separately too. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "South Dakota law puts the burden on you, the claimant, to prove ownership before an item is handed back under SDCL 43-41. Departments typically ask for a description that includes a detail only the true owner would know, like a case scratch, an inscription, or a saved photo on a phone, before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in South Dakota?",
+        "a": "No. South Dakota law does not require a reward for returned property. Offering one is always your choice, and plenty of items are turned in and returned with no reward at all."
+      },
+      {
+        "q": "What happens if I keep something I found instead of turning it in?",
+        "a": "You can be charged under SDCL 22-30A-6, theft of lost or mislaid property, if you knew the item was lost, strayed, or mislaid and kept it anyway. The safer route, and the one the statute is built around, is reporting the find to police or making a real effort to locate the owner."
+      },
+      {
+        "q": "How long will South Dakota police hold my lost item before it's disposed of?",
+        "a": "There is no single statewide number. Individual cities set their own holding periods by ordinance. Tea, South Dakota, for instance, can dispose of unclaimed abandoned property after 30 days. Larger departments in Sioux Falls or Rapid City may run different schedules, so it is worth asking the specific department holding your item."
+      },
+      {
+        "q": "What if my lost item is actually a dormant account, uncashed check, or forgotten valuables in a safe deposit box?",
+        "a": "That falls under a different law, the South Dakota Unclaimed Property Act, SDCL 43-41B. Holders must mail notice once the value reaches fifty dollars, and the state treasurer's office keeps the funds available at cash.sd.gov with no deadline for the rightful owner or their heirs to claim them."
+      }
+    ],
+    "disclaimer": "This page provides general information about South Dakota law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "TN": {
+    "stateName": "Tennessee",
+    "updated": "July 2026",
+    "intro": [
+      "Tennessee does not have one single statute that tells every finder exactly what to do with a lost wallet, phone, or bag, the way some states do. What governs a lost item in Memphis, Nashville, Knoxville, or Chattanooga is a mix of old common law duties, the state's general theft statute, and whatever policy the local police or sheriff's department has written down for its property room. Tennessee Code Section 8-8-501 gives county sheriffs authority to dispose of abandoned, stolen, or recovered property that nobody claims, and Section 39-14-103 makes knowingly keeping property that belongs to someone else a form of theft, but neither section spells out a statewide finder's process the way a dedicated lost property law would.",
+      "That gap gets filled at the city and county level. Knoxville Police, for example, publish a policy of holding found property for 90 days before the finder can even file a claim to keep it, and other Tennessee departments run their own timelines. Separately, the Tennessee Department of Treasury runs the Unclaimed Property Act for money, uncashed checks, and similar financial assets, which is a different track from a phone left in an Uber. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single statewide finder statute",
+        "body": "Tennessee relies on common law duties and department policy rather than one dedicated lost property statute. A finder who discovers a wallet, bag, or device generally has an obligation to make a reasonable effort to return it or turn it in to local police, but the specific steps and deadlines are set by the city or county, not by a uniform state code section."
+      },
+      {
+        "icon": "🚔",
+        "title": "Theft of property, T.C.A. § 39-14-103",
+        "body": "Tennessee's theft statute covers knowingly obtaining or exercising control over property that belongs to someone else with intent to deprive them of it. Courts and practitioners have applied this same theft framework to lost and mislaid property, so a finder who keeps something valuable instead of trying to return it or reporting it can face theft exposure, with classification tied to the value of the item."
+      },
+      {
+        "icon": "🏢",
+        "title": "Sheriff disposal authority, T.C.A. § 8-8-501",
+        "body": "When recovered or abandoned property is not claimed, this section authorizes the county sheriff to dispose of it. Local police departments build their own hold periods around this authority, for example Knoxville's policy holds found items for 90 days and then gives the finder 10 days to file a claim before the property can be disposed of or released, unless the true owner claims it first."
+      },
+      {
+        "icon": "🏪",
+        "title": "Tennessee Unclaimed Property Act, T.C.A. §§ 66-29-101 to 155",
+        "body": "This separate statute governs unclaimed money, uncashed checks, and similar intangible or financial property held by banks, employers, and other businesses, which gets reported to the state Treasury and searchable through ClaimItTN.gov. It is a different legal track from a lost phone or bag found in public, but Tennessee residents sometimes encounter both systems while searching for missing property."
+      }
+    ],
+    "whereTitle": "Where items end up in Tennessee",
+    "whereBody": "Lost items in Tennessee tend to funnel through a handful of predictable places. Nashville International Airport and Memphis International Airport both run their own lost and found desks, as do smaller commercial airports around the state. Local transit agencies like WeGo Public Transit in Nashville, Memphis Area Transit Authority, and Knoxville Area Transit hold items left on buses and trolleys. Large venues such as Bridgestone Arena, Nissan Stadium, the Grand Ole Opry, Broadway's honky tonk district, and Beale Street clubs collect items separately, and the Great Smoky Mountains region has its own park and visitor center lost and found points. City police property rooms in Nashville, Memphis, Knoxville, and Chattanooga are usually the final stop once a rideshare driver, a bar, or a stranger turns something in. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "You generally need to prove the item is yours before a Tennessee police property room or a business lost and found will release it. That usually means describing something specific that would not be obvious to a stranger, like a passcode, a case detail, or a private message saved on the device, along with matching identification."
+      },
+      {
+        "q": "Is a reward mandatory in Tennessee?",
+        "a": "No. Tennessee does not require owners to pay a reward to get lost property back. If you want to offer one to encourage a faster return, that is always your choice, never a legal obligation."
+      },
+      {
+        "q": "What happens if nobody claims my lost item?",
+        "a": "Local policy controls this, not a single state deadline. Under Knoxville's published policy, for instance, found property is held 90 days and then the finder has 10 days to file a claim, after which the department can dispose of it under the sheriff's disposal authority in T.C.A. § 8-8-501. Other Tennessee cities set their own timelines."
+      },
+      {
+        "q": "Can the person who found my item just keep it?",
+        "a": "Not safely. Tennessee's theft of property statute, T.C.A. § 39-14-103, has been applied to people who knowingly keep lost or mislaid property instead of trying to return it, and the classification of the offense depends on the item's value. Turning it in to local police is the finder's safest route."
+      },
+      {
+        "q": "Is this the same as unclaimed money held by the state?",
+        "a": "No. Tennessee's Unclaimed Property Act, T.C.A. §§ 66-29-101 to 155, deals with things like uncashed checks and dormant accounts held by banks and businesses, searchable through the Treasury's ClaimItTN.gov. A lost wallet, phone, or bag found in public goes through local police property rooms instead, which is the track ReportLost focuses on."
+      }
+    ],
+    "disclaimer": "This page provides general information about Tennessee law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "UT": {
+    "stateName": "Utah",
+    "updated": "July 2026",
+    "intro": [
+      "Utah is one of the few states with a real, dedicated lost and found statute. Title 77, Chapter 11D of the Utah Code, the Lost or Mislaid Property Act, spells out what a finder has to do, what a local law enforcement agency has to publish, and how long property has to sit before anyone can claim it or dispose of it. That is different from states that only rely on old common law rules, and it means a lost wallet, phone, or bag turned in to a Utah police department or sheriff's office follows a specific legal sequence rather than an informal one.",
+      "Utah also has a specific criminal statute for keeping something you know was lost or mislaid, so the law treats pocketing a found item as more than just bad manners. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Lost or Mislaid Property Act, Utah Code Title 77, Chapter 11D",
+        "body": "Utah has a statewide statute covering property that comes into the possession of a peace officer or local law enforcement agency after being found. It sets out what happens from the moment property is turned in to the point it is either claimed, released to the finder, or disposed of."
+      },
+      {
+        "icon": "🚔",
+        "title": "Finder's statement, Utah Code 77-11d-103",
+        "body": "A person who finds lost or mislaid property and delivers it to a local law enforcement agency must sign a statement on a form provided by that agency. This creates a paper trail tying the found item to the person who turned it in and the date it arrived."
+      },
+      {
+        "icon": "🕒",
+        "title": "Publication, posting and holding period, Utah Code 77-11d-105",
+        "body": "The agency has to publish and post notice of the found property, and it cannot dispose of the item until at least eight days after that publication and posting. If no owner comes forward within nine days of publication, the agency notifies the finder, who may then have a claim to the property. Some campuses and departments hold items even longer, for example University of Utah surplus holds lost property for thirty to sixty days."
+      },
+      {
+        "icon": "📰",
+        "title": "Theft of lost, mislaid, or mistakenly delivered property, Utah Code 76-6-407",
+        "body": "Utah's theft code specifically covers keeping property you know was lost, mislaid, or delivered by mistake. Holding on to a found item without making a reasonable effort to return it or turn it in can be prosecuted as theft, separate from the civil process of claiming abandoned property."
+      },
+      {
+        "icon": "🏢",
+        "title": "City ordinances mirror the state process",
+        "body": "Cities including Salt Lake City have their own municipal code sections on disposition of lost, mislaid and unclaimed property, generally following the same publication and minimum holding period set at the state level, with unclaimed items eventually released to the finder or the city."
+      }
+    ],
+    "whereTitle": "Where items end up in Utah",
+    "whereBody": "Lost items in Utah typically surface at Salt Lake City International Airport, with Utah Transit Authority buses, TRAX light rail and FrontRunner trains, at university campuses like the University of Utah and Utah State, at arenas such as the Delta Center, at ski resorts around Park City and Deer Valley, and at national parks including Zion and Arches. Local police departments and sheriff's offices, including Salt Lake City PD, Ogden PD and county sheriffs, are the ones who actually process turned in property under the state's lost property statute. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "What happens after I report a lost item to Utah police?",
+        "a": "Under Utah Code 77-11d-105, the agency that receives your found item has to publish and post notice of it. It cannot dispose of the property until at least eight days after that publication and posting, which gives you a window to come forward and claim it."
+      },
+      {
+        "q": "How long do Utah police hold found property before releasing or disposing of it?",
+        "a": "At minimum eight days after the notice is published and posted, per state law. If nobody claims the item within nine days of publication, the agency notifies the person who found it, since finders can have a claim to unclaimed property. Some holders, like university surplus departments, keep items for thirty to sixty days before final disposition."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Departments typically ask you to describe the item and confirm one detail that was not made public, such as a serial number, a specific mark, or what is stored inside a bag, before releasing it."
+      },
+      {
+        "q": "Is a reward mandatory in Utah?",
+        "a": "No. Nothing in Utah's lost property statute requires a reward. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "Is it a crime to keep something you found in Utah?",
+        "a": "Yes. Utah Code 76-6-407 makes it theft to keep property you know was lost, mislaid, or delivered to you by mistake, if you do not make a reasonable effort to return it or turn it in to law enforcement."
+      }
+    ],
+    "disclaimer": "This page provides general information about Utah law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "VT": {
+    "stateName": "Vermont",
+    "updated": "July 2026",
+    "intro": [
+      "Vermont is one of the few states with its own dedicated lost property law on the books. Title 27, Chapter 11 of the Vermont Statutes actually spells out what a finder is supposed to do: give notice, in some cases advertise the find, and let the original owner reclaim the item before it can ever be sold or kept. That is a more detailed framework than most states offer, and it exists side by side with a separate unclaimed property system run by the State Treasurer for money, accounts, and similar assets that go unclaimed for years.",
+      "In practice, what happens to your phone, wallet, backpack, or laptop after it is lost in Burlington, Montpelier, or at a ski resort in Stowe still comes down to whoever finds it and whichever local police department or business ends up holding it. Officers, transit staff, and venue lost and found offices apply their own intake and holding practices on top of the state framework. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Lost property law, 27 V.S.A. Chapter 11",
+        "body": "Vermont has a specific statute on lost property. It requires a person who finds lost property to give notice, generally to the owner if known or to local authorities, before treating the item as their own. A finder who fails to comply with the chapter can be held liable, and the original owner keeps the right to reclaim the property before any sale takes place."
+      },
+      {
+        "icon": "🚔",
+        "title": "Finder's duty to report",
+        "body": "Under Chapter 11, a finder is not free to simply keep what they pick up. The statute puts an obligation on the finder to give notice of the find, which is why police departments across Vermont, from Burlington to smaller towns like Hartford, ask finders to turn items in or report them so the rightful owner has a real chance to reclaim them."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed property, 27 V.S.A. Chapter 18",
+        "body": "Separately from lost personal items, Vermont's Unclaimed Property Chapter covers money and intangible property such as bank accounts, uncashed checks, and refunds. Property is generally presumed abandoned after a dormancy period of a few years depending on the asset type, and it is then reported to the Vermont State Treasurer, who holds it in perpetuity until the owner or heirs come forward and verify their claim."
+      },
+      {
+        "icon": "🏪",
+        "title": "Local department holding policies",
+        "body": "Individual police departments set their own practical timelines for physical lost and found items. For example, Hartford Police Department policy is to dispose of unclaimed property within thirty days unless other written arrangements are made, which shows how much day to day handling depends on the specific department holding your item rather than a single statewide clock."
+      },
+      {
+        "icon": "📮",
+        "title": "Reclaiming and verifying a claim",
+        "body": "Whether you are dealing with a police department under Chapter 11 or the State Treasurer's office under Chapter 18, the process to get property back involves proving it is yours. For unclaimed property claims through the Treasurer, Vermont requires the claimant to verify the claim, and local departments similarly expect you to describe or identify the item before releasing it."
+      }
+    ],
+    "whereTitle": "Where items end up in Vermont",
+    "whereBody": "Lost items in Vermont typically surface with local police departments in cities like Burlington, South Burlington, Montpelier, Rutland, and Hartford, or with the specific venue where they were left behind. That includes Burlington International Airport, Green Mountain Transit buses, Amtrak's Vermonter line, ski resorts and lodges around Stowe and Killington, and hotels, restaurants, and event venues across the state. Money and financial assets that go unclaimed for years instead flow to the Vermont State Treasurer's Unclaimed Property Division. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Does Vermont actually have a lost property law?",
+        "a": "Yes. Title 27, Chapter 11 of the Vermont Statutes is a dedicated lost property law. It requires finders to give notice of what they find and lets the original owner reclaim the property before it is sold, which is more specific than what many other states have on the books."
+      },
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "You still need to prove ownership. Departments and venues typically ask you to describe the item, including at least one private detail such as a case scratch, saved photo, lock screen, or serial number, before they release it, even after it has been logged in as found property."
+      },
+      {
+        "q": "Is a reward mandatory in Vermont?",
+        "a": "No. Vermont's lost property statute does not require finders to be paid a reward. Any reward is always your choice as the owner, not a legal obligation, and many people offer one simply to encourage a faster return."
+      },
+      {
+        "q": "How long will Vermont hold my lost item before it is disposed of or handed over?",
+        "a": "It depends on who is holding it. Local police departments set their own timelines, for example Hartford Police Department disposes of unclaimed property after thirty days absent other arrangements, while unclaimed money and similar assets are not treated as abandoned until a multi year dormancy period passes and are then sent to the State Treasurer, who holds them indefinitely for the owner."
+      },
+      {
+        "q": "What is the difference between lost property and Vermont's unclaimed property program?",
+        "a": "Lost property under Chapter 11 covers physical items someone finds, like a phone or bag, and is generally handled by local police or the venue involved. Vermont's unclaimed property program under Chapter 18 is a separate system run by the State Treasurer for money and financial assets such as old bank accounts or uncashed checks that a business or institution has lost contact with you about."
+      }
+    ],
+    "disclaimer": "This page provides general information about Vermont law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "VA": {
+    "stateName": "Virginia",
+    "updated": "July 2026",
+    "intro": [
+      "Virginia does not have one single law titled \"lost property\" the way some states do. Instead, what happens to something you lose in Virginia depends on who ends up holding it. A city or county police department follows one statute, Virginia State Police follows a separate exemption written just for them, a college or university follows a different rule again, and money or financial assets fall under the Virginia Disposition of Unclaimed Property Act, which is administered by the state treasury and is really built for old bank accounts and uncashed checks, not your phone or backpack. Layered under all of that is Virginia's common law of finders and its larceny statute, which decides whether keeping something you found was legal or a crime.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single statewide finders statute",
+        "body": "Virginia has never passed one general law spelling out what a finder must do with lost personal property. Instead, separate Code sections cover separate holders, cities and counties, state police, and public colleges, each with its own hold periods and disposal rules. Common law fills the gaps, and courts generally still expect a finder to make reasonable efforts to locate the true owner before treating an item as their own."
+      },
+      {
+        "icon": "🏢",
+        "title": "Localities hold and eventually sell unclaimed property, Va. Code 15.2-1719",
+        "body": "When a city or county police department ends up holding property that is never claimed, the locality can sell it. Once the sale happens, the clock is limited, no claim, suit, or proceeding to recover the funds or the property can be brought more than three years from the date of that sale, so waiting too long to check back with a department can close the door for good."
+      },
+      {
+        "icon": "🚔",
+        "title": "State Police follow their own rule, Va. Code 52-11.4",
+        "body": "Property that ends up in the hands of the Virginia State Police is handled under a separate section that specifically exempts State Police from the general Disposition of Unclaimed Property Act. In practice this means the agency that recovered your item, a local department versus State Police, can matter for how and when it is disposed of if unclaimed."
+      },
+      {
+        "icon": "🏪",
+        "title": "Colleges and universities, Va. Code 23.1-104",
+        "body": "If your item is found on a Virginia college or university campus, a different section applies. The institution must hold lost or abandoned property for at least 120 days before selling it, and if it is sold, the net proceeds must then be held for at least 90 more days so the rightful owner still has a window to come forward and claim the value."
+      },
+      {
+        "icon": "🚨",
+        "title": "Keeping a lost item can be larceny",
+        "body": "Virginia criminal law does not treat finding something as a free pass to keep it. Petit larceny is a Class 1 misdemeanor, punishable by up to twelve months in jail and a fine of up to $2,500, and knowingly holding onto property you know belongs to someone else, or receiving goods you know were stolen under Va. Code 18.2-108, can expose a finder to prosecution rather than ownership."
+      }
+    ],
+    "whereTitle": "Where items end up in Virginia",
+    "whereBody": "Lost items in Virginia typically surface through local police non emergency lines and property and evidence units like Virginia Beach's, through Washington Dulles International, Reagan National, Richmond International, and Norfolk International airports, through transit systems including WMATA Metro and Metrobus in Northern Virginia, VRE commuter rail, and GRTC in Richmond, and through venue lost and found desks at stadiums, beaches, and amusement areas along the coast. Add in the university system, from UVA to Virginia Tech to William & Mary, each running its own 120 day hold under state law, and you have a genuinely fragmented landscape. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you have to prove it is yours. Most Virginia departments and campus offices ask for a description that matches details not visible in a photo, things like a serial number, a case scratch, or what is saved inside a bag or wallet, before releasing the item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Virginia?",
+        "a": "No. Virginia law does not require anyone who finds or returns your property to be paid a reward. Offering one is entirely your choice, and many people who found an item are simply glad to see it get back to its owner without any payment at all."
+      },
+      {
+        "q": "Do I legally have to turn in something I find in Virginia?",
+        "a": "Virginia does not have one blanket statute forcing every finder to hand items to police, but courts have long expected finders to make a reasonable effort to locate the owner, and deliberately keeping something you know is not yours can amount to larceny under Virginia's criminal code."
+      },
+      {
+        "q": "How long will a Virginia police department hold my lost item?",
+        "a": "It depends on the department and the value of the item, since Virginia sets rules by holder rather than by one statewide timeline. For property a locality ends up selling because it was never claimed, the law gives you up to three years after the sale date to bring a claim for the proceeds, so check with the specific department that recovered your item."
+      },
+      {
+        "q": "What happens to something I lose on a Virginia college campus?",
+        "a": "Public colleges and universities in Virginia must hold lost or abandoned property for at least 120 days before selling it, and if it is sold, the proceeds must be kept for at least 90 more days, giving you a real window to reclaim either the item or its value through the school's own office."
+      }
+    ],
+    "disclaimer": "This page provides general information about Virginia law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "WV": {
+    "stateName": "West Virginia",
+    "updated": "July 2026",
+    "intro": [
+      "West Virginia does not have a single statute that spells out what a finder must do with a lost wallet, phone, or bag, the way some states do. Instead, what happens to your lost property here depends on a mix of common law finder duties, West Virginia's larceny statute, the Uniform Unclaimed Property Act found in Chapter 36, Article 8 of the state code, and the individual policies of the police department, airport, or venue that ends up holding the item.",
+      "In practice, most found items in West Virginia go to the nearest police department, transit office, or venue lost and found, where they sit locally for a period set by that department. Money and certain property that a business or agency cannot return can eventually be reported to the West Virginia State Treasurer's Office under the state's unclaimed property law. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "No single lost property statute, common law and the Unclaimed Property Act apply",
+        "body": "West Virginia has not enacted a dedicated lost and found statute that tells a finder exactly how long to hold an item or when to turn it over. Instead, common law duties to make reasonable efforts to locate an owner apply, and the Uniform Unclaimed Property Act, West Virginia Code Chapter 36, Article 8, governs what happens once property or money is reported as unclaimed to the state."
+      },
+      {
+        "icon": "🚔",
+        "title": "Police departments must report unclaimed property to the State Treasurer",
+        "body": "State, county, and municipal law enforcement agencies in West Virginia are required by law to file an unclaimed property report with the West Virginia State Treasurer's Office when property they are holding, including recovered stolen or found items, goes unclaimed, rather than keeping it indefinitely at the department."
+      },
+      {
+        "icon": "🕒",
+        "title": "Dormancy periods before property is treated as abandoned",
+        "body": "Under West Virginia Code Section 36-8-2, most property categories are presumed abandoned three years after the owner's right to demand it arises, and holders must file their annual report of property valued at fifty dollars or more before November 1 each year. Property from a safe deposit box cannot be turned over to the state until 120 days after that report is filed, which gives owners a window to reclaim items before they move further into the unclaimed property system."
+      },
+      {
+        "icon": "🏢",
+        "title": "No deadline to claim property once it reaches the Treasurer's Office",
+        "body": "Once property is reported and held by the West Virginia State Treasurer's Office, there is no time limit for the original owner to file a claim, the office holds unclaimed property in a custodial capacity until the rightful owner or heir comes forward."
+      },
+      {
+        "icon": "📰",
+        "title": "Keeping a found item can trigger West Virginia's larceny law",
+        "body": "West Virginia Code Section 61-3-13 makes simple larceny of goods valued at $1,000 or more a felony, grand larceny. Someone who finds property, identifies the owner, and knowingly keeps it anyway can face exposure under this statute or its lesser degree for lower value items, which is one reason most departments and venues push found items into a formal lost and found process rather than letting a finder simply keep them."
+      }
+    ],
+    "whereTitle": "Where items end up in West Virginia",
+    "whereBody": "Lost items in West Virginia typically surface at the state's airports, including Yeager Airport in Charleston, Tri-State Airport in Huntington, and North Central West Virginia Airport near Clarksburg and Morgantown, or with transit systems like the Kanawha Valley Regional Transportation Authority in Charleston and Mountain Line Transit Authority in Morgantown. Sports and event venues such as the WVU Coliseum, Milan Puskar Stadium, and the Charleston Coliseum and Convention Center run their own lost and found desks, and items left at state parks, casinos, and hotels around the Greenbrier and other resort areas usually stay with on site security first. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you will need to prove it is yours. Departments and venues in West Virginia typically ask for a description plus one private detail, such as what is saved in a bag pocket or a lock screen wallpaper, before releasing an item to a claimant."
+      },
+      {
+        "q": "Is a reward mandatory in West Virginia?",
+        "a": "No, West Virginia law does not require a reward for returning lost property. Offering one is always your choice, and many people recover their items with no reward involved at all."
+      },
+      {
+        "q": "What happens if no one claims my lost item?",
+        "a": "Local departments and venues generally hold items for their own set period before disposing of them, while money or property that reaches a state agency or business as unclaimed property follows West Virginia Code Chapter 36, with most categories presumed abandoned after three years and then reported to the State Treasurer's Office."
+      },
+      {
+        "q": "Does West Virginia have a specific lost property law like some other states?",
+        "a": "Not a dedicated one. West Virginia relies on common law finder principles, its larceny statute for cases of intentional retention, and the Uniform Unclaimed Property Act for money and property that ends up escheating to the state, rather than a single lost and found code section."
+      },
+      {
+        "q": "What if I find something and just keep it instead of reporting it?",
+        "a": "That can expose you to liability under West Virginia's larceny statute, Section 61-3-13, which treats knowingly keeping property worth $1,000 or more from its rightful owner as grand larceny, a felony, with lower value cases handled as a lesser offense."
+      }
+    ],
+    "disclaimer": "This page provides general information about West Virginia law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "WI": {
+    "stateName": "Wisconsin",
+    "updated": "July 2026",
+    "intro": [
+      "Wisconsin's found property law traces back to territorial days and still runs on the same basic structure: Chapter 170 of the Wisconsin Statutes tells a finder what to do with lost goods, a local police department holds the item and waits for the owner to step forward, and a separate state system run by the Department of Revenue handles unclaimed money and financial property that was never physically \"found\" at all. Wisconsin also backs this up with a theft statute that applies to people who knowingly keep lost items instead of trying to return them.",
+      "ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Wisconsin's Found Property Law (Wis. Stat. ch. 170, §§170.07-170.12)",
+        "body": "Wisconsin has a real statewide statute for found property, not just local policy. A finder of lost goods worth $100 or more is required to give written notice of the found item to local law enforcement, with limited exceptions carved out under sections 170.105 and 170.12."
+      },
+      {
+        "icon": "🕒",
+        "title": "The 90 day claim window",
+        "body": "Local departments applying Chapter 170, including county sheriffs, hold found property for 90 days after notice is given. If the rightful owner appears within that window and proves their right to the item, it goes back to them. If nobody claims it in time, the finder can become entitled to it."
+      },
+      {
+        "icon": "🚔",
+        "title": "Police custody in practice",
+        "body": "Once an item is turned in, it sits with the police department or sheriff's office that received the notice, not with the person who found it, until the 90 day period runs or an owner shows up with proof of ownership."
+      },
+      {
+        "icon": "🔄",
+        "title": "Theft of lost property (Wis. Stat. §943.20)",
+        "body": "Knowingly keeping someone else's lost property instead of reporting it can be prosecuted as theft under Wisconsin's general theft statute. It is a Class A misdemeanor when the property is worth $2,500 or less, with higher classifications as the value climbs above $2,500 and $5,000."
+      },
+      {
+        "icon": "🏢",
+        "title": "Unclaimed financial property (Wis. Stat. ch. 177, DOR custody)",
+        "body": "Money, stock and safe deposit box contents are handled differently than a found phone or bag. Wisconsin businesses must turn these over to the Department of Revenue after one to five years of inactivity, and the state then holds them indefinitely with no deadline for the owner to come forward and claim them."
+      }
+    ],
+    "whereTitle": "Where items end up in Wisconsin",
+    "whereBody": "Lost items in Wisconsin move through a mix of city police departments, county sheriffs, transit lost and found desks, and venue security offices. Milwaukee Mitchell International Airport and Dane County Regional Airport in Madison run their own lost and found processes, as do transit systems like the Milwaukee County Transit System and Madison Metro Transit. Sports and event venues such as Lambeau Field, American Family Field and Fiserv Forum also log found items separately from local police under Chapter 170. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, but you need to prove it is yours. Wisconsin's found property process under Chapter 170 requires the finder to notify police, and the department releases the item to whoever can establish their right to it, so be ready to describe a private detail, like a passcode, an inscription, or what's inside a bag, that only the true owner would know."
+      },
+      {
+        "q": "Is a reward mandatory in Wisconsin?",
+        "a": "No. Wisconsin law does not require owners to pay a reward to get their property back. Offering one is always your choice, not a legal obligation."
+      },
+      {
+        "q": "How long do Wisconsin police hold found property before it's released or disposed of?",
+        "a": "Under Chapter 170, once a finder gives written notice of found goods worth $100 or more, the item is typically held for 90 days so the owner has a chance to come forward and claim it."
+      },
+      {
+        "q": "What if the person who found my item never reports it?",
+        "a": "Wisconsin law expects finders of goods worth $100 or more to give written notice to police. Someone who knowingly keeps lost property without doing this can be charged under the state's theft statute, Wis. Stat. §943.20, which is why filing a report with the local department matters even if you don't know who has your item."
+      },
+      {
+        "q": "My lost item might be tied to money or a financial account instead of a physical object. Where does that go?",
+        "a": "Wisconsin routes unclaimed money, stock and safe deposit box contents through the Department of Revenue rather than local police. These funds are held indefinitely once reported, so there is no deadline to search for and claim them."
+      }
+    ],
+    "disclaimer": "This page provides general information about Wisconsin law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
+  },
+  "WY": {
+    "stateName": "Wyoming",
+    "updated": "July 2026",
+    "intro": [
+      "Wyoming does not have one statewide law that tells finders exactly what to do with a lost wallet, phone, or bag. Unlike the roughly twenty states that have enacted dedicated lost and found statutes, Wyoming leaves most of that ground to common law, its theft statute, and whatever policy the local police department or city has adopted. Knowingly keeping something you know belongs to someone else can still expose you to a theft charge under Wyo. Stat. § 6-3-402, but there is no single Title 34 section that spells out a turn-in duty or a statewide holding period for personal property found on the street or in a business.",
+      "What exists instead is a patchwork. Some cities, like Cody, have codified a holding period in their municipal code for lost or abandoned property that ends up in city possession. Other departments, like Casper Police, publish their own found property policy with their own minimum listing period before items go to auction or disposal. Wyoming's separate Uniform Unclaimed Property Act, run through the State Treasurer's office, mainly handles abandoned financial property such as uncashed checks and forgotten accounts, not the phone you left at a Jackson Hole restaurant or the backpack left behind at a Yellowstone trailhead. ReportLost works inside this framework: we file reports with the right local departments, alert the places you visited, and your report keeps searching for a match during your entire search period."
+    ],
+    "law": [
+      {
+        "icon": "⚖️",
+        "title": "Theft statute covers knowingly keeping lost property (Wyo. Stat. § 6-3-402)",
+        "body": "Wyoming's general theft statute makes it a crime to knowingly take, obtain, retain, or exercise control over property that belongs to someone else without authorization. Wyoming courts and prosecutors can apply this to a finder who knows an item is not theirs and decides to keep it rather than try to locate the owner or turn it in, even though there is no separate lost property statute spelling out the finder's duty step by step."
+      },
+      {
+        "icon": "🏢",
+        "title": "No dedicated statewide lost and found statute",
+        "body": "Wyoming is among the states without its own lost and found law comparable to what some other states have enacted. There is no single section of Title 34 that requires a finder to report a found wallet or bag to police, publish a notice, or wait a fixed number of days before treating unclaimed lost property as their own. In practice this means common law principles, the theft statute, and local rules fill the gap."
+      },
+      {
+        "icon": "🚔",
+        "title": "Local police departments and city ordinances set their own rules",
+        "body": "Because state law is silent, individual departments and cities decide how long they hold found property before disposing of it. Casper Police, for example, keep listed found items for a minimum period before releasing them for auction or disposal. Cody's municipal code separately provides that abandoned, lost, stolen, or unclaimed property in the city's possession for 90 days without a claim can be disposed of. Other Wyoming cities, including Cheyenne, Jackson, and Laramie, run their own property and evidence units with their own intake and hold procedures, so the exact timeline depends entirely on which department is holding your item."
+      },
+      {
+        "icon": "📮",
+        "title": "Unclaimed property law is a separate track for financial property",
+        "body": "Wyoming's Uniform Unclaimed Property Act, administered by the State Treasurer's office, requires holders of abandoned financial property, such as uncashed checks, dormant accounts, or credit memos, to send due diligence notices for amounts of $50 or more and file an annual report by November 1. This statute governs money and intangible property held by businesses and institutions, not personal items like keys, luggage, or electronics lost in public and found by another person, so it runs on a completely different track from everyday lost and found cases."
+      }
+    ],
+    "whereTitle": "Where items end up in Wyoming",
+    "whereBody": "Wyoming's biggest lost and found flows run through its airports, including Jackson Hole Airport, Cheyenne Regional Airport, Casper-Natrona County International Airport, and Gillette-Campbell County Airport, along with the visitor centers and ranger stations at Yellowstone and Grand Teton National Parks, which see enormous numbers of items left on shuttles, trails, and in lodges each season. City police departments in Cheyenne, Casper, Jackson, and Laramie each run their own property and evidence units, and venues like the University of Wyoming, ski resorts such as Jackson Hole Mountain Resort, and casinos and hotels across the state keep their own found item logs. ReportLost routes your report to the right ones for your city, and the city pages below give you the exact local contacts.",
+    "faq": [
+      {
+        "q": "Do I get my item back if someone turned it in?",
+        "a": "Yes, if you can prove it is yours. Most Wyoming departments and venues ask for a description plus one private verification detail, such as a passcode, a specific photo stored on the device, or the serial number, before releasing an item to you."
+      },
+      {
+        "q": "Is a reward mandatory in Wyoming?",
+        "a": "No. Wyoming has no statute requiring a reward for returned property. Offering one is always your choice, and many people recover items with no reward at all through the police department, airport, or venue that has it."
+      },
+      {
+        "q": "How long will a Wyoming police department hold my found item before disposing of it?",
+        "a": "It depends on the department. Casper Police, for example, keep found items listed for a minimum period before releasing them for auction, and some cities like Cody codify a 90 day holding window for abandoned or unclaimed property in city custody. There is no single statewide deadline, so check with the specific department holding your item."
+      },
+      {
+        "q": "Is it illegal to keep something I found in Wyoming?",
+        "a": "It can be. Wyoming does not have a specific lost property statute, but if you knowingly keep an item you know belongs to someone else and make no reasonable effort to find or return it to the owner, that can fall under the state's general theft statute, Wyo. Stat. § 6-3-402."
+      },
+      {
+        "q": "Does Wyoming have one law that covers lost and found statewide?",
+        "a": "No. Wyoming has not enacted a dedicated lost and found statute like some other states. Instead, common law principles, the state theft statute, and individual police department or city ordinance policies fill that role, which is why procedures can differ from Cheyenne to Jackson to Casper."
+      }
+    ],
+    "disclaimer": "This page provides general information about Wyoming law as of publication and is not legal advice. Procedures vary by city and department, verify details with your local authorities."
   }
 }
