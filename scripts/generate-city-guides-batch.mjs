@@ -7,12 +7,18 @@
 //   node scripts/generate-city-guides-batch.mjs 10        → les 10 prochaines villes sans guide
 //   node scripts/generate-city-guides-batch.mjs 25        → les 25 prochaines, etc.
 //
+// 2e argument : taille du vivier de villes examinees (par population decroissante).
+// Par defaut 6000. Quand tout le top 6000 est fait, elargir :
+//   node scripts/generate-city-guides-batch.mjs 100 12000 → les 100 prochaines dans le top 12000
+//   node scripts/generate-city-guides-batch.mjs 100 20000 → etc. (plafond serveur : 50000)
+//
 // Identifiants lus dans .env.local / .env (ADMIN_USER / ADMIN_PASS).
 
 import fs from "fs";
 
 const BASE = process.env.SITE_URL || "https://reportlost.org";
 const COUNT = Math.max(1, Number(process.argv[2] || 5));
+const POOL = Math.min(50000, Math.max(100, Number(process.argv[3] || process.env.POOL || 6000)));
 const DELAY_MS = 3000; // pause entre deux villes (Serper + Anthropic)
 
 const env =
@@ -48,7 +54,7 @@ process.on("SIGINT", () => { releaseLock(); process.exit(130); });
 process.on("SIGTERM", () => { releaseLock(); process.exit(143); });
 
 // 1) Liste de travail : villes par population, sans guide existant
-const listRes = await fetch(`${BASE}/api/admin/city-guide?cities=1&limit=6000`, {
+const listRes = await fetch(`${BASE}/api/admin/city-guide?cities=1&limit=${POOL}`, {
   headers: { Authorization: AUTH },
 });
 if (!listRes.ok) {
@@ -59,11 +65,13 @@ const { cities } = await listRes.json();
 const todo = (cities || []).filter((c) => !c.guide_status).slice(0, COUNT);
 
 if (!todo.length) {
-  console.log("🎉 Aucune ville sans guide dans le top 6000 — tout est déjà généré.");
+  console.log(`🎉 Aucune ville sans guide dans le top ${POOL} — tout est déjà généré.`);
+  console.log(`👉 Pour aller plus loin, élargis le vivier :`);
+  console.log(`   node scripts/generate-city-guides-batch.mjs ${COUNT} ${POOL + 6000}`);
   process.exit(0);
 }
 
-console.log(`🏙️  ${todo.length} ville(s) à générer et publier (non vérifiées) :\n`);
+console.log(`🏙️  ${todo.length} ville(s) à générer et publier (non vérifiées), vivier : top ${POOL} :\n`);
 
 let ok = 0;
 let ko = 0;

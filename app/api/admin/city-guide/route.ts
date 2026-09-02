@@ -10,6 +10,9 @@ import { buildCityPath } from "@/lib/slugify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Le mode ?cities=1 pagine par tranches de 1000 : un pool large = beaucoup de
+// requetes Supabase enchainees, d'ou un timeout genereux.
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const sb = getSupabaseAdmin();
@@ -22,7 +25,7 @@ export async function GET(req: NextRequest) {
   // Mode "liste de travail" : villes triées par population + statut de guide
   if (citiesMode) {
     const q = (req.nextUrl.searchParams.get("q") || "").trim();
-    const limit = Math.min(10000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
+    const limit = Math.min(50000, Math.max(1, Number(req.nextUrl.searchParams.get("limit")) || 100));
 
     // Pagination (Supabase plafonne ~1000 lignes par requête)
     const cities: any[] = [];
