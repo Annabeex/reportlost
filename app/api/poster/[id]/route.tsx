@@ -117,19 +117,31 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const id = params.id;
 
+    // L'URL peut porter soit le public_id a 5 chiffres, soit l'UUID interne :
+    // l'editeur de compte rendu insere "IMAGE:/api/poster/<uuid>". Sans ce
+    // aiguillage, la requete sur public_id ne trouvait rien et le poster
+    // retombait sur "WANTED ITEM" avec un faux alias construit sur l'UUID.
+    const SELECT =
+      "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo";
+    const isPublicId = /^\d{5}$/.test(id);
+    const column = isPublicId ? "public_id" : "id";
+
     let row: any = null;
     if (url && key) {
-      const qs =
-        "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo&public_id=eq." +
-        encodeURIComponent(id) +
-        "&limit=1";
-      const r = await fetch(`${url}/rest/v1/lost_items?${qs}`, {
-        headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
-        cache: "no-store",
-      });
-      if (r.ok) row = (await r.json())?.[0] || null;
+      const fetchBy = async (col: string) => {
+        const qs = `${SELECT}&${col}=eq.${encodeURIComponent(id)}&limit=1`;
+        const r = await fetch(`${url}/rest/v1/lost_items?${qs}`, {
+          headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (!r.ok) return null;
+        return (await r.json())?.[0] || null;
+      };
+      row = await fetchBy(column);
+      // filet : si l'identifiant ne ressemblait pas a ce qu'on croyait
+      if (!row) row = await fetchBy(isPublicId ? "id" : "public_id");
     }
-    if (!row) row = { title: "Item", public_id: id };
+    if (!row) row = { title: "Item", public_id: isPublicId ? id : "" };
 
     const [{ title, colorKey, place }, f500, f600, f800] = await Promise.all([
       aiClean(row),
@@ -145,7 +157,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const where =
       `IN ${cityRaw.toUpperCase()}${state ? ` (${state})` : ""}` + (place ? ` AT ${place.toUpperCase()}` : "");
     const date = clean(row.date || "", 20);
-    const email = `item${clean(row.public_id || id, 10)}@reportlost.org`;
+    // L'alias relais n'a de sens qu'avec un public_id : jamais construit sur un UUID.
+    const publicId = String(row.public_id || (isPublicId ? id : "")).trim();
+    const email = publicId ? `item${publicId}@reportlost.org` : "support@reportlost.org";
     const photo = typeof row.object_photo === "string" && /^https?:\/\//.test(row.object_photo) ? row.object_photo : "";
 
     const titleSize = title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
