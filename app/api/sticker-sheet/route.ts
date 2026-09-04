@@ -1,4 +1,4 @@
-// app/api/qr-sheet/route.ts
+// app/api/sticker-sheet/route.ts
 // Planche A4 de stickers — design "piste B" validé : cartes blanches à coins
 // arrondis, bandeau dégradé signature (#26723e → #2ea052), QR vert foncé.
 // Les dégradés sont rendus en PNG haute résolution via sharp (SVG sans texte,
@@ -70,8 +70,33 @@ export async function GET(req: NextRequest) {
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
       `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host")}`;
-    const scanUrl = `${base}/message?case=${encodeURIComponent(public_id)}`;
-    const relayEmail = `item${public_id}@reportlost.org`;
+    // ⚠️ Le QR encode un mailto:, pas une URL de page.
+    // Historique : la version d'origine de cette planche utilisait deja un
+    // mailto. Lors de la refonte "piste B", le code de qr-sheet a ete recopie
+    // ici et a apporte avec lui `${base}/message?case=...`, une page qui
+    // n'existe pas : tous les QR generes entre-temps menaient a un 404.
+    // Le mailto n'a besoin d'aucune page, fonctionne hors ligne cote serveur,
+    // et ouvre directement la messagerie du trouveur sur la bonne adresse.
+    //
+    // Densite du code : chaque caractere ajoute au mailto densifie le QR, et un
+    // QR trop dense sur un petit sticker use devient impossible a scanner.
+    // Mesure (ECL M) : sujet seul = 37x37 modules ; sujet + corps ci-dessous =
+    // 49x49 ; corps detaille facon formulaire = 85x85, injouable.
+    // Repere : en dessous d'environ 0,40 mm par module, le scan devient fragile.
+    // Avec 49x49, le plus petit QR de la planche (moyen, porte a 22 mm) donne
+    // 0,45 mm. Ne pas rallonger ce corps sans regarder ce chiffre.
+    // ⚠️ Adresse de relais : SEUL le format XXXXX@scan.reportlost.org est route.
+    // Le webhook /api/inbound-email n'accepte que ce motif
+    // (extractPublicId : /^([0-9]{5})@scan\.reportlost\.org$/), transmet le
+    // message au proprietaire et permet la conversation dans les deux sens.
+    // Un "item#####@reportlost.org" tombe dans la branche "alias non gere" :
+    // le mail atterrit chez le support et n'atteint jamais le client.
+    const relayEmail = `${public_id}@scan.reportlost.org`;
+    const mailBody = ["Where I found it:", "When:", "How to reach me:"].join("\n");
+    const scanUrl =
+      `mailto:${relayEmail}` +
+      `?subject=${encodeURIComponent(`I found your item (ID ${public_id})`)}` +
+      `&body=${encodeURIComponent(mailBody)}`;
 
     // Assets image
     const [qrPng, bandHeader, bandSm, bandMd, bandLg, bandWide] = await Promise.all([
@@ -140,9 +165,11 @@ export async function GET(req: NextRequest) {
       card(left, top, w, h);
       img(gMd, left, top, w, 6.5);
       textCenter("IF FOUND, PLEASE SCAN", left + w / 2, top + 2, 5.8, helvB, WHITE);
-      img(qr, left + 4, top + 9.5, 19, 19);
-      text("This item is protected", left + 26.5, top + 12.5, 6.8, helvB, GREEN_DEEP);
-      text("reportlost.org", left + 26.5, top + 19, 6.4, helvB, GREEN);
+      // QR porte de 19 a 22 mm : avec le corps de message pre-rempli, 19 mm
+      // donnait 0,39 mm par module, sous le seuil de scan fiable.
+      img(qr, left + 3, top + 8, 22, 22);
+      text("This item is protected", left + 28, top + 14, 6.5, helvB, GREEN_DEEP);
+      text("reportlost.org", left + 28, top + 20.5, 6.4, helvB, GREEN);
     };
     [0, 1, 2].forEach((i) => drawMedium(12 + i * 64, 89));
 

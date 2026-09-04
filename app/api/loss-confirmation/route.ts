@@ -295,7 +295,10 @@ export async function GET(req: NextRequest) {
     field("Documents", "Report as submitted by the reporting party, together with any documents and photographs provided.");
     field(
       "Dedicated address",
-      `${relay} — active on this report since ${filedOn} and forwarding directly to the reporting party.`
+      // Adresse publique : elle arrive chez ReportLost, qui filtre puis relaie.
+      // Ne pas ecrire "forwards directly" : c'est faux et le document est
+      // destine a des assureurs.
+      `${relay} — active on this report since ${filedOn}, monitored by ReportLost.org and relayed to the reporting party.`
     );
 
     // ---- portée ----
