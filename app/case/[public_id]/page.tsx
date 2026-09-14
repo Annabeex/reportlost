@@ -23,6 +23,11 @@ export const metadata: Metadata = {
 };
 
 // ✅ imports dynamiques
+const CaseWatchStatus = nextDynamic(
+  () => import("@/components/CaseWatchStatus").then((m) => m.default || m),
+  { ssr: true }
+);
+
 const CaseFollowup = nextDynamic(
   () => import("@/components/CaseFollowup").then((m) => m.default || m),
   {
@@ -118,7 +123,7 @@ export default async function Page({
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -138,7 +143,7 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at"
           )
           .eq("public_id", num)
           .limit(1)
@@ -221,6 +226,64 @@ export default async function Page({
     : [];
   const publicId = String(data.public_id || "");
 
+  // Formule automatique (12 $) : la veille EST le produit, la page lui est donc
+  // consacrée au lieu d'afficher un compte rendu de travail humain qui n'a pas
+  // lieu sur ce plan.
+  const contributionNum = Number(data.contribution || 0);
+
+  // Le bloc de veille s'affiche sur TOUS les dossiers payants, mais seulement
+  // quand elle est réellement armée : sans passage effectué ni passage prévu,
+  // écrire « the search is running » serait faux. Les dossiers automatiques
+  // sont armés au paiement, les Active search le sont depuis l'admin.
+  const watchArmed =
+    contributionNum > 0 &&
+    (!!(data as any).last_searched_at || !!(data as any).next_search_at);
+
+  let watch: {
+    examined: number;
+    credible: number;
+    endsAt: string | null;
+    finished: boolean;
+  } | null = null;
+
+  if (watchArmed) {
+    let examined = 0;
+    let credible = 0;
+    try {
+      const [all, good] = await Promise.all([
+        supabase
+          .from("match_candidates")
+          .select("id", { count: "exact", head: true })
+          .eq("lost_item_id", String(data.id)),
+        supabase
+          .from("match_candidates")
+          .select("id", { count: "exact", head: true })
+          .eq("lost_item_id", String(data.id))
+          .neq("verdict", "no"),
+      ]);
+      examined = all.count || 0;
+      credible = good.count || 0;
+    } catch {
+      /* non bloquant : les compteurs restent à zéro */
+    }
+    // ⚠️ La fenêtre de veille court depuis la DATE DE PERTE, pas depuis le
+    // dépôt : computeNextSearch() reçoit `lossDate = row.date || row.created_at`.
+    // Afficher created_at + 180 j annoncerait une fin plus tardive que la réalité.
+    const watchStart = (data as any).date || data.created_at;
+    const windowDays = contributionNum >= 25 ? 365 : 180;
+    const endsAt = watchStart
+      ? new Date(new Date(watchStart).getTime() + windowDays * 86400000).toISOString()
+      : null;
+    watch = {
+      examined,
+      credible,
+      endsAt,
+      finished:
+        String((data as any).search_status || "") === "done" ||
+        (!!endsAt && new Date(endsAt).getTime() < Date.now()),
+    };
+  }
+
   // Sous-titre : "Item … • Location … • Date of loss …"
   const cityClean = String(data.city || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
   const subtitleParts = [
@@ -278,7 +341,11 @@ export default async function Page({
               <span className="inline-flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 <strong>
-                  {Number(data.contribution) > 0 ? "Active search" : "Free listing"}
+                  {Number(data.contribution) >= 25
+                    ? "Active search"
+                    : Number(data.contribution) > 0
+                    ? "Automatic search"
+                    : "Free listing"}
                 </strong>
                 &nbsp;active
               </span>
@@ -287,7 +354,7 @@ export default async function Page({
                   🔎 Automated web monitoring until{" "}
                   <strong>
                     {new Date(
-                      new Date(data.created_at).getTime() +
+                      new Date((data as any).date || data.created_at).getTime() +
                         (Number(data.contribution) >= 25 ? 365 : 180) * 86400000
                     ).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                   </strong>
@@ -314,6 +381,11 @@ export default async function Page({
                   reference number and the details as you declared them. Insurers ask for a
                   record of the loss, and this is yours. Keep it with your file.
                 </p>
+                <div className="mt-2 rounded-r-md border-l-[3px] border-amber-200 bg-amber-50 px-3 py-2 text-[12.8px] leading-relaxed text-amber-900">
+                  <b>It is not an official document.</b> It does not replace a police report, nor
+                  any document issued by a public authority. If an insurer or an administration
+                  asks for an official record, you need to file with the police yourself.
+                </div>
               </div>
               <a
                 href={`/api/loss-confirmation?public_id=${encodeURIComponent(
@@ -330,15 +402,20 @@ export default async function Page({
         )}
 
         {/* Planche de stickers QR : incluse à partir de l'offre Maximum (25$) */}
-        {Number(data.contribution || 0) >= 25 && (
+        {Number(data.contribution || 0) >= 12 && (
           <section className="rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-indigo-900">
-                <div className="font-semibold">🎁 Your QR sticker sheet is included with this plan</div>
+                <div className="font-semibold">🎁 Your QR sticker sheet is included with your plan</div>
                 <p className="mt-1">
                   Print it and tag your valuables: anyone who finds a tagged item can scan the code and
                   reach you instantly through our protected relay, your personal details stay private.
                 </p>
+                <div className="mt-2 rounded-r-md border-l-[3px] border-amber-200 bg-amber-50 px-3 py-2 text-[12.8px] leading-relaxed text-amber-900">
+                  <b>How to print it.</b> Use letter-size adhesive paper — self-adhesive label
+                  sheets, sold in any office supply store — then cut along the lines. Plain paper
+                  works too, with a piece of clear tape over the code.
+                </div>
               </div>
               <a
                 href={`/api/sticker-sheet?public_id=${encodeURIComponent(publicId)}`}
@@ -376,7 +453,32 @@ export default async function Page({
         )}
 
         <section className="mt-4">
-          {isEdit ? (
+          {!isEdit && watch ? (
+            <>
+              <CaseWatchStatus
+                startedAt={data.created_at}
+                lastScanAt={(data as any).last_searched_at}
+                nextScanAt={(data as any).next_search_at}
+                endsAt={watch.endsAt}
+                examined={watch.examined}
+                credible={watch.credible}
+                finished={watch.finished}
+              />
+
+              {blocks.length > 0 && (
+                <div className="mt-4">
+                  <CaseFollowup
+                    blocks={blocks}
+                    publicId={publicId}
+                    hideEditButton
+                    firstName={data.first_name || null}
+                    itemTitle={data.title || null}
+                    updatedAt={(data as any).case_followup_updated_at || null}
+                  />
+                </div>
+              )}
+            </>
+          ) : isEdit ? (
             <CaseFollowupEditor
               publicId={publicId}
               firstName={data.first_name || ""}

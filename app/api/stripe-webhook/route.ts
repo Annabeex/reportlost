@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         const byId = await supabaseAdmin
           .from("lost_items")
           .select(
-            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city"
+            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city, case_token, search_status, next_search_at"
           )
           .eq("id", idOrPublic)
           .maybeSingle();
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         const byPub = await supabaseAdmin
           .from("lost_items")
           .select(
-            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city"
+            "id, paid, payment_email_sent, contribution, email, first_name, public_id, title, date, city, case_token, search_status, next_search_at"
           )
           .eq("public_id", idOrPublic)
           .maybeSingle();
@@ -126,18 +126,37 @@ export async function POST(req: NextRequest) {
         const reportId = String(row.id);
         const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
+        // Formule automatique : la veille EST le produit vendu, elle démarre
+        // donc d'office. Les dossiers Active search gardent le déclenchement
+        // manuel depuis l'admin, volontairement.
+        const isAutoPlan = paidAmount > 0 && paidAmount < 25;
+
         // Update payment fields if needed
         try {
-          const needsUpdate =
-            !row.paid || Number(row.contribution ?? 0) !== Number(paidAmount);
-          if (needsUpdate) {
+          const patch: Record<string, any> = {};
+
+          if (!row.paid || Number(row.contribution ?? 0) !== Number(paidAmount)) {
+            patch.paid = true;
+            patch.paid_at = new Date().toISOString();
+            patch.contribution = paidAmount;
+          }
+
+          // next_search_at n'a pas de valeur par défaut, et le worker filtre sur
+          // next_search_at <= now() : tant qu'elle est NULL, le dossier n'est
+          // jamais sélectionné. On l'amorce ici pour les dossiers automatiques.
+          if (
+            isAutoPlan &&
+            !(row as any).next_search_at &&
+            (row as any).search_status !== "excluded"
+          ) {
+            patch.next_search_at = new Date().toISOString();
+            patch.search_status = "active";
+          }
+
+          if (Object.keys(patch).length) {
             const { error: upErr } = await supabaseAdmin
               .from("lost_items")
-              .update({
-                paid: true,
-                paid_at: new Date().toISOString(),
-                contribution: paidAmount,
-              })
+              .update(patch)
               .eq("id", reportId);
             if (upErr) console.error("❌ Supabase update error:", upErr);
           }
@@ -151,7 +170,16 @@ export async function POST(req: NextRequest) {
             const base = getBaseUrl(req);
             const ref5 = getReferenceCode(row.public_id, reportId);
 
-            const subject = "✅ Payment received — your report has been published";
+            const caseUrl =
+              (row as any).case_token && row.public_id
+                ? `${base}/case/${encodeURIComponent(String(row.public_id))}?t=${encodeURIComponent(
+                    String((row as any).case_token)
+                  )}`
+                : "";
+
+            const subject = isAutoPlan
+              ? "✅ Payment received — your search is running"
+              : "✅ Payment received — your report has been published";
             const text = `Hello ${row.first_name || ""},
 
 Thank you for your payment. Your lost item report has been published on reportlost.org.
@@ -203,8 +231,76 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
+            // --- Formule automatique : autre message, et surtout le lien privé
+            // vers la page de suivi, seul chemin de retour puisqu'elle est
+            // verrouillée par le case_token. ---
+            const autoText = `Hello ${row.first_name || ""},
+
+Thank you. Your Automatic search is active, and the first scan runs tonight.
+
+What this covers, for the next 6 months:
+- The web is scanned on your item's keywords: every day this first week, then weekly, then monthly. Every credible result is reviewed by a person before it reaches you.
+- Your loss report confirmation, downloadable at any time. It is not an official document and does not replace a police report.
+- Your QR sticker sheet, a PDF to print yourself on adhesive paper.
+
+${caseUrl ? `Open my case page: ${caseUrl}\n\nThis link is private and belongs to your case. Keep this email: it is the only way back to the page.\n` : ""}
+Not covered by this plan: nobody contacts a police desk, hotel or transit office on your behalf, and no notice is published on social media.
+
+Your report details:
+- Item: ${row.title || ""}
+- Date: ${row.date || ""}
+- City: ${row.city || ""}
+- Reference code: ${ref5}
+
+Thank you for using ReportLost.`;
+
+            const autoHtml = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Payment received — your search is running</p>
+  </div>
+  <div style="padding:20px;color:#111827;line-height:1.65">
+    <p style="margin:0 0 12px">Hello <b>${row.first_name || ""}</b>,</p>
+    <p style="margin:0 0 12px">Thank you. Your <b>Automatic search</b> is active, and the first scan runs tonight.</p>
+
+    <p style="margin:0 0 8px"><b>What this covers, for the next 6 months</b></p>
+    <ul style="margin:0 0 16px;padding-left:18px">
+      <li>The web is scanned on your item&rsquo;s keywords: every day this first week, then weekly, then monthly. Every credible result is reviewed by a person before it reaches you.</li>
+      <li>Your <b>loss report confirmation</b>, downloadable at any time. It is not an official document and does not replace a police report.</li>
+      <li>Your <b>QR sticker sheet</b>, a PDF to print yourself on adhesive paper.</li>
+    </ul>
+
+    ${
+      caseUrl
+        ? `<div style="margin:0 0 8px;text-align:center">
+             <a href="${caseUrl}" style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700">Open my case page</a>
+           </div>
+           <p style="margin:0 0 16px;font-size:12.5px;color:#6b7280;text-align:center">This link is private and belongs to your case. Keep this email: it is the only way back to the page.</p>`
+        : ""
+    }
+
+    <p style="margin:0 0 14px;font-size:13px;color:#6b7280"><b>Not covered by this plan:</b> nobody contacts a police desk, hotel or transit office on your behalf, and no notice is published on social media.</p>
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
+      <li><b>Item:</b> ${row.title || ""}</li>
+      <li><b>Date:</b> ${row.date || ""}</li>
+      <li><b>City:</b> ${row.city || ""}</li>
+      <li><b>Reference code:</b> ${ref5}</li>
+    </ul>
+
+    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Thank you for using ReportLost.</p>
+  </div>
+</div>`;
+
             // ✅ Envoi DIRECT via SMTP (lib/mailer) : plus d'appel HTTP interne fragile
-            const okMail = await sendMailDirect({ to: row.email, subject, text, html });
+            const okMail = await sendMailDirect({
+              to: row.email,
+              subject,
+              text: isAutoPlan ? autoText : text,
+              html: isAutoPlan ? autoHtml : html,
+            });
 
             if (!okMail) {
               console.error("❌ sendMailDirect failed for", reportId);

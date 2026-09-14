@@ -4,6 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 
 /**
  * ReportContribution.tsx — Free listing + Active search (single paid plan)
+ *
+ * La version précédente est conservée telle quelle dans
+ * components/ReportContribution.previous.tsx.bak : si celle-ci convertit moins
+ * bien, il suffit de la renommer en .tsx pour revenir en arrière.
  */
 
 type Props = {
@@ -15,31 +19,36 @@ type Props = {
   referenceCode?: string;
   /** ✅ Mode animaux perdus : Pet Priority (25$) + option gratuite */
   petMode?: boolean;
+  /**
+   * Rattrapage : n'affiche la formule automatique à 12 $ QUE si l'on arrive par
+   * le lien proposé à ceux qui ont déjà choisi l'annonce gratuite. Elle n'est
+   * jamais montrée dans le parcours normal, sinon elle cannibalise les 25 $ —
+   * face à deux prix, on cherche la permission de dépenser moins.
+   */
+  showAutoPlan?: boolean;
 };
 
 const DARK_GREEN = "#1f6b3a";
 const LIGHT_GREEN_BG = "#eaf8ef";
 const ASSET_VER = "1";
 
-// ---------------------------------------------------------------------------
-// Small green check icon for bullet points
-function BulletIcon() {
+function Check({ className = "" }: { className?: string }) {
   return (
-    <img
-      src={`/images/icons/coche.svg?v=${ASSET_VER}`}
-      alt="Check"
-      className="w-5 h-5"
-      style={{
-        filter:
-          "invert(41%) sepia(22%) saturate(1901%) hue-rotate(85deg) brightness(92%) contrast(90%)",
-      }}
-    />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M5 13l4 4L19 7" />
+    </svg>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
 export default function ReportContribution({
   amount,
   contribution,
@@ -47,6 +56,7 @@ export default function ReportContribution({
   onBack,
   onNext,
   petMode = false,
+  showAutoPlan = false,
 }: Props) {
   const effectiveAmount = useMemo(
     () =>
@@ -56,21 +66,31 @@ export default function ReportContribution({
     [amount, contribution]
   );
 
-  const PRICE = { 1: 0, 3: 25, 4: 25 } as const;
+  const PRICE = { 1: 0, 2: 12, 3: 25, 4: 25 } as const;
 
-  // Présélection : la recherche active. L'utilisateur reste libre de choisir
-  // l'annonce gratuite.
-  const [selectedPlan, setSelectedPlan] = useState<1 | 3 | 4>(petMode ? 4 : 3);
+  // Présélection : la formule payante. L'annonce gratuite reste accessible.
+  const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
+    petMode ? 4 : showAutoPlan ? 2 : 3
+  );
 
   useEffect(() => {
-    // Retour en arrière depuis le paiement : on réaffiche l'annonce gratuite
-    // si c'est ce qui avait été choisi, sinon la recherche active.
+    // Retour en arrière depuis le paiement : on réaffiche ce qui avait été
+    // choisi. L'ancienne version écrivait `effectiveAmount === 0 ? 3 : 3`, donc
+    // l'annonce gratuite était systématiquement réécrasée par la formule payante.
     if (petMode) {
       setSelectedPlan(4);
       return;
     }
-    setSelectedPlan(effectiveAmount === 0 ? 3 : 3);
-  }, [effectiveAmount, petMode]);
+    if (effectiveAmount === 12) {
+      setSelectedPlan(2);
+      return;
+    }
+    if (effectiveAmount === 0) {
+      setSelectedPlan(showAutoPlan ? 2 : 1);
+      return;
+    }
+    setSelectedPlan(3);
+  }, [effectiveAmount, petMode, showAutoPlan]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -88,294 +108,374 @@ export default function ReportContribution({
     onNext();
   };
 
+  const isPaid = selectedPlan !== 1;
+  const planLabel =
+    selectedPlan === 4
+      ? "Pet Priority search"
+      : selectedPlan === 2
+      ? "Automatic search"
+      : selectedPlan === 3
+      ? "Active search"
+      : "the free listing";
+  const paidLabel = petMode ? "Pet Priority search" : "Active search";
+
   const cardClass = (active: boolean) =>
-    `rounded-2xl border overflow-hidden bg-white transition shadow-sm ${
+    `rounded-2xl border bg-white overflow-hidden shadow-sm transition cursor-pointer ${
       active
-        ? "border-green-500 ring-2 ring-green-300/70 bg-green-50"
+        ? "border-green-500 ring-[3px] ring-green-300/60 bg-green-50/40"
         : "border-green-200 hover:border-green-300"
     }`;
 
-  const selectCard = (plan: 1 | 3 | 4) => setSelectedPlan(plan);
-
-  const showPlanHeader = true;
+  // Vrai bouton radio : la carte entière reste cliquable, mais l'état est porté
+  // par un input, donc accessible au clavier et aux lecteurs d'écran.
+  const Radio = ({ plan, label }: { plan: 1 | 2 | 3 | 4; label: string }) => (
+    <input
+      type="radio"
+      name="report-plan"
+      value={plan}
+      checked={selectedPlan === plan}
+      onChange={() => setSelectedPlan(plan)}
+      aria-label={label}
+      className="h-[18px] w-[18px] flex-none accent-[#1f6b3a]"
+    />
+  );
 
   return (
     <section className="px-3 sm:px-4 md:px-6">
       <div className="max-w-3xl mx-auto">
-        {showPlanHeader && (
-          <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
-            <img
-              src={`/images/levels.svg?v=${ASSET_VER}`}
-              alt="Levels icon"
-              width={26}
-              height={26}
-              className="opacity-90"
-              style={{
-                filter:
-                  "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
-              }}
-            />
-            <h2 className="text-2xl font-bold text-gray-700 text-center">
-              How should we handle your report?
-            </h2>
-          </div>
-        )}
-
-        {/* Intro box */}
-        <div className="rounded-2xl border border-green-200 overflow-hidden mb-4 bg-white">
-          <div className="px-5 py-4 bg-white text-center">
-            {selectedPlan === 1 ? (
-              <p className="text-[15px] text-gray-700">
-                A free listing stays online and waits to be found. Nothing is sent, contacted or searched.
-              </p>
-            ) : (
-              <p className="text-[15px] text-gray-700">
-                With <b>Active search</b>, a team member files your report with the lost-property
-                service, contacts the places that may hold your item, publishes a notice, and monitors
-                the web for 12 months.
-              </p>
-            )}
-          </div>
+        <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
+          <img
+            src={`/images/levels.svg?v=${ASSET_VER}`}
+            alt=""
+            width={26}
+            height={26}
+            className="opacity-90"
+            style={{
+              filter:
+                "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
+            }}
+          />
+          <h2 className="text-2xl font-bold text-gray-700 text-center">
+            How should we handle your report?
+          </h2>
         </div>
 
-        {(
-          <div className="grid gap-4">
-            {/* Plan 4 — Pet Priority (25$) — uniquement en mode animaux */}
-            {petMode && (
-              <div className={cardClass(selectedPlan === 4)} onClick={() => selectCard(4)}>
-                <div
-                  className="flex items-center gap-3 px-5 py-3"
-                  style={{ backgroundColor: LIGHT_GREEN_BG }}
-                >
-                  <span className="text-xl">🐾</span>
-                  <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: DARK_GREEN }}>
-                    Pet Priority search
-                    <span className="text-xs font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
-                      ⚡ Priority handling
-                    </span>
-                  </h3>
-                </div>
+        {/* Intro contextuelle */}
+        <div className="rounded-2xl border border-green-200 bg-white px-5 py-4 text-center mb-3">
+          {selectedPlan === 1 ? (
+            <p className="text-[15px] text-gray-700">
+              A free listing stays online and waits to be found. Nothing is sent, contacted or searched.
+            </p>
+          ) : selectedPlan === 2 ? (
+            <p className="text-[15px] text-gray-700">
+              With <b>Automatic search</b>, no one contacts anyone on your behalf, but the web is
+              scanned on your keywords for six months and you keep your documents.
+            </p>
+          ) : (
+            <p className="text-[15px] text-gray-700">
+              With <b>{paidLabel}</b>, a team member files your report with the lost-property
+              service, contacts the places that may hold your item, publishes a notice, and monitors
+              the web for 12 months.
+            </p>
+          )}
+        </div>
 
-                <div className="px-5 py-4">
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <BulletIcon />
-                      <span className="text-gray-800">
-                        Your case is treated as <strong>time-critical</strong>: our team contacts the local animal
-                        shelters, animal control and rescue services (and the police where appropriate), the same day
-                        whenever possible.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <BulletIcon />
-                      <span className="text-gray-800">
-                        A dedicated visual is published on local social channels, <strong>including private lost pet
-                        groups our team is a member of</strong>. Your report stays active for <strong>12 months</strong>,
-                        searching for a match the whole time, with a protected relay email address.
-                      </span>
-                    </li>
-                  </ul>
+        {/* Ancrage : déplacer la question du prix vers ce qui décide réellement
+            d'une restitution. Aucun chiffre inventé, aucune comparaison douteuse. */}
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-3.5 mb-4">
+          <p className="text-[13.5px] leading-relaxed text-gray-700">
+            Getting something back is rarely about luck. It is about reaching the right desk before
+            the item moves on, and being findable when someone tries to return it.{" "}
+            <b className="text-gray-900">
+              That is what the $25 pays for: the outreach, and twelve months of being findable.
+            </b>
+          </p>
+        </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-gray-700 font-medium">$25 — one-time payment</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Plan 3 — Active search (25$) — seule formule payante */}
-            {!petMode && (
-            <div className={cardClass(selectedPlan === 3)} onClick={() => selectCard(3)}>
+        <div className="grid gap-4">
+          {/* --- Pet Priority (25 $), mode animaux --- */}
+          {petMode && (
+            <div className={cardClass(selectedPlan === 4)} onClick={() => setSelectedPlan(4)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
+                <Radio plan={4} label="Pet Priority search, $25" />
+                <span className="text-xl">🐾</span>
+                <h3
+                  className="text-xl font-semibold flex flex-wrap items-center gap-2"
+                  style={{ color: DARK_GREEN }}
+                >
+                  Pet Priority search
+                  <span className="text-[11px] font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                    ⚡ Priority handling
+                  </span>
+                </h3>
+              </div>
+
+              <div className="px-5 py-4">
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      Our team contacts the local animal shelters, animal control and rescue
+                      services, and the police where appropriate.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      A dedicated visual is published on local social channels,{" "}
+                      <strong>including private lost pet groups our team belongs to</strong>. Your
+                      report stays active for <strong>12 months</strong>, with a protected relay
+                      email address.
+                    </span>
+                  </li>
+                </ul>
+
+                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
+                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
+                    $25
+                  </span>
+                  <span className="text-[13px] text-gray-600">
+                    one-time payment, no account, no subscription
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- Active search (25 $) --- */}
+          {!petMode && (
+            <div className={cardClass(selectedPlan === 3)} onClick={() => setSelectedPlan(3)}>
+              <div
+                className="flex items-center gap-3 px-5 py-3"
+                style={{ backgroundColor: LIGHT_GREEN_BG }}
+              >
+                <Radio plan={3} label="Active search, $25" />
                 <img
                   src={`/images/icons/max.svg?v=${ASSET_VER}`}
-                  alt="Active search"
+                  alt=""
                   className="w-5 h-5"
                 />
-                <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: DARK_GREEN }}>
+                <h3
+                  className="text-xl font-semibold flex flex-wrap items-center gap-2"
+                  style={{ color: DARK_GREEN }}
+                >
                   Active search
-                  <span className="text-xs font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
                     🏅 Recommended
                   </span>
                 </h3>
               </div>
 
               <div className="px-5 py-4">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {[
-                    "information.svg",
-                    "ai-search.svg",
-                    "map-us.svg",
-                    "contact.svg",
-                    "database.svg",
-                    "megaphone.svg",
-                    "phone.svg",
-                    "report.svg",
-                    "facebook.svg",
-                    "file.svg",
-                    "globalsearch.svg",
-                    "gmail.svg",
-                    "google-maps.svg",
-                    "checkplateform.svg",
-                    "locations.svg",
-                    "x.svg",
-                    "lostfoundservice.svg",
-                    "safari.png",
-                    "big-data.svg",
-                    "feedback.svg",
-                    "telegramme.svg",
-                    "tiktok.svg",
-                    "twitter.png",
-                    "yahoo.svg",
-                    "contacts.png",
-                    "localisation.svg",
-                    "mail-anonyme.svg",
-                    "manualcheck.svg",
-                    "datasearch.svg",
-                    "web.svg",
-                    "geolocalisation.svg",
-                  ].map((icon) => (
-                    <img
-                      key={icon}
-                      src={`/images/icons/level3/${icon}?v=${ASSET_VER}`}
-                      alt={icon.replace(/\.(svg|png)$/i, "")}
-                      className="w-4 h-4 object-contain"
-                    />
-                  ))}
-                </div>
-
+                {/* La bande de 32 icônes a été retirée : non légendées et minuscules,
+                    elles se lisaient comme du remplissage sur une page où l'enjeu
+                    est la confiance, et laissaient entendre des partenariats. */}
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>Your report is filed with the competent lost-property service</strong>, usually the
-                      local police department or the city lost-property office, as soon as we hold the information
-                      that service requires. Where the rules oblige the owner to file in person, we send you the
-                      exact office, link and steps.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>Your report is filed with the competent lost-property service</strong>,
+                      usually the local police department or the city lost-property office, as soon
+                      as we hold the information that service requires. Where the rules oblige the
+                      owner to file in person, we send you the exact office, link and steps.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>The places likely to hold your item are contacted</strong>, selected from where you
-                      lost it: transit operator, hotel, restaurant, venue, airport, taxi company, nearby shops and
-                      the lost-property desks around it.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>The places likely to hold your item are contacted</strong>, selected
+                      from where you lost it: transit operator, hotel, restaurant, venue, airport,
+                      taxi company, nearby shops and the lost-property desks around it.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>A visual notice is created and published</strong> on social media and in the relevant
-                      local groups, private ones included. It carries an anonymous relay address tied to your case,
-                      so finders reach you without seeing your personal email or phone number.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>A visual notice is created and published</strong> on social media and
+                      in the relevant local groups, private ones included. It carries an anonymous
+                      relay address tied to your case, so finders reach you without seeing your
+                      personal email or phone number.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>An AI search engine scans the web for 12 months</strong> on your item&rsquo;s keywords:
-                      every day for the first week, then once a week, then once a month. Every credible match is
-                      reviewed by a team member before it reaches you.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>An AI search engine scans the web for 12 months</strong> on your
+                      item&rsquo;s keywords: every day for the first week, then once a week, then
+                      once a month. Every credible match is reviewed by a team member before it
+                      reaches you.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>A loss report certificate</strong>, downloadable from your case page at any time. It
-                      records your declaration and its date. It is not an official document and does not replace a
-                      police report.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>A loss report certificate</strong>, downloadable from your case page at
+                      any time. It records your declaration and its date. It is not an official
+                      document and does not replace a police report.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      <strong>A printable sheet of QR stickers</strong> for your everyday belongings. Each code
-                      routes a finder to your anonymous relay address.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>A printable sheet of QR stickers</strong> for your everyday belongings.
+                      Each code routes a finder to your anonymous relay address.
                     </span>
                   </li>
                 </ul>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$25 — one-time payment</span>
+                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
+                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
+                    $25
+                  </span>
+                  <span className="text-[13px] text-gray-600">
+                    one-time payment, no account, no subscription
+                  </span>
+                </div>
+
+                {/* La seule objection qui compte à cet instant : « et si vous ne le
+                    retrouvez pas ? ». Trois livrables sur six sont acquis quoi
+                    qu'il arrive — on le dit, sans parler d'argent. */}
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div className="text-[12.5px] font-bold uppercase tracking-wide text-amber-800">
+                    Yours either way
+                  </div>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-amber-900">
+                    Whether or not your item turns up, you keep the loss report certificate, the QR
+                    sticker sheet, and a written record of every desk we contacted on your case.
+                  </p>
                 </div>
               </div>
             </div>
-            )}
+          )}
 
-            {/* Plan 1 — Standard */}
-            <div className={cardClass(selectedPlan === 1)} onClick={() => selectCard(1)}>
+          {/* --- Automatic search (12 $), uniquement en rattrapage --- */}
+          {showAutoPlan && !petMode && (
+            <div className={cardClass(selectedPlan === 2)} onClick={() => setSelectedPlan(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
-                <img
-                  src={`/images/icons/search.svg?v=${ASSET_VER}`}
-                  alt="Standard"
-                  className="w-5 h-5"
-                />
+                <Radio plan={2} label="Automatic search, $12" />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                  Free listing
+                  Automatic search
                 </h3>
               </div>
 
               <div className="px-5 py-4">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {["information.svg", "google.svg"].map((icon) => (
-                    <img
-                      key={icon}
-                      src={`/images/icons/level1/${icon}?v=${ASSET_VER}`}
-                      alt={icon.replace(/\.(svg|png)$/i, "")}
-                      className="w-4 h-4 object-contain"
-                    />
-                  ))}
-                </div>
-
+                <p className="mb-3 text-[13.5px] leading-relaxed text-gray-600">
+                  The automated part of our work, without the human outreach: nobody calls a police
+                  desk or a hotel for you.
+                </p>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
-                    <BulletIcon />
-                    <span className="text-gray-800">
-                      Your report is published in our public database and stays visible to finders.
-                      No outreach, no police filing, no active match search: the listing waits for
-                      someone to come across it.
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>An AI search engine scans the web for 6 months</strong> on your
+                      item&rsquo;s keywords: every day for the first week, then once a week, then
+                      once a month. Every credible match is reviewed by a team member before it
+                      reaches you.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>A loss report certificate</strong>, downloadable from your case page at
+                      any time. It records your declaration and its date. It is not an official
+                      document and does not replace a police report.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      <strong>A printable sheet of QR stickers</strong> for your everyday belongings.
+                      Each code routes a finder to your anonymous relay address.
                     </span>
                   </li>
                 </ul>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">$0 — no card required</span>
+                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
+                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
+                    $12
+                  </span>
+                  <span className="text-[13px] text-gray-600">
+                    one-time payment, no account, no subscription
+                  </span>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Footer controls */}
-            <div className="mt-2 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={onBack}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={proceed}
-                className="inline-flex items-center justify-center px-5 py-2.5 rounded-md text-white font-semibold bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449]"
-              >
-                Continue
-              </button>
+          {/* --- Annonce gratuite --- */}
+          <div className={cardClass(selectedPlan === 1)} onClick={() => setSelectedPlan(1)}>
+            <div
+              className="flex items-center gap-3 px-5 py-3"
+              style={{ backgroundColor: LIGHT_GREEN_BG }}
+            >
+              <Radio plan={1} label="Free listing, $0" />
+              <img
+                src={`/images/icons/search.svg?v=${ASSET_VER}`}
+                alt=""
+                className="w-5 h-5"
+              />
+              <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
+                Free listing
+              </h3>
             </div>
 
-            <p className="flex items-center gap-2 text-sm text-gray-600 mt-6 ml-1">
-              <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="Secure" className="w-4 h-4" />
-              One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0 certified.
-            </p>
-          </div>
-        )}
+            <div className="px-5 py-4">
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                  <span className="text-[14.5px] text-gray-800">
+                    Your report is published in our public database,{" "}
+                    <em>because every report counts</em>, and stays visible to finders. No outreach,
+                    no filing, no active match search: the listing waits for someone to come across
+                    it.
+                  </span>
+                </li>
+              </ul>
 
+              <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
+                <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
+                  $0
+                </span>
+                <span className="text-[13px] text-gray-600">no card required</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Contrôles */}
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+            >
+              Back
+            </button>
+
+            <button
+              type="button"
+              onClick={proceed}
+              className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-[#26723e] to-[#2ea052] px-5 py-2.5 font-semibold text-white hover:from-[#226638] hover:to-[#279449]"
+            >
+              {isPaid ? `Continue with ${planLabel} →` : "Continue with the free listing →"}
+            </button>
+          </div>
+
+          <p className="mt-6 ml-1 flex items-center gap-2 text-sm text-gray-600">
+            <img
+              src={`/images/icons/secure.svg?v=${ASSET_VER}`}
+              alt=""
+              className="w-4 h-4"
+            />
+            One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0
+            certified.
+          </p>
+        </div>
       </div>
     </section>
   );

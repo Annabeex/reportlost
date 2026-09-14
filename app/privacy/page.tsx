@@ -28,6 +28,8 @@ All data is provided voluntarily by users.
 
 **What appears publicly:** a published report shows the item description, category, city and date of loss. Your name, email address, phone number, postal address, date of birth and private verification detail are never published. Finders reach you through a protected relay email address, so your personal email is not exposed.
 
+A published report is a public page and can be indexed by search engines. Before publication, we automatically filter identifying numbers out of the free-text fields you wrote: email addresses, phone numbers, social security numbers, and long digit sequences such as IMEI, card or licence numbers. The nature of the item is kept, since a finder needs it to recognise what they picked up. You can ask for your report to be removed at any time by writing to support@reportlost.org from the address used to file it.
+
 ---
 
 ### 3. How We Use Your Data

@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
     // Construire l’email (reprend ton ton actuel)
     const base = getBaseUrl(req);
     const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(reportId)}`;
+    // Rattrapage : réservé à ceux qui ont déjà choisi l'annonce gratuite, donc
+    // sans effet de cannibalisation sur la formule à 25 $.
+    const autoOfferUrl = `${contributeUrl}&offer=auto`;
     const ref5 = String(row.public_id || "").trim();
 
     const subject = "Your report is published — the search hasn't started yet";
@@ -81,6 +84,9 @@ That's exactly what Active search adds, for $25 once, active for 12 months:
 - A printable sheet of QR stickers routing finders to your relay address.
 
 Activate my search: ${contributeUrl}
+
+Not ready for the full search? For $12 you can add the automated part alone: the web scanned on your keywords for six months, every credible match reviewed by a person, your loss report certificate and your printable sheet of QR stickers. No outreach, no filing.
+Add the automatic search: ${autoOfferUrl}
 
 Your report details:
 - Item: ${row.title || ""}
@@ -134,6 +140,18 @@ Either way, your free listing stays online. Thank you for using ReportLost.`;
       <li><b>City:</b> ${row.city || ""}</li>
       ${ref5 ? `<li><b>Reference code:</b> ${ref5}</li>` : ""}
     </ul>
+
+    <div style="margin:0 0 16px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:12px 14px">
+      <p style="margin:0 0 6px;font-size:13.5px;line-height:1.6;color:#374151">
+        <b>Not ready for the full search?</b> For <b>$12</b> you can add the automated part alone:
+        the web scanned on your keywords for six months with every credible match reviewed by a
+        person, your loss report certificate, and your printable sheet of QR stickers. No outreach,
+        no filing.
+      </p>
+      <a href="${autoOfferUrl}" style="font-size:13.5px;font-weight:600;color:#166534;text-decoration:underline">
+        Add the automatic search — $12 &rarr;
+      </a>
+    </div>
 
     <p style="margin:0;font-size:13px;color:#6b7280">Either way, your free listing stays online. Thank you for using ReportLost.</p>
   </div>

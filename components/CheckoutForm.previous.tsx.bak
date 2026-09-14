@@ -188,23 +188,6 @@ export default function CheckoutForm({
         <p className="mt-2 text-sm text-gray-600">
           One-time payment, never a subscription.
         </p>
-
-        {/* L'encadré n'affichait que le montant. C'est ici, carte en main, que
-            le doute revient : quatre lignes suffisent à le lever. */}
-        <hr className="my-4 border-green-200" />
-        <ul className="space-y-2 text-sm text-gray-700">
-          {[
-            'Filed with the local lost-property service',
-            'Nearby places contacted, notice published',
-            '12 months of web monitoring, human-checked',
-            'Loss certificate + QR sticker sheet',
-          ].map((line) => (
-            <li key={line} className="flex gap-2 leading-snug">
-              <span className="flex-none text-green-600">✓</span>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
       </aside>
 
       <section className="bg-white rounded-xl p-6 border">
@@ -218,51 +201,26 @@ export default function CheckoutForm({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Libellés au-dessus des champs : un placeholder disparaît dès la
-              première frappe, et l'utilisateur ne sait plus ce qu'on lui demande. */}
-          <div>
-            <label
-              htmlFor="cardholder"
-              className="mb-1.5 block text-[12.5px] font-medium text-gray-700"
-            >
-              Cardholder name
-            </label>
-            <input
-              id="cardholder"
-              value={cardholder}
-              onChange={(e) => setCardholder(e.target.value)}
-              placeholder="Name as printed on the card"
-              className="w-full rounded border p-2"
-            />
-          </div>
+          <input
+            value={cardholder}
+            onChange={(e) => setCardholder(e.target.value)}
+            placeholder="Cardholder name"
+            className="w-full border p-2 rounded"
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-medium text-gray-700">
-              Card details
-            </label>
-            {/* hidePostalCode repassé à false : aux États-Unis le code postal
-                sert à la vérification d'adresse, le masquer augmente les refus
-                bancaires et les litiges. */}
-            <div className="rounded border p-3">
-              <CardElement options={{ hidePostalCode: false }} />
-            </div>
+          <div className="border p-3 rounded">
+            <CardElement options={{ hidePostalCode: true }} />
           </div>
 
           <button
             type="submit"
             disabled={loading || !stripe}
-            className="w-full rounded bg-gradient-to-r from-[#26723e] to-[#2ea052] py-3 font-semibold text-white disabled:opacity-60"
+            className="w-full bg-green-600 text-white py-2 rounded"
           >
             {loading ? 'Processing…' : `Pay $${total.toFixed(2)} and start my search`}
           </button>
 
           {message && <p className="text-sm text-center">{message}</p>}
-
-          <p className="text-center text-[11.5px] leading-relaxed text-gray-500">
-            🔒 Your card details go straight to Stripe and never touch our servers.
-            <br />
-            No account is created, and nothing is charged again.
-          </p>
         </form>
       </section>
     </div>

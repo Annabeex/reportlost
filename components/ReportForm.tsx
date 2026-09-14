@@ -173,6 +173,9 @@ export default function ReportForm({
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
+      // Lien de rattrapage envoyé à ceux qui ont choisi l'annonce gratuite :
+      // il débloque l'affichage de la formule automatique à 12 $.
+      if (params.get("offer") === "auto") setShowAutoPlan(true);
 
       // ✅ rid : l'URL (?rid=, lien du mail) prime toujours. Le rid mémorisé en
       // localStorage n'est réutilisé que s'il a moins de 24h — au-delà, c'est un
@@ -676,6 +679,7 @@ export default function ReportForm({
   // ✅ Après paiement : écran de confirmation (plus de popup alert) qui propose
   // les coordonnées d'action (téléphone / adresse / date de naissance), demandées
   // UNIQUEMENT aux clients payants. Le webhook Stripe gère la base côté serveur.
+  const [showAutoPlan, setShowAutoPlan] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [detailsSaved, setDetailsSaved] = useState(false);
   const handleSuccessfulPayment = async () => {
@@ -874,6 +878,8 @@ setFreeEmailSent(true);
   const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
     String(formData.report_id || ""),
   )}`;
+  // Rattrapage : même parcours, mais la formule automatique à 12 $ devient visible.
+  const autoOfferUrl = `${contributeUrl}&offer=auto`;
 
   return (
     <main
@@ -942,6 +948,7 @@ setFreeEmailSent(true);
           onBack={handleBack}
           onNext={handleNext}
           petMode={petMode}
+          showAutoPlan={showAutoPlan}
         />
       )}
 
@@ -968,7 +975,7 @@ setFreeEmailSent(true);
                 </p>
               )}
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={contributeUrl}
                   className="inline-flex items-center px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 font-semibold"
@@ -982,6 +989,23 @@ setFreeEmailSent(true);
                 >
                   ← Back
                 </button>
+              </div>
+
+              {/* Rattrapage, montré seulement ici : la personne a déjà écarté les
+                  25 $, donc la formule automatique ne cannibalise plus rien. */}
+              <div className="mt-4 max-w-2xl rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <p className="text-sm leading-relaxed text-gray-700">
+                  <strong>Not ready for the full search?</strong> For <strong>$12</strong> you can
+                  still add the automated part: the web scanned on your keywords for six months with
+                  every credible match reviewed by a person, your loss report certificate, and your
+                  printable sheet of QR stickers. No outreach, no filing.
+                </p>
+                <a
+                  href={autoOfferUrl}
+                  className="mt-2 inline-block text-sm font-semibold text-green-800 underline underline-offset-2 hover:text-green-900"
+                >
+                  Add the automatic search — $12 →
+                </a>
               </div>
             </div>
           </section>
@@ -1133,7 +1157,7 @@ setFreeEmailSent(true);
                 reportId={String(formData.report_id || "")}
                 onSuccess={handleSuccessfulPayment}
                 onBack={handleBack}
-                tierLabel="Active search"
+                tierLabel={Number(formData.contribution) === 12 ? "Automatic search" : "Active search"}
                 key={`co-${formData.report_id}-${formData.contribution}`}
               />
             </Elements>
