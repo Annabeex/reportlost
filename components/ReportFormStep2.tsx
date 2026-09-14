@@ -305,7 +305,10 @@ export default function ReportFormStep2({
                 checked={confirmAll}
                 onChange={(e) => handleMasterConsent(e.target.checked)}
               />
-              <span className="text-[17px] leading-7 text-[#111827]">
+              {/* 14 px et gris : le consentement doit rester parfaitement lisible,
+                  mais en 17 px il était le plus gros texte de l'étape et se lisait
+                  comme un avertissement au moment où l'on demande un e-mail. */}
+              <span className="text-[14px] leading-6 text-gray-700">
                 I confirm I’ve read and accept the{" "}
                 <a
                   href="https://reportlost.org/terms"
@@ -324,8 +327,8 @@ export default function ReportFormStep2({
                 >
                   Privacy Policy
                 </a>
-                . I agree to be contacted and I confirm I am the owner of the item or authorized to
-                report it.
+                . I agree to be contacted about this report, and I confirm I am the owner of the
+                item or authorized to report it.
               </span>
             </label>
           </div>
