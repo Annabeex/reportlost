@@ -24,7 +24,7 @@ async function buildContext(lostItemId: string): Promise<string> {
     sb
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, circumstances, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, birth_date, private_detail, contribution, paid, search_status, last_searched_at"
+        "id, public_id, created_at, title, description, circumstances, primary_category, categories, city, state_id, date, time_slot, first_name, last_name, email, phone, address, birth_date, private_detail, contribution, paid, search_status, last_searched_at, case_token"
       )
       .eq("id", lostItemId)
       .maybeSingle(),
@@ -62,6 +62,11 @@ async function buildContext(lostItemId: string): Promise<string> {
 - Contribution : ${item.contribution ?? 0} $ — payé : ${item.paid ? "oui" : "non"}
 - Signalé le : ${fmtDate(item.created_at)} — veille : ${item.search_status || "?"} (dernier passage ${fmtDate(item.last_searched_at)})
 - Adresse relais anonyme du dossier (à donner aux établissements) : item${item.public_id || ""}@reportlost.org
+- Lien privé de la page de suivi du client (à mettre dans les mails AU CLIENT, jamais à un établissement) : ${
+    (item as any).case_token && item.public_id
+      ? `https://reportlost.org/case/${item.public_id}?t=${(item as any).case_token}`
+      : "(indisponible, ne pas inventer de lien)"
+  }
 - Détail privé vérificateur (⚠️ JAMAIS dans un mail public ni à un établissement, sert uniquement à vérifier une réclamation) : ${(item as any).private_detail || "(non renseigné)"}
 - Date de naissance (pour dépôts police uniquement) : ${(item as any).birth_date || "(non renseignée)"}
 - Adresse postale du client : ${(item as any).address || "(non renseignée)"}`);
@@ -129,6 +134,7 @@ SUBJECT: <sujet>
 <corps du mail>
 EMAIL>>>
 - RÈGLES DE TOUT BROUILLON D'EMAIL : texte brut sans AUCUN symbole markdown (pas de **, pas de #), pas de tirets de ponctuation, jamais de placeholder ([Client Name], [Phone]...). Coordonnées du client : l'email personnel du client peut être transmis UNIQUEMENT aux organismes publics (police, mairie/city hall, animal control) quand c'est utile au dossier ; pour tout établissement privé (hôtel, commerce, restaurant, transport privé...), UNIQUEMENT l'adresse relais anonyme du dossier (item<public_id>@reportlost.org, indiquée dans le contexte). Signature établissements : exactement "Anna\nReportLost.org". Pour les clients : signature "Warm regards,\nAnna\nLost Item Investigation Team\nReportLost.org".
+- TOUT mail adressé AU CLIENT se termine, juste avant la signature, par une ligne donnant le lien privé de suivi fourni dans le contexte, par exemple "You can follow every step we take on your case here: <lien>". Recopie le lien EXACTEMENT, jamais reconstruit de mémoire, et si le contexte indique qu'il est indisponible, n'écris aucune ligne de lien. Ce lien ne figure JAMAIS dans un mail à un établissement.
 - Adapte-toi aux consignes d'Anna dans le chat (ton, contenu, geste commercial...). Sois concis.
 - Rien n'est envoyé automatiquement : Anna valide toujours manuellement.
 
@@ -158,6 +164,8 @@ Next steps on our side:
 - Continue outreach to nearby businesses and high-traffic spots along the area where you may have walked.
 - Our automated monitoring keeps scanning the entire web and social networks (community groups, marketplaces, neighborhood pages) and re-checks regularly to catch any new "found <type d'objet>" post in or around <ville>.
 - I will keep following your case and notify you immediately if anything new is reported.
+
+You can follow every step we take on your case here: <lien privé de suivi, recopié depuis le contexte>
 
 Warm regards,
 Anna

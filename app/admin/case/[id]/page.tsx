@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { buildFollowupBlocks } from "@/lib/followupTemplate";
 
 type Item = {
   id: string;
@@ -35,6 +36,8 @@ type Establishment = {
   url?: string | null;
   contacted_email: boolean;
   contacted_form: boolean;
+  /** Figure dans le compte rendu remis au client. Vrai par défaut en base. */
+  in_report?: boolean;
   notes?: string | null;
 };
 
@@ -101,6 +104,8 @@ export default function CasePage() {
   const [messages, setMessages] = useState<CaseMessage[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
+  const [followupBusy, setFollowupBusy] = useState(false);
+  const [followupInfo, setFollowupInfo] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Ajout d'établissement
@@ -237,20 +242,97 @@ export default function CasePage() {
     }
   }
 
-  async function toggleEstablishment(est: Establishment, field: "contacted_email" | "contacted_form") {
-    const value = !est[field];
-    setEstablishments((prev) => prev.map((e) => (e.id === est.id ? { ...e, [field]: value } : e)));
+  // Un seul interrupteur : l'établissement figure-t-il dans le compte rendu du
+  // client. Coché par défaut ; on le décoche quand on renonce à le contacter.
+  async function toggleInReport(est: Establishment) {
+    const value = !(est.in_report ?? true);
+    setEstablishments((prev) =>
+      prev.map((e) => (e.id === est.id ? { ...e, in_report: value } : e))
+    );
     try {
       const r = await fetch("/api/admin/case-establishment", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: est.id, [field]: value }),
+        body: JSON.stringify({ id: est.id, in_report: value }),
       });
       if (!r.ok) throw new Error((await r.json())?.error || r.statusText);
     } catch (e: any) {
-      // rollback
-      setEstablishments((prev) => prev.map((x) => (x.id === est.id ? { ...x, [field]: !value } : x)));
+      setEstablishments((prev) =>
+        prev.map((x) => (x.id === est.id ? { ...x, in_report: !value } : x))
+      );
       alert(`Erreur : ${String(e?.message || e)}`);
+    }
+  }
+
+  async function renameEstablishment(est: Establishment) {
+    const next = window.prompt("Nom de l'établissement :", est.name);
+    if (next === null) return;
+    const name = next.trim();
+    if (!name || name === est.name) return;
+    const before = est.name;
+    setEstablishments((prev) => prev.map((e) => (e.id === est.id ? { ...e, name } : e)));
+    try {
+      const r = await fetch("/api/admin/case-establishment", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: est.id, name }),
+      });
+      if (!r.ok) throw new Error((await r.json())?.error || r.statusText);
+    } catch (e: any) {
+      setEstablishments((prev) =>
+        prev.map((x) => (x.id === est.id ? { ...x, name: before } : x))
+      );
+      alert(`Erreur : ${String(e?.message || e)}`);
+    }
+  }
+
+  // Publie le compte rendu lu par le client, à partir des établissements cochés.
+  // C'est l'action volontaire d'Anna : le client n'a aucun bouton de son côté.
+  async function publishFollowup() {
+    const pid = String(item?.public_id || "").trim();
+    if (!pid || followupBusy) return;
+
+    const kept = establishments.filter((e) => e.in_report ?? true);
+
+    let existing = 0;
+    try {
+      const g = await fetch(`/api/case_followup/${encodeURIComponent(pid)}?t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      const gj = await g.json();
+      existing = Array.isArray(gj?.blocks) ? gj.blocks.length : 0;
+    } catch {
+      /* si la lecture échoue on demande quand même confirmation */
+    }
+
+    const question = existing
+      ? `Un compte rendu existe déjà (${existing} sections) et sera REMPLACÉ.\n\nLe régénérer avec ${kept.length} établissement(s) retenu(s) ?`
+      : `Publier le compte rendu du client avec ${kept.length} établissement(s) retenu(s) ?`;
+    if (!window.confirm(question)) return;
+
+    setFollowupBusy(true);
+    setFollowupInfo(null);
+    try {
+      const blocks = buildFollowupBlocks({
+        publicId: pid,
+        lostId: String(item?.id || ""),
+        city: item?.city || "",
+        establishments: kept.map((e) => ({ name: e.name, notes: e.notes })),
+      });
+      const r = await fetch(`/api/case_followup/${encodeURIComponent(pid)}?t=${Date.now()}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocks }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(j?.error || r.statusText);
+      setFollowupInfo(
+        `✅ Compte rendu publié : ${blocks.length} sections, ${kept.length} établissement(s)`
+      );
+    } catch (e: any) {
+      setFollowupInfo(`⚠️ ${String(e?.message || e)}`);
+    } finally {
+      setFollowupBusy(false);
     }
   }
 
@@ -505,7 +587,13 @@ export default function CasePage() {
         </div>
 
         <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="mb-2 font-semibold">🏢 Établissements contactés ({establishments.length})</h2>
+          <h2 className="mb-2 font-semibold">
+            🏢 Établissements du dossier ({establishments.length})
+          </h2>
+          <p className="mb-2 text-xs text-gray-500">
+            Cochés, ils apparaissent dans le compte rendu du client. Décoche ceux que tu
+            renonces à contacter.
+          </p>
           <ul className="max-h-40 space-y-1 overflow-y-auto pr-1 text-sm">
             {establishments.map((est) => (
               <li key={est.id} className="flex items-center gap-3 rounded border border-gray-100 px-2 py-1">
@@ -519,26 +607,28 @@ export default function CasePage() {
                   )}
                   {est.email && <span className="text-gray-500"> · {est.email}</span>}
                 </span>
-                <label className="flex items-center gap-1 text-xs text-gray-600">
+                <label
+                  className="flex items-center gap-1 text-xs text-gray-600"
+                  title="Décoche pour le retirer du compte rendu remis au client"
+                >
                   <input
                     type="checkbox"
-                    checked={est.contacted_email}
-                    onChange={() => toggleEstablishment(est, "contacted_email")}
+                    checked={est.in_report ?? true}
+                    onChange={() => toggleInReport(est)}
                   />
-                  ✉️ mail
+                  compte rendu
                 </label>
-                <label className="flex items-center gap-1 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={est.contacted_form}
-                    onChange={() => toggleEstablishment(est, "contacted_form")}
-                  />
-                  📋 formulaire
-                </label>
+                <button
+                  onClick={() => renameEstablishment(est)}
+                  className="text-gray-400 hover:text-blue-600"
+                  title="Renommer"
+                >
+                  ✏️
+                </button>
                 <button
                   onClick={() => deleteEstablishment(est.id)}
                   className="text-gray-400 hover:text-red-600"
-                  title="Retirer"
+                  title="Retirer du dossier"
                 >
                   ✕
                 </button>
@@ -571,6 +661,34 @@ export default function CasePage() {
             >
               + Ajouter
             </button>
+          </div>
+
+          {/* Publication du compte rendu : l'action se fait ici, au moment où la
+              liste des établissements vient d'être validée, et pas côté client. */}
+          <div className="mt-3 border-t border-gray-100 pt-3">
+            <button
+              onClick={publishFollowup}
+              disabled={followupBusy || !item?.public_id}
+              className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              {followupBusy ? "Publication…" : "📋 Publier le compte rendu client"}
+            </button>
+            <p className="mt-1.5 text-xs text-gray-500">
+              Génère les sections du compte rendu avec les établissements cochés et les publie
+              sur la page /case du client. Remplace la version précédente, y compris tes
+              retouches manuelles.
+            </p>
+            {followupInfo && <p className="mt-1.5 text-sm">{followupInfo}</p>}
+            {item?.public_id && (
+              <a
+                href={`/case/${item.public_id}?edit=1`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block text-xs text-blue-600 underline"
+              >
+                Ouvrir l'éditeur du compte rendu →
+              </a>
+            )}
           </div>
         </div>
       </div>

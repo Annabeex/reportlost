@@ -82,7 +82,12 @@ export default function CaseFollowup({
   const updated = updatedAt ? new Date(updatedAt) : null;
   const nextUpdate = updated ? new Date(updated.getTime() + 14 * 86400000) : null;
 
-  // ⛔️ Pas de defaults en public : si vide, on affiche un encart d'information.
+  // Vue publique et rien à montrer : on n'affiche RIEN. L'ancien encart
+  // « No public update yet — open the admin editor » parlait à l'administratrice
+  // sur la page du client, qui voyait un message d'erreur là où il attendait son
+  // attestation et ses stickers. Ces sections-là restent affichées au-dessus.
+  if (!normalized.length && hideEditButton) return null;
+
   if (!normalized.length) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">

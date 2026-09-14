@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { id, contacted_email, contacted_form, notes } = await req.json();
+    const { id, contacted_email, contacted_form, notes, in_report, name, email, url } =
+      await req.json();
     if (!id) return NextResponse.json({ error: "id requis" }, { status: 400 });
     const sb = getSupabaseAdmin();
     if (!sb) return NextResponse.json({ error: "Supabase non configuré" }, { status: 500 });
@@ -44,6 +45,12 @@ export async function PATCH(req: NextRequest) {
     if (typeof contacted_email === "boolean") patch.contacted_email = contacted_email;
     if (typeof contacted_form === "boolean") patch.contacted_form = contacted_form;
     if (typeof notes === "string") patch.notes = notes;
+    // in_report : l'établissement figure-t-il dans le compte rendu remis au client.
+    // Coché par défaut à la création ; décoché quand Anna renonce à le contacter.
+    if (typeof in_report === "boolean") patch.in_report = in_report;
+    if (typeof name === "string" && name.trim()) patch.name = name.trim();
+    if (typeof email === "string") patch.email = email.trim() || null;
+    if (typeof url === "string") patch.url = url.trim() || null;
 
     const { error } = await sb.from("case_establishments").update(patch).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
