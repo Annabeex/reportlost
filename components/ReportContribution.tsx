@@ -97,7 +97,7 @@ export default function ReportContribution({
 
   const selectCard = (plan: 1 | 3 | 4) => setSelectedPlan(plan);
 
-  const showPlanHeader = selectedPlan !== 1;
+  const showPlanHeader = true;
 
   return (
     <section className="px-3 sm:px-4 md:px-6">
@@ -116,7 +116,7 @@ export default function ReportContribution({
               }}
             />
             <h2 className="text-2xl font-bold text-gray-700 text-center">
-              Choose your search level
+              How should we handle your report?
             </h2>
           </div>
         )}
@@ -130,7 +130,9 @@ export default function ReportContribution({
               </p>
             ) : (
               <p className="text-[15px] text-gray-700">
-                Your contribution finances the <b>verification</b>, <b>distribution</b> and <b>search</b> of your report by a team member.
+                With <b>Active search</b>, a team member files your report with the lost-property
+                service, contacts the places that may hold your item, publishes a notice, and monitors
+                the web for 12 months.
               </p>
             )}
           </div>
@@ -175,7 +177,7 @@ export default function ReportContribution({
                   </ul>
 
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-gray-700 font-medium">Search fee: $25</span>
+                    <span className="text-gray-700 font-medium">$25 — one-time payment</span>
                   </div>
                 </div>
               </div>
@@ -297,7 +299,7 @@ export default function ReportContribution({
                 </ul>
 
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">Search fee: $25</span>
+                  <span className="text-gray-700 font-medium">$25 — one-time payment</span>
                 </div>
               </div>
             </div>
@@ -343,7 +345,7 @@ export default function ReportContribution({
                 </ul>
 
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">Search fee: $0</span>
+                  <span className="text-gray-700 font-medium">$0 — no card required</span>
                 </div>
               </div>
             </div>

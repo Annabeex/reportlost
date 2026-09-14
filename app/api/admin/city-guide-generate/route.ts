@@ -66,6 +66,47 @@ const GUIDE_SCHEMA = `type CityGuide = {
   disclaimer: string;
 }`;
 
+// ---------------------------------------------------------------------------
+// Seuils : une commune de 800 habitants n'a ni aéroport ni réseau de bus, et
+// une photo générée pour elle ne ressemblera à rien de réel.
+const SMALL_TOWN_POP = 5000; // en dessous : rédaction plus courte
+const NO_PHOTO_POP = 2500;   // en dessous : pas d'image générée du tout
+
+// ---------------------------------------------------------------------------
+// Garde-fou de sortie. Une consigne dans le prompt se contourne, un contrôle
+// sur le texte produit ne se contourne pas : on relit ce que le modèle a écrit
+// avant de le publier.
+const BANNED: { re: RegExp; why: string }[] = [
+  { re: /\b(every|each)\s+(minute|second|hour)\s+counts\b/i, why: "urgence artificielle" },
+  { re: /\btime is (critical|of the essence|running out)\b/i, why: "urgence artificielle" },
+  { re: /\bthe clock is ticking\b/i, why: "urgence artificielle" },
+  { re: /\b(do ?n[o']?t wait|before it'?s too late|act (now|fast)|hurry)\b/i, why: "urgence artificielle" },
+  { re: /\bfirst\s+(24|48)\s+hours?\b[^.]{0,40}\b(critical|crucial|decisive)\b/i, why: "urgence artificielle" },
+  { re: /\b6\s*(to|or)\s*12\s*months?\b/i, why: "durée obsolète, la formule unique dure 12 mois" },
+  { re: /\b(we guarantee|guaranteed)\b/i, why: "promesse de résultat" },
+  { re: /\b(every|all)\s+(shelter|shelters|group|groups|police department|departments)\b/i, why: "absolu sur la portée" },
+  { re: /\b\d{1,3}\s?%\s+of\b/i, why: "statistique non sourcée" },
+  { re: /\b(subscription|monthly fee)\b/i, why: "vocabulaire d'abonnement" },
+];
+
+function collectStrings(v: any, out: string[] = []): string[] {
+  if (typeof v === "string") out.push(v);
+  else if (Array.isArray(v)) v.forEach((x) => collectStrings(x, out));
+  else if (v && typeof v === "object") Object.values(v).forEach((x) => collectStrings(x, out));
+  return out;
+}
+
+function auditGuide(guide: any): { phrase: string; why: string }[] {
+  const found: { phrase: string; why: string }[] = [];
+  for (const s of collectStrings(guide)) {
+    for (const b of BANNED) {
+      const m = s.match(b.re);
+      if (m) found.push({ phrase: m[0], why: b.why });
+    }
+  }
+  return found;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { city, state, autoPublish } = await req.json();
@@ -77,7 +118,7 @@ export async function POST(req: NextRequest) {
     const stateAbbr = String(state).toUpperCase();
     let { data: cityRow } = await sb
       .from("us_cities")
-      .select("id, city_ascii, state_id, state_name, image_url")
+      .select("id, city_ascii, state_id, state_name, image_url, population")
       .eq("state_id", stateAbbr)
       .ilike("city_ascii", String(city).trim())
       .maybeSingle();
@@ -85,7 +126,7 @@ export async function POST(req: NextRequest) {
     if (!cityRow) {
       const { data: fuzzyRows } = await sb
         .from("us_cities")
-        .select("id, city_ascii, state_id, state_name, image_url")
+        .select("id, city_ascii, state_id, state_name, image_url, population")
         .eq("state_id", stateAbbr)
         .ilike("city_ascii", `${String(city).trim()}%`)
         .order("population", { ascending: false })
@@ -96,6 +137,22 @@ export async function POST(req: NextRequest) {
 
     const cityName = cityRow.city_ascii;
     const stateName = cityRow.state_name || stateAbbr;
+    const population = Number((cityRow as any).population || 0);
+    const isSmallTown = population > 0 && population < SMALL_TOWN_POP;
+
+    // Une petite commune n'a ni transit, ni aéroport, ni quartiers : lui écrire
+    // une page longue oblige le modèle à meubler, et meubler c'est inventer.
+    const smallTownRule = isSmallTown
+      ? `
+
+📏 PETITE COMMUNE (${population.toLocaleString("en-US")} habitants). Écris COURT, c'est une contrainte, pas une suggestion :
+- intro : 1 seul paragraphe, 3 phrases maximum.
+- cards : 3 maximum (typiquement police, mairie ou services municipaux, animaux perdus). Pas de carte transit ni aéroport.
+- areas : 2 ou 3 zones réelles, et si tu n'en connais pas avec certitude, n'en mets aucune plutôt que d'inventer des quartiers.
+- faq : 3 questions maximum, dont celle sur l'indépendance de ReportLost.
+- Ne compense JAMAIS la petite taille par des généralités. Une page courte et vraie vaut mieux qu'une page longue et vague.`
+      : "";
+
 
     // 1) Recherches réelles
     const queries = [
@@ -125,7 +182,7 @@ export async function POST(req: NextRequest) {
       `Tu rédiges la page "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
 Tu es un EXPERT EN CONVERSION, pas un blogueur : cette page vend le service d'accompagnement de ReportLost
 (un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale, et le signalement
-reste actif en recherche de correspondances pendant 6 à 12 mois). Chaque section doit ramener vers le formulaire de signalement.
+reste actif en recherche de correspondances pendant 12 mois). Chaque section doit ramener vers le formulaire de signalement.
 
 EXEMPLES D'OBJETS : quand tu cites des objets perdus en exemple (intro, FAQ, cartes, étapes), privilégie wallet, purse, ring, bracelet, phone, cat et dog (les objets qui convertissent le mieux) ; keys, laptop, backpack ou glasses seulement de temps en temps pour varier.
 
@@ -135,12 +192,24 @@ Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost
 - h1 : orienté action et bénéfice, ex "Lost something in <ville>? Report it and get it back." (reformulé à chaque ville).
 - heroSubtitle : la promesse du service, du type "One report and we route it to the right <police locale>, the relevant lost & found offices, and active local social channels.", avec les vrais noms locaux.
 - steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Your report keeps searching for you), adaptées à la ville. L'étape 3 insiste sur la veille MAIS avec un cadrage rassurant, centré sur le signalement et non sur une "surveillance" : le signalement reste actif pendant toute la durée de la formule, la recherche automatisée continue de croiser les nouveaux posts "found", annonces et marketplaces avec la description, pour que la personne n'ait pas à vérifier elle-même chaque jour, avec alerte dès qu'un match crédible sort.
-- ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match", "for your entire search period (6 or 12 months)". INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
+- ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match", "for 12 months". La durée est de 12 mois, jamais "6 to 12 months" ni "6 or 12 months" : il n'existe plus qu'une seule formule payante. INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
 - intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
 - cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
-- midCta / finalCta : le timing est un argument mais JAMAIS anxiogène ni commercial agressif. Pas de "Don't wait!", "The clock is ticking", "before it's too late". Formule positive et rassurante, reformulée à chaque page : agir tôt améliore les chances, et une fois le signalement déposé, l'utilisateur peut souffler, l'équipe prend le relais.
+- midCta / finalCta : ton calme et rassurant. Le lecteur vient de perdre quelque chose, il est déjà inquiet : le texte doit le soulager, pas ajouter de la pression.
+
+⛔ URGENCE ARTIFICIELLE, RÈGLE DE PRINCIPE : n'écris JAMAIS, nulle part dans la page, qu'il reste peu de temps, que chaque minute ou chaque heure compte, que les premières heures sont décisives, ou que le lecteur risque de perdre son objet en attendant. Cette règle s'applique à toute la page, pas seulement aux CTA, et à toute formulation équivalente même si elle n'est pas dans la liste ci-dessous.
+Exemples interdits : "every minute counts", "time is critical", "time is of the essence", "time is running out", "the clock is ticking", "don't wait", "before it's too late", "act now", "act fast", "hurry", "the first 24/48 hours are critical/decisive/crucial".
+Ce qui est AUTORISÉ, une seule fois par page, sans point d'exclamation : constater qu'un signalement déposé tôt est traité plus tôt. Puis rassurer : une fois le signalement fait, l'équipe prend le relais et la personne n'a plus à courir après.
 - ctaLabel / finalCtaLabel : "Report my lost item →" / "Start my report →".
 - FAQ : questions locales concrètes tirées des systèmes trouvés (délais, où réclamer), formulées différemment d'une ville à l'autre. La dernière question (ReportLost est-il officiel ?) est commune, avec une réponse reformulée.
+
+Règles STRICTES d'ALIGNEMENT AVEC LES CONDITIONS GÉNÉRALES (ce que le service fait réellement) :
+- Le dépôt auprès du service d'objets trouvés compétent se fait LÀ OÙ CE SERVICE ACCEPTE un signalement par un tiers. Écris donc "we file the report where the department accepts third-party reports, and give you the exact office, link and steps where it does not". N'écris JAMAIS que ReportLost dépose systématiquement une plainte ou un rapport de police.
+- La veille dure 12 mois. Jamais d'autre durée.
+- INTERDIT : toute promesse de résultat ("we will find it", "guaranteed", "we guarantee"). Le service est une obligation de moyens.
+- INTERDIT : les absolus sur la portée ("every shelter", "all local groups", "all police departments", "everywhere", "any lost item"). Écris "the relevant shelters", "the local groups that matter", "the right department".
+- INTERDIT : toute statistique, pourcentage ou chiffre de performance ("84% of lost items are found", "most items are recovered within X days"). Nous n'en publions aucun.
+- INTERDIT : présenter une activité qui n'existe pas dans cette ville (nombre de signalements, objets récemment retrouvés sur place). Aucune donnée d'activité locale inventée.
 
 Règles STRICTES de véracité :
 - N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).
@@ -158,7 +227,7 @@ Règles de STYLE :
 - Icônes emoji + iconBg parmi : bg-blue-100, bg-yellow-100, bg-indigo-100, bg-sky-100, bg-green-100, bg-rose-100.
 - state="${stateAbbr}", citySlug="${cityName.toLowerCase()}", nearby=[].
 - disclaimer : indépendance de ReportLost vis-à-vis des entités citées.
-Réponds UNIQUEMENT avec le JSON (pas de markdown).
+Réponds UNIQUEMENT avec le JSON (pas de markdown).${smallTownRule}
 
 Schéma :
 ${GUIDE_SCHEMA}`,
@@ -198,6 +267,47 @@ ${results}`,
     }
     if (!guide) {
       return NextResponse.json({ error: "JSON invalide renvoyé par le modèle (2 tentatives) — relance cette ville", raw: raw.slice(0, 500) }, { status: 502 });
+    }
+
+    // 2bis) Audit de conformité. Si le modèle a glissé de l'urgence artificielle,
+    // une durée obsolète ou une promesse de résultat, on lui fait réécrire une
+    // fois en lui citant ses propres phrases. S'il récidive, on ne publie pas.
+    let violations = auditGuide(guide);
+    if (violations.length) {
+      console.warn(`[city-guide] ${cityName} : ${violations.length} violation(s)`, violations);
+      const list = violations.map((v) => `- "${v.phrase}" (${v.why})`).join("\n");
+      const rawFix = await callClaude(
+        `Le guide que tu viens de produire contient des formulations interdites. Réécris-le INTÉGRALEMENT en supprimant ces phrases et toute formulation équivalente, sans rien changer d'autre : mêmes contacts, mêmes liens, même structure.
+
+Phrases à supprimer :
+${list}
+
+Rappels : la veille dure 12 mois (jamais "6 to 12 months"). Aucune urgence : ni "every minute counts", ni "time is critical", ni équivalent. Aucune promesse de résultat, aucun absolu du type "every shelter" ou "all groups", aucune statistique.
+
+Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA}`,
+        `Guide à corriger :\n\n${JSON.stringify(guide)}`,
+        8000
+      );
+      const fixed = parseGuide(rawFix);
+      if (fixed) {
+        const stillBad = auditGuide(fixed);
+        if (!stillBad.length) {
+          guide = fixed;
+          violations = [];
+          console.log(`[city-guide] ${cityName} : corrigé au 2e passage`);
+        } else {
+          violations = stillBad;
+        }
+      }
+      if (violations.length) {
+        return NextResponse.json(
+          {
+            error: `Guide non conforme après correction, non publié : ${violations.map((v) => `"${v.phrase}" (${v.why})`).join(", ")}`,
+            violations,
+          },
+          { status: 422 }
+        );
+      }
     }
 
     // 3) Villes voisines réelles (liens internes) injectées programmatiquement
@@ -272,7 +382,12 @@ ${results}`,
     //    aussi une éventuelle photo Pexels ; les villes non traitées gardent Pexels.
     let imageUrl: string | null = (cityRow as any).image_url || null;
     const isPexels = !!imageUrl && imageUrl.includes("images.pexels.com");
-    if (!imageUrl || isPexels) {
+    // Sous NO_PHOTO_POP, une image générée ne ressemblera à rien de réel :
+    // mieux vaut pas d'illustration qu'une illustration inventée.
+    const skipPhoto = population > 0 && population < NO_PHOTO_POP;
+    if (skipPhoto) {
+      console.log(`[city-image] ${cityName} (${population} hab.) : pas d'image générée`);
+    } else if (!imageUrl || isPexels) {
       try {
         imageUrl = (await generateCityPhoto(sb, cityRow as any)) || imageUrl;
       } catch (e) {

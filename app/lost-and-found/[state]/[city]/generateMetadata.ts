@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 import { fromCitySlug } from "@/lib/slugify";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const CANONICAL_BASE = "https://reportlost.org";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -55,7 +56,7 @@ export async function generateMetadata({
     // ✅ STRICT match (no %...%) to avoid “New York Mills” matching “New York”
     const { data, error } = await supabase
       .from("us_cities")
-      .select("city_ascii, state_name, state_id, static_title, image_url, static_content")
+      .select("city_ascii, state_name, state_id, static_title, image_url, static_content, population")
       .eq("state_id", stateSlug.toUpperCase())
       .ilike("city_ascii", cityName) // exact (case-insensitive)
       .maybeSingle();
@@ -67,15 +68,47 @@ export async function generateMetadata({
       };
     }
 
-    const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
+    // Même garde-fou que sur la page : un static_title « Found Something in X? »
+    // cible la mauvaise intention pour une page de déclaration de perte.
+    const rawTitle = String(data.static_title || "").trim();
+    const title =
+      !rawTitle || /^found something/i.test(rawTitle)
+        ? `Lost & Found in ${data.city_ascii}, ${data.state_name}`
+        : rawTitle;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
       : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
+
+    // ====== Indexation conditionnée à la substance réelle de la page ======
+    // Une ville n'est poussée à l'index que si elle a un guide publié, ou si
+    // elle est assez grande pour mériter une page même sans guide.
+    // SÉCURITÉ : toute erreur de requête laisse la page indexable, pour qu'un
+    // incident de base ne puisse jamais désindexer le site en masse.
+    let indexable = true;
+    try {
+      const population = Number((data as any).population || 0);
+      if (population < 100000) {
+        const admin = getSupabaseAdmin({ fresh: false });
+        if (admin) {
+          const { data: g, error: gErr } = await admin
+            .from("city_guides")
+            .select("id")
+            .eq("state_id", stateSlug.toUpperCase())
+            .eq("city_slug", String(data.city_ascii || "").trim().toLowerCase())
+            .eq("status", "published")
+            .maybeSingle();
+          if (!gErr) indexable = !!g;
+        }
+      }
+    } catch {
+      indexable = true;
+    }
 
     return {
       title,
       description,
       alternates: { canonical },
+      ...(indexable ? {} : { robots: { index: false, follow: true } }),
       openGraph: {
         title,
         description,

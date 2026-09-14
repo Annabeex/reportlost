@@ -1,20 +1,89 @@
 // lib/legalHolding.ts
-// Durée de garde légale des objets trouvés par État (en jours), dérivée des
-// guides États vérifiés (lib/stateGuides.ts). 90 jours par défaut : pratique
-// la plus répandue quand l'État n'a pas de délai codifié.
-const HOLDING_DAYS: Record<string, number> = {
-  CA: 90, // Civil Code §2080.2
-  FL: 90, // Fla. Stat. ch. 705
-  AZ: 30, // ARS §12-941
-  WA: 60, // RCW 63.21
-  NY: 90, // PPL §253 : 3 mois à 3 ans selon valeur ; 90 j = plancher prudent
-  IL: 180, // 765 ILCS 1020 : 6 mois (≤100 $) à 1 an
+// Règle de garde légale des objets trouvés, par État.
+//
+// Source : les entrées ÉCRITES À LA MAIN de lib/stateGuides.ts, seules vérifiées
+// avec leurs références. Les 41 États de stateGuidesGenerated.json sont produits
+// par recherche automatique et marqués « à relire » : leurs chiffres ne sont pas
+// promus ici tant qu'ils n'ont pas été contrôlés, parce qu'une durée légale
+// fausse affichée sur des milliers de pages est pire que pas de durée du tout.
+//
+// Trois situations existent réellement, et la troisième est souvent la plus
+// utile au visiteur : savoir qu'aucun délai ne le protège change ce qu'il fait.
+export type HoldingRule = {
+  kind: "fixed" | "scaled" | "local";
+  /** Uniquement pour kind === "fixed". */
+  days?: number;
+  citation?: string;
+  /** Phrase affichable telle quelle après « In {State}, ». */
+  note: string;
+};
+
+const HOLDING: Record<string, HoldingRule> = {
+  CA: {
+    kind: "fixed",
+    days: 90,
+    citation: "California Civil Code §2080.2",
+    note: "found property must be held by law enforcement for at least 90 days before it can pass to the finder, be auctioned or disposed of.",
+  },
+  FL: {
+    kind: "fixed",
+    days: 90,
+    citation: "Florida Statutes ch. 705",
+    note: "the legal window is 90 days once the item is in law enforcement custody. Hotels, airports and theme parks set their own, often much shorter, retention policies.",
+  },
+  WA: {
+    kind: "fixed",
+    days: 60,
+    citation: "RCW 63.21",
+    note: "the owner's claim window is 60 days, shorter than in most states, and a finder must report the find within 7 days.",
+  },
+  AZ: {
+    kind: "fixed",
+    days: 30,
+    citation: "Arizona Revised Statutes §12-941",
+    note: "found property held by a public agency can change hands after just 30 days, the shortest official window of any large state.",
+  },
+  NY: {
+    kind: "scaled",
+    citation: "New York Personal Property Law §§252-253",
+    note: "the holding period scales with the item's value: the more it is worth, the longer the police must keep it. A finder must deposit an item worth $20 or more at a police station within 10 days.",
+  },
+  IL: {
+    kind: "scaled",
+    citation: "765 ILCS 1020",
+    note: "the holding period depends on value: six months for items under $100, one year above.",
+  },
+  TX: {
+    kind: "local",
+    note: "there is no statewide holding period. Each police department, transit agency and venue sets its own retention policy, commonly around 90 days but different in every city, which is why reaching the right desk early is what actually protects you.",
+  },
+  PA: {
+    kind: "local",
+    note: "there is no single statewide holding period. Each department, transit agency and venue defines its own retention and claim procedure, often a few months, never guaranteed.",
+  },
+  OH: {
+    kind: "local",
+    citation: "Ohio Revised Code §2933.41",
+    note: "police must make reasonable efforts to identify the owner, but retention periods are set locally rather than statewide.",
+  },
+  GA: {
+    kind: "local",
+    citation: "OCGA §16-8-6",
+    note: "there is no statewide clock. Retention is decided by local policy, and Atlanta's airport runs its own separate circuit.",
+  },
 };
 
 export const DEFAULT_HOLDING_DAYS = 90;
 
+/** Règle vérifiée pour cet État, ou null si nous ne l'avons pas contrôlée. */
+export function holdingRule(stateId?: string | null): HoldingRule | null {
+  return HOLDING[String(stateId || "").toUpperCase()] ?? null;
+}
+
+/** Durée en jours pour les usages internes (veille, relances). Repli prudent. */
 export function holdingDays(stateId?: string | null): number {
-  return HOLDING_DAYS[String(stateId || "").toUpperCase()] ?? DEFAULT_HOLDING_DAYS;
+  const r = HOLDING[String(stateId || "").toUpperCase()];
+  return r?.kind === "fixed" && r.days ? r.days : DEFAULT_HOLDING_DAYS;
 }
 
 export function legalDeadline(foundAt: string | Date, stateId?: string | null): string {

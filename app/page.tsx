@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Workflow, ShieldCheck, Target } from 'lucide-react';
 import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
+import states from '@/lib/states';
 
 // --- IMPORTANT: carte interactive chargée à la demande, pas au-dessus du fold
 const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
@@ -117,6 +118,26 @@ function LazyInteractiveMap() {
       ) : (
         <UsaMap />
       )}
+
+      {/* La carte navigue par onClick + router.push : aucun <a href>, donc
+          invisible pour Google et inutilisable au clavier. Cette liste donne
+          aux 51 pages États de vrais liens explorables. */}
+      <nav aria-label="Lost and found by state" className="mt-4">
+        <h2 className="text-sm font-semibold text-gray-700 mb-2">Lost &amp; found by state</h2>
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] leading-5">
+          {states.map((s: { name: string; code: string }) => (
+            <li key={s.code}>
+              <Link
+                href={`/lost-and-found/${s.code.toLowerCase()}`}
+                prefetch={false}
+                className="text-blue-700 hover:underline"
+              >
+                {s.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
 }

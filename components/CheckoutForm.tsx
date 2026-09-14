@@ -27,7 +27,7 @@ export default function CheckoutForm({
   reportId,
   onSuccess,
   onBack,
-  tierLabel = 'Standard search',
+  tierLabel = 'Active search',
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
@@ -181,7 +181,7 @@ export default function CheckoutForm({
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8">
       <aside className="bg-[#eaf8ef] rounded-xl p-6 border border-green-200">
-        <p className="text-sm text-[#1f6b3a] mb-2">Your contribution</p>
+        <p className="text-sm text-[#1f6b3a] mb-2">{tierLabel}</p>
         <div className="text-4xl font-bold text-[#1f6b3a]">
           ${total.toFixed(2)}
         </div>
@@ -217,7 +217,7 @@ export default function CheckoutForm({
             disabled={loading || !stripe}
             className="w-full bg-green-600 text-white py-2 rounded"
           >
-            {loading ? 'Processing…' : 'Confirm contribution'}
+            {loading ? 'Processing…' : `Pay $${total.toFixed(2)} and start my search`}
           </button>
 
           {message && <p className="text-sm text-center">{message}</p>}

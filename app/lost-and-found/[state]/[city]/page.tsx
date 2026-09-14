@@ -6,8 +6,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 
-import { exampleReports } from "@/lib/lostitems";
 import { getNearbyCities } from "@/lib/getNearbyCities";
+import { holdingRule } from "@/lib/legalHolding";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import CityMapSection from "@/components/CityMapSection";
 import { CityGuideTitle, CityGuideExtra } from "@/components/CityGuide";
@@ -196,9 +196,17 @@ export default async function Page({ params }: { params: { state: string; city: 
       }
     });
 
-    const title = cityData.static_title || `Lost something in ${cityData.city_ascii}?`;
+    // Certains static_title en base ciblent l'objet TROUVÉ (« Found Something
+    // in X? ») alors que la page sert à déclarer une PERTE. On les remplace
+    // pour coller à l'intention de recherche dominante.
+    const rawTitle = String(cityData.static_title || "").trim();
+    const title =
+      !rawTitle || /^found something/i.test(rawTitle)
+        ? `Lost something in ${cityData.city_ascii}?`
+        : rawTitle;
     const text = cityData.static_content || "";
     const today = formatDate(new Date());
+    let guideUpdatedAt: string | null = null;
 
     // ====== Page enrichie dédiée à New York City ======
     // (n'affecte AUCUNE autre ville : contenu générique conservé partout ailleurs)
@@ -228,12 +236,13 @@ export default async function Page({ params }: { params: { state: string; city: 
         if (adminGuide) {
           const { data: g } = await adminGuide
             .from("city_guides")
-            .select("guide")
+            .select("guide, updated_at")
             .eq("state_id", stateAbbr)
             .eq("city_slug", String(cityData.city_ascii || "").trim().toLowerCase())
             .eq("status", "published")
             .maybeSingle();
           dbGuide = (g?.guide as CityGuideType) || null;
+          guideUpdatedAt = (g?.updated_at as string) || null;
         }
       } catch {
         dbGuide = null;
@@ -278,16 +287,77 @@ export default async function Page({ params }: { params: { state: string; city: 
     }
     // ===========================================================================
 
-    // Exemples “fallback” (jamais 0 signalement affiché)
-    const fakeReports: ReportLine[] = exampleReports(cityData).map((t: string) => ({ text: t, slug: null }));
+    // Plus aucun signalement inventé : on n'affiche que du réel.
+    const reports: ReportLine[] = realReports.slice(0, 3);
 
-    // Compose: on place les vrais d’abord, puis on complète avec des faux (max 3)
-    const reports: ReportLine[] = (realReports.length ? [...realReports, ...fakeReports] : fakeReports).slice(0, 3);
+    // ====== Activité réelle : compteurs + derniers signalements nationaux ======
+    let totalReports = 0;
+    let stateReports = 0;
+    let latestNationwide: ReportLine[] = [];
+    try {
+      const adminStats = getSupabaseAdmin({ fresh: false });
+      if (adminStats) {
+        const [nat, st, latest] = await Promise.all([
+          adminStats.from("lost_items").select("id", { count: "exact", head: true }),
+          adminStats
+            .from("lost_items")
+            .select("id", { count: "exact", head: true })
+            .eq("state_id", stateAbbr),
+          adminStats
+            .from("lost_items")
+            .select("title, city, state_id, created_at, slug")
+            .not("slug", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(5),
+        ]);
+        totalReports = nat.count || 0;
+        stateReports = st.count || 0;
+        latestNationwide = (latest.data || []).map((r: any) => {
+          const label = (r?.title && String(r.title).trim()) || "Lost item";
+          const when = r?.created_at ? formatMonthDay(new Date(r.created_at)) : "";
+          const cityClean = String(r?.city || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+          const where = [cityClean, r?.state_id].filter(Boolean).join(", ");
+          return {
+            text: `${label} — ${where}${when ? `, ${when}` : ""}`,
+            slug: r?.slug ? String(r.slug) : null,
+          };
+        });
+      }
+    } catch {
+      /* soft-fail : on affiche simplement moins */
+    }
+    const isSmallTown = Number(cityData.population || 0) < 5000;
+    const legal = holdingRule(stateAbbr);
 
     // 4) Nearby
     let nearbyCities: any[] = [];
     try {
-      nearbyCities = await getNearbyCities(cityData.id, cityData.state_id);
+      const candidates = await getNearbyCities(cityData.id, cityData.state_id, 12);
+      // On ne lie que vers des villes possédant un guide publié : inutile d'envoyer
+      // Google (et les visiteurs) vers des pages non enrichies.
+      const adminNear = getSupabaseAdmin({ fresh: false });
+      if (adminNear && candidates.length) {
+        const slugs = candidates.map((c: any) => String(c.city_ascii || "").trim().toLowerCase());
+        const { data: guided } = await adminNear
+          .from("city_guides")
+          .select("state_id, city_slug")
+          .eq("status", "published")
+          .in("city_slug", slugs);
+        const allowed = new Set(
+          (guided || []).map((g: any) => `${String(g.state_id).toUpperCase()}|${g.city_slug}`)
+        );
+        nearbyCities = candidates
+          .filter((c: any) =>
+            allowed.has(
+              `${String(c.state_id || stateAbbr).toUpperCase()}|${String(c.city_ascii || "")
+                .trim()
+                .toLowerCase()}`
+            )
+          )
+          .slice(0, 5);
+      } else {
+        nearbyCities = [];
+      }
     } catch {
       nearbyCities = [];
     }
@@ -309,13 +379,16 @@ export default async function Page({ params }: { params: { state: string; city: 
     const enrichedText = `<p>${(text || "")
       .replace(/(\n\n|\n)/g, "\n")
       .replace(/(?<!\n)\n(?!\n)/g, "\n\n")
-      .replace(/hotels?/gi, "🏨 hotels")
-      .replace(/restaurants?/gi, "🍽️ restaurants")
-      .replace(/malls?/gi, "🛍️ malls")
-      .replace(/parks?/gi, "🌳 parks")
-      .replace(/tourist attractions?/gi, "🧭 tourist attractions")
-      .replace(/museum/gi, "🖼️ museum")
-      .replace(/staff/gi, "👥 staff")
+      // Emojis : uniquement sur le mot générique en minuscules, une seule fois,
+      // et en conservant le mot d'origine. Sans cela « Rotary Park » devenait
+      // « Rotary 🌳 parks » sur des milliers de pages.
+      .replace(/\b(hotels?)\b/, "🏨 $1")
+      .replace(/\b(restaurants?)\b/, "🍽️ $1")
+      .replace(/\b(malls?)\b/, "🛍️ $1")
+      .replace(/\b(parks?)\b/, "🌳 $1")
+      .replace(/\b(tourist attractions?)\b/, "🧭 $1")
+      .replace(/\b(museums?)\b/, "🖼️ $1")
+      .replace(/\b(staff)\b/, "👥 $1")
       .replace(/\n\n+/g, "</p><p>")
       .replace(/\n/g, " ")}</p>`;
 
@@ -343,23 +416,85 @@ export default async function Page({ params }: { params: { state: string; city: 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/2 w-full prose text-gray-800">
             <h2 className="text-xl font-semibold text-blue-900 mb-3 relative pl-6">
-              <span className="absolute left-0 top-0">🔍</span>
-              Recently reported lost items in {cityData.city_ascii} – updated this {today}
+              <span className="absolute left-0 top-0">📈</span>
+              Recent activity
             </h2>
-            <ul className="list-none space-y-2 pl-0">
-              {reports.map((r, i: number) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-blue-500">📍</span>
-                  {r.slug ? (
-                    <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
-                      {r.text}
-                    </Link>
-                  ) : (
-                    <span>{r.text}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
+
+            {totalReports > 0 && (
+              <p className="text-sm text-gray-700 mb-4">
+                <strong>{totalReports.toLocaleString("en-US")}</strong> reports filed on ReportLost
+                {stateReports > 0 && (
+                  <>
+                    {" · "}
+                    <strong>{stateReports.toLocaleString("en-US")}</strong> in {cityData.state_name}
+                  </>
+                )}
+              </p>
+            )}
+
+            {legal && (
+              <p className="text-sm text-gray-700 mb-4 border-l-2 border-amber-300 pl-3">
+                {legal.kind === "local" ? "⚠️" : "⏳"} In{" "}
+                <strong>{cityData.state_name}</strong>, {legal.note}
+                {legal.citation ? ` (${legal.citation})` : ""}
+              </p>
+            )}
+
+            {reports.length > 0 ? (
+              <>
+                <h3 className="text-base font-semibold text-gray-800 mb-2">
+                  Reported in {cityData.city_ascii}
+                </h3>
+                <ul className="list-none space-y-2 pl-0">
+                  {reports.map((r, i: number) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-blue-500">📍</span>
+                      {r.slug ? (
+                        <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
+                          {r.text}
+                        </Link>
+                      ) : (
+                        <span>{r.text}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : isSmallTown ? (
+              <p className="text-sm text-gray-700">
+                No report has been filed in {cityData.city_ascii} yet. Yours would be the first, and it
+                gets a public page that anyone who finds your item can search.
+              </p>
+            ) : null}
+
+            {latestNationwide.length > 0 && (
+              <>
+                <h3 className="text-base font-semibold text-gray-800 mt-5 mb-2">
+                  Latest reports across the United States
+                </h3>
+                <ul className="list-none space-y-2 pl-0">
+                  {latestNationwide.map((r, i: number) => (
+                    <li key={`us-${i}`} className="flex items-start gap-2 text-sm">
+                      <span className="text-gray-400">📍</span>
+                      {r.slug ? (
+                        <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
+                          {r.text}
+                        </Link>
+                      ) : (
+                        <span>{r.text}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {guideUpdatedAt && (
+              <p className="text-xs text-gray-500 mt-5">
+                Local contact details on this page were last reviewed on{" "}
+                {formatDate(new Date(guideUpdatedAt))}.
+              </p>
+            )}
           </div>
 
           <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
@@ -419,6 +554,16 @@ export default async function Page({ params }: { params: { state: string; city: 
           <section className="bg-white p-6 rounded-xl shadow flex flex-col lg:flex-row gap-8 items-start">
             <div className="lg:w-1/2 w-full">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Nearby Cities</h2>
+              <p className="text-sm text-gray-700 mb-3">
+                See the full{" "}
+                <Link
+                  href={`/lost-and-found/${String(stateAbbr).toLowerCase()}`}
+                  className="text-blue-700 hover:underline font-medium"
+                >
+                  lost &amp; found guide for {cityData.state_name}
+                </Link>
+                , including the legal holding period and where unclaimed items end up.
+              </p>
               <ul className="list-disc list-inside text-gray-700">
                 {nearbyCities.map((c: any) => {
                   const sidRaw = c.state_id ?? stateAbbr;

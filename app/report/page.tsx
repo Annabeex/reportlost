@@ -7,12 +7,9 @@ export const metadata: Metadata = {
   description:
     "Use this form to submit a lost item report and share key details to help the search process.",
 
-  // ✅ évite que /report et toutes ses variantes ?tab=... soient indexées
-  // (sinon ton outil SEO te remontera des doublons + risque de contenu dupliqué)
-  robots: {
-    index: false,
-    follow: true,
-  },
+  // Les variantes ?tab=... sont regroupées par la balise canonique ci-dessous :
+  // inutile d'ajouter un noindex, qui supprimerait la page des résultats au
+  // lieu de dédoublonner ses variantes.
 
   // ✅ consolide toutes les variantes sur une URL canonique
   alternates: {
