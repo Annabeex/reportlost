@@ -74,12 +74,6 @@ export default function Navbar() {
           <BrandLogo />
         </Link>
         <div className="space-x-4 text-sm text-gray-700">
-          <Link href="/report" className="hover:text-blue-600 transition-colors">
-            Report
-          </Link>
-          <Link href="/lost-pet-poster" className="hover:text-blue-600 transition-colors">
-            🐾 Lost Pet Poster
-          </Link>
           <Link href="/about" className="hover:text-blue-600 transition-colors">
             About
           </Link>
@@ -111,18 +105,9 @@ export default function Navbar() {
           <BrandLogo compact={isMobile} />
         </Link>
 
-        {/* Lien secondaire. Le problème n'était pas le lien lui-même mais sa
-            position : seul enfant du milieu dans un justify-between, il atterrissait
-            pile au centre et se lisait comme un titre de page. Le ml-auto le pousse
-            contre les boutons, où l'œil attend une navigation. */}
-        {!isUniPage && !isMobile && (
-          <Link
-            href="/lost-pet-poster"
-            className="ml-auto mr-6 hidden items-center whitespace-nowrap text-sm text-gray-700 transition-colors hover:text-blue-600 lg:flex"
-          >
-            🐾 Lost Pet Poster
-          </Link>
-        )}
+        {/* Le lien « Lost Pet Poster » vivait ici, seul au milieu de la barre.
+            Il est désormais présenté en encart sur la page d'accueil, où il a
+            la place d'expliquer ce qu'il est. */}
         {!isUniPage && (
           <div className="flex items-stretch gap-0 h-full">
             {/* --- VERSION MOBILE : droite et compacte --- */}

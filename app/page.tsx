@@ -298,6 +298,37 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* --- Encart affiche animal perdu ---------------------------------
+          Ce lien était un mot posé au milieu de la barre de navigation, sans
+          contexte. Ici il a la place de dire ce qu'il est, et il reste gratuit. */}
+      <section className="w-full bg-white px-8 py-10">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+          <div className="flex flex-col items-center gap-6 px-7 py-7 sm:flex-row sm:items-center">
+            <div
+              aria-hidden
+              className="flex h-20 w-20 flex-none items-center justify-center rounded-2xl bg-white text-4xl shadow-sm ring-1 ring-amber-200"
+            >
+              🐾
+            </div>
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <h2 className="text-xl font-bold text-amber-900">Lost a pet? Print a poster in 2 minutes.</h2>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-amber-900/80">
+                Posters on the street are still what brings most pets home. Ours puts your photo,
+                your description and a scannable code on one page, so a neighbour can reach you
+                without your phone number being on a lamppost. It is free, and nothing is published
+                online unless you ask.
+              </p>
+            </div>
+            <Link
+              href="/lost-pet-poster"
+              className="flex-none rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-amber-700"
+            >
+              Make my poster →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* --- 10 derniers signalements (sous le fold) --- */}
       <section className="bg-white w-full px-8 py-16 mx-auto">
         <div className="max-w-5xl mx-auto">

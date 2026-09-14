@@ -117,7 +117,6 @@ export default function ReportContribution({
       : selectedPlan === 3
       ? "Active search"
       : "the free listing";
-  const paidLabel = petMode ? "Pet Priority search" : "Active search";
 
   const cardClass = (active: boolean) =>
     `rounded-2xl border bg-white overflow-hidden shadow-sm transition cursor-pointer ${
@@ -160,36 +159,29 @@ export default function ReportContribution({
           </h2>
         </div>
 
-        {/* Intro contextuelle */}
-        <div className="rounded-2xl border border-green-200 bg-white px-5 py-4 text-center mb-3">
+        {/* Un seul encadré d'introduction. Il y en avait deux empilés, gris sur
+            blanc, avant même la première offre : l'écran commençait par un pavé. */}
+        <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
           {selectedPlan === 1 ? (
-            <p className="text-[15px] text-gray-700">
-              A free listing stays online and waits to be found. Nothing is sent, contacted or searched.
+            <p className="text-[14px] leading-relaxed text-gray-700">
+              A free listing stays online and waits to be found. Nothing is sent, contacted or
+              searched.
             </p>
           ) : selectedPlan === 2 ? (
-            <p className="text-[15px] text-gray-700">
-              With <b>Automatic search</b>, no one contacts anyone on your behalf, but the web is
-              scanned on your keywords for six months and you keep your documents.
+            <p className="text-[14px] leading-relaxed text-gray-700">
+              With <b className="text-gray-900">Automatic search</b>, no one contacts anyone on your
+              behalf, but the web is scanned on your keywords for six months and you keep your
+              documents.
             </p>
           ) : (
-            <p className="text-[15px] text-gray-700">
-              With <b>{paidLabel}</b>, a team member files your report with the lost-property
-              service, contacts the places that may hold your item, publishes a notice, and monitors
-              the web for 12 months.
+            <p className="text-[14px] leading-relaxed text-gray-700">
+              Getting something back is rarely about luck. It is about reaching the right desk before
+              the item moves on, and being findable when someone tries to return it.{" "}
+              <b className="text-gray-900">
+                That is what the $25 pays for: the outreach, and twelve months of being findable.
+              </b>
             </p>
           )}
-        </div>
-
-        {/* Ancrage : déplacer la question du prix vers ce qui décide réellement
-            d'une restitution. Aucun chiffre inventé, aucune comparaison douteuse. */}
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-3.5 mb-4">
-          <p className="text-[13.5px] leading-relaxed text-gray-700">
-            Getting something back is rarely about luck. It is about reaching the right desk before
-            the item moves on, and being findable when someone tries to return it.{" "}
-            <b className="text-gray-900">
-              That is what the $25 pays for: the outreach, and twelve months of being findable.
-            </b>
-          </p>
         </div>
 
         <div className="grid gap-4">
@@ -231,6 +223,88 @@ export default function ReportContribution({
                       email address.
                     </span>
                   </li>
+                </ul>
+
+                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
+                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
+                    $25
+                  </span>
+                  <span className="text-[13px] text-gray-600">
+                    one-time payment, no account, no subscription
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- Active search (25 $) --- */}
+          {!petMode && (
+            <div className={cardClass(selectedPlan === 3)} onClick={() => setSelectedPlan(3)}>
+              <div
+                className="flex items-center gap-3 px-5 py-3"
+                style={{ backgroundColor: LIGHT_GREEN_BG }}
+              >
+                <Radio plan={3} label="Active search, $25" />
+                <img
+                  src={`/images/icons/max.svg?v=${ASSET_VER}`}
+                  alt=""
+                  className="w-5 h-5"
+                />
+                <h3
+                  className="text-xl font-semibold flex flex-wrap items-center gap-2"
+                  style={{ color: DARK_GREEN }}
+                >
+                  Active search
+                  <span className="text-[11px] font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                    🏅 Recommended
+                  </span>
+                </h3>
+              </div>
+
+              <div className="px-5 py-4">
+                {/* La bande de 32 icônes a été retirée : non légendées et minuscules,
+                    elles se lisaient comme du remplissage sur une page où l'enjeu
+                    est la confiance, et laissaient entendre des partenariats. */}
+                {/* Six paragraphes empilés faisaient un mur de texte. Deux
+                    colonnes, un titre court et une ligne : même information,
+                    lisible d'un regard. Le détail complet est dans les CGV. */}
+                <ul className="grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
+                  {[
+                    [
+                      "Filed with the lost-property service",
+                      "Usually the local police or city office, as soon as we hold what they require.",
+                    ],
+                    [
+                      "The right places contacted",
+                      "Transit, hotel, venue, airport, taxi, nearby shops — chosen from where you lost it.",
+                    ],
+                    [
+                      "A visual notice published",
+                      "On social media and in local groups, with an anonymous relay address for finders.",
+                    ],
+                    [
+                      "12 months of web monitoring",
+                      "Daily the first week, then weekly, then monthly. Every credible match read by a person.",
+                    ],
+                    [
+                      "A loss report certificate",
+                      "Dated, downloadable any time. Not an official document, and not a police report.",
+                    ],
+                    [
+                      "A printable QR sticker sheet",
+                      "For your everyday belongings. Each code routes a finder to your relay address.",
+                    ],
+                  ].map(([title, line]) => (
+                    <li key={title} className="flex items-start gap-2.5">
+                      <Check className="mt-[3px] h-[17px] w-[17px] flex-none text-green-500" />
+                      <span>
+                        <span className="block text-[14px] font-semibold text-gray-900">{title}</span>
+                        <span className="mt-0.5 block text-[13px] leading-relaxed text-gray-600">
+                          {line}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
                 </ul>
 
                 <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
