@@ -85,16 +85,15 @@ export default function HowItWorksPage() {
       </h2>
 
       <p className="mb-4">
-        When reporting a lost item, several levels of search assistance are
-        available.
+        Publishing a lost item report is free. A single paid plan is offered,
+        <strong> Active search, at $25</strong> — a one-time payment, never a
+        subscription, active for 12 months.
       </p>
 
       <p className="mb-4">
-        All assistance plans include <strong>manual review and action</strong> by
-        a member of our team.
+        It includes <strong>manual review and action</strong> by a member of our
+        team, and covers the following:
       </p>
-
-      <p className="mb-4">At a minimum, this includes:</p>
 
       <ul className="list-disc list-inside mb-6 space-y-1">
         <li>
@@ -122,8 +121,9 @@ export default function HowItWorksPage() {
       </h2>
 
       <p className="mb-6">
-        Our search engine regularly scans the web for relevant keywords
-        associated with the lost item.
+        An AI search engine scans the web for keywords associated with your lost
+        item, <strong>every day for the first week, then once a week, then once a
+        month, for 12 months</strong>.
       </p>
 
       <p className="mb-4">When a potential match is detected:</p>
@@ -155,11 +155,24 @@ export default function HowItWorksPage() {
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        Stickers and QR code (available with selected plans)
+        Loss report certificate (included with Active search)
       </h2>
 
       <p className="mb-6">
-        With the $25 assistance plan, a printable PDF sheet of stickers is
+        A certificate recording your declaration and its date is issued on our
+        website and can be downloaded from your case page at any time. It is
+        useful when a venue, an insurer or an employer asks for written proof
+        that the loss was declared. <strong>It is not an official document and
+        does not replace a police report</strong> or any document issued by a
+        public authority.
+      </p>
+
+      <h2 className="text-xl font-semibold mb-4">
+        Stickers and QR code (included with Active search)
+      </h2>
+
+      <p className="mb-6">
+        With the $25 Active search plan, a printable PDF sheet of stickers is
         included.
       </p>
 

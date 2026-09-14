@@ -1,5 +1,5 @@
-// app/maximum-search/page.tsx
-// Marketing/landing page for the "Maximum search" assistance level.
+// app/active-search/page.tsx
+// Marketing/landing page for the "Active search" plan (single paid plan).
 // - Tailwind CSS styling
 
 import Link from "next/link";
@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { Check, Mail, Shield, Search, Bell, MapPin, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Maximum search — ReportLost",
+  title: "Active search — ReportLost",
   description:
     "Hands-on outreach to local Lost & Found desks, broad database checks, targeted alerts — plus a prevention kit with secure ID stickers.",
 };
@@ -43,7 +43,7 @@ export default function Page({
             {/* Left copy */}
             <div className="max-w-3xl">
               <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight">
-                Maximum search
+                Active search
               </h1>
               <p className="mt-4 text-lg sm:text-xl/relaxed opacity-95">
                 We actively contact local authorities and Lost &amp; Found desks, search large
@@ -60,7 +60,7 @@ export default function Page({
                   href="#whats-included"
                   className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 font-semibold text-white ring-1 ring-white/40 backdrop-blur hover:bg-white/25"
                 >
-                  Learn more about the Maximum search plan
+                  Learn more about the Active search plan
                 </Link>
               </div>
 
@@ -172,11 +172,55 @@ export default function Page({
         </div>
       </section>
 
+      {/* WHAT $25 COVERS */}
+      <section id="what-you-get" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl font-bold">What $25 covers</h2>
+        <p className="mt-3 max-w-3xl text-gray-700">
+          One payment, never a subscription. Six deliverables, active for 12 months.
+        </p>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          {[
+            {
+              t: "Your report is filed with the lost-property service",
+              d: "Usually the local police department or the city lost-property office, chosen from where you lost the item, as soon as we hold the information that service requires. Where the rules oblige the owner to file in person, we send you the exact office, link and steps.",
+            },
+            {
+              t: "The places likely to hold it are contacted",
+              d: "Selected from your loss location: transit operator, hotel, restaurant, venue, airport, taxi company, nearby shops and the lost-property desks around it.",
+            },
+            {
+              t: "A visual notice is created and published",
+              d: "On social media and in the local groups that matter, private ones included. It carries an anonymous relay address tied to your case, so finders reach you without seeing your personal email or phone number.",
+            },
+            {
+              t: "An AI search engine scans the web for 12 months",
+              d: "On your item's keywords: every day for the first week, then once a week, then once a month. Every credible match is reviewed by a team member before it reaches you.",
+            },
+            {
+              t: "A loss report certificate",
+              d: "Issued on our site and downloadable from your case page at any time. It records your declaration and its date. It is not an official document and does not replace a police report.",
+            },
+            {
+              t: "A printable sheet of QR stickers",
+              d: "For your everyday belongings, to print on adhesive paper. Each code routes a finder to your anonymous relay address.",
+            },
+          ].map((b, i) => (
+            <div key={b.t} className="rounded-2xl border p-6">
+              <div className="flex items-baseline gap-3">
+                <span className="text-sm font-semibold text-emerald-700">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="font-semibold">{b.t}</h3>
+              </div>
+              <p className="mt-2 text-gray-700">{b.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* WHAT'S INCLUDED */}
       <section id="whats-included" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="rounded-3xl border p-6 sm:p-10 shadow-sm">
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
-            Included with Maximum search
+            Included with Active search
           </span>
           <h2 className="mt-4 text-2xl font-bold">Prevention kit & secure stickers</h2>
           <p className="mt-3 max-w-3xl text-gray-700">
@@ -246,8 +290,8 @@ export default function Page({
             <div>
               <h3 className="font-semibold">How long do you keep searching?</h3>
               <p className="mt-2 text-gray-700">
-                Your report stays active and keeps searching for a match for the full duration of your plan,
-                6 months with Extended search and 12 months with Maximum search, starting the day it is activated.
+                Your report stays active and keeps searching for a match for 12 months, starting the day
+                the Active search plan is activated.
               </p>
             </div>
             <div>

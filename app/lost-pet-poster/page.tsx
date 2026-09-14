@@ -48,7 +48,7 @@ const FAQ = [
   },
   {
     q: "Does ReportLost help find lost pets?",
-    a: "Yes. Beyond this free poster, our assistance plans include contacting local shelters and services, publishing your alert on social channels including local groups, and monitoring public web sources for new 'found pet' posts for 6 to 12 months.",
+    a: "Yes. Beyond this free poster, our assistance plans include contacting local shelters and services, publishing your alert on social channels including local groups, and monitoring public web sources for new 'found pet' posts for 12 months.",
   },
 ];
 

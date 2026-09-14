@@ -349,6 +349,17 @@ export async function GET(req: NextRequest) {
       scy -= 10;
     }
 
+    // ---- mention obligatoire : ce document n'est pas officiel ----
+    const disclaimer =
+      "This confirmation records a declaration made by the reporting party on ReportLost.org. " +
+      "It is not an official document and does not replace a police report or any document issued " +
+      "by a public authority.";
+    let discY = M + 30;
+    for (const ln of wrap(disclaimer, helv, 7.6, PAGE_W - 2 * M)) {
+      textAt(ln, M, discY, 7.6, helv, GRAY);
+      discY -= 10;
+    }
+
     // ---- pied de page ----
     const footY = M - 4;
     line(M, footY + 12, PAGE_W - M);

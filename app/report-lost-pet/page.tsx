@@ -1,6 +1,6 @@
 // app/report-lost-pet/page.tsx
 // Formulaire dédié aux animaux perdus : catégorie pré-remplie + formule unique
-// Pet Priority (30$). Contenu SEO en HTML statique autour du formulaire.
+// Pet Priority (25$). Contenu SEO en HTML statique autour du formulaire.
 import type { Metadata } from "next";
 import Link from "next/link";
 import ReportForm from "@/components/ReportForm";

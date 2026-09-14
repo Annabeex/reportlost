@@ -207,7 +207,7 @@ function StickersCheckoutForm() {
           </div>
 
           <p className="mt-6 text-sm text-[#1f6b3a]">
-            <b>Included for free</b> in <i>Maximum search</i>. If you only need the stickers sheet, you can buy it here.
+            <b>Included for free</b> in <i>Active search</i>. If you only need the stickers sheet, you can buy it here.
           </p>
         </aside>
 
@@ -334,7 +334,7 @@ export default function Page() {
             address (no personal email or phone displayed on the item). Price: $12.
             <br />
             <span className="opacity-90">
-              <b>Free</b> if you choose <i>Maximum search</i>.
+              <b>Free</b> if you choose <i>Active search</i>.
             </span>
           </p>
         </div>

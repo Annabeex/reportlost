@@ -369,7 +369,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
 Your lost item report is saved on reportlost.org, one step away from going live.
 
-One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
+One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -396,9 +396,11 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search: our team files the report with the right local
-      services, posts alerts, and keeps searching for a match on your behalf during your entire
-      search period (6 or 12 months).
+      One last step to activate your search. For <b>$25</b>, one single payment and never a
+      subscription: we file your report with the competent lost-property service, contact the places
+      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
+      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
+      QR stickers.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -535,7 +537,7 @@ Contribution : ${other.contribution ?? 0}`;
 
 Your lost item report is saved on reportlost.org, one step away from going live.
 
-One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
+One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -562,9 +564,11 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search: our team files the report with the right local
-      services, posts alerts, and keeps searching for a match on your behalf during your entire
-      search period (6 or 12 months).
+      One last step to activate your search. For <b>$25</b>, one single payment and never a
+      subscription: we file your report with the competent lost-property service, contact the places
+      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
+      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
+      QR stickers.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -728,7 +732,7 @@ const { data: foundRows, error: findErr } = await supabase
 
 Your lost item report is saved on reportlost.org, one step away from going live.
 
-One last step to activate your search: our team files the report with the right local services, posts alerts, and keeps searching for a match during your entire search period (6 or 12 months, one single payment, never a subscription).
+One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -755,9 +759,11 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search: our team files the report with the right local
-      services, posts alerts, and keeps searching for a match on your behalf during your entire
-      search period (6 or 12 months).
+      One last step to activate your search. For <b>$25</b>, one single payment and never a
+      subscription: we file your report with the competent lost-property service, contact the places
+      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
+      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
+      QR stickers.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>

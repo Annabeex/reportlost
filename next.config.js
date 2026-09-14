@@ -23,6 +23,13 @@ const nextConfig = {
         permanent: true, // 308
       },
 
+      // ✅ Ancienne landing page de la formule payante
+      {
+        source: "/maximum-search",
+        destination: "/active-search",
+        permanent: true,
+      },
+
       // ✅ Tes redirects existants
       {
         source: "/category/:slug",

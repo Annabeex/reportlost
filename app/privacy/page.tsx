@@ -82,7 +82,7 @@ To exercise these rights, contact us at: support@reportlost.org
 
 ### 6. Data Retention
 
-We retain report-related data only for as long as necessary to support matching and assistance purposes: the active duration of your report (6 or 12 months depending on the plan), plus a reasonable archival period.
+We retain report-related data only for as long as necessary to support matching and assistance purposes: the active duration of your report (12 months), plus a reasonable archival period.
 
 In general, data is retained for **up to 24 months**, unless deletion is requested earlier or required by law. Correspondence related to paid cases may be kept for the same period to document the work performed.
 

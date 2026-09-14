@@ -28,7 +28,7 @@ type ReportFormProps = {
   /** ✅ NEW: version "intégrée" (page ville) — enlève min-h-screen et allège les marges.
    *  Par défaut false → aucun impact sur /report, universités, home. */
   embedded?: boolean;
-  /** ✅ NEW: mode animaux perdus — formule unique Pet Priority (30$) à l'étape contribution */
+  /** ✅ NEW: mode animaux perdus — Pet Priority (25$) à l'étape contribution */
   petMode?: boolean;
 };
 
@@ -723,8 +723,8 @@ export default function ReportForm({
 
         const contributeUrl = `${base}/report?go=contribute&rid=${ridForUrl}`;
 
-        // 🔗 Nouvelle URL pour la page "Maximum search" (avec rid)
-        const maximumUrl = `${base}/maximum-search?rid=${ridForUrl}`;
+        // 🔗 URL de la page "Active search" (avec rid)
+        const activeUrl = `${base}/active-search?rid=${ridForUrl}`;
 
         // Preheader (affiché par certains clients)
         const preheader =
@@ -741,20 +741,22 @@ Date: ${formData.date || ""}
 City: ${formData.city || ""}
 Reference code: ${ref5}
 
-Why activate your search now?
-In the first 48 hours, items move quickly between locations. When you activate, our team will:
-• Notify and follow up with local Lost & Found desks (transit, venues, and other likely locations) on your behalf.
-• Search across large databases and public listings relevant to your case.
-• Set up targeted alerts and outreach to increase your chances of being contacted if a match appears.
+What $25 covers (one payment, never a subscription, active for 12 months):
+• Your report is filed with the competent lost-property service, usually the local police department, as soon as we hold the information it requires.
+• The places likely to hold your item are contacted: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost & found desks.
+• A visual notice is created and published on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.
+• An AI search engine scans the web on your item's keywords for 12 months: daily the first week, then weekly, then monthly. Every credible match is reviewed by a person before it reaches you.
+• A loss report certificate, downloadable from your case page. It is not an official document and does not replace a police report.
+• A printable sheet of QR stickers routing finders to your relay address.
 
 Activate my search: ${contributeUrl}
 
-Included with “Maximum search”: prevention kit & secure stickers
+Included with “Active search”: prevention kit & secure stickers
 You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
 Each sticker routes finders to a private, dedicated address we host for you — so people can contact you
 without your personal email or phone appearing on the object.
 
-See what’s included: ${maximumUrl}
+See what’s included: ${activeUrl}
 
 You can manage or update your report any time using the link in this email.
 
@@ -787,14 +789,17 @@ Thank you for using ReportLost — we’re here to help.
       <li><b>Reference code:</b> ${ref5}</li>
     </ul>
 
-    <p style="margin:14px 0 6px"><b>Why activate your search now?</b></p>
+    <p style="margin:14px 0 6px"><b>What $25 covers</b></p>
     <p style="margin:0 0 10px">
-      In the first 48 hours, items move quickly between locations. When you activate, our team will:
+      One payment, never a subscription. Six deliverables, active for 12 months:
     </p>
     <ul style="margin:0 0 18px;padding-left:18px">
-      <li>Notify and follow up with local Lost &amp; Found desks (transit, venues, and other likely locations) on your behalf.</li>
-      <li>Search across large databases and public listings relevant to your case.</li>
-      <li>Set up targeted alerts and outreach to increase your chances of being contacted if a match appears.</li>
+      <li>Your report is <b>filed with the competent lost-property service</b>, usually the local police department, as soon as we hold the information it requires.</li>
+      <li><b>The places likely to hold your item are contacted</b>: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost &amp; found desks.</li>
+      <li><b>A visual notice is created and published</b> on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.</li>
+      <li><b>An AI search engine scans the web for 12 months</b> on your item&rsquo;s keywords: daily the first week, then weekly, then monthly. Every credible match is reviewed by a person before it reaches you.</li>
+      <li><b>A loss report certificate</b>, downloadable from your case page. It is not an official document and does not replace a police report.</li>
+      <li><b>A printable sheet of QR stickers</b> routing finders to your relay address.</li>
     </ul>
 
     <div style="margin:18px 0 22px;text-align:center">
@@ -804,7 +809,7 @@ Thank you for using ReportLost — we’re here to help.
       </a>
     </div>
 
-    <p style="margin:18px 0 6px"><b>Included with “Maximum search”: prevention kit &amp; secure stickers</b></p>
+    <p style="margin:18px 0 6px"><b>Included with “Active search”: prevention kit &amp; secure stickers</b></p>
     <p style="margin:0 0 10px">
       You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
       Each sticker routes finders to a <b>private, dedicated address we host for you</b> — so people can contact you
@@ -812,7 +817,7 @@ Thank you for using ReportLost — we’re here to help.
     </p>
 
     <p style="margin:0 0 18px;text-align:center">
-      <a href="${maximumUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
+      <a href="${activeUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
     </p>
 
     <p style="margin:0 0 10px">You can manage or update your report any time using the link in this email.</p>
@@ -1062,14 +1067,7 @@ setFreeEmailSent(true);
                 reportId={String(formData.report_id || "")}
                 onSuccess={handleSuccessfulPayment}
                 onBack={handleBack}
-                // Libellé exact selon le niveau (15 / 30)
-                tierLabel={
-                  Number(formData.contribution) >= 30
-                    ? "Complete assistance"
-                    : Number(formData.contribution) >= 15
-                    ? "Extended search"
-                    : "Standard search"
-                }
+                tierLabel="Active search"
                 key={`co-${formData.report_id}-${formData.contribution}`}
               />
             </Elements>

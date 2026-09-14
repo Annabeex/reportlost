@@ -30,13 +30,20 @@ ReportLost.org offers:
 
 **B) Optional paid assistance**
 
-Three assistance plans are offered at checkout, each as a one-time fee:
+A single assistance plan is offered at checkout, as a one-time fee. Lost pets are handled under the same plan, with priority processing:
 
-- **Extended search ($12):** your report is reviewed and distributed through relevant channels, and stays active in our matching search for **6 months** from activation.
-- **Maximum search ($25):** our team manually contacts the relevant local services and establishments, publishes a dedicated social alert, provides a printable sheet of identification stickers, and reviews every potential match before it reaches you. Your report stays active for **12 months** from activation.
-- **Pet Priority ($30):** priority handling for lost pets, including outreach to local shelters, animal control and rescue services, and publication in local lost pet groups. Your report stays active for **12 months** from activation.
+**Active search ($25)** covers six deliverables, for 12 months from activation:
 
-A free-choice contribution of $12 or more is handled as the Extended search plan.
+1. **Filing with the competent lost-property service.** We transmit your report to the service responsible for the loss location, in most cases the local police department or the municipal lost-property office. This is done provided we hold the information that service requires; where local rules oblige the owner to file personally, we provide the relevant office, reporting link and step-by-step instructions instead.
+2. **Outreach to the places likely to hold the item.** Selected from your loss location: transport operator, hotel, restaurant, venue, airport, taxi company, nearby businesses and surrounding lost-property desks.
+3. **Creation and distribution of a visual notice.** Published on social media and in the relevant local groups, including private groups we are members of. The notice displays an anonymous relay email address linked to your case, so finders can contact you without your personal address or phone number being disclosed.
+4. **Automated web monitoring for 12 months.** An AI search engine scans public web sources using your item's keywords, every day for the first week, then once a week, then once a month. Potential matches are reviewed by a team member before being forwarded to you. Monitoring does not cover content inaccessible to public search tools.
+5. **A loss report certificate**, issued on our website and downloadable from your case page. It records your declaration and its date. **It is not an official document and does not replace a police report or any document issued by a public authority.**
+6. **A printable sheet of QR stickers**, to be printed on adhesive paper. Each code routes a finder to the anonymous relay address linked to your case.
+
+**Pet Priority ($25)** is the same plan applied to a lost animal, with time-critical handling: outreach to local shelters, animal control and rescue services, and publication in local lost pet groups, private ones included.
+
+There is no partial or free-choice contribution. A report is either published free of charge, or handled under the Active search plan.
 
 Where a police department or public office accepts lost property reports filed by a third party, we file the report on your behalf. Where local rules require the owner to file personally, we provide the appropriate contact details, links and instructions instead.
 
@@ -59,7 +66,7 @@ ReportLost.org reserves the right to remove or redact content that violates thes
 
 Submitting a report is **free**.
 
-Paid assistance plans are one-time fees, not subscriptions, and are processed securely by Stripe. When a plan is purchased, the fee covers work that begins shortly after purchase (review, preparation, outreach, keeping the report active in our matching search, and related actions) for the duration stated in the plan (6 or 12 months).
+Paid assistance plans are one-time fees, not subscriptions, and are processed securely by Stripe. When a plan is purchased, the fee covers work that begins shortly after purchase (review, preparation, outreach, keeping the report active in our matching search, and related actions) for the duration stated in the plan (12 months).
 
 For this reason, paid assistance fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
 

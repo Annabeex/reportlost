@@ -67,31 +67,27 @@ export default function HelpCenterPage() {
       {/* Pricing */}
       <section id="pricing" className="mb-12">
         <h2 className="text-2xl font-semibold">Pricing & Plans</h2>
-        <div className="mt-6 grid gap-6 sm:grid-cols-3">
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border p-5 shadow-sm">
-            <h3 className="text-lg font-semibold">Basic</h3>
-            <p className="text-sm text-gray-500">Free</p>
+            <h3 className="text-lg font-semibold">Free listing</h3>
+            <p className="text-sm text-gray-500">$0</p>
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>• Your report is stored in our public database</li>
+              <li>• Your report is published in our public database</li>
               <li>• Eligible for automatic matching</li>
+              <li>• No outreach and no active search: the listing waits to be found</li>
             </ul>
           </div>
-          <div className="rounded-2xl border p-5 shadow-sm">
-            <h3 className="text-lg font-semibold">Extended Search</h3>
-            <p className="text-sm text-gray-500">$12</p>
+          <div className="rounded-2xl border-2 border-green-500 p-5 shadow-sm">
+            <h3 className="text-lg font-semibold">Active search</h3>
+            <p className="text-sm text-gray-500">$25 — one-time, never a subscription</p>
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>• AI‑powered search across the web</li>
-              <li>• Verification in multiple databases</li>
-              <li>• Automated notifications to local offices</li>
-            </ul>
-          </div>
-          <div className="rounded-2xl border p-5 shadow-sm">
-            <h3 className="text-lg font-semibold">Full Assistance</h3>
-            <p className="text-sm text-gray-500">$25</p>
-            <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>• Everything in Extended Search</li>
-              <li>• Human follow‑up and manual checks</li>
-              <li>• Visual creation and social media outreach</li>
+              <li>• Report filed with the competent lost &amp; found service, usually the police department</li>
+              <li>• The places likely to hold your item contacted, based on where you lost it</li>
+              <li>• Visual notice created and published on social media and local groups</li>
+              <li>• Anonymous relay email address linked to your case</li>
+              <li>• AI web monitoring for 12 months: daily the first week, then weekly, then monthly</li>
+              <li>• Loss report certificate, downloadable (not an official document)</li>
+              <li>• Printable sheet of QR stickers linked to your relay address</li>
             </ul>
           </div>
         </div>

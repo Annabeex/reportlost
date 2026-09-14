@@ -72,10 +72,13 @@ Good news: your lost item report is published on reportlost.org and visible to a
 
 One thing to know: a free listing waits. Right now, no one is contacting the local lost & found desks, no report is being filed with the police, and no one is checking new "found" posts against your description.
 
-That's exactly what an assisted search adds. When you activate one, our team gets to work:
-- We contact the relevant local services and establishments on your behalf.
-- We file the lost property report with the police where they accept it.
-- A social alert is published, and your report stays active, searching for a match for the full duration of your plan.
+That's exactly what Active search adds, for $25 once, active for 12 months:
+- Your report is filed with the competent lost-property service, usually the local police department.
+- The places likely to hold your item are contacted, based on where you lost it.
+- A visual notice is published on social media and in the relevant local groups, with an anonymous relay address tied to your case.
+- An AI search engine scans the web on your keywords for 12 months: daily the first week, then weekly, then monthly, with every credible match reviewed by a person.
+- A loss report certificate, downloadable from your case page (not an official document).
+- A printable sheet of QR stickers routing finders to your relay address.
 
 Activate my search: ${contributeUrl}
 
@@ -107,11 +110,14 @@ Either way, your free listing stays online. Thank you for using ReportLost.`;
       new &ldquo;found&rdquo; posts against your description.
     </p>
 
-    <p style="margin:0 0 8px"><b>That's exactly what an assisted search adds:</b></p>
+    <p style="margin:0 0 8px"><b>That's exactly what Active search adds, for $25 once:</b></p>
     <ul style="margin:0 0 18px;padding-left:18px">
-      <li>We contact the relevant local services and establishments on your behalf.</li>
-      <li>We file the lost property report with the police where they accept it.</li>
-      <li>A social alert is published, and your report stays active, searching for a match for the full duration of your plan.</li>
+      <li>Your report is <b>filed with the competent lost-property service</b>, usually the local police department.</li>
+      <li><b>The places likely to hold your item are contacted</b>, based on where you lost it.</li>
+      <li><b>A visual notice is published</b> on social media and in the relevant local groups, with an anonymous relay address tied to your case.</li>
+      <li><b>An AI search engine scans the web for 12 months</b>: daily the first week, then weekly, then monthly, every credible match reviewed by a person.</li>
+      <li><b>A loss report certificate</b>, downloadable from your case page (not an official document).</li>
+      <li><b>A printable sheet of QR stickers</b> routing finders to your relay address.</li>
     </ul>
 
     <div style="margin:18px 0 22px;text-align:center">

@@ -61,12 +61,12 @@ Found near Union Station at 6:30 pm. I can hold it for pickup.
                 Order the stickers PDF — $12
               </Link>
 
-              {/* Rappel : inclus dans Maximum search */}
+              {/* Rappel : inclus dans Active search */}
               <Link
-                href="/maximum-search"
+                href="/active-search"
                 className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-semibold text-gray-800 hover:bg-gray-50"
               >
-                Included free with Maximum search
+                Included free with Active search
               </Link>
             </div>
 

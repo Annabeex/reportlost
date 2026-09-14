@@ -278,11 +278,7 @@ export default async function Page({
               <span className="inline-flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 <strong>
-                  {Number(data.contribution) >= 30
-                    ? "Pet Priority search"
-                    : Number(data.contribution) >= 25
-                    ? "Maximum search"
-                    : "Extended search"}
+                  {Number(data.contribution) > 0 ? "Active search" : "Free listing"}
                 </strong>
                 &nbsp;active
               </span>

@@ -27,15 +27,15 @@ export const metadata: Metadata = {
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Is there a service that can help me recover an item lost in the United States?",
-    a: "Yes. ReportLost.org is an independent assistance service for items lost anywhere in the United States. Depending on the plan you choose, our team contacts the relevant local lost-property channels (police department, city services, transit, hotels, venues or businesses you mention), publishes a dedicated social media notice, and monitors public web sources for your item for 6 to 12 months.",
+    a: "Yes. ReportLost.org is an independent assistance service for items lost anywhere in the United States. Depending on the plan you choose, our team contacts the relevant local lost-property channels (police department, city services, transit, hotels, venues or businesses you mention), publishes a dedicated social media notice, and monitors public web sources for your item for 12 months.",
   },
   {
     q: "Can someone contact the police and local businesses about my lost item?",
-    a: "With our paid plans, we identify the police department and the local businesses or venues relevant to your loss and contact them on your behalf. Where local rules require the owner to file a police report in person, we prepare the exact contact details, links and instructions so you can do it in minutes.",
+    a: "With the Active search plan, we identify the police department and the local businesses or venues relevant to your loss and contact them on your behalf. Where local rules require the owner to file a police report in person, we prepare the exact contact details, links and instructions so you can do it in minutes.",
   },
   {
     q: "Can someone contact a hotel, restaurant or venue where I lost something?",
-    a: "Yes — tell us where you were (hotel, restaurant, beach, park, airport, taxi…) when you file your report, and we reach out to those establishments directly. The Premium plan covers an extended list of establishments beyond the ones you mention.",
+    a: "Yes — tell us where you were (hotel, restaurant, beach, park, airport, taxi…) when you file your report, and we reach out to those establishments directly, plus an extended list of establishments around your loss location beyond the ones you mention.",
   },
   {
     q: "Is there a service that posts lost items on local social media groups?",
@@ -43,7 +43,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Can I have the internet monitored for several months after losing an item?",
-    a: "Yes. Monitoring starts when your plan is activated and runs for 6 months (Standard) or 12 months (Premium). Automated searches combine your item's type, brand, distinctive features, city, neighborhood and date of loss across public web sources, marketplaces and community pages. Monitoring does not cover content that is inaccessible to public search tools.",
+    a: "Yes. Monitoring starts when your plan is activated and runs for 12 months. Automated searches combine your item's type, brand, distinctive features, city, neighborhood and date of loss across public web sources, marketplaces and community pages. Monitoring does not cover content that is inaccessible to public search tools.",
   },
   {
     q: "How can a foreign tourist report a lost item in the United States?",
@@ -59,11 +59,11 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How long does ReportLost monitor potential matches?",
-    a: "6 months with the Standard plan ($12) and 12 months with the Premium plan ($25), starting the day your plan is activated. Both are one-time payments, never a subscription. The search cadence is highest in the first weeks, when recovery odds are best, then continues at a regular rhythm.",
+    a: "12 months with the Active search plan ($25), starting the day your plan is activated. It is a one-time payment, never a subscription. The search cadence is highest in the first weeks, when recovery odds are best, then continues at a regular rhythm.",
   },
   {
     q: "What happens when ReportLost finds a possible match?",
-    a: "You receive the match by email with a link to the source. On the Premium plan, every potential match is first reviewed by a human before being forwarded, so you only receive credible leads.",
+    a: "You receive the match by email with a link to the source. Every potential match is first reviewed by a human before being forwarded, so you only receive credible leads.",
   },
   {
     q: "Does ReportLost guarantee that my item will be recovered?",
@@ -96,7 +96,7 @@ export default function RecoveryAssistancePage() {
         provider: { "@id": `${BASE}/#organization` },
         url: CANONICAL,
         description:
-          "Human-assisted lost-item recovery service for items lost in the United States, including local outreach to police and venues, social media distribution, and six- to twelve-month web monitoring with human-verified matches.",
+          "Human-assisted lost-item recovery service for items lost in the United States, including local outreach to police and venues, social media distribution, and twelve-month web monitoring with human-verified matches.",
         offers: [
           {
             "@type": "Offer",
@@ -107,19 +107,11 @@ export default function RecoveryAssistancePage() {
           },
           {
             "@type": "Offer",
-            name: "Standard assistance — 6-month monitoring",
-            price: "12",
-            priceCurrency: "USD",
-            description:
-              "Police and local outreach, social media visual, protected relay email, and 6 months of web monitoring.",
-          },
-          {
-            "@type": "Offer",
-            name: "Premium assistance — 12-month monitoring",
+            name: "Active search — 12-month monitoring",
             price: "25",
             priceCurrency: "USD",
             description:
-              "Extended outreach, social media visual, protected relay email, human-verified matches, downloadable QR poster (PDF), and 12 months of web monitoring.",
+              "Report filed with the competent lost-property service, outreach to the places likely to hold the item, social media visual with an anonymous relay email, 12 months of AI web monitoring with human-verified matches, a downloadable loss report certificate, and a printable sheet of QR stickers.",
           },
         ],
       },
@@ -151,11 +143,11 @@ export default function RecoveryAssistancePage() {
             Lost an item in the United States? We help you search for it.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-700">
-            ReportLost helps travelers and U.S. residents take the right steps after losing an item. Depending on
-            the selected plan, our team contacts the relevant local lost-property office, police department,
+            ReportLost helps travelers and U.S. residents take the right steps after losing an item. With the
+            Active search plan, our team contacts the relevant local lost-property office, police department,
             transportation service, hotel, venue or business; creates and distributes a targeted social media
             notice; and monitors public web sources using the item description, city, location and date of loss —
-            for <strong>6 to 12 months</strong>.
+            for <strong>12 months</strong>.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
@@ -172,7 +164,7 @@ export default function RecoveryAssistancePage() {
             </a>
           </div>
           <p className="mt-5 text-sm font-medium text-gray-500">
-            Human assistance · Local outreach · 6 to 12-month monitoring
+            Human assistance · Local outreach · 12-month monitoring
           </p>
         </section>
 
@@ -195,8 +187,8 @@ export default function RecoveryAssistancePage() {
             <li>
               <strong>2. Official and local outreach.</strong> We identify and contact the relevant municipal
               lost-property office, the police department where appropriate, the transportation provider, and the
-              hotels, venues or businesses you mention. The Premium plan extends this outreach to additional
-              establishments around your loss location.
+              hotels, venues or businesses you mention, plus additional establishments around your loss
+              location.
             </li>
             <li>
               <strong>3. Social media distribution.</strong> We create a dedicated lost-item visual and publish or
@@ -204,13 +196,20 @@ export default function RecoveryAssistancePage() {
               Facebook groups we are members of, private communities included.
             </li>
             <li>
-              <strong>4. Web monitoring — 6 or 12 months.</strong> Monitoring begins when your plan is activated
-              and remains active for 180 days (Standard) or 365 days (Premium). Searches use multiple combinations
+              <strong>4. Web monitoring — 12 months.</strong> Monitoring begins when your plan is activated
+              and remains active for 365 days, running every day for the first week, then once a week, then
+              once a month. Searches use multiple combinations
               of the item type, brand, distinctive features, city, neighborhood, venue and date of loss across
               public sources. Monitoring does not cover content inaccessible to public search tools.
             </li>
             <li>
-              <strong>5. Human verification (Premium).</strong> Potential matches are reviewed by a person before
+              <strong>5. Loss report certificate and QR stickers.</strong> A certificate recording your
+              declaration and its date is issued on our site and downloadable from your case page — it is not an
+              official document and does not replace a police report. You also receive a printable sheet of QR
+              stickers, each routing a finder to your anonymous relay address.
+            </li>
+            <li>
+              <strong>6. Human verification.</strong> Potential matches are reviewed by a person before
               being forwarded to you, so you only receive credible leads.
             </li>
             <li>
@@ -223,46 +222,40 @@ export default function RecoveryAssistancePage() {
         {/* Plans */}
         <section className="rounded-xl bg-white p-8 shadow">
           <h2 className="text-2xl font-bold text-gray-900">Plans</h2>
-          <div className="mt-6 grid gap-5 md:grid-cols-3">
+          <div className="mt-6 grid gap-5 md:grid-cols-2">
             <div className="rounded-xl border border-gray-200 p-5">
               <h3 className="text-lg font-bold text-gray-900">Free listing</h3>
               <p className="mt-1 text-2xl font-bold text-gray-900">$0</p>
               <ul className="mt-3 space-y-2 text-sm text-gray-600">
                 <li>✔️ Your lost item report published online</li>
                 <li>✔️ Public, shareable listing page</li>
-              </ul>
-            </div>
-            <div className="rounded-xl border-2 border-blue-400 p-5">
-              <h3 className="text-lg font-bold text-gray-900">Standard assistance</h3>
-              <p className="mt-1 text-2xl font-bold text-gray-900">$12</p>
-              <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                <li>✔️ Police &amp; local lost-property outreach</li>
-                <li>✔️ Contact of the establishments you mention</li>
-                <li>✔️ Social media visual published</li>
                 <li>✔️ Protected relay email address</li>
                 <li>
-                  ✔️ <strong>6-month</strong> web &amp; social monitoring
+                  ➖ No outreach and no active search: the listing waits to be found
                 </li>
               </ul>
             </div>
             <div className="rounded-xl border-2 border-green-500 p-5">
-              <h3 className="text-lg font-bold text-gray-900">Premium assistance</h3>
+              <h3 className="text-lg font-bold text-gray-900">Active search</h3>
               <p className="mt-1 text-2xl font-bold text-gray-900">$25</p>
               <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                <li>✔️ Everything in Standard</li>
-                <li>✔️ Extended outreach (more establishments contacted)</li>
+                <li>✔️ Everything in the free listing</li>
+                <li>✔️ Report filed with the competent lost-property service, usually the police</li>
+                <li>✔️ The places likely to hold your item contacted</li>
+                <li>✔️ Visual notice published on social media and local groups</li>
                 <li>
-                  ✔️ <strong>12-month</strong> web &amp; social monitoring
+                  ✔️ <strong>12 months</strong> of AI web monitoring: daily the first week, then weekly, then
+                  monthly
                 </li>
                 <li>✔️ Matches reviewed by a human before you get them</li>
-                <li>✔️ Printable QR-code poster (PDF) included</li>
+                <li>✔️ Loss report certificate, downloadable from your case page</li>
+                <li>✔️ Printable sheet of QR stickers linked to your relay address</li>
               </ul>
             </div>
           </div>
           <p className="mt-5 text-sm text-gray-600">
-            <strong>Pay-what-you-want option:</strong> you can also support your search with a custom contribution.
-            Below $12, we still publish your report and the social media notice, and do our best with the time
-            available; from $12, your case is handled like a Standard plan.
+            <strong>One price, one-time, never a subscription.</strong> There is no partial plan: your report is
+            either published free of charge, or actively searched under the Active search plan.
           </p>
         </section>
 
@@ -273,7 +266,7 @@ export default function RecoveryAssistancePage() {
             Every paid case combines four concrete actions. Your report is <strong>filed with the police</strong>{" "}
             and sent to the establishments where the item may have been lost (hotel, venue, transit, businesses
             nearby). A dedicated visual is <strong>published on local social channels</strong> and community
-            groups. Our <strong>automated monitoring scans the web for 6 to 12 months</strong>, crossing your
+            groups. Our <strong>automated monitoring scans the web for 12 months</strong>, crossing your
             item&rsquo;s description, location and date against new listings and &ldquo;found&rdquo; posts, so you
             don&rsquo;t have to check every site yourself. And a <strong>real team reviews each case manually</strong>:
             they check incoming reports, run additional searches, and filter potential matches before anything
@@ -301,7 +294,7 @@ export default function RecoveryAssistancePage() {
         {/* Final CTA */}
         <section className="py-4 text-center">
           <h2 className="text-2xl font-bold text-gray-900">Ready to start the search?</h2>
-          <p className="mt-2 text-gray-600">One report. Every relevant channel. Up to 12 months of monitoring.</p>
+          <p className="mt-2 text-gray-600">One report. Every relevant channel. 12 months of monitoring.</p>
           <Link
             href="/report"
             className="mt-5 inline-block rounded-lg bg-green-600 px-8 py-3 font-bold text-white shadow-md transition hover:bg-green-700"
