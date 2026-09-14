@@ -18,6 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ObjectSuggest from "@/components/ObjectSuggest";
 
 export default function CityLostFormBlock({
   defaultCity,
@@ -81,31 +82,28 @@ export default function CityLostFormBlock({
             </p>
           </div>
           <div className="px-5 pb-5 pt-3 sm:px-6">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                go(true);
-              }}
+            {/* Le même composant de suggestions que l'étape 1 du formulaire :
+                la personne voit exactement la même liste, et sa réponse est
+                transmise telle quelle. ObjectSuggest est autonome et léger,
+                il n'entraîne pas le bundle du formulaire avec lui. */}
+            <div onMouseEnter={prefetch} onFocus={prefetch}>
+              <ObjectSuggest value={item} onChange={setItem} />
+            </div>
+
+            <div className="mt-2.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+              If there isn&rsquo;t an adequate suggestion, select{" "}
+              <strong>&ldquo;Other &ndash; My item isn&rsquo;t listed&rdquo;</strong> and enter the
+              item&rsquo;s category. You can provide details later.
+            </div>
+
+            <button
+              type="button"
+              onClick={() => go(true)}
+              onMouseEnter={prefetch}
+              className="mt-2.5 w-full rounded-xl bg-gradient-to-r from-[#26723e] to-[#2ea052] py-3 text-[15px] font-bold text-white"
             >
-              <input
-                type="text"
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                onFocus={prefetch}
-                onMouseEnter={prefetch}
-                enterKeyHint="go"
-                aria-label="What did you lose?"
-                placeholder="Start typing your item (e.g., Phone, Wallet, Passport)…"
-                className="w-full rounded-xl border-[1.5px] border-green-200 bg-white px-4 py-3 text-[15px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-green-400 focus:ring-2 focus:ring-green-200"
-              />
-              <button
-                type="submit"
-                onMouseEnter={prefetch}
-                className="mt-2.5 w-full rounded-xl bg-gradient-to-r from-[#26723e] to-[#2ea052] py-3 text-[15px] font-bold text-white"
-              >
-                Continue →
-              </button>
-            </form>
+              Continue →
+            </button>
             <p className="mt-2.5 text-center text-[11.5px] text-gray-500">
               Free listing · no account · your details stay private
             </p>

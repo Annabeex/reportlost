@@ -206,6 +206,7 @@ export default function ReportForm({
       const itemParam = (params.get("item") || "").trim();
       if (itemParam) {
         setFormData((p: any) => (p.title ? p : { ...p, title: itemParam.slice(0, 120) }));
+        setItemFromUrl(true);
       }
 
       // ✅ NEW: récupérer ?station=xxxx depuis l'URL du QR
@@ -686,6 +687,9 @@ export default function ReportForm({
   // ✅ Après paiement : écran de confirmation (plus de popup alert) qui propose
   // les coordonnées d'action (téléphone / adresse / date de naissance), demandées
   // UNIQUEMENT aux clients payants. Le webhook Stripe gère la base côté serveur.
+  // Objet déjà renseigné par l'amorce d'une page ville : l'étape 1 ne repose
+  // alors plus la question, elle enchaîne directement sur la description.
+  const [itemFromUrl, setItemFromUrl] = useState(false);
   const [showAutoPlan, setShowAutoPlan] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [detailsSaved, setDetailsSaved] = useState(false);
@@ -925,6 +929,7 @@ setFreeEmailSent(true);
           onNext={handleNext}
           universityName={universityName} // ✅ NEW: Prop passée pour affichage conditionnel
           petMode={petMode} // ✅ NEW: libellés animaux
+          itemFromUrl={itemFromUrl}
         />
       )}
 

@@ -12,6 +12,8 @@ interface Props {
   onNext: () => void;
   universityName?: string; // ✅ NEW: Ajouté pour accepter la prop du parent
   petMode?: boolean; // ✅ NEW: libellés adaptés aux animaux perdus
+  /** L'objet a déjà été choisi sur une page ville : on ne repose pas la question. */
+  itemFromUrl?: boolean;
 }
 
 /* --- Listes (inchangées) --- */
@@ -187,7 +189,7 @@ function LocalSuggest({
 
 /* ========================================================================= */
 
-export default function ReportFormStep1({ formData, onChange, onNext, universityName, petMode = false }: Props) { // ✅ NEW: Ajout de la prop ici
+export default function ReportFormStep1({ formData, onChange, onNext, universityName, petMode = false, itemFromUrl = false }: Props) { // ✅ NEW: Ajout de la prop ici
   // Phases
   const [phase, setPhase] = useState<"basic" | "context">("basic");
 
@@ -350,11 +352,20 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
       {phase === "basic" && (
         <>
           <h2 className="text-xl font-bold">
-            {petMode ? "Step 1: Tell us about your pet" : "Step 1: Describe the lost item"}
+            {petMode
+              ? "Step 1: Tell us about your pet"
+              : itemFromUrl && (formData.title || "").trim()
+              // Minuscules à l'affichage uniquement : la valeur enregistrée en
+              // base garde la casse saisie par le client.
+              ? `Describe your lost ${String(formData.title).trim().toLowerCase()}`
+              : "Step 1: Describe the lost item"}
           </h2>
 
-          {/* What did you lose — composant existant (garde ton design) */}
-          {petMode ? (
+          {/* What did you lose — composant existant (garde ton design).
+              Masqué quand la réponse vient de l'amorce d'une page ville : la
+              question a déjà été posée, la reposer donnerait l'impression que
+              la première réponse n'a pas été prise en compte. */}
+          {itemFromUrl && !petMode ? null : petMode ? (
             <div>
               <label className="block font-medium mb-2">What kind of animal, and their name?</label>
               <input
@@ -377,7 +388,7 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
             </div>
           )}
 
-          {showSuggestInfo && !petMode && (
+          {showSuggestInfo && !petMode && !itemFromUrl && (
             <div className="rounded-lg border border-green-200 bg-green-50 text-green-800 px-3 py-2 text-sm">
               If there isn’t an adequate suggestion, select <strong>“Other – My item isn’t listed”</strong> and
               enter the item’s category. You can provide details later.
