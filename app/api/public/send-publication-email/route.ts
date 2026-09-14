@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     // On lit la ligne (PII minimale)
     const { data: row, error } = await supabaseAdmin
       .from("lost_items")
-      .select("id, mail_sent, email, first_name, title, date, city, public_id")
+      .select("id, publication_mail_sent, email, first_name, title, date, city, public_id")
       .eq("id", reportId)
       .maybeSingle();
 
@@ -57,8 +57,13 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, error: "Email mismatch" }, { status: 403 });
     }
 
-    // Déjà envoyé → on ne renvoie pas
-    if (row.mail_sent) return json({ ok: true, skipped: true }, { status: 200 });
+    // ⚠️ Ce garde-fou lisait `mail_sent`, qui est posé par /api/save-report au
+    // moment où le brouillon est enregistré — donc AVANT le choix de formule.
+    // Résultat : ce mail-ci n'était jamais envoyé, et les dépôts gratuits ne
+    // recevaient que le mail « one step away from going live », qui leur
+    // annonçait à tort que leur annonce n'était pas publiée.
+    // Chaque mail a désormais son propre drapeau.
+    if (row.publication_mail_sent) return json({ ok: true, skipped: true }, { status: 200 });
 
     // Construire l’email (reprend ton ton actuel)
     const base = getBaseUrl(req);
@@ -171,12 +176,12 @@ Either way, your free listing stays online. Thank you for using ReportLost.`;
     // Marque DB
     const { error: upErr } = await supabaseAdmin
       .from("lost_items")
-      .update({ mail_sent: true })
+      .update({ publication_mail_sent: true })
       .eq("id", reportId);
 
     if (upErr) {
       // email envoyé mais flag non persisté : on renvoie ok quand même
-      return json({ ok: true, warning: "mail sent but mail_sent not persisted" }, { status: 200 });
+      return json({ ok: true, warning: "mail sent but publication_mail_sent not persisted" }, { status: 200 });
     }
 
     return json({ ok: true }, { status: 200 });

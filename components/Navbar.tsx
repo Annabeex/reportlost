@@ -108,23 +108,27 @@ export default function Navbar() {
         {/* Le lien « Lost Pet Poster » vivait ici, seul au milieu de la barre.
             Il est désormais présenté en encart sur la page d'accueil, où il a
             la place d'expliquer ce qu'il est. */}
+        {/* Sur mobile les deux boutons occupaient presque la moitié de la barre,
+            à pleine hauteur et collés au bord : ils écrasaient le logo. Ils
+            deviennent deux pastilles compactes. Le desktop garde ses formes
+            obliques pleine hauteur. */}
         {!isUniPage && (
-          <div className="flex items-stretch gap-0 h-full">
+          <div className={isMobile ? "flex items-center gap-1.5" : "flex items-stretch gap-0 h-full"}>
             {/* --- VERSION MOBILE : droite et compacte --- */}
             {isMobile ? (
               <>
                 <Link
                   href="/report?tab=lost"
-                  className="flex items-center justify-center bg-green-600 text-white font-semibold px-3 py-1 text-xs rounded-l-md"
+                  className="inline-flex items-center rounded-md bg-[#15803d] px-3 py-2 text-[11px] font-bold tracking-wide text-white"
                 >
-                  <Search size={14} className="mr-1 opacity-95" />
+                  <Search size={13} className="mr-1.5 opacity-95" />
                   LOST
                 </Link>
                 <Link
                   href="/report?tab=found"
-                  className="flex items-center justify-center bg-blue-500 text-white font-semibold px-3 py-1 text-xs rounded-r-md"
+                  className="inline-flex items-center rounded-md bg-[#60a5fa] px-3 py-2 text-[11px] font-bold tracking-wide text-white"
                 >
-                  <SmallCheck size={14} />
+                  <SmallCheck size={13} />
                   FOUND
                 </Link>
               </>

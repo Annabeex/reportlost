@@ -357,7 +357,10 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
               : itemFromUrl && (formData.title || "").trim()
               // Minuscules à l'affichage uniquement : la valeur enregistrée en
               // base garde la casse saisie par le client.
-              ? `Describe your lost ${String(formData.title).trim().toLowerCase()}`
+              // Registre officiel conservé : on retire seulement « lost », qui est
+              // redondant. C'est la phrase d'aide sous le champ, pas le titre,
+              // qui lève l'effort de rédaction.
+              ? `Describe your ${String(formData.title).trim().toLowerCase()}`
               : "Step 1: Describe the lost item"}
           </h2>
 
@@ -396,9 +399,17 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
           )}
 
           <div>
-            <label className="block font-medium mb-2">
+            <label className="block font-medium mb-1">
               {petMode ? "Describe your pet" : "Please provide a detailed description"}
             </label>
+            {/* « Describe » ne dit pas ce qu'on attend : les gens écrivent trois
+                mots et passent. Le critère « recognize it among a dozen others »
+                donne le niveau de détail sans détendre le ton. */}
+            <p className="mb-2 text-[13px] leading-relaxed text-gray-500">
+              {petMode
+                ? "Breed, color, size, collar and tag, microchipped or not, temperament — anything that would let someone recognize them."
+                : "Color, brand, marks or engravings, what was inside — anything that would let someone recognize it among a dozen others."}
+            </p>
             <textarea
               name="description"
               placeholder={

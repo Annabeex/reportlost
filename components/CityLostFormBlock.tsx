@@ -77,8 +77,15 @@ export default function CityLostFormBlock({
         <div className="overflow-hidden rounded-2xl border-2 border-green-500 bg-gradient-to-b from-green-50/60 to-white shadow-[0_6px_20px_-12px_rgba(34,197,94,.7)]">
           <div className="px-5 pt-4 sm:px-6">
             <h2 className="text-lg font-bold text-[#1f6b3a] sm:text-xl">What did you lose?</h2>
-            <p className="mt-1 text-[13px] text-gray-600">
-              Start here. The rest takes about two minutes, and publishing is free.
+            {/* L'ancienne note verte sur fond vert, juste sous un champ vert,
+                se voyait à peine et alourdissait le bloc. Même texte, remonté
+                en sous-titre gris : lu avant la saisie plutôt qu'après. */}
+            <p className="mt-1 text-[13px] leading-relaxed text-gray-600">
+              If there isn&rsquo;t an adequate suggestion, select{" "}
+              <strong className="font-semibold text-gray-700">
+                &ldquo;Other &ndash; My item isn&rsquo;t listed&rdquo;
+              </strong>{" "}
+              and enter the item&rsquo;s category. You can provide details later.
             </p>
           </div>
           <div className="px-5 pb-5 pt-3 sm:px-6">
@@ -90,12 +97,6 @@ export default function CityLostFormBlock({
               <ObjectSuggest value={item} onChange={setItem} />
             </div>
 
-            <div className="mt-2.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-              If there isn&rsquo;t an adequate suggestion, select{" "}
-              <strong>&ldquo;Other &ndash; My item isn&rsquo;t listed&rdquo;</strong> and enter the
-              item&rsquo;s category. You can provide details later.
-            </div>
-
             <button
               type="button"
               onClick={() => go(true)}
@@ -105,7 +106,7 @@ export default function CityLostFormBlock({
               Continue →
             </button>
             <p className="mt-2.5 text-center text-[11.5px] text-gray-500">
-              Free listing · no account · your details stay private
+              Free listing · your details stay private
             </p>
           </div>
         </div>
