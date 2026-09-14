@@ -82,10 +82,6 @@ export default function ReportDetailsPanel({
             institutions (hotels, hospitals, universities). We include your report reference
             so physical returns can be matched quickly.
           </p>
-          <p>
-            <em>Premium option:</em> we can call and follow up on your behalf — useful for
-            time-sensitive or high-value items.
-          </p>
         </div>
       ),
     },

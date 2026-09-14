@@ -51,7 +51,7 @@ export function buildFollowupBlocks(opts: {
   if (lines) {
     outreach.push(
       `Reached out for your case${city ? ` in ${city}` : ""}:\n\n${lines}`,
-      "For best results, you can also call these desks directly or visit in person with proof of ownership. Mentioning your reference number lets them connect your visit to the report we filed."
+      "For best results, you can also contact these desks directly or visit in person with proof of ownership. Mentioning your reference number lets them connect your visit to the report we filed."
     );
   }
 

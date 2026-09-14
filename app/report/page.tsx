@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function ReportPage({
   searchParams,
 }: {
-  searchParams?: { tab?: string; category?: string };
+  searchParams?: { tab?: string; category?: string; city?: string; item?: string };
 }) {
   const tabParam = (searchParams?.tab || "").toLowerCase();
   const initialTab = tabParam === "found" ? "found" : "lost";
@@ -32,7 +32,9 @@ export default function ReportPage({
   return (
     <main className="w-full">
       <ClientReportForm
-        defaultCity=""
+        // Pré-remplissage venu de l'amorce des pages villes (?city=…&item=…).
+        // L'objet est lu directement dans l'URL par ReportForm.
+        defaultCity={(searchParams?.city || "").trim()}
         initialTab={initialTab}
         compact
         initialCategory={initialCategory}

@@ -38,7 +38,7 @@ function baseDefaults(publicId?: string, lostId?: string): Block[] {
   return [
     { id: uid(), title: "Local notifications & Authority outreach", paragraphs: [
       "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
-      "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please call the lost and found office or visit the office in person with proof of ownership if you have.",
+      "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please contact the lost and found office or visit it in person with proof of ownership if you have.",
     ]},
     { id: uid(), title: "Database & Partners searches", paragraphs: [
       "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords.",

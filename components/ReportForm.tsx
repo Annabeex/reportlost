@@ -201,6 +201,13 @@ export default function ReportForm({
         setFormData((p: any) => ({ ...p, category: catParam }));
       }
 
+      // ✅ Amorce des pages villes : ?item=… pré-remplit le premier champ, pour
+      // que la personne arrive sur une étape 1 déjà entamée plutôt que vierge.
+      const itemParam = (params.get("item") || "").trim();
+      if (itemParam) {
+        setFormData((p: any) => (p.title ? p : { ...p, title: itemParam.slice(0, 120) }));
+      }
+
       // ✅ NEW: récupérer ?station=xxxx depuis l'URL du QR
       const st = (params.get("station") || "").trim().toLowerCase();
       if (st) {

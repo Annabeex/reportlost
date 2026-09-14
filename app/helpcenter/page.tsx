@@ -125,7 +125,7 @@ export default function HelpCenterPage() {
         </p>
         <ul className="mt-4 space-y-3 text-gray-700">
           <li>
-            <span className="font-medium">Retrace your steps:</span> note exact times and locations; call and visit the venues where the item may have been left (transport desk, café, venue staff, security).
+            <span className="font-medium">Retrace your steps:</span> note exact times and locations; contact and visit the venues where the item may have been left (transport desk, café, venue staff, security).
           </li>
           <li>
             <span className="font-medium">Contact official lost‑and‑found services:</span> airlines, train and bus companies, city services, campus or venue offices. Provide a concise description and a way to confirm ownership.

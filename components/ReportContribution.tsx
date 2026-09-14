@@ -347,8 +347,8 @@ export default function ReportContribution({
 
               <div className="px-5 py-4">
                 <p className="mb-3 text-[13.5px] leading-relaxed text-gray-600">
-                  The automated part of our work, without the human outreach: nobody calls a police
-                  desk or a hotel for you.
+                  The automated part of our work, without the human outreach: nobody contacts a
+                  police desk or a hotel for you.
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">

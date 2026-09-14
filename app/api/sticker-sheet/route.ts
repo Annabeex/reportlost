@@ -341,7 +341,7 @@ export async function GET(req: NextRequest) {
       costCard(12, 120, "$1,299", "What a flagship phone costs new",
         "iPhone 18 Pro Max, 256 GB, list price. Most of the", "loss is the data and the hours, not the hardware.");
       costCard(108, 120, "$50-300", "Rekeying a home after losing keys",
-        "Per visit, depending on how many locks and", "whether it is an emergency call-out.");
+        "Per visit, depending on how many locks and", "whether it is an emergency appointment.");
 
       // --- Où les coller ---
       C.text("Where to stick them", 12, 168, 13, helvB, GREEN_DEEP);
