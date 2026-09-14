@@ -25,7 +25,7 @@ const LAST_REVIEWED = "September 2026";
 export const metadata = {
   title: "Lost & Found in the United States, State by State | ReportLost",
   description:
-    "How long police must hold found property, what a finder owes you, and where unclaimed items end up, state by state. Browse lost & found guidance for every US state.",
+    "How long police must hold found property, what a finder owes you, and where unclaimed items end up, state by state. Browse lost & found guidance for every US state, plus Washington, D.C. and Puerto Rico.",
   alternates: { canonical: "https://reportlost.org/lost-and-found" },
 };
 
@@ -60,33 +60,20 @@ async function getCoveredCountByState(): Promise<Record<string, number>> {
   return out;
 }
 
-async function getTotalReports(): Promise<number> {
-  try {
-    const sb = getSupabaseAdmin({ fresh: false });
-    if (!sb) return 0;
-    const { count } = await sb
-      .from("lost_items")
-      .select("id", { count: "exact", head: true });
-    return count || 0;
-  } catch {
-    return 0;
-  }
-}
-
 // --- présentation des règles --------------------------------------------------
 
 function ruleShort(rule: HoldingRule): string {
+  if (rule.shortLabel) return rule.shortLabel;
   if (rule.kind === "fixed" && rule.days) return `${rule.days} days`;
   if (rule.kind === "scaled") return "Scales with value";
   return "No statewide period";
 }
 
+// On affiche la note vérifiée à la main plutôt qu'une phrase générique : elle est
+// écrite pour suivre « In {State}, », d'où la majuscule ajoutée ici.
 function ruleLong(rule: HoldingRule): string {
-  if (rule.kind === "fixed" && rule.days)
-    return `Found property must be held for at least ${rule.days} days before it can be auctioned, given to the finder or disposed of.`;
-  if (rule.kind === "scaled")
-    return "The holding period is not a single number: it grows with the declared value of the item.";
-  return "Retention is decided department by department. Asking the specific desk that holds your item is the only reliable answer.";
+  const n = rule.note || "";
+  return n ? n.charAt(0).toUpperCase() + n.slice(1) : "";
 }
 
 // Ordre de lecture : durées fixes croissantes, puis barèmes, puis absence de règle.
@@ -100,13 +87,7 @@ function ruleWeight(rule: HoldingRule): number {
 
 export default async function LostAndFoundHub() {
   const all = states as StateRow[];
-  const [covered, totalReports] = await Promise.all([
-    getCoveredCountByState(),
-    getTotalReports(),
-  ]);
-
-  const coveredCities = Object.values(covered).reduce((a, b) => a + b, 0);
-  const statesCovered = Object.keys(covered).length;
+  const covered = await getCoveredCountByState();
 
   const verified = all
     .map((s) => ({ state: s, rule: holdingRule(s.code) }))
@@ -155,45 +136,11 @@ export default async function LostAndFoundHub() {
 
       <p className="mx-auto max-w-2xl text-center text-gray-700 leading-relaxed">
         There is no national lost and found office, and no single law. What happens to
-        an item you lost depends on the state it was lost in, and often on the single
+        an item you lost depends on the state or territory it was lost in, and often on the single
         department, station or venue that picked it up. These pages set out what the
         law says where it says anything, who to contact where it does not, and how to
         put your loss on record.
       </p>
-
-      {/* Compteurs réels : aucune donnée décorative. */}
-      {(totalReports > 0 || coveredCities > 0) && (
-        <div className="mt-8 flex flex-wrap items-baseline justify-center gap-x-12 gap-y-4">
-          {totalReports > 0 && (
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-gray-900 tabular-nums">
-                {totalReports.toLocaleString("en-US")}
-              </div>
-              <div className="mt-1 text-[11px] uppercase tracking-wide text-gray-500">
-                reports filed
-              </div>
-            </div>
-          )}
-          {coveredCities > 0 && (
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-gray-900 tabular-nums">
-                {coveredCities.toLocaleString("en-US")}
-              </div>
-              <div className="mt-1 text-[11px] uppercase tracking-wide text-gray-500">
-                cities with a local guide
-              </div>
-            </div>
-          )}
-          <div className="text-center">
-            <div className="text-2xl font-semibold text-gray-900 tabular-nums">
-              {statesCovered > 0 ? statesCovered : all.length}
-            </div>
-            <div className="mt-1 text-[11px] uppercase tracking-wide text-gray-500">
-              states covered
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tableau des règles vérifiées : le contenu qui n'existe nulle part ailleurs. */}
       {verified.length > 0 && (
@@ -258,11 +205,16 @@ export default async function LostAndFoundHub() {
       {/* Index des États : un lien interne stable et suivable vers chaque page. */}
       <section className="mt-14">
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Browse every state
+          Browse every state and territory
         </h2>
         <p className="max-w-3xl text-sm leading-relaxed text-gray-600 mb-6">
-          Each state page explains how lost and found works there and lists the cities
-          we cover, with the local desks, transit operators and venues to contact.
+          Each page explains how lost and found works there and lists the cities we cover, with the
+          local desks, transit operators and venues to contact. Washington, D.C. and Puerto Rico run
+          their own circuits and have their own page. You can also browse{" "}
+          <Link href="/lost" className="text-blue-700 hover:underline">
+            the most recent reports filed across the country
+          </Link>
+          .
         </p>
 
         <ul className="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3 lg:grid-cols-4">

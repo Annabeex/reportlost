@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
 We have saved your lost item report draft on reportlost.org.
 
-To publish it and start the search, please complete the secure payment (you can choose your search level on the next page).
+To activate the search, complete the secure payment of $25. It covers the filing of your report with the competent lost-property service, outreach to the places likely to be holding your item, a visual notice published with an anonymous relay address, twelve months of AI web monitoring, a loss report certificate and a printable sheet of QR stickers.
 
 Your report details:
 - Item: ${row.title || ""}
@@ -111,9 +111,15 @@ Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is co
     <p style="margin:0 0 14px">We have saved your lost item report <em>draft</em> on
       <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
-    <p style="margin:0 0 14px">To publish it and start the search, please complete the secure payment.
-      You will be able to choose your search level on the next page.
-    </p>
+    <p style="margin:0 0 10px">To activate the search, complete the secure payment of <b>$25</b>. It covers:</p>
+    <ul style="margin:0 16px 14px;padding-left:18px">
+      <li>the filing of your report with the competent lost-property service, as soon as we hold the information it requires;</li>
+      <li>outreach to the places likely to be holding your item;</li>
+      <li>a visual notice published with an anonymous relay address tied to your case;</li>
+      <li>twelve months of AI web monitoring, every credible match reviewed by a person;</li>
+      <li>a loss report certificate, which is not an official document;</li>
+      <li>a printable sheet of QR stickers routing finders to your relay address.</li>
+    </ul>
     <ul style="margin:0 16px 18px;padding-left:18px">
       <li><b>Item:</b> ${row.title || ""}</li>
       <li><b>Date:</b> ${row.date || ""}</li>

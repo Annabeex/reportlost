@@ -4,6 +4,9 @@ export const allStates = [
   'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
   'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+  // District de Columbia et Porto Rico : des guides y sont publiés, leur page
+  // d'État doit donc exister, sinon les villes concernées pointent vers un 404.
+  'DC','PR',
 ];
 
 export function generateStaticParams() {

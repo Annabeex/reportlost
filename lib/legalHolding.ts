@@ -13,6 +13,8 @@ export type HoldingRule = {
   kind: "fixed" | "scaled" | "local";
   /** Uniquement pour kind === "fixed". */
   days?: number;
+  /** Libellé court si « N days » serait imprécis (ex. PR : 3 mois depuis l'avis). */
+  shortLabel?: string;
   citation?: string;
   /** Phrase affichable telle quelle après « In {State}, ». */
   note: string;
@@ -65,6 +67,16 @@ const HOLDING: Record<string, HoldingRule> = {
     kind: "local",
     citation: "Ohio Revised Code §2933.41",
     note: "police must make reasonable efforts to identify the owner, but retention periods are set locally rather than statewide.",
+  },
+  // Porto Rico n'est pas une juridiction de common law : la règle vient du Code
+  // civil de 2020 (loi 55-2020, en vigueur depuis le 28 novembre 2020), art. 749
+  // et 31 L.P.R.A. §7965-7966. Vérifié en septembre 2026 sur Justia.
+  PR: {
+    kind: "fixed",
+    days: 90,
+    shortLabel: "3 months",
+    citation: "Civil Code of Puerto Rico, art. 749 (31 L.P.R.A. §7965)",
+    note: "a finder must hand the item to the municipal authority immediately, not to a police station, and the municipality publishes a public notice. Three months after that notice, an unclaimed item, or its value, is awarded to the finder, and an owner who gets the item back owes the finder one tenth of its value (31 L.P.R.A. §7966).",
   },
   GA: {
     kind: "local",

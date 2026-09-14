@@ -964,7 +964,7 @@ setFreeEmailSent(true);
             <div className="flex flex-col items-start gap-3 mt-4">
               {forceFreeMode && (
                 <p className="text-sm text-gray-600 mb-2">
-                  <strong>Optional:</strong> Need our team to actively search private databases and contact transit authorities for you?
+                  <strong>Optional:</strong> Your free listing is live. Active search adds the filing with the local lost-property service, outreach to the places likely to hold your item, a published visual notice and twelve months of web monitoring.
                 </p>
               )}
               
@@ -973,7 +973,7 @@ setFreeEmailSent(true);
                   href={contributeUrl}
                   className="inline-flex items-center px-4 py-2 rounded-md bg-green-700 text-white hover:bg-green-800 font-semibold"
                 >
-                  Activate Premium Search
+                  Activate my search — $25
                 </a>
                 <button
                   type="button"
@@ -988,21 +988,81 @@ setFreeEmailSent(true);
         ) : paymentDone ? (
           // ✅ Confirmation après paiement + coordonnées d'action (clients payants uniquement)
           <section className="w-full bg-white px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-            <div className="rounded-2xl border border-green-200 bg-[#f2fbf5] px-5 py-4">
-              <h2 className="text-xl font-bold text-[#1f6b3a]">✅ Payment confirmed</h2>
-              <p className="mt-1 text-[#0f2b1c]">
-                Your search is now active. You will receive a confirmation email shortly.
+            <div className="rounded-2xl border border-green-200 bg-[#f2fbf5] px-5 py-5">
+              <h2 className="text-xl font-bold text-[#1f6b3a]">
+                ✅ Payment confirmed — your search is active
+              </h2>
+              <p className="mt-1.5 text-[#0f2b1c]">
+                Your report is published and the web monitoring has already started. A confirmation
+                email is on its way
+                {formData.email ? (
+                  <> to <span className="font-semibold">{formData.email}</span></>
+                ) : null}
+                .
               </p>
+
+              {/* Après un paiement, la question du client n'est pas « qu'ai-je acheté »
+                  mais « que se passe-t-il maintenant ». Y répondre ici évite les
+                  relances quotidiennes des jours suivants. Aucun délai chiffré n'est
+                  promis : on annonce l'ordre des étapes, pas des dates. */}
+              <dl className="mt-4 space-y-2.5 border-t border-green-200/70 pt-4 text-sm">
+                <div className="flex gap-3">
+                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Now</dt>
+                  <dd className="text-[#123524]">
+                    Your report is live and the AI search engine is scanning the web on your
+                    item&rsquo;s keywords, every day during this first week.
+                  </dd>
+                </div>
+                <div className="flex gap-3">
+                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Next</dt>
+                  <dd className="text-[#123524]">
+                    We contact the places likely to be holding your item, publish your visual notice
+                    with an anonymous relay address, and file your report with the lost-property
+                    service concerned wherever it accepts a report filed by a third party.
+                  </dd>
+                </div>
+                <div className="flex gap-3">
+                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">12 months</dt>
+                  <dd className="text-[#123524]">
+                    The search continues, weekly then monthly. Every credible match is reviewed by a
+                    person before it reaches you, so you only hear from us when there is something
+                    to look at.
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
               <h3 className="font-semibold text-gray-900">
-                Help us act on your behalf <span className="text-green-700 font-normal">(optional)</span>
+                Details that unlock steps we cannot take without them{" "}
+                <span className="font-normal text-green-700">(optional)</span>
               </h3>
-              <p className="mt-1 mb-4 text-sm text-gray-600">
-                A phone number lets an establishment reach you quickly, a postal address is needed
-                if something has to be shipped back, and some police departments ask for a date of
-                birth when we file the report for you. Never published.
+              {/* Chaque explication ne s'affiche que tant que le champ concerné est
+                  vide : une fois rempli, il n'y a plus rien à débloquer et la phrase
+                  ne ferait qu'allonger l'écran. */}
+              {(!formData.phone || !formData.birth_date || !formData.address) && (
+                <ul className="mt-2 mb-4 space-y-1.5 text-sm text-gray-600">
+                  {!formData.phone && (
+                    <li>
+                      <span className="font-medium text-gray-900">Phone number</span> — so an
+                      establishment that has your item can reach you directly instead of going
+                      through us.
+                    </li>
+                  )}
+                  {(!formData.birth_date || !formData.address) && (
+                    <li>
+                      <span className="font-medium text-gray-900">
+                        Date of birth and postal address
+                      </span>{" "}
+                      — several police departments will not accept a report filed on your behalf
+                      without them.
+                    </li>
+                  )}
+                </ul>
+              )}
+              <p className="mb-4 text-sm text-gray-500">
+                Never published on the site, and never passed on beyond the step that requires it.
+                You can leave a field empty and add it later.
               </p>
               {detailsSaved ? (
                 <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
@@ -1012,7 +1072,9 @@ setFreeEmailSent(true);
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-medium mb-1">Phone number</label>
+                      <label className="block font-medium mb-1">
+                        Phone number <span className="font-normal text-gray-500">(optional)</span>
+                      </label>
                       <input
                         name="phone"
                         type="tel"
@@ -1022,7 +1084,9 @@ setFreeEmailSent(true);
                       />
                     </div>
                     <div>
-                      <label className="block font-medium mb-1">Date of birth</label>
+                      <label className="block font-medium mb-1">
+                        Date of birth <span className="font-normal text-gray-500">(optional)</span>
+                      </label>
                       <input
                         type="date"
                         name="birth_date"
@@ -1032,7 +1096,9 @@ setFreeEmailSent(true);
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block font-medium mb-1">Postal address</label>
+                      <label className="block font-medium mb-1">
+                        Postal address <span className="font-normal text-gray-500">(optional)</span>
+                      </label>
                       <input
                         name="address"
                         value={formData.address || ""}

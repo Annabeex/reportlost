@@ -409,6 +409,65 @@ const handwritten: Record<string, StateGuide> = {
       "This page provides general information about Pennsylvania law as of publication and is not legal advice. Procedures vary by city and department; verify details with your local authorities.",
   },
 
+  // Sources vérifiées (septembre 2026) :
+  // - Code civil de Porto Rico, loi 55-2020, en vigueur depuis le 28/11/2020
+  // - art. 749 = 31 L.P.R.A. §7965 (remise à la municipalité, avis public,
+  //   vente aux enchères à 8 jours si l'objet se dégrade, 3 mois puis adjugé
+  //   à l'inventeur) — texte lu sur Justia
+  // - 31 L.P.R.A. §7966 (frais + récompense du dixième de la valeur)
+  PR: {
+    stateName: "Puerto Rico",
+    updated: "September 2026",
+    intro: [
+      "Puerto Rico is not a common-law jurisdiction, and lost property is one of the places where the difference is immediately visible. The rules come from the Civil Code enacted as Act 55-2020, in force since November 28, 2020, and they are unusually explicit: article 749 tells a finder exactly what to do with your item, and section 7966 gives that finder a legal right to a reward.",
+      "One consequence surprises visitors and residents alike. The law does not send a found item to a police station: it names the municipal authority. With 78 municipalities on the island, the right casa alcaldía is often the address that matters, alongside the airport, the transit desk or the hotel where the item was actually left.",
+    ],
+    law: [
+      {
+        icon: "🏛️",
+        title: "Article 749: the item goes to the municipality",
+        body: "Anyone who finds movable property whose previous possessor is unknown must deliver it immediately to the municipal authority, which then publishes a public notice of the find. This is the legal route in Puerto Rico, and it is not the police property room that most mainland states rely on. Knowing which municipality covers the spot where you lost your item is therefore a practical advantage, not a detail.",
+      },
+      {
+        icon: "⏳",
+        title: "Three months from the public notice",
+        body: "If nobody claims the item within three months of that public notice, the item, or its value, is awarded to the finder. The clock runs from the notice, not from the day you lost it, so the date the municipality publishes is the one that counts. Items that cannot be kept without deteriorating, or without storage costs that would noticeably reduce their value, are sold at public auction eight days after the notice.",
+      },
+      {
+        icon: "💵",
+        title: "The reward is an obligation, not a courtesy",
+        body: "Under 31 L.P.R.A. section 7966, an owner who recovers a lost item must pay the expenses incurred and give the finder one tenth of the sum or of the item's current value. In most US states a reward is entirely your choice. In Puerto Rico it is owed by law, which is worth knowing both before you offer one and when an honest finder asks.",
+      },
+    ],
+    whereTitle: "Where items end up in Puerto Rico",
+    whereBody:
+      "Legally, found items belong at the municipal authority of the town where they were picked up, and municipal police departments often staff that desk in practice. The Negociado de la Policía de Puerto Rico handles theft, which is a separate filing from a lost item. Beyond that, the usual private circuits apply and each keeps its own: Luis Muñoz Marín airport in San Juan and the airlines serving it, Rafael Hernández in Aguadilla and Mercedita in Ponce, cruise terminals and hotels in Old San Juan, resorts, car rental companies, and the Autoridad de Transporte Integrado for the Tren Urbano and AMA buses, which publishes customer service numbers rather than a written lost and found procedure. ReportLost routes your report to the ones that match where you lost your item, and the city pages below list the local contacts.",
+    faq: [
+      {
+        q: "Do I report a lost item to the police or to the city in Puerto Rico?",
+        a: "The Civil Code points to the municipal authority: article 749 requires a finder to deliver the item to the municipality, which publishes a public notice. Report a theft to the Negociado de la Policía de Puerto Rico, but for an item simply lost, the municipality is the place the law designates.",
+      },
+      {
+        q: "How long is a found item kept in Puerto Rico?",
+        a: "Three months from the date of the public notice. After that, an unclaimed item or its value is awarded to the finder. Items that would deteriorate or cost too much to store can be auctioned eight days after the notice, so perishable or bulky property moves much faster.",
+      },
+      {
+        q: "Is a reward mandatory in Puerto Rico?",
+        a: "Yes, and this is a real difference from the mainland. Under 31 L.P.R.A. section 7966 the owner who recovers the item owes the expenses plus one tenth of its value to the finder.",
+      },
+      {
+        q: "I lost something at the airport or on the Tren Urbano, who has it?",
+        a: "Those are separate circuits from the municipality. Luis Muñoz Marín airport, the airlines, and the Autoridad de Transporte Integrado each hold what is found on their premises, and an item left on a bus or a train rarely reaches a city desk. One report covering every circuit beats calling each one in turn.",
+      },
+      {
+        q: "Does Puerto Rico follow the same lost and found rules as US states?",
+        a: "No. Puerto Rico is a civil law jurisdiction, and its rules come from the Civil Code rather than from common-law finders' doctrine. The current code took effect on November 28, 2020, and rewrote these provisions, so guidance published before that date may be out of date.",
+      },
+    ],
+    disclaimer:
+      "This page provides general information about Puerto Rico law as of publication and is not legal advice. Procedures vary by municipality and by venue; verify details with the local authorities concerned.",
+  },
+
   // Sources vérifiées (juillet 2026) :
   // - 765 ILCS 1020 (ilga.gov / Justia) : ≤100 $ affichage + 6 mois ;
   //   >100 $ publication 3 semaines + 1 an ; double valeur si disposition anticipée

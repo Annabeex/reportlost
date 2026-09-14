@@ -111,11 +111,14 @@ export default function Navbar() {
           <BrandLogo compact={isMobile} />
         </Link>
 
-        {/* Liens (Cachés si on est sur une page Université) */}
+        {/* Lien secondaire. Le problème n'était pas le lien lui-même mais sa
+            position : seul enfant du milieu dans un justify-between, il atterrissait
+            pile au centre et se lisait comme un titre de page. Le ml-auto le pousse
+            contre les boutons, où l'œil attend une navigation. */}
         {!isUniPage && !isMobile && (
           <Link
             href="/lost-pet-poster"
-            className="mr-4 hidden items-center text-sm text-gray-700 transition-colors hover:text-blue-600 lg:flex"
+            className="ml-auto mr-6 hidden items-center whitespace-nowrap text-sm text-gray-700 transition-colors hover:text-blue-600 lg:flex"
           >
             🐾 Lost Pet Poster
           </Link>

@@ -29,6 +29,7 @@ const STATIC_PATHS = [
   "/lost-pet-poster",
   "/lost-item-recovery-assistance-usa",
   "/lost-and-found",
+  "/lost",
   "/how-it-works",
   "/about",
   "/contact",

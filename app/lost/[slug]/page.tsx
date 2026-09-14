@@ -21,7 +21,11 @@ import NextDynamic from "next/dynamic";
 const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), { ssr: false });
 
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
-import { looksLikeObjectNotPlace } from "@/lib/slugify";
+import Link from "next/link";
+import { looksLikeObjectNotPlace, buildCityPath } from "@/lib/slugify";
+import { redactPublic } from "@/lib/redactPublic";
+import { holdingRule } from "@/lib/legalHolding";
+import { stateNameFromAbbr } from "@/lib/utils";
 import { MapPin } from "lucide-react";
 import { headers as nextHeaders } from "next/headers";
 
@@ -149,6 +153,17 @@ function shortenTitleForDisplay(title: string): string {
   return pretty.charAt(0).toUpperCase() + pretty.slice(1);
 }
 
+// "2025-12-29" ou un ISO -> "December 29, 2025". UTC forcé : sinon la date
+// affichée peut reculer d'un jour selon le fuseau du serveur de rendu.
+function formatLongDate(v?: string | null) {
+  if (!v) return "";
+  const d = new Date(String(v).length <= 10 ? `${v}T12:00:00Z` : v);
+  if (isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+  });
+}
+
 // ---------------- Metadata (OG/Twitter) ----------------
 
 export async function generateMetadata(
@@ -190,13 +205,17 @@ export async function generateMetadata(
     undefined;
 
   // Titre/desc pour les aperçus
-  const title = data.title
-    ? `Lost: ${data.title}${city ? ` in ${city}` : ""}${data.state_id ? ` (${data.state_id})` : ""}`
+  // Les aperçus sortent du site : ils passent par le même filtre que la page.
+  const safeTitle = redactPublic(data.title ?? "");
+  const safeDescription = redactPublic(data.description ?? "");
+
+  const title = safeTitle
+    ? `Lost: ${safeTitle}${city ? ` in ${city}` : ""}${data.state_id ? ` (${data.state_id})` : ""}`
     : `Lost report${city ? ` in ${city}` : ""}`;
 
   const descParts = [
     place ? `Possible location: ${place}` : null,
-    data.description ? data.description : null,
+    safeDescription ? safeDescription : null,
   ].filter(Boolean);
   const description = descParts.join(" — ") || "Lost item report";
 
@@ -330,14 +349,15 @@ export default async function LostReportPage({ params }: PageProps) {
   const publicAlias = `item${shortId}@reportlost.org`;
 
   // Prepare fields for display
-  const fullTitle = data.title ?? "Item";
-  const description = data.description ?? "";
+  // Filtre de publication : identifiants masqués, nature de l'objet conservée.
+  const fullTitle = redactPublic(data.title) || "Item";
+  const description = redactPublic(data.description);
   const cityRaw = data.city ?? "";
   const city = stripStateFromCity(cityRaw); // avoid “(OR) (OR)”
   const stateId = data.state_id ?? "";
   const date = data.date ?? "";
   const timeSlot = data.time_slot ?? "";
-  const circumstances = data.circumstances ?? "";
+  const circumstances = redactPublic(data.circumstances);
   const objectPhoto = data.object_photo ?? "";
 
   // Short title for H1 + icon line
@@ -353,36 +373,128 @@ export default async function LostReportPage({ params }: PageProps) {
       : `${proto}://${host}`;
   const pageUrl = `${baseUrl}/lost/${data.slug}`;
 
+  // ---- Contexte local : règle légale vérifiée + liens descendants ----------
+  // Ces trois liens sont la raison d'être du bloc : les pages /lost/ portent
+  // l'essentiel de l'index du site et ne transmettaient rien aux guides.
+  const legal = holdingRule(stateId);
+  const stateName = stateNameFromAbbr(stateId);
+  const cityPath = city && stateId ? buildCityPath(stateId, city) : null;
+  const statePath = stateName && stateId ? `/lost-and-found/${stateId.toLowerCase()}` : null;
+
+  // ---- Signalements voisins : même ville d'abord, complétés par l'État -----
+  type NearbyRow = {
+    slug: string;
+    title: string | null;
+    city: string | null;
+    state_id: string | null;
+    created_at: string | null;
+  };
+  let nearby: NearbyRow[] = [];
+  if (stateId) {
+    try {
+      const cols = "slug, title, city, state_id, created_at";
+      if (city) {
+        const { data: sameCity } = await supabase
+          .from("lost_items")
+          .select(cols)
+          .eq("state_id", stateId)
+          .not("slug", "is", null)
+          .neq("slug", data.slug)
+          .ilike("city", `${city}%`)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        nearby = (sameCity || []) as NearbyRow[];
+      }
+      if (nearby.length < 5) {
+        const { data: sameState } = await supabase
+          .from("lost_items")
+          .select(cols)
+          .eq("state_id", stateId)
+          .not("slug", "is", null)
+          .neq("slug", data.slug)
+          .order("created_at", { ascending: false })
+          .limit(12);
+        const seen = new Set(nearby.map((r) => r.slug));
+        for (const r of (sameState || []) as NearbyRow[]) {
+          if (nearby.length >= 5) break;
+          if (r.slug && !seen.has(r.slug)) {
+            nearby.push(r);
+            seen.add(r.slug);
+          }
+        }
+      }
+    } catch {
+      /* non bloquant : le bloc disparaît, la page reste */
+    }
+  }
+
+  const reportedOn = formatLongDate(data.created_at);
+  const lossOn = formatLongDate(date);
+
+  // Fil d'Ariane : rendu en liens ET en JSON-LD (rich result + chemin de crawl).
+  const crumbs = [
+    { name: "Home", url: `${baseUrl}/` },
+    { name: "Lost & found", url: `${baseUrl}/lost-and-found` },
+    ...(statePath && stateName ? [{ name: stateName, url: `${baseUrl}${statePath}` }] : []),
+    ...(cityPath && city ? [{ name: city, url: `${baseUrl}${cityPath}` }] : []),
+    { name: displayTitle, url: pageUrl },
+  ];
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.name,
+      item: c.url,
+    })),
+  };
+
   return (
     <main className="bg-white">
-      {/* Top bar sobre (ZIP non affiché) */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2 text-slate-800">
-            <MapPin className="h-5 w-5 text-emerald-700" />
-            <span className="text-sm font-medium text-slate-700">
-              {city || "—"}{stateId ? `, ${stateId}` : ""}
-            </span>
-          </div>
-          <div className="text-xs text-slate-500">Report ID · {shortId}</div>
-        </div>
-      </header>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      {/* Fil d'Ariane : remplace l'ancienne barre grise « ville + Report ID ».
+          Même information, plus compacte, et surtout cliquable. */}
+      <nav aria-label="Breadcrumb" className="border-b border-slate-200 bg-white">
+        <ol className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-1.5 gap-y-1 px-4 py-3 text-[12.5px] text-slate-500">
+          {crumbs.map((c, i) => {
+            const last = i === crumbs.length - 1;
+            return (
+              <li key={c.url + i} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-slate-300">›</span>}
+                {last ? (
+                  <span className="text-slate-600">{c.name}</span>
+                ) : (
+                  <Link
+                    href={c.url.replace(baseUrl, "") || "/"}
+                    prefetch={false}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {c.name}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
       <section className="mx-auto max-w-4xl px-4 py-10">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="px-6 pb-2 pt-7 md:px-8">
-            {/* Ligne bandeau LOST + badges City/State à droite */}
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center rounded-md bg-orange-500/95 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
                 LOST
               </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-800">
-                  <span className="font-medium">City:</span> {city || "—"}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-800">
-                  <span className="font-medium">State:</span> {stateId || "—"}
-                </span>
+              <div className="text-xs text-slate-500">
+                {reportedOn ? (
+                  <>Reported <span className="font-medium text-slate-700">{reportedOn}</span> · </>
+                ) : null}
+                ID {shortId}
               </div>
             </div>
 
@@ -392,49 +504,47 @@ export default async function LostReportPage({ params }: PageProps) {
               {placeLabel && placeLabel !== "unspecified place" ? `at ${placeLabel}` : ""}
             </h1>
 
-            {/* Lead — conserve le titre complet */}
             <p className="mt-3 max-w-2xl text-base leading-7 text-slate-700">
-              <strong>Lost item:</strong> {fullTitle}. {description}
+              <strong>{fullTitle}.</strong> {description}
             </p>
           </div>
 
           <hr className="border-slate-200/80" />
 
+          {/* Faits : les badges City/State en double ont disparu, la ville est
+              déjà dans le fil d'Ariane et dans le titre. */}
           <div className="px-6 py-6 md:px-8">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">📅</div>
-                  <p className="text-slate-800">
-                    <span className="font-medium">Date of loss:</span>{" "}
-                    {date ? `${date}${timeSlot ? ` (estimated time: ${timeSlot})` : ""}` : "Not specified"}
-                  </p>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">
-                    <MapPin className="h-4 w-4 text-emerald-700" />
-                  </div>
-                  <p className="text-slate-800">
-                    <span className="font-medium">{displayTitle} lost at</span> {placeLabel}
-                  </p>
-                </div>
+            <div className="grid gap-3 md:grid-cols-2 md:gap-x-8">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">📅</div>
+                <p className="text-slate-800">
+                  <span className="font-medium">Date of loss:</span>{" "}
+                  {lossOn ? `${lossOn}${timeSlot ? `, ${timeSlot}` : ""}` : "Not specified"}
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-sm text-slate-800"><span className="font-medium">City:</span> {city || "—"}</span>
-                  <span className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-sm text-slate-800"><span className="font-medium">State:</span> {stateId || "—"}</span>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border border-slate-300 text-sm text-slate-700">
+                  <MapPin className="h-4 w-4 text-emerald-700" />
                 </div>
-                {Boolean(circumstances) && (
-                  <p className="text-slate-800"><span className="font-medium">ℹ️ Circumstances of loss:</span> {circumstances}</p>
-                )}
+                <p className="text-slate-800">
+                  <span className="font-medium">Where:</span> {placeLabel}
+                  {city ? ` — ${city}${stateId ? `, ${stateId}` : ""}` : ""}
+                </p>
               </div>
+
+              {Boolean(circumstances) && (
+                <p className="text-slate-800 md:col-span-2">
+                  <span className="font-medium">ℹ️ Circumstances of loss:</span> {circumstances}
+                </p>
+              )}
             </div>
 
-            {/* Public email box */}
+            {/* Boîte inventeur */}
             <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <p className="mb-1 font-medium text-slate-900">✅ If you found it, please send an email:</p>
+              <p className="mb-1 font-medium text-slate-900">
+                ✅ Found this {displayTitle.toLowerCase()}? Write to the owner:
+              </p>
               <a
                 href={`mailto:${publicAlias}`}
                 className="font-mono text-lg text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
@@ -442,7 +552,8 @@ export default async function LostReportPage({ params }: PageProps) {
                 {publicAlias}
               </a>
               <p className="mt-1 text-sm text-emerald-900/80">
-                This email is unique to this report and forwards directly to the owner.
+                This address belongs to this report only and forwards straight to the owner. No
+                personal address is published.
               </p>
             </div>
 
@@ -455,20 +566,107 @@ export default async function LostReportPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Share */}
-            <div className="mt-8 flex items-center justify-between gap-3">
-              <div className="text-xs text-slate-500">Public report</div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}&quote=${encodeURIComponent(fullTitle)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  Share on Facebook
-                </a>
-                <ShareButtonNoSSR title={fullTitle} />
+            {/* Conversion : la page ne parlait qu'à l'inventeur. Sur Google,
+                « lost <objet> <ville> » est tapé par quelqu'un qui a perdu. */}
+            <div className="mt-6 rounded-xl bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-5">
+              <p className="text-[17px] font-semibold text-white">
+                Lost something in {city || "your area"} too?
+              </p>
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-emerald-50">
+                File your own report in a few minutes. Publishing it is free. The $25 Active search
+                adds the filing with the local lost-property service, outreach to the places likely
+                to hold your item, a published visual notice and twelve months of web monitoring.
+              </p>
+              <Link
+                href="/report"
+                className="mt-4 inline-block rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#1f6b3a] shadow hover:bg-emerald-50"
+              >
+                Report my lost item →
+              </Link>
+            </div>
+
+            {/* Contexte local + liens descendants vers ville et État */}
+            {(legal || cityPath || statePath) && (
+              <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+                <div className="border-b border-slate-200 bg-slate-50/70 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Lost &amp; found in {city ? `${city}, ` : ""}{stateName || stateId}
+                </div>
+                <div className="px-4 py-4">
+                  {legal && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                      <p className="text-sm leading-relaxed text-amber-900">
+                        <span className="font-semibold">In {stateName || stateId}, </span>
+                        {legal.note}
+                        {legal.citation ? (
+                          <span className="text-amber-700"> {legal.citation}</span>
+                        ) : null}
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {cityPath && (
+                      <Link prefetch={false} href={cityPath} className="text-[15px] font-medium text-blue-800 hover:underline">
+                        Lost &amp; found desks and contacts in {city}{" "}
+                        <span className="font-normal text-slate-500">
+                          — local police, venues, transit
+                        </span>
+                      </Link>
+                    )}
+                    {statePath && (
+                      <Link prefetch={false} href={statePath} className="text-[15px] font-medium text-blue-800 hover:underline">
+                        The full {stateName} lost &amp; found guide{" "}
+                        <span className="font-normal text-slate-500">
+                          — finder duties, deadlines, where unclaimed items end up
+                        </span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* Signalements voisins : relie entre elles des pages qui n'étaient
+                connectées que par le sitemap. */}
+            {nearby.length > 0 && (
+              <div className="mt-6">
+                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  Other reports nearby
+                </h2>
+                <ul className="border-t border-slate-200">
+                  {nearby.map((r) => {
+                    const label = redactPublic(r.title) || "Lost item";
+                    const where = [
+                      stripStateFromCity(r.city || ""),
+                      r.state_id || "",
+                    ].filter(Boolean).join(", ");
+                    return (
+                      <li
+                        key={r.slug}
+                        className="-mx-2 flex items-baseline justify-between gap-4 rounded border-b border-slate-200 px-2 py-2.5 hover:bg-slate-50"
+                      >
+                        <Link
+                          prefetch={false}
+                          href={`/lost/${r.slug}`}
+                          className="text-[15px] font-medium text-blue-800 hover:underline"
+                        >
+                          {label}
+                          {where ? <span className="font-normal text-slate-500"> — {where}</span> : null}
+                        </Link>
+                        <span className="flex-none text-xs tabular-nums text-slate-500">
+                          {formatLongDate(r.created_at)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {/* Partage : le lien Facebook autonome faisait doublon, il est déjà
+                dans le menu de ShareButton. */}
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+              <div className="text-xs text-slate-500">Public report · ID {shortId}</div>
+              <ShareButtonNoSSR title={fullTitle} />
             </div>
           </div>
         </div>
