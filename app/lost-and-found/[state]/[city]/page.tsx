@@ -252,7 +252,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     // ====== vrais signalements (≤ 90 jours) pour cette ville/État — via ADMIN ======
     // Fenêtre longue : le contenu réel (unique, local) reste visible et chaque
     // signalement publié est LIÉ à sa page /lost/... (maillage interne SEO).
-    type ReportLine = { text: string; slug: string | null };
+    type ReportLine = { label: string; meta: string; slug: string | null };
     let realReports: ReportLine[] = [];
     try {
       const admin = getSupabaseAdmin({ fresh: false }); // cacheable : page ISR
@@ -276,7 +276,9 @@ export default async function Page({ params }: { params: { state: string; city: 
             const cityClean = String(r?.city || cityData.city_ascii).replace(/\s*\([^)]*\)\s*$/, "").trim();
             const where = r?.state_id ? `${cityClean}, ${r.state_id}` : cityClean;
             return {
-              text: ` ${label} lost in ${where}, ${when}.`,
+              label,
+              // La ville est dans le titre de la page : la répéter est du bruit.
+              meta: where === `${cityData.city_ascii}, ${stateAbbr}` ? when : `${where}, ${when}`,
               slug: r?.slug ? String(r.slug) : null,
             };
           });
@@ -318,7 +320,8 @@ export default async function Page({ params }: { params: { state: string; city: 
           const cityClean = String(r?.city || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
           const where = [cityClean, r?.state_id].filter(Boolean).join(", ");
           return {
-            text: `${label} — ${where}${when ? `, ${when}` : ""}`,
+            label,
+            meta: `${where}${when ? `, ${when}` : ""}`,
             slug: r?.slug ? String(r.slug) : null,
           };
         });
@@ -414,91 +417,117 @@ export default async function Page({ params }: { params: { state: string; city: 
     const RecentAndMapSection = (
       <section className="bg-white p-6 rounded-b-xl shadow -mt-px">
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-1/2 w-full prose text-gray-800">
-            <h2 className="text-xl font-semibold text-blue-900 mb-3 relative pl-6">
-              <span className="absolute left-0 top-0">📈</span>
-              Recent activity
+          <div className="lg:w-1/2 w-full text-gray-800">
+            <h2 className="text-xl font-semibold text-blue-900 mb-4 flex items-center gap-2">
+              <span aria-hidden>📈</span> Recent activity
             </h2>
 
             {totalReports > 0 && (
-              <p className="text-sm text-gray-700 mb-4">
-                <strong>{totalReports.toLocaleString("en-US")}</strong> reports filed on ReportLost
+              <div className="flex items-baseline gap-8 mb-5">
+                <div>
+                  <div className="text-2xl font-semibold text-gray-900 tabular-nums leading-none">
+                    {totalReports.toLocaleString("en-US")}
+                  </div>
+                  <div className="mt-1 text-[11px] uppercase tracking-wide text-gray-500">
+                    reports filed
+                  </div>
+                </div>
                 {stateReports > 0 && (
-                  <>
-                    {" · "}
-                    <strong>{stateReports.toLocaleString("en-US")}</strong> in {cityData.state_name}
-                  </>
+                  <div>
+                    <div className="text-2xl font-semibold text-gray-900 tabular-nums leading-none">
+                      {stateReports.toLocaleString("en-US")}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase tracking-wide text-gray-500">
+                      in {cityData.state_name}
+                    </div>
+                  </div>
                 )}
-              </p>
+              </div>
             )}
 
             {legal && (
-              <p className="text-sm text-gray-700 mb-4 border-l-2 border-amber-300 pl-3">
-                {legal.kind === "local" ? "⚠️" : "⏳"} In{" "}
-                <strong>{cityData.state_name}</strong>, {legal.note}
-                {legal.citation ? ` (${legal.citation})` : ""}
-              </p>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 mb-5">
+                <p className="text-[13px] leading-relaxed text-amber-900">
+                  <span className="font-semibold">{cityData.state_name} : </span>
+                  {legal.note}
+                  {legal.citation ? <span className="text-amber-700"> ({legal.citation})</span> : null}
+                </p>
+              </div>
             )}
 
             {reports.length > 0 ? (
-              <>
-                <h3 className="text-base font-semibold text-gray-800 mb-2">
+              <div className="mb-6">
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                   Reported in {cityData.city_ascii}
                 </h3>
-                <ul className="list-none space-y-2 pl-0">
+                <ul className="border-t border-gray-200 divide-y divide-gray-200">
                   {reports.map((r, i: number) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-blue-500">📍</span>
+                    <li
+                      key={i}
+                      className="-mx-2 flex items-baseline justify-between gap-4 rounded px-2 py-2.5 transition-colors hover:bg-blue-50/60"
+                    >
                       {r.slug ? (
-                        <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
-                          {r.text}
+                        <Link
+                          href={`/lost/${r.slug}`}
+                          className="text-[15.5px] font-medium text-blue-800 no-underline hover:underline"
+                        >
+                          {r.label}
                         </Link>
                       ) : (
-                        <span>{r.text}</span>
+                        <span className="text-[15.5px] font-medium text-gray-900">{r.label}</span>
                       )}
+                      <span className="shrink-0 text-xs tabular-nums text-gray-500">{r.meta}</span>
                     </li>
                   ))}
                 </ul>
-              </>
+              </div>
             ) : isSmallTown ? (
-              <p className="text-sm text-gray-700">
+              <p className="mb-6 text-sm leading-relaxed text-gray-600">
                 No report has been filed in {cityData.city_ascii} yet. Yours would be the first, and it
                 gets a public page that anyone who finds your item can search.
               </p>
             ) : null}
 
             {latestNationwide.length > 0 && (
-              <>
-                <h3 className="text-base font-semibold text-gray-800 mt-5 mb-2">
-                  Latest reports across the United States
+              <div>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                  Across the United States
                 </h3>
-                <ul className="list-none space-y-2 pl-0">
+                <ul className="space-y-2">
                   {latestNationwide.map((r, i: number) => (
-                    <li key={`us-${i}`} className="flex items-start gap-2 text-sm">
-                      <span className="text-gray-400">📍</span>
+                    <li key={`us-${i}`} className="text-[13.5px] leading-snug">
                       {r.slug ? (
-                        <Link href={`/lost/${r.slug}`} className="text-blue-800 hover:underline">
-                          {r.text}
+                        <Link
+                          href={`/lost/${r.slug}`}
+                          className="text-blue-700 no-underline hover:underline"
+                        >
+                          {r.label}
                         </Link>
                       ) : (
-                        <span>{r.text}</span>
+                        <span className="text-gray-800">{r.label}</span>
                       )}
+                      <span className="text-gray-500"> · {r.meta}</span>
                     </li>
                   ))}
                 </ul>
-              </>
+              </div>
             )}
 
             {guideUpdatedAt && (
-              <p className="text-xs text-gray-500 mt-5">
-                Local contact details on this page were last reviewed on{" "}
-                {formatDate(new Date(guideUpdatedAt))}.
+              <p className="mt-5 border-t border-gray-100 pt-3 text-[11px] text-gray-400">
+                Local contact details reviewed on {formatDate(new Date(guideUpdatedAt))}.
               </p>
             )}
           </div>
 
-          <div className="lg:w-1/2 w-full h-[300px] rounded-lg overflow-hidden shadow">
-            <CityMapSection lat={mapLat} lng={mapLng} cityId={cityData.id} />
+          {/* La carte s'étire pour épouser la hauteur de la colonne de gauche
+              (le conteneur flex est en items-stretch par défaut) : plus de
+              bande blanche sous une carte figée à 300 px. Le positionnement
+              absolu évite de dépendre de la résolution d'un h-full en % . */}
+          <div className="relative w-full h-[300px] overflow-hidden rounded-lg shadow lg:h-auto lg:w-1/2 lg:min-h-[320px] lg:max-h-[560px]">
+            <div className="absolute inset-0">
+              <CityMapSection lat={mapLat} lng={mapLng} cityId={cityData.id} />
+            </div>
           </div>
         </div>
       </section>
