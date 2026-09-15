@@ -14,6 +14,9 @@ type Props = {
   label?: string;               // libellé au-dessus de l'input (facultatif)
   showOther?: boolean;          // afficher la ligne "Other" (défaut: true)
   otherText?: string;           // texte de la ligne "Other"
+  // Liste dans le flux plutôt qu'en calque absolu : le conteneur grandit au
+  // lieu de rogner la liste (les cartes à `overflow-hidden` la coupaient).
+  inline?: boolean;
 };
 
 const DEFAULT_ITEMS = [
@@ -48,6 +51,7 @@ export default function ObjectSuggest({
   label,
   showOther = true,
   otherText = "Other – My item isn't listed",
+  inline = false,
 }: Props) {
   const data = items && items.length ? items : DEFAULT_ITEMS;
 
@@ -109,7 +113,9 @@ export default function ObjectSuggest({
       type="button"
       role="option"
       aria-selected={cursor === i}
-      className={`w-full text-left px-3 py-2 hover:bg-blue-50 ${cursor === i ? "bg-blue-50" : ""}`}
+      className={`w-full text-left px-3.5 py-3 text-[15.5px] hover:bg-[#e6f3ea] ${
+        cursor === i ? "bg-[#e6f3ea] font-semibold text-[#226638]" : ""
+      }`}
       onMouseDown={(e) => e.preventDefault()}
       onMouseEnter={() => setCursor(i)}
       onClick={() => onPick(label)}
@@ -143,20 +149,26 @@ export default function ObjectSuggest({
         <div
           id="object-suggest-list"
           role="listbox"
-          className="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
+          className={`${
+            inline ? "relative" : "absolute z-20 shadow-lg"
+          } mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white`}
         >
-          {results.length > 0 ? (
-            results.map(optionRow)
-          ) : (
-            <div className="px-3 py-2 text-gray-500">No suggestions.</div>
-          )}
+          <div className="max-h-[248px] overflow-y-auto overscroll-contain">
+            {results.length > 0 ? (
+              results.map(optionRow)
+            ) : (
+              <div className="px-3.5 py-3 text-gray-500">No suggestions.</div>
+            )}
+          </div>
 
           {showOther && (
             <button
               type="button"
               role="option"
               aria-selected={cursor === results.length}
-              className={`w-full text-left px-3 py-2 border-t ${cursor === results.length ? "bg-[#e6f3ea]" : "bg-white"} hover:bg-[#e6f3ea] text-[#226638] font-medium`}
+              className={`w-full border-t px-3.5 py-3 text-left text-[15px] ${
+                cursor === results.length ? "bg-[#e6f3ea]" : "bg-white"
+              } font-semibold text-[#226638] hover:bg-[#e6f3ea]`}
               onMouseDown={(e) => e.preventDefault()}
               onMouseEnter={() => setCursor(results.length)}
               onClick={enterOtherMode}
