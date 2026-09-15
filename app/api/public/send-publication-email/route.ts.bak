@@ -1,0 +1,191 @@
+// app/api/public/send-publication-email/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { sendMailDirect } from "@/lib/mailer";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function json(data: any, init?: ResponseInit) {
+  const res = NextResponse.json(data, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
+function getBaseUrl(req: NextRequest): string {
+  const env = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (env) return env;
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "reportlost.org";
+  return `${proto}://${host}`;
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const ct = req.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      return json({ ok: false, error: "Content-Type must be application/json" }, { status: 415 });
+    }
+
+    const body = (await req.json().catch(() => null)) as
+      | { reportId?: string; email?: string }
+      | null;
+
+    const reportId = (body?.reportId || "").trim();
+    if (!reportId) return json({ ok: false, error: "Missing reportId" }, { status: 400 });
+
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return json({ ok: false, error: "Server not configured" }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // On lit la ligne (PII minimale)
+    const { data: row, error } = await supabaseAdmin
+      .from("lost_items")
+      .select("id, publication_mail_sent, email, first_name, title, date, city, public_id")
+      .eq("id", reportId)
+      .maybeSingle();
+
+    if (error) return json({ ok: false, error: error.message }, { status: 500 });
+    if (!row) return json({ ok: false, error: "Report not found" }, { status: 404 });
+
+    // Optionnel : vérif email (évite qu’un tiers spam un reportId)
+    if (body?.email && row.email && body.email.trim().toLowerCase() !== String(row.email).trim().toLowerCase()) {
+      return json({ ok: false, error: "Email mismatch" }, { status: 403 });
+    }
+
+    // ⚠️ Ce garde-fou lisait `mail_sent`, qui est posé par /api/save-report au
+    // moment où le brouillon est enregistré — donc AVANT le choix de formule.
+    // Résultat : ce mail-ci n'était jamais envoyé, et les dépôts gratuits ne
+    // recevaient que le mail « one step away from going live », qui leur
+    // annonçait à tort que leur annonce n'était pas publiée.
+    // Chaque mail a désormais son propre drapeau.
+    if (row.publication_mail_sent) return json({ ok: true, skipped: true }, { status: 200 });
+
+    // Construire l’email (reprend ton ton actuel)
+    const base = getBaseUrl(req);
+    const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(reportId)}`;
+    // Rattrapage : réservé à ceux qui ont déjà choisi l'annonce gratuite, donc
+    // sans effet de cannibalisation sur la formule à 25 $.
+    const autoOfferUrl = `${contributeUrl}&offer=auto`;
+    const ref5 = String(row.public_id || "").trim();
+
+    const subject = "Your report is published — the search hasn't started yet";
+    const text = `Hello ${row.first_name || ""},
+
+Good news: your lost item report is published on reportlost.org and visible to anyone who looks for it.
+
+One thing to know: a free listing waits. Right now, no one is contacting the local lost & found desks, no report is being filed with the police, and no one is checking new "found" posts against your description.
+
+That's exactly what Active search adds, for $25 once, active for 12 months:
+- Your report is filed with the competent lost-property service, usually the local police department.
+- The places likely to hold your item are contacted, based on where you lost it.
+- A visual notice is published on social media and in the relevant local groups, with an anonymous relay address tied to your case.
+- An AI search engine scans the web on your keywords for 12 months: daily the first week, then weekly, then monthly, with every credible match reviewed by a person.
+- A loss report certificate, downloadable from your case page (not an official document).
+- A printable sheet of QR stickers routing finders to your relay address.
+
+Activate my search: ${contributeUrl}
+
+Not ready for the full search? For $12 you can add the automated part alone: the web scanned on your keywords for six months, every credible match reviewed by a person, your loss report certificate and your printable sheet of QR stickers. No outreach, no filing.
+Add the automatic search: ${autoOfferUrl}
+
+Your report details:
+- Item: ${row.title || ""}
+- Date: ${row.date || ""}
+- City: ${row.city || ""}
+${ref5 ? `- Reference code: ${ref5}\n` : ""}
+
+Either way, your free listing stays online. Thank you for using ReportLost.`;
+
+    const html = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
+  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
+    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ Your report is published</p>
+  </div>
+  <div style="padding:20px;color:#111827;line-height:1.6">
+    <p style="margin:0 0 12px">Hello <b>${row.first_name || ""}</b>,</p>
+    <p style="margin:0 0 14px">
+      Good news: your report is published on
+      <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>
+      and visible to anyone who looks for it.
+    </p>
+
+    <p style="margin:0 0 14px">
+      One thing to know: <b>a free listing waits</b>. Right now, no one is contacting the local
+      lost &amp; found desks, no report is being filed with the police, and no one is checking
+      new &ldquo;found&rdquo; posts against your description.
+    </p>
+
+    <p style="margin:0 0 8px"><b>That's exactly what Active search adds, for $25 once:</b></p>
+    <ul style="margin:0 0 18px;padding-left:18px">
+      <li>Your report is <b>filed with the competent lost-property service</b>, usually the local police department.</li>
+      <li><b>The places likely to hold your item are contacted</b>, based on where you lost it.</li>
+      <li><b>A visual notice is published</b> on social media and in the relevant local groups, with an anonymous relay address tied to your case.</li>
+      <li><b>An AI search engine scans the web for 12 months</b>: daily the first week, then weekly, then monthly, every credible match reviewed by a person.</li>
+      <li><b>A loss report certificate</b>, downloadable from your case page (not an official document).</li>
+      <li><b>A printable sheet of QR stickers</b> routing finders to your relay address.</li>
+    </ul>
+
+    <div style="margin:18px 0 22px;text-align:center">
+      <a href="${contributeUrl}"
+         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+        Activate my search
+      </a>
+    </div>
+
+    <p style="margin:0 0 8px"><b>Your report details</b></p>
+    <ul style="margin:0 16px 18px;padding-left:18px">
+      <li><b>Item:</b> ${row.title || ""}</li>
+      <li><b>Date:</b> ${row.date || ""}</li>
+      <li><b>City:</b> ${row.city || ""}</li>
+      ${ref5 ? `<li><b>Reference code:</b> ${ref5}</li>` : ""}
+    </ul>
+
+    <div style="margin:0 0 16px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:12px 14px">
+      <p style="margin:0 0 6px;font-size:13.5px;line-height:1.6;color:#374151">
+        <b>Not ready for the full search?</b> For <b>$12</b> you can add the automated part alone:
+        the web scanned on your keywords for six months with every credible match reviewed by a
+        person, your loss report certificate, and your printable sheet of QR stickers. No outreach,
+        no filing.
+      </p>
+      <a href="${autoOfferUrl}" style="font-size:13.5px;font-weight:600;color:#166534;text-decoration:underline">
+        Add the automatic search — $12 &rarr;
+      </a>
+    </div>
+
+    <p style="margin:0;font-size:13px;color:#6b7280">Either way, your free listing stays online. Thank you for using ReportLost.</p>
+  </div>
+</div>`;
+
+    // ✅ Envoi SMTP direct (plus de fetch interne vers /api/send-mail, source
+    // des timeouts serverless corrigés partout ailleurs).
+    const sent = await sendMailDirect({
+      to: String(row.email),
+      subject,
+      text,
+      html,
+      fromName: "ReportLost",
+    });
+    if (!sent) return json({ ok: false, error: "send failed" }, { status: 502 });
+
+    // Marque DB
+    const { error: upErr } = await supabaseAdmin
+      .from("lost_items")
+      .update({ publication_mail_sent: true })
+      .eq("id", reportId);
+
+    if (upErr) {
+      // email envoyé mais flag non persisté : on renvoie ok quand même
+      return json({ ok: true, warning: "mail sent but publication_mail_sent not persisted" }, { status: 200 });
+    }
+
+    return json({ ok: true }, { status: 200 });
+  } catch (e: any) {
+    return json({ ok: false, error: e?.message || String(e) }, { status: 500 });
+  }
+}

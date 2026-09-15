@@ -351,7 +351,7 @@ const updatePayload = { ...other, fingerprint, state_id };
       // NEW: trigger slug generation (non bloquant)
       await triggerSlugGeneration(req, existing.id);
 
-      // Capture du dossier (plus d'e-mail client ici — voir la note ci-dessous)
+      // send confirmation to user only once (avec recheck)
       let mail_sent = !!existing.mail_sent;
       if (!mail_sent && (other.email || email)) {
         try {
@@ -425,30 +425,26 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            // ❌ E-MAIL CLIENT SUPPRIMÉ À L'ENREGISTREMENT.
-            // Ce point du parcours est la fin de l'étape 2 : la personne n'a
-            // pas encore vu l'offre. Lui envoyer « One last step to activate
-            // your search » revenait à lui adresser un argumentaire pendant
-            // qu'elle remplissait encore le formulaire, puis à doubler avec
-            // l'e-mail de publication gratuite ou la confirmation de paiement
-            // quelques minutes plus tard.
-            // Le drapeau `mail_sent` est conservé : il ne signifie plus
-            // « e-mail client envoyé » mais « dossier capturé avec une adresse »,
-            // et c'est lui qui garantit UNE seule notification à support@.
-            const okUser = true;
+            const okUser = await sendMailViaApi(req, {
+              to: other.email || email || "",
+              subject: "One last step to activate your search",
+              text,
+              html,
+            });
+
             if (okUser) {
               try {
                 await supabase.from("lost_items").update({ mail_sent: true }).eq("id", existing.id);
                 mail_sent = true;
-                console.log("📝 Report captured, mail_sent flag persisted for", existing.id);
+                console.log("✅ Confirmation email sent and mail_sent persisted for", existing.id);
               } catch (e) {
                 console.warn("Could not persist mail_sent flag for existing row:", e);
               }
             } else {
-              console.error("❌ Could not persist capture flag for", existing.id);
+              console.error("❌ Confirmation email sending failed for", existing.id);
             }
           } else {
-            console.log("⏭️ Already captured, skipping for", existing.id);
+            console.log("⏭️ Mail already sent earlier, skipping for", existing.id);
           }
         } catch (err) {
           console.error("❌ Email confirmation deposit failed for existing row:", err);
@@ -596,30 +592,26 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            // ❌ E-MAIL CLIENT SUPPRIMÉ À L'ENREGISTREMENT.
-            // Ce point du parcours est la fin de l'étape 2 : la personne n'a
-            // pas encore vu l'offre. Lui envoyer « One last step to activate
-            // your search » revenait à lui adresser un argumentaire pendant
-            // qu'elle remplissait encore le formulaire, puis à doubler avec
-            // l'e-mail de publication gratuite ou la confirmation de paiement
-            // quelques minutes plus tard.
-            // Le drapeau `mail_sent` est conservé : il ne signifie plus
-            // « e-mail client envoyé » mais « dossier capturé avec une adresse »,
-            // et c'est lui qui garantit UNE seule notification à support@.
-            const okUser = true;
-            if (okUser) {
+              const okUser = await sendMailViaApi(req, {
+                to: other.email || email || "",
+                subject: "✅ One last step to activate your search",
+                text,
+                html,
+              });
+
+              if (okUser) {
                 justEmailedById = true;
                 try {
                   await supabase.from("lost_items").update({ mail_sent: true }).eq("id", clientProvidedId);
-                  console.log("📝 Report captured, mail_sent flag persisted for", clientProvidedId);
+                  console.log("✅ Confirmation email sent and mail_sent persisted for", clientProvidedId);
                 } catch (e) {
                   console.warn("Could not persist mail_sent flag for clientProvidedId:", e);
                 }
               } else {
-                console.error("❌ Could not persist capture flag for", clientProvidedId);
+                console.error("❌ Confirmation email sending failed for", clientProvidedId);
               }
             } else {
-              console.log("⏭️ Already captured, skipping for", clientProvidedId);
+              console.log("⏭️ Mail already sent earlier, skipping for", clientProvidedId);
             }
           } catch (err) {
             console.error("❌ Email confirmation deposit failed for clientProvidedId:", err);
@@ -725,7 +717,7 @@ const { data: foundRows, error: findErr } = await supabase
     // NEW: trigger slug generation (non bloquant)
     await triggerSlugGeneration(req, String(insData.id));
 
-    // Capture du dossier (plus d'e-mail client ici — voir la note ci-dessous)
+    // send confirmation email once (user) — avec recheck
     if (other.email || email) {
       try {
         const shouldSend = await canSendUserMail(supabase, String(insData.id));
@@ -795,29 +787,25 @@ Thank you for using ReportLost.`;
   </div>
 </div>`;
 
-            // ❌ E-MAIL CLIENT SUPPRIMÉ À L'ENREGISTREMENT.
-            // Ce point du parcours est la fin de l'étape 2 : la personne n'a
-            // pas encore vu l'offre. Lui envoyer « One last step to activate
-            // your search » revenait à lui adresser un argumentaire pendant
-            // qu'elle remplissait encore le formulaire, puis à doubler avec
-            // l'e-mail de publication gratuite ou la confirmation de paiement
-            // quelques minutes plus tard.
-            // Le drapeau `mail_sent` est conservé : il ne signifie plus
-            // « e-mail client envoyé » mais « dossier capturé avec une adresse »,
-            // et c'est lui qui garantit UNE seule notification à support@.
-            const okUser = true;
-            if (okUser) {
+          const okUser = await sendMailViaApi(req, {
+            to: other.email || email || "",
+            subject: "One last step to activate your search",
+            text,
+            html,
+          });
+
+          if (okUser) {
             try {
               await supabase.from("lost_items").update({ mail_sent: true }).eq("id", insData.id);
-              console.log("📝 Report captured, mail_sent flag persisted for", insData.id);
+              console.log("✅ Confirmation email sent and mail_sent persisted for", insData.id);
             } catch (e) {
               console.warn("Could not persist mail_sent flag for new insert:", e);
             }
           } else {
-            console.error("❌ Could not persist capture flag for new insert", insData.id);
+            console.error("❌ Confirmation email sending failed for new insert", insData.id);
           }
         } else {
-          console.log("⏭️ Already captured, skipping for", insData.id);
+          console.log("⏭️ Mail already sent earlier, skipping for", insData.id);
         }
       } catch (err) {
         console.error("❌ Email confirmation deposit failed for new insert:", err);
