@@ -46,24 +46,6 @@ export function getMailTransporter(): Transporter {
   throw new Error("Missing SMTP credentials (SMTP_* or ZOHO_*)");
 }
 
-/**
- * Adresses internes : les notifications qui nous sont déjà destinées ne sont
- * pas remises en copie cachée (sinon chaque notification arrive en double).
- */
-function isInternalRecipient(to: string | string[]): boolean {
-  const list = Array.isArray(to) ? to : [to];
-  const internals = [
-    "support@reportlost.org",
-    (process.env.MAIL_BCC || "").trim().toLowerCase(),
-    (process.env.MATCH_DIGEST_TO || "").trim().toLowerCase(),
-  ].filter(Boolean);
-  return list.every((addr) => {
-    const m = String(addr).match(/<([^>]+)>/);
-    const clean = (m ? m[1] : String(addr)).trim().toLowerCase();
-    return internals.includes(clean);
-  });
-}
-
 export async function sendMailDirect(payload: {
   to: string | string[];
   subject: string;
@@ -71,25 +53,10 @@ export async function sendMailDirect(payload: {
   html?: string;
   fromName?: string;
   replyTo?: string;
-  /** Copie cachée explicite. Sinon MAIL_BCC s'applique aux e-mails clients. */
-  bcc?: string | string[];
-  /** true pour ne jamais ajouter la copie cachée automatique. */
-  noBcc?: boolean;
 }): Promise<boolean> {
   try {
     const transporter = getMailTransporter();
     const fromAddr = process.env.SMTP_USER || process.env.ZOHO_USER || "support@reportlost.org";
-
-    // Copie cachée automatique de TOUT e-mail client vers la boîte interne :
-    // c'est le seul moyen de voir exactement ce que le client a reçu, gabarit
-    // compris. Appliquée ici plutôt qu'à chaque appel, pour qu'aucun nouvel
-    // e-mail n'y échappe. Désactivée si MAIL_BCC est absent.
-    const autoBcc =
-      payload.noBcc || isInternalRecipient(payload.to)
-        ? undefined
-        : (process.env.MAIL_BCC || "").trim() || undefined;
-    const bcc = payload.bcc ?? autoBcc;
-
     await transporter.sendMail({
       from: `"${(payload.fromName || "ReportLost").replace(/(\r|\n)/g, " ")}" <${fromAddr}>`,
       to: payload.to,
@@ -97,7 +64,6 @@ export async function sendMailDirect(payload: {
       text: payload.text,
       ...(payload.html ? { html: payload.html } : {}),
       ...(payload.replyTo ? { replyTo: payload.replyTo } : {}),
-      ...(bcc ? { bcc } : {}),
     });
     return true;
   } catch (e) {

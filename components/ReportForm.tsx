@@ -100,6 +100,10 @@ export default function ReportForm({
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ anti double-submit (état)
   const submitLockRef = useRef(false); // ✅ anti double-submit (verrou mémoire)
   const formRef = useRef<HTMLDivElement>(null);
+  // Passe à true dès que le dossier est finalisé : empêche toute réécriture
+  // ultérieure du rid mémorisé (voir saveReportToDatabase).
+  const finalizedRef = useRef(false);
+
   const router = useRouter();
 
   const [formData, setFormData] = useState<any>(() => {
@@ -579,9 +583,18 @@ export default function ReportForm({
       }));
 
       try {
-        if (returnedId)
+        // ⚠️ Deux corrections ici.
+        // 1) Les accolades manquaient : `reportlost_rid_ts` était écrit même
+        //    quand aucun id n'était revenu, donc la fenêtre de 24 h glissait
+        //    indéfiniment tant que la personne utilisait le formulaire.
+        // 2) Une fois le dossier finalisé (publié en gratuit ou payé), on ne
+        //    réécrit plus le rid : sinon la sauvegarde des coordonnées
+        //    facultatives d'après-paiement le remettait en place et le dossier
+        //    payé redevenait écrasable par un dépôt ultérieur.
+        if (returnedId && !finalizedRef.current) {
           localStorage.setItem("reportlost_rid", returnedId);
           localStorage.setItem("reportlost_rid_ts", String(Date.now()));
+        }
         if (returnedPublicId)
           localStorage.setItem(
             "reportlost_public_id",
@@ -693,8 +706,33 @@ export default function ReportForm({
   const [showAutoPlan, setShowAutoPlan] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
   const [detailsSaved, setDetailsSaved] = useState(false);
+  /**
+   * Le rid mémorisé sert à retomber sur la MÊME ligne quand la personne
+   * revient en arrière dans le formulaire : c'est ce qui évite les doublons.
+   * Mais il n'était jamais effacé, seulement purgé au bout de 24 h. Un dépôt
+   * ultérieur fait depuis le même navigateur écrasait donc le dossier
+   * précédent au lieu d'en créer un nouveau — et, la ligne existant déjà, ni
+   * la notification support ni l'e-mail de publication ne repartaient.
+   *
+   * On l'efface donc à la FINALISATION seulement (publié en gratuit, ou payé).
+   * Le retour arrière se produit avant ce point : la protection anti-doublon
+   * est intacte, et le lien d'upsell reste valable puisqu'il porte le rid dans
+   * son URL, pas dans le localStorage.
+   */
+  const clearStoredRid = () => {
+    finalizedRef.current = true;
+    try {
+      localStorage.removeItem("reportlost_rid");
+      localStorage.removeItem("reportlost_rid_ts");
+    } catch {
+      /* navigation privée, stockage bloqué : sans effet */
+    }
+  };
+
   const handleSuccessfulPayment = async () => {
     setPaymentDone(true);
+    // Dossier finalisé et payé : idem, on ne doit plus réécrire cette ligne.
+    clearStoredRid();
     requestAnimationFrame(() => formRef.current?.scrollIntoView({ block: "start" }));
   };
   const saveActionDetails = async () => {
@@ -859,6 +897,8 @@ await fetch("/api/public/send-publication-email", {
 
 clearTimeout(t);
 setFreeEmailSent(true);
+// Dossier finalisé en annonce gratuite : le brouillon n'est plus reprenable.
+clearStoredRid();
       } catch {
         // soft-fail
       }

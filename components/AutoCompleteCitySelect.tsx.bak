@@ -42,21 +42,6 @@ export default function AutoCompleteCitySelect({
   const [activeIndex, setActiveIndex] = useState(-1)
   const listRef = useRef<HTMLUListElement>(null)
 
-  // Dernière ville choisie. Sans cette mémoire, la liste se rouvrait seule :
-  // `pick()` modifie `search`, ce qui relance l'effet de recherche, qui refait
-  // une requête et rappelle setShowSuggestions(true). Et comme le parent
-  // renvoie tantôt "Chicago (IL)" (onChange) tantôt "Chicago" (onSelect),
-  // l'effet [value] remettait `search` à jour deux fois de suite, rouvrant la
-  // liste à chaque passage. Il fallait donc cliquer plusieurs fois.
-  const lastPicked = useRef<{ label: string; city: string } | null>(null)
-
-  const matchesPicked = (s: string) => {
-    const lp = lastPicked.current
-    if (!lp) return false
-    const t = (s || '').trim().toLowerCase()
-    return t === lp.label.toLowerCase() || t === lp.city.toLowerCase()
-  }
-
   // Garde la valeur contrôlée en phase
   useEffect(() => {
     setSearch(value || '')
@@ -73,15 +58,6 @@ export default function AutoCompleteCitySelect({
 
   useEffect(() => {
     const run = async () => {
-      // La valeur affichée est exactement celle qu'on vient de choisir :
-      // aucune requête, aucune réouverture.
-      if (matchesPicked(search)) {
-        setOptions([])
-        setShowSuggestions(false)
-        setLoading(false)
-        return
-      }
-
       const { cityPart, statePart } = parseInput(search)
       const q = cityPart
 
@@ -122,7 +98,6 @@ export default function AutoCompleteCitySelect({
 
   const pick = (opt: CityOption) => {
     const label = `${opt.city_ascii} (${opt.state_id})`
-    lastPicked.current = { label, city: opt.city_ascii }
     setSearch(label)
     onChange(label)     // le formulaire garde une string propre
     onSelect?.(opt)     // bonus : l’objet complet si besoin
@@ -158,16 +133,11 @@ export default function AutoCompleteCitySelect({
       <input
         type="text"
         value={search}
-        onChange={(e) => {
-          // La personne retape : la sélection précédente ne vaut plus.
-          lastPicked.current = null
-          setSearch(e.target.value)
-        }}
+        onChange={(e) => setSearch(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         className="border p-2 rounded w-full"
         onFocus={() => {
-          if (matchesPicked(search)) return
           if (search.trim().length >= minQueryLength) setShowSuggestions(true)
         }}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
