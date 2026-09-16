@@ -2,6 +2,8 @@
 // Cœur de la veille : recherche Serper + jugement Claude Haiku + cadence.
 // Aucune dépendance Supabase ici (la route s'occupe de la base).
 
+import { extractJsonOr } from "@/lib/extractJson";
+
 export type LostReport = {
   id: string;
   title: string | null;
@@ -117,12 +119,9 @@ export function normalizeUrl(u: string): string {
 }
 
 function parseJson<T>(txt: string, fallback: T): T {
-  try {
-    const m = txt.match(/\{[\s\S]*\}/); // isole le premier objet JSON
-    return m ? (JSON.parse(m[0]) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  // La capture gloutonne d'origine allait du premier « { » au DERNIER « } ».
+  // extractJsonOr équilibre les accolades et s'arrête au premier objet complet.
+  return extractJsonOr<T>(txt, fallback);
 }
 
 // ---------------------------------------------------------------------------

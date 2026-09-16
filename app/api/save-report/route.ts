@@ -102,6 +102,22 @@ async function triggerSlugGeneration(req: NextRequest, id: string) {
   }
 }
 
+
+/**
+ * Rapprochement avec l'inventaire des établissements (universités, hôtels,
+ * transporteurs). Déterministe et gratuit ; l'étage IA est optionnel et
+ * désactivé par défaut. Encapsulé : il ne peut jamais faire échouer
+ * l'enregistrement du signalement, qui reste la priorité.
+ */
+async function tryOrgMatch(lostId: string) {
+  try {
+    const { runMatchForLostItem } = await import("@/lib/orgMatchRun");
+    await runMatchForLostItem(lostId);
+  } catch (e) {
+    console.warn("runMatchForLostItem (ignoré):", (e as Error)?.message || e);
+  }
+}
+
 /* --- Ajout MINIMAL: recheck avant envoi au client --- */
 async function canSendUserMail(supabase: any, id: string): Promise<boolean> {
   try {
@@ -350,6 +366,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
       // NEW: trigger slug generation (non bloquant)
       await triggerSlugGeneration(req, existing.id);
+      await tryOrgMatch(existing.id);
 
       // Capture du dossier (plus d'e-mail client ici — voir la note ci-dessous)
       let mail_sent = !!existing.mail_sent;
@@ -524,6 +541,7 @@ Contribution : ${other.contribution ?? 0}`;
 
         // NEW: trigger slug generation (non bloquant)
         await triggerSlugGeneration(req, clientProvidedId);
+        await tryOrgMatch(clientProvidedId);
 
         // send user confirmation if not already done (avec recheck)
         let justEmailedById = false;
@@ -724,6 +742,7 @@ const { data: foundRows, error: findErr } = await supabase
 
     // NEW: trigger slug generation (non bloquant)
     await triggerSlugGeneration(req, String(insData.id));
+    await tryOrgMatch(String(insData.id));
 
     // Capture du dossier (plus d'e-mail client ici — voir la note ci-dessous)
     if (other.email || email) {

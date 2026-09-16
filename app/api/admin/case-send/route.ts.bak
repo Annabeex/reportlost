@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const { data: item, error } = await sb
       .from("lost_items")
-      .select("id, public_id, email")
+      .select("id, public_id")
       .eq("id", lostItemId)
       .maybeSingle();
     if (error || !item) {
@@ -49,26 +49,6 @@ export async function POST(req: NextRequest) {
       : supportEmail;
 
     const text = String(body);
-
-    // À QUI écrit-on ?
-    // Au client, le gabarit ReportLost a du sens : il attend de nos nouvelles
-    // et reconnaît la marque. À un commissariat, un hôtel ou un transporteur,
-    // le même bandeau vert transforme une demande en prospectus — et c'est
-    // exactement ce qui fait classer un message sans réponse. Pour eux, on
-    // envoie un message texte ordinaire, comme en écrirait une personne.
-    const bareAddress = (a: string) => {
-      const m = String(a).match(/<([^>]+)>/);
-      return (m ? m[1] : String(a)).trim().toLowerCase();
-    };
-    const recipients = String(to)
-      .split(/[,;]/)
-      .map(bareAddress)
-      .filter(Boolean);
-    const clientEmail = String((item as any).email || "").trim().toLowerCase();
-    // Gabarit seulement si TOUS les destinataires sont le client : un seul
-    // tiers en copie et on repasse en texte simple.
-    const toClientOnly =
-      !!clientEmail && recipients.length > 0 && recipients.every((r) => r === clientEmail);
 
     // Mise en page soignée : gabarit ReportLost (bandeau vert) + paragraphes,
     // et conversion des lignes "- ..." en vraies listes à puces.
@@ -107,9 +87,7 @@ export async function POST(req: NextRequest) {
       replyTo,
       subject: String(subject),
       text,
-      // Pas de partie HTML pour les tiers : le message part en texte seul,
-      // donc il s'affiche comme un mail écrit à la main.
-      ...(toClientOnly ? { html } : {}),
+      html,
     });
 
     await sb.from("case_messages").insert({

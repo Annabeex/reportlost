@@ -66,6 +66,19 @@ export async function POST(req: NextRequest) {
   };
 
   const { data, error } = await sb.from("found_items").insert(row).select("id, org_ref").single();
+
+  // Rapprochement immédiat avec les pertes déclarées. Volontairement `await` :
+  // sur Vercel une promesse non attendue est tuée au gel de la fonction. Le
+  // moteur est déterministe et borné (400 lignes max), donc négligeable ; et
+  // il est encapsulé, il ne peut pas faire échouer l'enregistrement.
+  if (data?.id) {
+    try {
+      const { runMatchForFoundItem } = await import("@/lib/orgMatchRun");
+      await runMatchForFoundItem(String(data.id));
+    } catch (e) {
+      console.warn("runMatchForFoundItem (ignoré):", (e as Error)?.message || e);
+    }
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await sb.from("org_item_events").insert({

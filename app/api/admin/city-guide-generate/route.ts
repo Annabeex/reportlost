@@ -9,6 +9,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getNearbyCities } from "@/lib/getNearbyCities";
 import { buildCityPath } from "@/lib/slugify";
 import { generateCityPhoto } from "@/lib/cityImage";
+import { extractJson } from "@/lib/extractJson";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -244,13 +245,10 @@ ${results}`,
       try {
         return JSON.parse(cleaned);
       } catch {}
-      const m = cleaned.match(/\{[\s\S]*\}/);
-      if (m) {
-        try {
-          return JSON.parse(m[0]);
-        } catch {}
-      }
-      return null;
+      // Repli équilibré : l'ancienne capture allait jusqu'au DERNIER « } »,
+      // donc un second bloc JSON dans la réponse cassait le parsing.
+      const parsed = extractJson<any>(cleaned);
+      return parsed.ok ? parsed.value : null;
     };
 
     let guide: any = parseGuide(raw);
