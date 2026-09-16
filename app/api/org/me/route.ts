@@ -8,5 +8,5 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const ctx = await getOrgContext(req);
   if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return NextResponse.json({ ok: true, email: ctx.email, org: ctx.org, role: ctx.role });
+  return NextResponse.json({ ok: true, email: ctx.email, org: ctx.org, orgs: ctx.scopedOrgs, allOrgs: ctx.orgs, scope: ctx.scope, role: ctx.role });
 }

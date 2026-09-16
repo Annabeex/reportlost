@@ -43,19 +43,39 @@ const inDays = (n) => iso(Date.now() + n * 86400000);
 /* ------------------------------------------------------------------ */
 
 async function purge() {
-  const { data: org } = await sb.from("organizations").select("id, name").eq("slug", SLUG).maybeSingle();
-  if (!org) { console.log("\nRien à supprimer : aucune organisation de démonstration.\n"); return; }
+  // Le purge ne supprime QUE les objets de démonstration, reconnaissables à
+  // leur référence F-00xx et à leur description type. Si la démo a été posée
+  // dans une organisation réelle, celle-ci n'est jamais supprimée.
+  const DEMO_REFS = ["F-0042", "F-0039", "F-0031", "F-0028", "F-0019", "F-0011"];
 
-  const { data: items } = await sb.from("found_items").select("id").eq("org_id", org.id);
+  const { data: items } = await sb
+    .from("found_items")
+    .select("id, org_id")
+    .in("org_ref", DEMO_REFS);
   const ids = (items || []).map((i) => i.id);
+  const orgIds = [...new Set((items || []).map((i) => i.org_id).filter(Boolean))];
+
+  if (ids.length) {
+    await sb.from("org_matches").delete().in("found_item_id", ids);
+    await sb.from("org_item_events").delete().in("item_id", ids.map(String));
+    await sb.from("found_items").delete().in("id", ids);
+  }
+  console.log(`\n🧹 Supprimé : ${ids.length} objet(s) de démonstration et leurs rapprochements.`);
+
+  // L'organisation de démonstration, elle, part entièrement — mais jamais
+  // une organisation réelle dans laquelle la démo aurait été posée.
+  const { data: org } = await sb.from("organizations").select("id, name").eq("slug", SLUG).maybeSingle();
+  if (!org) {
+    console.log("   Aucune organisation de démonstration à retirer (tes organisations réelles sont intactes).\n");
+    return;
+  }
 
   await sb.from("org_matches").delete().eq("org_id", org.id);
   await sb.from("org_item_events").delete().eq("org_id", org.id);
-  if (ids.length) await sb.from("found_items").delete().in("id", ids);
   await sb.from("org_members").delete().eq("org_id", org.id);
   await sb.from("organizations").delete().eq("id", org.id);
 
-  console.log(`\n🧹 Supprimé : ${org.name}, ${ids.length} objet(s), rapprochements et journal.`);
+  console.log(`   Organisation de démonstration retirée : ${org.name}.`);
   console.log("   Le compte de connexion reste actif (à supprimer dans Supabase > Authentication si tu veux).\n");
 }
 
@@ -106,7 +126,32 @@ async function seed() {
   const state = usable[0].state_id || null;
 
   // 2) L'organisation.
-  let { data: org } = await sb.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
+  //
+  // getOrgContext ne sait pas gérer plusieurs appartenances : il prend la
+  // PREMIÈRE ligne d'org_members, sans tri. Créer une deuxième organisation
+  // pour un compte qui en a déjà une donnerait donc une démo invisible.
+  // On remplit l'organisation existante du compte quand il y en a une.
+  let org = null;
+  {
+    const { data: list } = await sb.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const existingUser = list?.users?.find((u) => (u.email || "").toLowerCase() === arg("email").toLowerCase());
+    if (existingUser) {
+      const { data: mem } = await sb
+        .from("org_members")
+        .select("org_id, organizations(id, name, city, state_id)")
+        .eq("user_id", existingUser.id)
+        .limit(1)
+        .maybeSingle();
+      if (mem?.organizations) {
+        org = { id: mem.organizations.id };
+        console.log(`ℹ️  Organisation existante réutilisée : ${mem.organizations.name}`);
+      }
+    }
+  }
+  if (!org) {
+    const found = await sb.from("organizations").select("id").eq("slug", SLUG).maybeSingle();
+    org = found.data || null;
+  }
   if (!org) {
     const { data, error } = await sb
       .from("organizations")
@@ -117,7 +162,7 @@ async function seed() {
         state_id: state,
         city,
         public_email: "lostandfound@demo.edu",
-        verified: true,
+        verified: false,
       })
       .select("id")
       .single();
@@ -229,7 +274,9 @@ async function seed() {
    Connexion    : ${email}
    Mot de passe : celui que tu viens de choisir
 
-   Écrans       : /org/login  puis  /org/review  ·  /org/dashboard  ·  /org/items/new
+   Écrans       : /campus/login  puis  /campus/review  ·  /campus/dashboard  ·  /campus/items/new
+                  (type « university » → portail campus. Les commissariats,
+                   hôtels et transports restent sur /org/*.)
 
    Pour tout retirer : node scripts/seed-org-demo.mjs --purge
 `);

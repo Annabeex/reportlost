@@ -13,3 +13,7 @@ node_modules/
 
 # documents de travail (données clients, jamais versionnées)
 _travail/
+
+# Copies de travail (anciennes versions gardées en local, jamais déployées)
+*.bak
+*.previous.*

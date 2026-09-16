@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import OrgClaimForm from "@/components/OrgClaimForm";
+import { portalBase, scopeOfType } from "@/lib/orgScope";
 
 export const revalidate = 60; // 1 min : les ajouts/retraits d'objets doivent apparaître vite
 
@@ -15,6 +16,8 @@ const TYPE_LABEL: Record<string, string> = {
   police: "Police department",
   city: "City services",
   university: "University",
+  college: "College",
+  school: "School",
   hotel: "Hotel / venue",
   transit: "Transit / airport",
   other: "Organization",
@@ -106,7 +109,7 @@ export default async function OrgPublicPage({ params }: { params: { slug: string
 
       <p className="mt-6 text-center text-xs text-gray-400">
         Powered by ReportLost.org · Free lost &amp; found management for organizations ·{" "}
-        <Link href="/org/login" className="underline">Create your page</Link>
+        <Link href={`${portalBase(scopeOfType(org.type))}/login`} className="underline">Create your page</Link>
       </p>
     </main>
   );

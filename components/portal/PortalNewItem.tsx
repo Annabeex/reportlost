@@ -1,0 +1,182 @@
+"use client";
+// Enregistrement d'un objet trouvé en 30 secondes (photo, lieu, stockage).
+// ⚠️ L'enregistrement passe par portalFetch : sans l'en-tête x-org-id, un
+// compte qui gère deux structures déposait l'objet dans la mauvaise.
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { usePortal, portalFetch } from "@/lib/portal";
+
+export default function PortalNewItem() {
+  const router = useRouter();
+  const { scope, base } = usePortal();
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    found_at: today,
+    found_location: "",
+    storage_location: "",
+    photo_url: "",
+    public_label: "",
+    public_visible: true,
+  });
+  const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // ✨ Saisie par photo : l'IA pré-remplit les champs encore vides,
+  // sans jamais écraser ce que l'agent a déjà tapé.
+  const analyze = async (photoUrl: string) => {
+    setAnalyzing(true);
+    try {
+      const r = await portalFetch(scope, "/api/org/analyze-item", {
+        method: "POST",
+        body: JSON.stringify({ image_url: photoUrl }),
+      });
+      const j = await r.json();
+      if (!r.ok) return; // silencieux : l'agent remplit à la main comme avant
+      setForm((f) => ({
+        ...f,
+        title: f.title || j.title || "",
+        description: f.description || j.description || "",
+        public_label: f.public_label || j.public_label || "",
+      }));
+    } catch {
+      // silencieux
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const safe = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
+      const path = `org_items/${Date.now()}-${safe}`;
+      const { error } = await supabaseBrowser.storage.from("images").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabaseBrowser.storage.from("images").getPublicUrl(path);
+      const publicUrl = data?.publicUrl || "";
+      setForm((f) => ({ ...f, photo_url: publicUrl }));
+      if (publicUrl) analyze(publicUrl); // ✨ remplissage auto en arrière-plan
+    } catch (e: any) {
+      setErr(`Photo upload failed: ${e?.message || e}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await portalFetch(scope, "/api/org/items", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || r.statusText);
+      router.push(`${base}/dashboard`);
+    } catch (e: any) {
+      if (String(e?.message) === "no-session") { router.push(`${base}/login`); return; }
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const set = (k: string) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const cls = "w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400";
+
+  return (
+    <main className="mx-auto max-w-md px-6 py-10">
+      <h1 className="text-2xl font-bold text-gray-900">Log a found item</h1>
+      <p className="mt-1 text-sm text-gray-600">
+        Snap a photo and the form fills itself. Reference number and holding deadline are
+        assigned automatically.
+      </p>
+      <form onSubmit={submit} className="mt-6 space-y-4">
+        <div>
+          <label className="block font-medium mb-1">Photo <span className="text-green-700">(recommended, fills the form for you)</span></label>
+          {form.photo_url ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={form.photo_url} alt="" className="h-16 w-16 rounded-lg object-cover border" />
+              {analyzing && <span className="text-sm text-emerald-700">✨ Reading the photo…</span>}
+              <button type="button" className="text-sm text-red-600 underline"
+                onClick={() => setForm((f) => ({ ...f, photo_url: "" }))}>Remove</button>
+            </div>
+          ) : (
+            <>
+              <input id="org-photo" type="file" accept="image/*" capture="environment" onChange={upload} className="hidden" />
+              <label htmlFor="org-photo"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#2ea052] bg-white px-4 py-2.5 font-medium text-[#226638] shadow-sm hover:bg-[#f2fbf5]">
+                📷 {uploading ? "Uploading…" : "Take a photo"}
+              </label>
+            </>
+          )}
+        </div>
+        <div>
+          <label className="block font-medium mb-1">What was found?</label>
+          <input required value={form.title} onChange={set("title")} placeholder="e.g. Brown leather wallet" className={cls} />
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Details <span className="text-green-700">(optional)</span></label>
+          <textarea value={form.description} onChange={set("description")} rows={2}
+            placeholder="Color, brand, contents… keep one detail private for verification" className={cls} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block font-medium mb-1">Date found</label>
+            <input type="date" required value={form.found_at} onChange={set("found_at")} max={today} className={cls} />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Where found <span className="text-green-700">(optional)</span></label>
+            <input value={form.found_location} onChange={set("found_location")}
+              placeholder={scope === "campus" ? "Bobst Library, 4th floor" : "Lobby desk"} className={cls} />
+          </div>
+        </div>
+        <div>
+          <label className="block font-medium mb-1">Storage location <span className="text-green-700">(optional)</span></label>
+          <input value={form.storage_location} onChange={set("storage_location")} placeholder="Shelf B3, locker A1…" className={cls} />
+        </div>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.public_visible}
+              onChange={(e) => setForm((f) => ({ ...f, public_visible: e.target.checked }))}
+              className="mt-1 h-4 w-4 accent-emerald-600" />
+            <span className="text-sm">
+              <span className="font-medium">List on our public page</span>
+              <span className="block text-xs text-gray-600">
+                Only a generic label, the date and the drop-off location are shown. Details and photo
+                stay private, they are used to verify ownership claims.
+              </span>
+            </span>
+          </label>
+          {form.public_visible && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Shown publicly as</label>
+              <input value={form.public_label} onChange={set("public_label")}
+                placeholder='Keep it generic, e.g. "Phone" or "Wallet"' maxLength={60} className={cls} />
+            </div>
+          )}
+        </div>
+        {err && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+        <div className="flex items-center gap-3">
+          <button type="submit" disabled={busy || uploading}
+            className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-2.5 font-semibold text-white shadow disabled:opacity-60">
+            {busy ? "Saving…" : "Save item"}
+          </button>
+          <button type="button" className="text-sm text-gray-500 underline" onClick={() => router.push(`${base}/dashboard`)}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}

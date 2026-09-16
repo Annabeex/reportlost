@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMailDirect } from "@/lib/mailer";
+import { portalBase, scopeOfType } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const { data: org } = await sb
       .from("organizations")
-      .select("id, name, slug, public_email, verified, public_listing")
+      .select("id, name, slug, type, public_email, verified, public_listing")
       .eq("slug", slug)
       .maybeSingle();
     if (!org || !org.verified || !org.public_listing) {
@@ -75,7 +76,7 @@ Claimant: ${name} · ${email}${phone ? ` · ${phone}` : ""}
 Their description (compare it with your internal notes and photo before any handover):
 ${proof}
 
-Open your dashboard to review: https://reportlost.org/org/dashboard
+Open your dashboard to review: ${"https://reportlost.org" + portalBase(scopeOfType(org.type)) + "/dashboard"}
 
 ReportLost.org`,
       fromName: "ReportLost",

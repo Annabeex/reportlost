@@ -2,11 +2,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { ORG_TYPES } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const TYPES = new Set(["police", "city", "university", "hotel", "transit", "other"]);
+// ⚠️ Source unique : la liste proposée par les portails. Un type accepté ici
+// mais absent de ORG_TYPES (ou l'inverse) crée un compte qui retombe en
+// "other" et se retrouve exclu du portail par lequel il est arrivé.
+const TYPES = new Set(
+  Object.values(ORG_TYPES).flat().map((t) => t.v)
+);
 
 function slugify(s: string) {
   return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -16,7 +22,7 @@ function slugify(s: string) {
 export async function POST(req: NextRequest) {
   const ctx = await getOrgContext(req);
   if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (ctx.org) return NextResponse.json({ error: "Vous avez déjà une organisation." }, { status: 400 });
+  if (ctx.org) return NextResponse.json({ error: "You already manage an organization in this portal." }, { status: 400 });
 
   const body = await req.json().catch(() => null);
   const name = String(body?.name || "").trim();

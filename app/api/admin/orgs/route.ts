@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMailDirect } from "@/lib/mailer";
+import { portalBase, scopeOfType } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,7 +78,7 @@ export async function PATCH(req: NextRequest) {
 
     const { data: org } = await sb
       .from("organizations")
-      .select("id, slug, name, public_email, verified")
+      .select("id, slug, name, type, public_email, verified")
       .eq("id", id)
       .maybeSingle();
     if (!org) return NextResponse.json({ error: "organisation introuvable" }, { status: 404 });
@@ -112,7 +113,7 @@ https://reportlost.org/o/${org.slug}
 What it shows: only the generic label, the found date and the drop-off location of the items you chose to list. Details and photos stay private and are used to verify ownership claims.
 
 You can manage everything (items, visibility, claims) from your dashboard:
-https://reportlost.org/org/dashboard
+${"https://reportlost.org" + portalBase(scopeOfType(org.type)) + "/dashboard"}
 
 Feel free to link your public page from your website or share it at your front desk. If you have any question, just reply to this email.
 
