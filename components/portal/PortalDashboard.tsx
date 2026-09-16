@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { setActiveOrgId } from "@/components/OrgSwitcher";
 import PortalNav from "@/components/portal/PortalNav";
+import RetentionSetting from "@/components/portal/RetentionSetting";
 import { usePortal, portalFetch } from "@/lib/portal";
 import { scopeOfType, portalBase } from "@/lib/orgScope";
 
@@ -167,19 +168,10 @@ export default function PortalDashboard() {
     return arr;
   }, [items, filter, query]);
 
-  if (loading || !org) return <main className="p-10 text-gray-500">Loading…</main>;
-
-  // La durée de conservation ne vient pas de la même source : loi de l'État
-  // pour un commissariat, politique interne pour une université.
-  const holdNote =
-    scope === "campus"
-      ? `Holding period from ${words.holdSource}`
-      : org.state_id
-        ? `${org.state_id} holding rules applied`
-        : "";
+  if (loading || !org) return <div className="p-10 text-gray-500">Loading…</div>;
 
   return (
-    <>
+    <div className="min-h-screen bg-[#f7f8fa]">
       <PortalNav
         current="inventory"
         pending={pending}
@@ -188,7 +180,7 @@ export default function PortalDashboard() {
         crossPortal={cross}
         onChangeOrg={(id) => { setActiveOrgId(scope, id); setLoading(true); load(); }}
       />
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-gray-900 truncate">{org.name}</h1>
@@ -200,7 +192,6 @@ export default function PortalDashboard() {
               ) : (
                 <>reportlost.org/o/{org.slug}</>
               )}
-              {holdNote ? ` · ${holdNote}` : ""}
             </p>
           </div>
           <button type="button" onClick={togglePublicListing}
@@ -222,6 +213,25 @@ export default function PortalDashboard() {
             Sign out
           </button>
         </div>
+
+        <RetentionSetting
+          org={org}
+          onSave={async (days) => {
+            const r = await api("/api/org/settings", {
+              method: "PATCH",
+              body: JSON.stringify({ retention_days: days }),
+            });
+            const j = await r.json().catch(() => null);
+            if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
+            setOrg((o: any) => ({ ...o, retention_days: days }));
+            // Les dates limites ont changé côté serveur : on relit l'inventaire
+            // plutôt que d'afficher des compteurs d'urgence périmés.
+            const ri = await api("/api/org/items");
+            const ji = await ri.json();
+            setItems(Array.isArray(ji.items) ? ji.items : []);
+            return Number(j?.recomputed || 0);
+          }}
+        />
 
         {!org.verified && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -306,7 +316,7 @@ export default function PortalDashboard() {
             })}
           </div>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

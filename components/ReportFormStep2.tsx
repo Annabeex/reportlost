@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { toPosterSafeImage } from "@/lib/imageToPosterSafe";
 
 interface Props {
   formData: any;
@@ -136,10 +137,15 @@ export default function ReportFormStep2({
     if (!file) return;
     try {
       setUploading(true);
-      const safeName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
+      // Normalisation avant envoi : le poster /api/poster/<id> ne sait décoder
+      // que PNG/JPEG/GIF. Une WebP y laissait un rectangle blanc. Repli sur le
+      // fichier d'origine si la conversion échoue.
+      const safeFile = await toPosterSafeImage(file);
+      const safeName = safeFile.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
       const filename = `object_photo/lost-${Date.now()}-${safeName}`;
-      const uploadResponse = await supabase.storage.from("images").upload(filename, file, {
+      const uploadResponse = await supabase.storage.from("images").upload(filename, safeFile, {
         upsert: true,
+        contentType: safeFile.type || undefined,
       });
       if (uploadResponse.error) throw uploadResponse.error;
       const publicUrlResponse = await supabase.storage.from("images").getPublicUrl(filename);

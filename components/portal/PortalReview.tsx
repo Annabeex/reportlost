@@ -136,11 +136,11 @@ export default function PortalReview() {
   };
 
   if (loading) {
-    return <main className="mx-auto max-w-5xl px-5 py-16 text-gray-500">Loading…</main>;
+    return <div className="mx-auto max-w-5xl px-5 py-16 text-gray-500">Loading…</div>;
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f8fa]">
+    <div className="min-h-screen bg-[#f7f8fa]">
       <PortalNav
         current="review"
         pending={matches.length}
@@ -304,6 +304,6 @@ export default function PortalReview() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { legalDeadline } from "@/lib/legalHolding";
+import { retentionDeadline } from "@/lib/orgRetention";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
     dropoff_location: String(b?.found_location || "").trim().slice(0, 200) || null,
     storage_location: String(b?.storage_location || "").trim().slice(0, 120) || null,
     status: "stored",
-    legal_deadline: legalDeadline(found_at, ctx.org.state_id),
+    // Politique de l'établissement si elle est réglée, loi de l'État pour
+    // la police et les mairies, 30 jours provisoires sinon.
+    legal_deadline: retentionDeadline(ctx.org, found_at),
     // Visibilité publique : libellé générique uniquement (jamais la description)
     public_visible: b?.public_visible !== false,
     public_label: String(b?.public_label || "").trim().slice(0, 60) || title.split(/\s+/).slice(0, 2).join(" "),

@@ -108,7 +108,64 @@ Return JSON:
   }
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+// ── Photo ────────────────────────────────────────────────────────────────────
+// next/og (satori + resvg) ne décode que PNG, JPEG et GIF. Une WebP, une AVIF,
+// une HEIC — ou une URL qui répond du JSON — ne déclenche aucune erreur : elle
+// laisse un rectangle blanc de la taille du bloc photo au milieu du poster.
+// On va donc chercher l'image nous-mêmes, on vérifie sa SIGNATURE BINAIRE (le
+// Content-Type annoncé ment régulièrement) et on ne la passe au rendu que si
+// elle est réellement décodable. Sinon on retombe sur le séparateur décoratif :
+// un poster sans photo vaut mieux qu'un poster troué.
+function sniffImage(bytes: Uint8Array): string {
+  const at = (i: number, ...sig: number[]) => sig.every((v, k) => bytes[i + k] === v);
+  if (at(0, 0x89, 0x50, 0x4e, 0x47)) return "png";
+  if (at(0, 0xff, 0xd8, 0xff)) return "jpeg";
+  if (at(0, 0x47, 0x49, 0x46, 0x38)) return "gif";
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return "webp";
+  if (at(4, 0x66, 0x74, 0x79, 0x70)) return "heic/avif";
+  return "unknown";
+}
+
+function toBase64(buf: ArrayBuffer): string {
+  const b = new Uint8Array(buf);
+  let bin = "";
+  // Par tranches : String.fromCharCode(...b) explose la pile au-delà de ~100 Ko.
+  for (let i = 0; i < b.length; i += 0x8000) {
+    bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+}
+
+const MAX_PHOTO_BYTES = 6_000_000; // au-delà, le rendu edge dépasse sa mémoire
+
+type PhotoResult = { dataUrl: string; kind: string; bytes: number; status: number };
+
+async function loadPhoto(src: string): Promise<PhotoResult> {
+  const empty = { dataUrl: "", kind: "none", bytes: 0, status: 0 };
+  if (!src) return empty;
+  try {
+    const r = await fetch(src, { cache: "force-cache" });
+    if (!r.ok) return { ...empty, kind: "http-error", status: r.status };
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > MAX_PHOTO_BYTES) {
+      return { dataUrl: "", kind: "too-large", bytes: buf.byteLength, status: r.status };
+    }
+    const kind = sniffImage(new Uint8Array(buf));
+    if (kind !== "png" && kind !== "jpeg" && kind !== "gif") {
+      return { dataUrl: "", kind, bytes: buf.byteLength, status: r.status };
+    }
+    return {
+      dataUrl: `data:image/${kind};base64,${toBase64(buf)}`,
+      kind,
+      bytes: buf.byteLength,
+      status: r.status,
+    };
+  } catch {
+    return { ...empty, kind: "fetch-failed" };
+  }
+}
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const ink = "#26323f";
   const muted = "#64748b";
 
@@ -160,7 +217,27 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     // L'alias relais n'a de sens qu'avec un public_id : jamais construit sur un UUID.
     const publicId = String(row.public_id || (isPublicId ? id : "")).trim();
     const email = publicId ? `item${publicId}@reportlost.org` : "support@reportlost.org";
-    const photo = typeof row.object_photo === "string" && /^https?:\/\//.test(row.object_photo) ? row.object_photo : "";
+    const photoSrc =
+      typeof row.object_photo === "string" && /^https?:\/\//.test(row.object_photo) ? row.object_photo : "";
+    const photoInfo = await loadPhoto(photoSrc);
+    const photo = photoInfo.dataUrl;
+
+    // ?debug=1 : dit en une ligne pourquoi la photo n'est pas sur le poster,
+    // sans avoir à deviner devant un rectangle blanc.
+    if (new URL(req.url).searchParams.get("debug") === "1") {
+      return Response.json({
+        public_id: publicId,
+        object_photo: photoSrc || null,
+        http_status: photoInfo.status || null,
+        detected_format: photoInfo.kind,
+        bytes: photoInfo.bytes || null,
+        rendered: Boolean(photo),
+        note:
+          photoInfo.kind === "webp" || photoInfo.kind === "heic/avif"
+            ? "Format non décodable par le générateur : reconvertir la photo en JPEG."
+            : undefined,
+      });
+    }
 
     const titleSize = title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
     const photoH = title.length > 9 ? 260 : 320;

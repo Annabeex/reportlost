@@ -3,6 +3,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import Analytics from "@/components/Analytics";
 import VisitTracker from "@/components/VisitTracker";
 import { Suspense } from "react";
@@ -50,15 +51,20 @@ export default function RootLayout({
         </Suspense>
         <VisitTracker />
 
-        <header>
-          <Navbar />
-        </header>
+        {/* Masqués sur /org/* et /campus/*, qui ont leur propre en-tête. */}
+        <SiteChrome>
+          <header>
+            <Navbar />
+          </header>
+        </SiteChrome>
 
         <main className="flex-1">{children}</main>
 
-        <footer>
-          <Footer />
-        </footer>
+        <SiteChrome>
+          <footer>
+            <Footer />
+          </footer>
+        </SiteChrome>
       </body>
     </html>
   );

@@ -133,3 +133,25 @@ input[type="date"] {
   opacity: 1;
   min-height: 42px;
 }
+
+/* Faisceau de lecture de la photo, portail établissements.
+   Il ne s'affiche que pendant l'analyse : une animation qui tourne en boucle
+   sur un écran au repos fait croire que quelque chose est bloqué. */
+@keyframes rl-scan-sweep {
+  0%   { top: 6%;  opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { top: 94%; opacity: 0; }
+}
+.rl-scan-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #22c55e;
+  box-shadow: 0 0 18px 5px rgba(34, 197, 94, 0.55);
+  animation: rl-scan-sweep 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-scan-beam { animation: none; top: 50%; }
+}
