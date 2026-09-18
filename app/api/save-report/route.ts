@@ -269,6 +269,9 @@ export async function POST(req: NextRequest) {
       // ✅ référence partenaire (DB)
       "station_slug",
 
+      // ✅ provenance du dépôt (chemin interne, ext:<domaine>, direct)
+      "source_page",
+
       // ✅ Catégorisation (schéma actuel)
       "primary_category",   // text
       "categories",         // text[]

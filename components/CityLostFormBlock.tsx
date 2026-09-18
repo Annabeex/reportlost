@@ -82,13 +82,13 @@ export default function CityLostFormBlock({
            donc pas dans le CLS. ---- */}
       <div ref={starterRef} id="report-form" className="scroll-mt-6">
         <div className="rounded-2xl border border-green-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-t-2xl bg-[#1f6b3a] px-5 py-4 sm:px-6">
+          {/* « Free to publish » retiré : la gratuité était le premier mot lu,
+              avant même la question. Annoncer d'emblée que tout est gratuit
+              installe l'idée que déposer suffit. */}
+          <div className="rounded-t-2xl bg-[#1f6b3a] px-5 py-4 sm:px-6">
             <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">
               What did you lose?
             </h2>
-            <span className="text-[10.5px] font-bold uppercase tracking-[0.11em] text-[#a7d9bc]">
-              Free to publish
-            </span>
           </div>
 
           <div className="px-5 py-5 sm:px-6">
@@ -152,7 +152,7 @@ export default function CityLostFormBlock({
             <span className="block text-[13px] font-bold text-gray-900">
               Lost something in {defaultCity}?
             </span>
-            <span className="text-[11.5px] text-gray-500">Free to publish · 2 minutes</span>
+            <span className="text-[11.5px] text-gray-500">Takes 2 minutes</span>
           </div>
           <button
             type="button"

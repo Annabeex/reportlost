@@ -73,7 +73,20 @@ export async function POST(req: NextRequest) {
     const autoOfferUrl = `${contributeUrl}&offer=auto`;
     const ref5 = String(row.public_id || "").trim();
 
-    const subject = "Your report is published — the search hasn't started yet";
+    // ⚠️ L'objet est lu en notification, sur l'écran verrouillé, au moment même
+    // où la personne vient de choisir le gratuit. « Your report is published »
+    // y jouait comme un accusé de réception : affaire classée, rien à faire.
+    // Il ne doit contenir aucun mot de clôture, et nommer l'objet perdu plutôt
+    // que le dossier — c'est ce que la personne reconnaît d'un coup d'œil.
+    const itemLabel = String(row.title || "").replace(/\s+/g, " ").trim().slice(0, 30);
+    const subject = itemLabel
+      ? `Your ${itemLabel}: the search has not started`
+      : "The search on your report has not started";
+
+    // Texte d'aperçu, affiché juste après l'objet par Gmail, Apple Mail et
+    // Outlook. Sans lui, ils vont chercher la première ligne du corps — donc
+    // « Published in the public database ». On le fixe explicitement.
+    const preheader = "Nothing has been sent to anyone yet. Filing and outreach are a separate step.";
     // Registre : la publication gratuite n'est pas un aboutissement, c'est un
     // état intermédiaire. L'ancien gabarit disait le contraire de son propre
     // texte — bandeau vert, coche, « Good news » — et la personne refermait en
@@ -85,8 +98,8 @@ export async function POST(req: NextRequest) {
 
     const text = `Hello ${row.first_name || ""},
 
-[x] Published in the public database
 [ ] The search has not started — nothing is being done on your case at this stage.
+[x] Published in the public database
 
 Your report is online, and anyone looking for your item can find it. That is what a free listing does, and it is all it does.
 
@@ -133,6 +146,7 @@ Your free listing stays online either way.`;
       .join("");
 
     const html = `
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff">${preheader}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid #e5e7eb">
@@ -146,14 +160,14 @@ Your free listing stays online either way.`;
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fffbeb;border-bottom:1px solid #fde68a">
     <tr>
-      <td style="padding:14px 18px 4px;font-size:14px;line-height:1.45;color:#4b5563">
-        <span style="color:#166534;font-weight:bold">&#10003;</span>&nbsp; Published in the public database
+      <td style="padding:14px 18px 4px;font-size:14px;line-height:1.45;color:#78350f">
+        <b>&#9675;&nbsp; The search has not started</b>
+        <div style="margin:3px 0 0 20px;font-size:12.5px;color:#92400e">Nothing is being done on your case at this stage.</div>
       </td>
     </tr>
     <tr>
-      <td style="padding:5px 18px 14px;font-size:14px;line-height:1.45;color:#78350f">
-        <b>&#9675;&nbsp; The search has not started</b>
-        <div style="margin:3px 0 0 20px;font-size:12.5px;color:#92400e">Nothing is being done on your case at this stage.</div>
+      <td style="padding:5px 18px 14px;font-size:14px;line-height:1.45;color:#4b5563">
+        <span style="color:#166534;font-weight:bold">&#10003;</span>&nbsp; Published in the public database
       </td>
     </tr>
   </table>

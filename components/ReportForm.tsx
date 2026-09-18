@@ -117,6 +117,7 @@ export default function ReportForm({
       category: (initialCategory || "").toString().trim().toLowerCase(),
       // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
       source_station: "",
+      source_page: "",
 
       title: "",
       description: "",
@@ -217,6 +218,36 @@ export default function ReportForm({
       const st = (params.get("station") || "").trim().toLowerCase();
       if (st) {
         setFormData((p: any) => ({ ...p, source_station: st }));
+      }
+
+      // ✅ Provenance du dépôt. On la lit dans le referrer plutôt que dans un
+      // paramètre ajouté à chaque lien : tous les chemins existants sont
+      // couverts d'un coup, y compris ceux qu'on oublierait. ?from=… reste
+      // prioritaire pour les cas où le referrer est perdu (redirection, QR).
+      // On ne garde QUE le chemin : jamais la chaîne de requête, qui peut
+      // transporter ce que la personne a tapé.
+      const fromParam = (params.get("from") || "").trim().slice(0, 120);
+      let source = fromParam;
+      if (!source) {
+        const ref = String(document.referrer || "");
+        if (!ref) {
+          source = "direct";
+        } else {
+          try {
+            const u = new URL(ref);
+            source =
+              u.host === window.location.host
+                ? u.pathname.slice(0, 160)
+                : `ext:${u.hostname.replace(/^www\./, "")}`.slice(0, 120);
+          } catch {
+            source = "direct";
+          }
+        }
+      }
+      // Un aller-retour à l'intérieur du formulaire ne doit pas écraser
+      // l'origine réelle par « /report ».
+      if (source && !source.startsWith("/report")) {
+        setFormData((p: any) => (p.source_page ? p : { ...p, source_page: source }));
       }
     } catch {
       /* ignore */
@@ -392,6 +423,7 @@ export default function ReportForm({
           (formData.category || "").toString().trim().toLowerCase(),
         ),
         // ✅ NEW: code partenaire issu du QR (ex: "chicago-north")
+        source_page: toNull((formData.source_page || "").toString().trim()),
         source_station: toNull(
           (formData.source_station || "").toString().trim().toLowerCase(),
         ),
