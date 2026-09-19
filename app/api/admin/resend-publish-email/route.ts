@@ -1,4 +1,18 @@
 // app/api/admin/resend-publish-email/route.ts
+//
+// ⚠️ BROUILLON — NE PAS ENVOYER EN L'ÉTAT.
+//
+// Ce mail date d'avant le dépôt gratuit. Il parle d'un « draft » et annonce que
+// l'annonce sera publiée APRÈS paiement. C'est faux pour tout le monde : la
+// page publique /lost/<slug> est créée par triggerSlugGeneration dès que les
+// coordonnées sont validées, donc bien avant l'écran des formules. L'envoyer
+// aujourd'hui reviendrait à dire à quelqu'un que son annonce n'est pas en
+// ligne alors qu'elle l'est.
+//
+// La route n'est branchée sur aucun bouton de l'admin ni sur aucun cron : elle
+// ne part que si on appelle l'URL à la main. Conservée comme base de départ si
+// une relance est un jour relancée — le texte est à reprendre entièrement
+// avant tout envoi.
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
