@@ -1,13 +1,29 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /**
- * ReportContribution.tsx — Free listing + Automatic search + Active search
+ * ReportContribution.tsx — Standard (Free) + Automatic search + Active search
  *
- * La version précédente est conservée telle quelle dans
- * components/ReportContribution.previous.tsx.bak : si celle-ci convertit moins
- * bien, il suffit de la renommer en .tsx pour revenir en arrière.
+ * Deux écrans, dans le même composant :
+ *
+ *   "plans" — les trois formules. La formule à 12 $ n'est plus réservée au
+ *             rattrapage : elle est visible d'emblée, avec une frontière nette
+ *             (le 12 $ est la machine seule, le 25 $ est ce qu'une personne
+ *             fait). L'ancienne crainte de cannibalisation n'est pas confirmée
+ *             par les chiffres : sur la période où les trois formules étaient
+ *             affichées, la recette par dépôt était PLUS élevée qu'avec deux.
+ *
+ *   "gauge" — montré uniquement à qui choisit le gratuit. Il accuse réception
+ *             sans rien célébrer, et propose une dernière fois de monter d'un
+ *             cran. Le mégaphone grossit et gagne une onde à chaque palier :
+ *             ce qu'on achète, c'est de la portée. (L'ancienne jauge en forme
+ *             de cœur collectait un pourboire libre : 22 $ en huit mois, tous
+ *             sous 15 $, tous posés sur des annonces gratuites. Ce n'était pas
+ *             un don, c'était une négociation. Les crans sont donc fixes.)
+ *
+ * La version à deux formules est conservée dans
+ * components/ReportContribution.avant-3-formules.tsx.bak.
  */
 
 type Props = {
@@ -17,13 +33,12 @@ type Props = {
   onBack: () => void;
   onNext: () => void;
   referenceCode?: string;
-  /** ✅ Mode animaux perdus : Pet Priority (25$) + option gratuite */
+  /** ✅ Mode animaux perdus : Pet Priority (25 $) + option gratuite */
   petMode?: boolean;
   /**
-   * Rattrapage : n'affiche la formule automatique à 12 $ QUE si l'on arrive par
-   * le lien proposé à ceux qui ont déjà choisi l'annonce gratuite. Elle n'est
-   * jamais montrée dans le parcours normal, sinon elle cannibalise les 25 $ —
-   * face à deux prix, on cherche la permission de dépenser moins.
+   * Lien de rattrapage `?offer=auto` envoyé après un dépôt gratuit. La carte à
+   * 12 $ étant désormais toujours visible, ce drapeau ne sert plus qu'à la
+   * PRÉSÉLECTIONNER.
    */
   showAutoPlan?: boolean;
 };
@@ -31,6 +46,65 @@ type Props = {
 const DARK_GREEN = "#1f6b3a";
 const LIGHT_GREEN_BG = "#eaf8ef";
 const ASSET_VER = "1";
+
+/* ───────────────────────── Jauge : icônes par palier ─────────────────────── */
+
+const ICONS_AUTO = ["informations.svg", "ai-search.svg", "datasearch.svg"].map(
+  (f) => `/images/icons/level2/${f}?v=${ASSET_VER}`
+);
+
+const ICONS_ACTIVE = [
+  "information.svg", "ai-search.svg", "map-us.svg", "database.svg", "megaphone.svg",
+  "phone.svg", "report.svg", "facebook.svg", "file.svg", "globalsearch.svg",
+  "gmail.svg", "google-maps.svg", "checkplateform.svg", "locations.svg", "x.svg",
+  "lostfoundservice.svg", "safari.png", "big-data.svg", "feedback.svg",
+  "telegramme.svg", "yahoo.svg", "contacts.png", "mail-anonyme.svg",
+  "manualcheck.svg", "datasearch.svg", "web.svg", "geolocalisation.svg",
+].map((f) => `/images/icons/level3/${f}?v=${ASSET_VER}`);
+
+/** Les trois crans de la jauge. L'ordre est celui de la piste, de gauche à droite. */
+const STOPS = [
+  {
+    price: 0,
+    label: "Free",
+    title: "Published, not searched",
+    icons: [] as string[],
+    cta: "Continue",
+    text: (
+      <>
+        <b className="font-bold text-green-800">Free listing:</b> your report waits in the public
+        database. Nothing is filed, nobody is contacted.
+      </>
+    ),
+  },
+  {
+    price: 12,
+    label: "$12",
+    title: "Searched automatically",
+    icons: ICONS_AUTO,
+    cta: "Continue — $12",
+    text: (
+      <>
+        <b className="font-bold text-green-800">Automatic search:</b> AI search for 6 months, a loss
+        report certificate, and stickers to print.
+      </>
+    ),
+  },
+  {
+    price: 25,
+    label: "$25",
+    title: "Searched and announced",
+    icons: ICONS_ACTIVE,
+    cta: "Continue — $25",
+    text: (
+      <>
+        <b className="font-bold text-green-800">Active search:</b> everything above. Plus the human
+        part: filing with the lost-property service, outreach where you lost it, and your report
+        distributed through the appropriate channels.
+      </>
+    ),
+  },
+] as const;
 
 function Check({ className = "" }: { className?: string }) {
   return (
@@ -49,6 +123,27 @@ function Check({ className = "" }: { className?: string }) {
   );
 }
 
+/** Mégaphone du curseur : il grossit, et gagne une onde par palier. */
+function Megaphone({ level, color }: { level: number; color: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ width: [20, 26, 32][level], height: [20, 26, 32][level] }}
+    >
+      <path d="M3.2 9.6h3.4l6.6-4.4v13.6l-6.6-4.4H3.2z" fill={color} fillOpacity={0.18} />
+      <path d="M6.3 14.4v3.2a1.6 1.6 0 0 0 3.2 0v-1.1" />
+      {level > 0 && <path d="M16.6 9.2a4.8 4.8 0 0 1 0 5.6" />}
+      {level > 1 && <path d="M19.3 6.6a9 9 0 0 1 0 10.8" />}
+    </svg>
+  );
+}
+
 export default function ReportContribution({
   amount,
   contribution,
@@ -60,23 +155,21 @@ export default function ReportContribution({
 }: Props) {
   const effectiveAmount = useMemo(
     () =>
-      Number.isFinite(Number(amount ?? contribution))
-        ? Number(amount ?? contribution)
-        : 0,
+      Number.isFinite(Number(amount ?? contribution)) ? Number(amount ?? contribution) : 0,
     [amount, contribution]
   );
 
   const PRICE = { 1: 0, 2: 12, 3: 25, 4: 25 } as const;
 
-  // Présélection : la formule payante. L'annonce gratuite reste accessible.
+  const [screen, setScreen] = useState<"plans" | "gauge">("plans");
+  // Présélection : la formule complète, sauf arrivée par le lien de rattrapage.
   const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
     petMode ? 4 : showAutoPlan ? 2 : 3
   );
+  const [level, setLevel] = useState<0 | 1 | 2>(0);
 
   useEffect(() => {
-    // Retour en arrière depuis le paiement : on réaffiche ce qui avait été
-    // choisi. L'ancienne version écrivait `effectiveAmount === 0 ? 3 : 3`, donc
-    // l'annonce gratuite était systématiquement réécrasée par la formule payante.
+    // Retour en arrière depuis le paiement : on réaffiche ce qui avait été choisi.
     if (petMode) {
       setSelectedPlan(4);
       return;
@@ -96,27 +189,28 @@ export default function ReportContribution({
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     }
-  }, []);
+  }, [screen]);
 
-  const proceed = () => {
-    const contribution = PRICE[selectedPlan];
+  const commit = (value: number) => {
     setFormData((prev: any) => ({
       ...prev,
-      contribution,
-      paymentRequired: contribution > 0,
+      contribution: value,
+      paymentRequired: value > 0,
     }));
     onNext();
   };
 
-  const isPaid = selectedPlan !== 1;
-  const planLabel =
-    selectedPlan === 4
-      ? "Pet Priority search"
-      : selectedPlan === 2
-      ? "Automatic search"
-      : selectedPlan === 3
-      ? "Active search"
-      : "the free listing";
+  const proceed = () => {
+    // L'annonce gratuite ne part pas directement : on accuse réception, et on
+    // laisse une dernière occasion de monter d'un cran.
+    if (selectedPlan === 1) {
+      setFormData((prev: any) => ({ ...prev, contribution: 0, paymentRequired: false }));
+      setLevel(0);
+      setScreen("gauge");
+      return;
+    }
+    commit(PRICE[selectedPlan]);
+  };
 
   const cardClass = (active: boolean) =>
     `rounded-2xl border bg-white overflow-hidden shadow-sm transition cursor-pointer ${
@@ -125,8 +219,6 @@ export default function ReportContribution({
         : "border-green-200 hover:border-green-300"
     }`;
 
-  // Vrai bouton radio : la carte entière reste cliquable, mais l'état est porté
-  // par un input, donc accessible au clavier et aux lecteurs d'écran.
   const Radio = ({ plan, label }: { plan: 1 | 2 | 3 | 4; label: string }) => (
     <input
       type="radio"
@@ -139,49 +231,145 @@ export default function ReportContribution({
     />
   );
 
+  const Fee = ({ value }: { value: number }) => (
+    <div className="mt-4 border-t border-gray-100 pt-3 text-[14.5px] font-medium text-gray-700">
+      Search fee: ${value}
+    </div>
+  );
+
+  /* ─────────────────────────────── Écran 2 : jauge ───────────────────────── */
+
+  if (screen === "gauge") {
+    const stop = STOPS[level];
+    const pct = level * 50;
+
+    return (
+      <section className="px-3 sm:px-4 md:px-6">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-[21px] font-bold tracking-tight text-gray-900">We have your report</h2>
+          <p className="mt-1.5 max-w-[62ch] text-[15px] text-gray-600">
+            It is recorded under your reference and will be published. No search has started yet.
+          </p>
+
+          <div className="mt-6 overflow-hidden rounded-2xl border border-green-200 bg-white">
+            <div
+              className="flex min-h-[52px] items-center px-5 py-3"
+              style={{ backgroundColor: LIGHT_GREEN_BG }}
+            >
+              <h3 className="text-[17.5px] font-semibold" style={{ color: DARK_GREEN }}>
+                {stop.title}
+              </h3>
+            </div>
+
+            <div className="px-5 pb-5 pt-4">
+              {/* Ce que le cran met en mouvement. Vide au gratuit : rien n'est diffusé. */}
+              <div className="flex min-h-[22px] flex-wrap gap-1.5 pb-1">
+                {stop.icons.map((src) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={src} src={src} alt="" className="h-[18px] w-[18px] object-contain" />
+                ))}
+              </div>
+
+              <div className="mx-6 mt-7 sm:mx-9">
+                <div
+                  className="relative h-[50px] cursor-pointer select-none"
+                  onPointerDown={(e) => {
+                    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                    const r = e.currentTarget.getBoundingClientRect();
+                    const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+                    setLevel(Math.round(p * 2) as 0 | 1 | 2);
+                  }}
+                >
+                  <div className="absolute left-0 right-0 top-[21px] h-2 rounded-full bg-gray-200" />
+                  <div
+                    className="absolute left-0 top-[21px] h-2 rounded-full transition-[width] duration-150"
+                    style={{ width: `${pct}%`, backgroundColor: DARK_GREEN }}
+                  />
+                  {[0, 1, 2].map((j) => (
+                    <div
+                      key={j}
+                      className="absolute top-[19px] h-3 w-3 -translate-x-1/2 rounded-full border-2"
+                      style={{
+                        left: `${j * 50}%`,
+                        borderColor: j <= level ? DARK_GREEN : "#cbd5e1",
+                        backgroundColor: j <= level ? DARK_GREEN : "#fff",
+                      }}
+                    />
+                  ))}
+                  <div
+                    className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white shadow-sm transition-[left,width,height] duration-150"
+                    style={{
+                      left: `${pct}%`,
+                      width: [30, 38, 46][level],
+                      height: [30, 38, 46][level],
+                      borderColor: level > 0 ? DARK_GREEN : "#cbd5e1",
+                      backgroundColor: level > 0 ? DARK_GREEN : "#fff",
+                    }}
+                  >
+                    <Megaphone level={level} color={level > 0 ? "#ffffff" : "#94a3b8"} />
+                  </div>
+                </div>
+
+                <div className="mt-3.5 flex justify-between">
+                  {STOPS.map((s, j) => (
+                    <button
+                      key={s.price}
+                      type="button"
+                      onClick={() => setLevel(j as 0 | 1 | 2)}
+                      className={`text-[13px] font-semibold ${
+                        j === level ? "text-[#1f6b3a]" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="mt-5 min-h-[46px] text-[14.5px] leading-relaxed text-gray-600">
+                {stop.text}
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="" className="h-4 w-4" />
+            One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0
+            certified.
+          </p>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setScreen("plans")}
+              className="rounded-md border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={() => commit(stop.price)}
+              className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-[#26723e] to-[#2ea052] px-5 py-2.5 font-semibold text-white hover:from-[#226638] hover:to-[#279449]"
+            >
+              {stop.cta}
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  /* ────────────────────────────── Écran 1 : formules ─────────────────────── */
+
   return (
     <section className="px-3 sm:px-4 md:px-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-center gap-2 text-gray-700 mb-3">
-          <img
-            src={`/images/levels.svg?v=${ASSET_VER}`}
-            alt=""
-            width={26}
-            height={26}
-            className="opacity-90"
-            style={{
-              filter:
-                "invert(48%) sepia(38%) saturate(845%) hue-rotate(80deg) brightness(92%) contrast(90%)",
-            }}
-          />
-          <h2 className="text-2xl font-bold text-gray-700 text-center">
-            How should we handle your report?
-          </h2>
-        </div>
+      <div className="mx-auto max-w-3xl">
+        <h2 className="mb-4 text-center text-2xl font-bold text-gray-700">Choose your plan</h2>
 
-        {/* Un seul encadré d'introduction. Il y en avait deux empilés, gris sur
-            blanc, avant même la première offre : l'écran commençait par un pavé. */}
-        <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4">
-          {selectedPlan === 1 ? (
-            <p className="text-[14px] leading-relaxed text-gray-700">
-              A free listing stays online and waits to be found. Nothing is sent, contacted or
-              searched.
-            </p>
-          ) : selectedPlan === 2 ? (
-            <p className="text-[14px] leading-relaxed text-gray-700">
-              With <b className="text-gray-900">Automatic search</b>, no one contacts anyone on your
-              behalf, but the web is scanned on your keywords for six months and you keep your
-              documents.
-            </p>
-          ) : (
-            <p className="text-[14px] leading-relaxed text-gray-700">
-              Getting something back is rarely about luck. It is about reaching the right desk before
-              the item moves on, and being findable when someone tries to return it.{" "}
-              <b className="text-gray-900">
-                That is what the $25 pays for: the outreach, and twelve months of being findable.
-              </b>
-            </p>
-          )}
+        <div className="mb-4 rounded-2xl border border-green-200 bg-white px-5 py-4 text-center text-[15px] leading-relaxed text-gray-700">
+          With <b className="text-gray-900">Active search</b>, a team member files your report with
+          the lost-property service and contacts the places that may hold your item.
         </div>
 
         <div className="grid gap-4">
@@ -195,16 +383,15 @@ export default function ReportContribution({
                 <Radio plan={4} label="Pet Priority search, $25" />
                 <span className="text-xl">🐾</span>
                 <h3
-                  className="text-xl font-semibold flex flex-wrap items-center gap-2"
+                  className="flex flex-wrap items-center gap-2 text-xl font-semibold"
                   style={{ color: DARK_GREEN }}
                 >
                   Pet Priority search
-                  <span className="text-[11px] font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
+                  <span className="rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-[#1f6b3a]">
                     ⚡ Priority handling
                   </span>
                 </h3>
               </div>
-
               <div className="px-5 py-4">
                 <ul className="space-y-3">
                   <li className="flex items-start gap-3">
@@ -224,15 +411,7 @@ export default function ReportContribution({
                     </span>
                   </li>
                 </ul>
-
-                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
-                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
-                    $25
-                  </span>
-                  <span className="text-[13px] text-gray-600">
-                    one-time payment, no account, no subscription
-                  </span>
-                </div>
+                <Fee value={25} />
               </div>
             </div>
           )}
@@ -245,95 +424,51 @@ export default function ReportContribution({
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
                 <Radio plan={3} label="Active search, $25" />
-                <img
-                  src={`/images/icons/max.svg?v=${ASSET_VER}`}
-                  alt=""
-                  className="w-5 h-5"
-                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/images/icons/max.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
                 <h3
-                  className="text-xl font-semibold flex flex-wrap items-center gap-2"
+                  className="flex flex-wrap items-center gap-2 text-xl font-semibold"
                   style={{ color: DARK_GREEN }}
                 >
                   Active search
-                  <span className="text-[11px] font-semibold text-[#1f6b3a] bg-green-100 border border-green-200 px-2 py-0.5 rounded-full">
-                    🏅 Recommended
+                  <span className="rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-[#1f6b3a]">
+                    🏅 Most popular
                   </span>
                 </h3>
               </div>
-
               <div className="px-5 py-4">
-                {/* La bande de 32 icônes a été retirée : non légendées et minuscules,
-                    elles se lisaient comme du remplissage sur une page où l'enjeu
-                    est la confiance, et laissaient entendre des partenariats. */}
-                {/* Six paragraphes empilés faisaient un mur de texte. Deux
-                    colonnes, un titre court et une ligne : même information,
-                    lisible d'un regard. Le détail complet est dans les CGV. */}
-                <ul className="grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
-                  {[
-                    [
-                      "Filed with the lost-property service",
-                      "Usually the local police or city office, as soon as we hold what they require.",
-                    ],
-                    [
-                      "The right places contacted",
-                      "Transit, hotel, venue, airport, taxi, nearby shops — chosen from where you lost it.",
-                    ],
-                    [
-                      "A visual notice published",
-                      "On social media and in local groups, with an anonymous relay address for finders.",
-                    ],
-                    [
-                      "12 months of web monitoring",
-                      "Daily the first week, then weekly, then monthly. Every credible match read by a person.",
-                    ],
-                    [
-                      "A loss report certificate",
-                      "Dated, downloadable any time. Not an official document, and not a police report.",
-                    ],
-                    [
-                      "A printable QR sticker sheet",
-                      "For your everyday belongings. Each code routes a finder to your relay address.",
-                    ],
-                  ].map(([title, line]) => (
-                    <li key={title} className="flex items-start gap-2.5">
-                      <Check className="mt-[3px] h-[17px] w-[17px] flex-none text-green-500" />
-                      <span>
-                        <span className="block text-[14px] font-semibold text-gray-900">{title}</span>
-                        <span className="mt-0.5 block text-[13px] leading-relaxed text-gray-600">
-                          {line}
-                        </span>
+                <ul className="space-y-3.5">
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] leading-relaxed text-gray-800">
+                      {/* <span> et non <p> : ce bloc est déjà dans un <span>,
+                          et un paragraphe n'a pas le droit d'y vivre. */}
+                      <span className="mb-2.5 block">
+                        Our team manually distributes your report through the appropriate channels,
+                        including relevant authorities and official services, and ensures continued
+                        monitoring and follow-up actions when applicable.
                       </span>
-                    </li>
-                  ))}
+                      <span className="block">
+                        Our AI continuously scans large databases for potential matches for 12
+                        months. Includes your dated loss report certificate, downloadable at any
+                        time, and a printable PDF sheet of secure ID stickers.
+                      </span>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      Recommended for valuable or sentimental items, and whenever time matters.
+                    </span>
+                  </li>
                 </ul>
-
-                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
-                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
-                    $25
-                  </span>
-                  <span className="text-[13px] text-gray-600">
-                    one-time payment, no account, no subscription
-                  </span>
-                </div>
-
-                {/* La seule objection qui compte à cet instant : « et si vous ne le
-                    retrouvez pas ? ». Trois livrables sur six sont acquis quoi
-                    qu'il arrive — on le dit, sans parler d'argent. */}
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <div className="text-[12.5px] font-bold uppercase tracking-wide text-amber-800">
-                    Yours either way
-                  </div>
-                  <p className="mt-1 text-[13.5px] leading-relaxed text-amber-900">
-                    Whether or not your item turns up, you keep the loss report certificate, the QR
-                    sticker sheet, and a written record of every desk we contacted on your case.
-                  </p>
-                </div>
+                <Fee value={25} />
               </div>
             </div>
           )}
 
-          {/* --- Automatic search (12 $), uniquement en rattrapage --- */}
-          {showAutoPlan && !petMode && (
+          {/* --- Automatic search (12 $) --- */}
+          {!petMode && (
             <div className={cardClass(selectedPlan === 2)} onClick={() => setSelectedPlan(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
@@ -344,115 +479,82 @@ export default function ReportContribution({
                   Automatic search
                 </h3>
               </div>
-
               <div className="px-5 py-4">
-                <p className="mb-3 text-[13.5px] leading-relaxed text-gray-600">
-                  The automated part of our work, without the human outreach: nobody contacts a
-                  police desk or a hotel for you.
-                </p>
-                <ul className="space-y-3">
+                <ul className="space-y-3.5">
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
-                    <span className="text-[14.5px] text-gray-800">
-                      <strong>An AI search engine scans the web for 6 months</strong> on your
-                      item&rsquo;s keywords: every day for the first week, then once a week, then
-                      once a month. Every credible match is reviewed by a team member before it
-                      reaches you.
+                    <span className="text-[14.5px] leading-relaxed text-gray-800">
+                      The automated half of the work. Our system scans large databases and online
+                      sources for potential matches during six months, and every credible match is
+                      read by a team member before it reaches you.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      <strong>A loss report certificate</strong>, downloadable from your case page at
-                      any time. It records your declaration and its date. It is not an official
-                      document and does not replace a police report.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
-                    <span className="text-[14.5px] text-gray-800">
-                      <strong>A printable sheet of QR stickers</strong> for your everyday belongings.
-                      Each code routes a finder to your anonymous relay address.
+                      Recommended for all types of lost items.
                     </span>
                   </li>
                 </ul>
-
-                <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
-                  <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
-                    $12
-                  </span>
-                  <span className="text-[13px] text-gray-600">
-                    one-time payment, no account, no subscription
-                  </span>
-                </div>
+                <Fee value={12} />
               </div>
             </div>
           )}
 
-          {/* --- Annonce gratuite --- */}
+          {/* --- Standard (Free) --- */}
           <div className={cardClass(selectedPlan === 1)} onClick={() => setSelectedPlan(1)}>
             <div
               className="flex items-center gap-3 px-5 py-3"
               style={{ backgroundColor: LIGHT_GREEN_BG }}
             >
-              <Radio plan={1} label="Free listing, $0" />
-              <img
-                src={`/images/icons/search.svg?v=${ASSET_VER}`}
-                alt=""
-                className="w-5 h-5"
-              />
+              <Radio plan={1} label="Standard, free" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/images/icons/search.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
               <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                Free listing
+                Standard (Free)
               </h3>
             </div>
-
             <div className="px-5 py-4">
-              <ul className="space-y-3">
+              <ul className="space-y-3.5">
                 <li className="flex items-start gap-3">
                   <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                   <span className="text-[14.5px] text-gray-800">
-                    Your report is published in our public database,{" "}
-                    <em>because every report counts</em>, and stays visible to finders. No outreach,
-                    no filing, no active match search: the listing waits for someone to come across
-                    it.
+                    Public publication in our open database, because every report counts.
+                  </span>
+                </li>
+                {/* La seule ligne négative de l'écran, et elle est à sa place :
+                    c'est ici que le malentendu coûte le plus cher. */}
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex-none font-bold text-amber-700">—</span>
+                  <span className="text-[14.5px] text-amber-700">
+                    Nothing else happens: no filing, no outreach, no monitoring, no documents.
                   </span>
                 </li>
               </ul>
-
-              <div className="mt-4 flex items-baseline gap-2.5 border-t border-gray-100 pt-3">
-                <span className="text-[22px] font-bold" style={{ color: DARK_GREEN }}>
-                  $0
-                </span>
-                <span className="text-[13px] text-gray-600">no card required</span>
-              </div>
+              <Fee value={0} />
             </div>
           </div>
 
-          {/* Contrôles */}
           <div className="mt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={onBack}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+              className="rounded-md border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
             >
               Back
             </button>
-
             <button
               type="button"
               onClick={proceed}
               className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-[#26723e] to-[#2ea052] px-5 py-2.5 font-semibold text-white hover:from-[#226638] hover:to-[#279449]"
             >
-              {isPaid ? `Continue with ${planLabel} →` : "Continue with the free listing →"}
+              Continue
             </button>
           </div>
 
-          <p className="mt-6 ml-1 flex items-center gap-2 text-sm text-gray-600">
-            <img
-              src={`/images/icons/secure.svg?v=${ASSET_VER}`}
-              alt=""
-              className="w-4 h-4"
-            />
+          <p className="ml-1 mt-6 flex items-center gap-2 text-sm text-gray-600">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="" className="h-4 w-4" />
             One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0
             certified.
           </p>
