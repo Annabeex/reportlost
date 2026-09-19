@@ -200,8 +200,8 @@ export default function PortalReview() {
                       }`}
                     >
                       {m.found.days_left <= 0
-                        ? "hold period over"
-                        : `hold ends in ${m.found.days_left} days`}
+                        ? "eligible for transfer"
+                        : `eligible in ${m.found.days_left} days`}
                     </span>
                   )}
                 </div>

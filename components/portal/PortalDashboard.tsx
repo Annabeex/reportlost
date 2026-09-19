@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { setActiveOrgId } from "@/components/OrgSwitcher";
 import PortalNav from "@/components/portal/PortalNav";
 import RetentionSetting from "@/components/portal/RetentionSetting";
+import { DISPOSITIONS, LEAVING_STATUSES, type Disposition } from "@/lib/orgDisposition";
 import { usePortal, portalFetch } from "@/lib/portal";
 import { scopeOfType, portalBase } from "@/lib/orgScope";
 
@@ -73,6 +74,11 @@ export default function PortalDashboard() {
   const [filter, setFilter] = useState<string>("stored");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  // Sortie d'un objet : on ne l'enregistre pas sans savoir OÙ il est parti.
+  // C'est cette ligne qu'on relira à quelqu'un qui se manifeste des mois après.
+  const [leaving, setLeaving] = useState<
+    { id: string; status: string; disposition: Disposition; to: string; busy?: boolean } | null
+  >(null);
 
   const api = useCallback(
     (url: string, init?: RequestInit) => portalFetch(scope, url, init),
@@ -123,13 +129,26 @@ export default function PortalDashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const setStatus = async (id: string, status: string) => {
+  const setStatus = async (id: string, status: string, extra?: Record<string, any>) => {
     const r = await api(`/api/org/items/${encodeURIComponent(id)}`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...(extra || {}) }),
     });
     if (r.ok) setItems((prev) => prev.map((it) => (it.id === id ? { ...it, status } : it)));
     else alert("Update failed");
+    return r.ok;
+  };
+
+  // Un objet qui sort du bureau ouvre la fiche de sortie ; un retour en stock
+  // s'enregistre directement.
+  const onStatusPicked = (id: string, status: string) => {
+    if (!LEAVING_STATUSES.has(status)) return void setStatus(id, status);
+    setLeaving({
+      id,
+      status,
+      disposition: status === "returned" ? "returned_owner" : "transferred_police",
+      to: "",
+    });
   };
 
   const toggleItemVisibility = async (id: string, next: boolean) => {
@@ -268,7 +287,55 @@ export default function PortalDashboard() {
             {visible.map((it) => {
               const d = daysLeft(it.legal_deadline);
               return (
-                <div key={it.id} className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div key={it.id} className="relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+                {leaving?.id === it.id && (
+                  <div className="absolute inset-0 z-10 flex flex-col gap-2 overflow-auto bg-white/98 p-3">
+                    <div className="text-[12.5px] font-bold text-gray-900">Where did it go?</div>
+                    <select
+                      value={leaving.disposition}
+                      onChange={(e) =>
+                        setLeaving((l) => (l ? { ...l, disposition: e.target.value as Disposition } : l))
+                      }
+                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-[12px]"
+                    >
+                      {DISPOSITIONS.map((d) => (
+                        <option key={d.v} value={d.v}>{d.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      autoFocus
+                      value={leaving.to}
+                      onChange={(e) => setLeaving((l) => (l ? { ...l, to: e.target.value } : l))}
+                      placeholder={DISPOSITIONS.find((d) => d.v === leaving.disposition)?.hint || ""}
+                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-[12px]"
+                    />
+                    <div className="mt-auto flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={leaving.busy}
+                        onClick={async () => {
+                          setLeaving((l) => (l ? { ...l, busy: true } : l));
+                          const ok = await setStatus(it.id, leaving.status, {
+                            disposition: leaving.disposition,
+                            disposed_to: leaving.to.trim(),
+                          });
+                          if (ok) setLeaving(null);
+                          else setLeaving((l) => (l ? { ...l, busy: false } : l));
+                        }}
+                        className="rounded-lg bg-[#16a34a] px-3 py-1.5 text-[12px] font-bold text-white disabled:opacity-60"
+                      >
+                        {leaving.busy ? "…" : "Record"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLeaving(null)}
+                        className="text-[12px] text-gray-500 underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                   <div className="relative h-24 bg-gray-50">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={it.image_url || catImage(it.title)} alt="" className="h-full w-full object-cover" />
@@ -277,7 +344,7 @@ export default function PortalDashboard() {
                     </span>
                     {d !== null && (it.status === "stored" || it.status === "claim_pending") && d <= 7 && (
                       <span className="absolute right-1.5 top-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
-                        {d > 0 ? `${d}d left` : "disposal ok"}
+                        {d > 0 ? `${d}d left` : "eligible"}
                       </span>
                     )}
                   </div>
@@ -291,7 +358,7 @@ export default function PortalDashboard() {
                   <div className="mt-auto flex items-center gap-1.5 px-2.5 py-2">
                     <select
                       value={it.status || "stored"}
-                      onChange={(e) => setStatus(it.id, e.target.value)}
+                      onChange={(e) => onStatusPicked(it.id, e.target.value)}
                       className="min-w-0 flex-1 rounded-lg border border-gray-300 px-1.5 py-1 text-[11px]"
                       title="Change status"
                     >

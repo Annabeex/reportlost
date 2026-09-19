@@ -65,6 +65,10 @@ export default function PortalNewItem() {
   const [suggested, setSuggested] = useState<Record<string, boolean>>({});
   const [photoMeta, setPhotoMeta] = useState<{ bytes: number; at: string } | null>(null);
   const [readMs, setReadMs] = useState<number | null>(null);
+  // Plafond mensuel du scan : le compteur ne s'affiche qu'après un scan, pour
+  // ne pas ajouter une requête à chaque ouverture de la page.
+  const [quota, setQuota] = useState<{ used: number; quota: number } | null>(null);
+  const [quotaMsg, setQuotaMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -121,7 +125,16 @@ export default function PortalNewItem() {
         body: JSON.stringify({ image_url: photoUrl }),
       });
       const j = await r.json();
+      if (r.status === 402) {
+        // Plafond atteint : on bascule en saisie manuelle plutôt que de laisser
+        // l'agent devant un bouton qui ne fera plus rien.
+        setQuota({ used: Number(j?.used || 0), quota: Number(j?.quota || 0) });
+        setQuotaMsg(String(j?.message || "Automatic scan is unavailable this month."));
+        setMode("manual");
+        return;
+      }
       if (!r.ok) return; // silencieux : l'agent remplit à la main comme avant
+      if (j?.quota) setQuota({ used: Number(j.used || 0), quota: Number(j.quota) });
       setForm((f) => {
         const next = { ...f };
         const marks: Record<string, boolean> = {};
@@ -240,6 +253,12 @@ export default function PortalNewItem() {
           ))}
         </div>
 
+        {quotaMsg && (
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
+            <b>Monthly scan limit reached</b> ({quota?.used}/{quota?.quota}). {quotaMsg}
+          </div>
+        )}
+
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           {/* ── Photo ─────────────────────────────────────────────────── */}
           <section className={`${CARD} flex flex-col overflow-hidden`}>
@@ -253,8 +272,15 @@ export default function PortalNewItem() {
                   READING…
                 </span>
               ) : readMs !== null ? (
-                <span className="rounded-full bg-green-100 px-3.5 py-1.5 text-[13px] font-bold tracking-wide text-green-800">
-                  READ · {(readMs / 1000).toFixed(1)} S
+                <span className="flex items-center gap-2.5">
+                  {quota && (
+                    <span className="text-[12.5px] text-gray-400">
+                      {quota.used}/{quota.quota} scans this month
+                    </span>
+                  )}
+                  <span className="rounded-full bg-green-100 px-3.5 py-1.5 text-[13px] font-bold tracking-wide text-green-800">
+                    READ · {(readMs / 1000).toFixed(1)} S
+                  </span>
                 </span>
               ) : null}
             </div>
@@ -422,7 +448,7 @@ export default function PortalNewItem() {
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3 py-3.5">
-                <dt className="text-gray-600">Hold until</dt>
+                <dt className="text-gray-600">Eligible for transfer</dt>
                 <dd className="text-right">
                   <span className="font-bold">{fmtShort(hold)}</span>{" "}
                   <span className="font-semibold text-gray-500">({retention.days} days)</span>
