@@ -18,8 +18,14 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 // après
 import NextDynamic from "next/dynamic";
-const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), { ssr: false });
+const ShareButtonNoSSR = NextDynamic(() => import("@/components/ShareButton"), {
+  ssr: false,
+  // Réserve la place du bouton avant son montage : sans ça, il
+  // apparaît après l'hydratation et pousse tout le contenu suivant.
+  loading: () => <div aria-hidden className="h-[42px] w-[150px]" />,
+});
 
+import LostStarterCard from "@/components/LostStarterCard";
 import { normalizePublicId, publicIdFromUuid } from "@/lib/reportId";
 import Link from "next/link";
 import { looksLikeObjectNotPlace, buildCityPath } from "@/lib/slugify";
@@ -557,32 +563,47 @@ export default async function LostReportPage({ params }: PageProps) {
               </p>
             </div>
 
-            {/* Photo */}
+            {/* Photo.
+                ⚠️ CLS : l'image n'avait aucune hauteur réservée. Le navigateur
+                ne savait pas la place qu'elle prendrait avant de l'avoir
+                chargée, et tout ce qui suit sautait au moment de l'affichage —
+                sur mobile, de quoi dépasser à lui seul le seuil de 0,25.
+                Le cadre a désormais un rapport fixe, donc la place est prise
+                dès le premier rendu. `object-contain` plutôt que `cover` :
+                sur un objet perdu, voir l'objet entier compte plus que
+                remplir le cadre. */}
             {objectPhoto && (
               <div className="mt-6">
-                <figure className="overflow-hidden rounded-xl border border-slate-200">
-                  <img src={objectPhoto} alt={fullTitle} className="block max-h-[520px] w-full object-cover" />
+                <figure className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={objectPhoto}
+                    alt={fullTitle}
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
                 </figure>
               </div>
             )}
 
+            {/* Le partage suit la photo : c'est là qu'on a envie de relayer,
+                pas après la liste des signalements voisins. Hauteur minimale
+                réservée, car le bouton est monté côté client (ssr: false) et
+                décalait ce qui le suit en apparaissant. */}
+            <div className="mt-4 flex min-h-[42px] flex-wrap items-center gap-3">
+              <ShareButtonNoSSR title={fullTitle} />
+            </div>
+
             {/* Conversion : la page ne parlait qu'à l'inventeur. Sur Google,
-                « lost <objet> <ville> » est tapé par quelqu'un qui a perdu. */}
-            <div className="mt-6 rounded-xl bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-5">
-              <p className="text-[17px] font-semibold text-white">
-                Lost something in {city || "your area"} too?
-              </p>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-emerald-50">
-                File your own report in a few minutes. Publishing it is free. The $25 Active search
-                adds the filing with the local lost-property service, outreach to the places likely
-                to hold your item, a published visual notice and twelve months of web monitoring.
-              </p>
-              <Link
-                href="/report"
-                className="mt-4 inline-block rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-[#1f6b3a] shadow hover:bg-emerald-50"
-              >
-                Report my lost item →
-              </Link>
+                « lost <objet> <ville> » est tapé par quelqu'un qui a perdu.
+                Le bandeau-lien du 14 septembre est remplacé par l'amorce elle-même :
+                on répond à la question sur place, et on arrive à l'étape 1 déjà
+                entamée au lieu d'un formulaire vierge. */}
+            <div className="mt-6">
+              <LostStarterCard
+                city={city || undefined}
+                heading={`Lost something in ${city || "your area"} too?`}
+                showHint={false}
+              />
             </div>
 
             {/* Contexte local + liens descendants vers ville et État */}
@@ -662,11 +683,10 @@ export default async function LostReportPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Partage : le lien Facebook autonome faisait doublon, il est déjà
-                dans le menu de ShareButton. */}
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+            {/* Le bouton de partage est remonté sous la photo. Il ne reste
+                ici que la référence publique. */}
+            <div className="mt-8 border-t border-slate-200 pt-5">
               <div className="text-xs text-slate-500">Public report · ID {shortId}</div>
-              <ShareButtonNoSSR title={fullTitle} />
             </div>
           </div>
         </div>

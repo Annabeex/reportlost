@@ -280,6 +280,23 @@ export default function CheckoutForm({
             <br />
             No account is created, and nothing is charged again.
           </p>
+
+          {/* ⚠️ onBack était passé par ReportForm mais n'était affiché nulle part :
+              une fois une formule payante choisie, on se retrouvait devant Stripe
+              sans retour possible, hormis le bouton du navigateur — qui repart au
+              début du formulaire et perd la saisie. */}
+          {onBack && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={loading}
+                className="text-[13.5px] text-gray-500 underline underline-offset-2 hover:text-gray-700 disabled:opacity-50"
+              >
+                ← Back to plans
+              </button>
+            </div>
+          )}
         </form>
       </section>
     </div>

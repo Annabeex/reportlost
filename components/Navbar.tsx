@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 // ✅ Petite coche verte (sans rond)
 function SmallCheck({ size = 18 }: { size?: number }) {
@@ -53,18 +52,17 @@ function BrandLogo({ compact = false }: { compact?: boolean }) {
 export default function Navbar() {
   const pathname = usePathname() || '/';
   const slant = 28; // largeur de la pente oblique
-  const [isMobile, setIsMobile] = useState(false);
 
   // ✅ UX: On détecte si on est sur une page université pour cacher les onglets
   const isUniPage = pathname.startsWith('/universities');
 
-  // Détection de la taille d’écran
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // ⚠️ La largeur d'écran était lue en JavaScript (`window.innerWidth < 640`)
+  // dans un useState/useEffect. Le serveur rendait donc TOUJOURS la version
+  // large — barre de 72 px — puis le navigateur corrigeait à 60 px après
+  // hydratation. Toute la page remontait de 12 px, ce qui suffisait à produire
+  // un CLS de 0,31 sur mobile, sur l'ensemble du site.
+  // Le choix se fait désormais en CSS, donc dès le premier pixel affiché :
+  // les deux variantes sont rendues, une seule est visible par palier.
 
   // --- Navbar home
   if (pathname === '/') {
@@ -88,21 +86,17 @@ export default function Navbar() {
   // --- Navbar site (autres pages)
   return (
     <nav
-      className="relative bg-white border-b border-gray-200 flex items-center"
-      style={{
-        height: isMobile ? 60 : 72,
-        padding: 0,
-        margin: 0,
-      }}
+      className="relative m-0 flex h-[60px] items-center border-b border-gray-200 bg-white p-0 sm:h-[72px]"
     >
-      <div
-        className={`max-w-7xl mx-auto w-full ${
-          isMobile ? 'px-2' : 'px-4'
-        } flex items-center justify-between h-full`}
-      >
+      <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-2 sm:px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center" passHref>
-          <BrandLogo compact={isMobile} />
+          <span className="flex sm:hidden">
+            <BrandLogo compact />
+          </span>
+          <span className="hidden sm:flex">
+            <BrandLogo />
+          </span>
         </Link>
 
         {/* Le lien « Lost Pet Poster » vivait ici, seul au milieu de la barre.
@@ -113,10 +107,9 @@ export default function Navbar() {
             deviennent deux pastilles compactes. Le desktop garde ses formes
             obliques pleine hauteur. */}
         {!isUniPage && (
-          <div className={isMobile ? "flex items-center gap-1.5" : "flex items-stretch gap-0 h-full"}>
+          <>
             {/* --- VERSION MOBILE : droite et compacte --- */}
-            {isMobile ? (
-              <>
+            <div className="flex items-center gap-1.5 sm:hidden">
                 <Link
                   href="/report?tab=lost"
                   className="inline-flex items-center rounded-md bg-[#15803d] px-3 py-2 text-[11px] font-bold tracking-wide text-white"
@@ -131,10 +124,10 @@ export default function Navbar() {
                   <SmallCheck size={13} />
                   FOUND
                 </Link>
-              </>
-            ) : (
-              <>
-                {/* --- VERSION DESKTOP : oblique --- */}
+            </div>
+
+            {/* --- VERSION DESKTOP : oblique --- */}
+            <div className="hidden h-full items-stretch gap-0 sm:flex">
                 <Link
                   href="/report?tab=lost"
                   className="flex items-center font-semibold text-white no-underline"
@@ -180,9 +173,8 @@ export default function Navbar() {
                   <SmallCheck size={18} />
                   <span className="whitespace-nowrap">I found something</span>
                 </Link>
-              </>
-            )}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </nav>
