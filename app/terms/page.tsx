@@ -30,7 +30,7 @@ ReportLost.org offers:
 
 **B) Optional paid assistance**
 
-One assistance plan is offered at checkout, as a one-time fee. Lost pets are handled under the same plan, with priority processing. A reduced plan covering the automated deliverables alone is offered afterwards to users who chose the free listing:
+Two assistance plans are offered at checkout, each as a one-time fee. Lost pets are handled under the full plan, with priority processing:
 
 **Active search ($25)** covers six deliverables, for 12 months from activation:
 
@@ -43,7 +43,7 @@ One assistance plan is offered at checkout, as a one-time fee. Lost pets are han
 
 **Pet Priority ($25)** is the same plan applied to a lost animal, with time-critical handling: outreach to local shelters, animal control and rescue services, and publication in local lost pet groups, private ones included.
 
-**Automatic search ($12)** is offered only to users who have already chosen the free listing, and is not available as an alternative at checkout. It covers deliverables 4, 5 and 6 above and nothing else, with automated web monitoring running for **6 months** instead of 12. No filing with a lost-property service, no outreach to third parties and no visual notice are carried out under this plan.
+**Automatic search ($12)** covers deliverables 4, 5 and 6 above and nothing else, with automated web monitoring running for **6 months** instead of 12. No filing with a lost-property service, no outreach to third parties and no visual notice are carried out under this plan.
 
 There is no partial or free-choice contribution: the amounts above are fixed, and a report is either published free of charge or handled under one of the plans described here.
 

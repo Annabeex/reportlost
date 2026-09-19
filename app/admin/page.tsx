@@ -720,19 +720,6 @@ export default function AdminPage() {
                             </button>
                           )}
 
-                          {Number(item.contribution || 0) < 25 && (
-                            item.force_search ? (
-                              <button type="button" onClick={() => toggleSearch(item.id, 'force_off')}
-                                className="rounded bg-amber-200 text-amber-800 px-2 py-1 hover:brightness-105">
-                                Retirer le forçage
-                              </button>
-                            ) : (
-                              <button type="button" onClick={() => toggleSearch(item.id, 'force_on')}
-                                className="rounded bg-amber-500 text-white px-2 py-1 hover:brightness-110">
-                                Forcer dans la veille (&lt;12$)
-                              </button>
-                            )
-                          )}
                           </div>
 
                           <button

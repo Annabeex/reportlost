@@ -22,6 +22,27 @@ type Props = {
 
 type StripePaymentRequest = ReturnType<NonNullable<Stripe['paymentRequest']>>;
 
+// ⚠️ Cette liste était écrite en dur sur la formule à 25 $ et s'affichait
+// telle quelle à quelqu'un payant 12 $ : elle lui promettait, carte en main,
+// un dépôt auprès du service compétent, des démarches auprès des commerces,
+// une annonce publiée et douze mois de veille — dont sa formule ne contient
+// rien. C'est l'écran qui fait foi en cas de litige : il doit décrire ce qui
+// est réellement acheté, et dire ce qui ne l'est pas.
+const SUMMARY_FULL = [
+  'Filed with the local lost-property service',
+  'Nearby places contacted, notice published',
+  '12 months of web monitoring, human-checked',
+  'Loss certificate + QR sticker sheet',
+];
+
+const SUMMARY_AUTO = [
+  '6 months of web monitoring',
+  'Loss certificate + QR sticker sheet',
+];
+
+/** Seuil de la formule complète. En dessous, on est sur l'automatique seule. */
+const FULL_PLAN_MIN = 25;
+
 export default function CheckoutForm({
   amount,
   reportId,
@@ -42,6 +63,7 @@ export default function CheckoutForm({
     useState<StripePaymentRequest | null>(null);
 
   const total = useMemo(() => Math.max(1, Number(amount || 0)), [amount]);
+  const isFullPlan = total >= FULL_PLAN_MIN;
 
   const paymentHeaders = {
     'Content-Type': 'application/json',
@@ -193,12 +215,7 @@ export default function CheckoutForm({
             le doute revient : quatre lignes suffisent à le lever. */}
         <hr className="my-4 border-green-200" />
         <ul className="space-y-2 text-sm text-gray-700">
-          {[
-            'Filed with the local lost-property service',
-            'Nearby places contacted, notice published',
-            '12 months of web monitoring, human-checked',
-            'Loss certificate + QR sticker sheet',
-          ].map((line) => (
+          {(isFullPlan ? SUMMARY_FULL : SUMMARY_AUTO).map((line) => (
             <li key={line} className="flex gap-2 leading-snug">
               <span className="flex-none text-green-600">✓</span>
               <span>{line}</span>

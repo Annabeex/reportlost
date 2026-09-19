@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 
 /**
- * ReportContribution.tsx — Free listing + Active search (single paid plan)
+ * ReportContribution.tsx — Free listing + Automatic search + Active search
  *
  * La version précédente est conservée telle quelle dans
  * components/ReportContribution.previous.tsx.bak : si celle-ci convertit moins

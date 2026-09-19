@@ -152,7 +152,6 @@ export default function CityLostFormBlock({
             <span className="block text-[13px] font-bold text-gray-900">
               Lost something in {defaultCity}?
             </span>
-            <span className="text-[11.5px] text-gray-500">Takes 2 minutes</span>
           </div>
           <button
             type="button"

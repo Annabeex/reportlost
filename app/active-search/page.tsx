@@ -1,5 +1,5 @@
 // app/active-search/page.tsx
-// Marketing/landing page for the "Active search" plan (single paid plan).
+// Marketing/landing page for the "Active search" plan ($25, the full plan).
 // - Tailwind CSS styling
 
 import Link from "next/link";

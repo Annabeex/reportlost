@@ -85,9 +85,11 @@ export default function HowItWorksPage() {
       </h2>
 
       <p className="mb-4">
-        Publishing a lost item report is free. A single paid plan is offered,
-        <strong> Active search, at $25</strong> — a one-time payment, never a
-        subscription, active for 12 months.
+        Publishing a lost item report is free. Two paid plans are offered, each a
+        one-time payment and never a subscription:
+        <strong> Active search, at $25</strong>, active for 12 months, and
+        <strong> Automatic search, at $12</strong>, which covers the automated
+        part alone for 6 months.
       </p>
 
       <p className="mb-4">

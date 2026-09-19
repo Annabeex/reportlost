@@ -67,7 +67,7 @@ export default function HelpCenterPage() {
       {/* Pricing */}
       <section id="pricing" className="mb-12">
         <h2 className="text-2xl font-semibold">Pricing & Plans</h2>
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border p-5 shadow-sm">
             <h3 className="text-lg font-semibold">Free listing</h3>
             <p className="text-sm text-gray-500">$0</p>
@@ -75,6 +75,16 @@ export default function HelpCenterPage() {
               <li>• Your report is published in our public database</li>
               <li>• Eligible for automatic matching</li>
               <li>• No outreach and no active search: the listing waits to be found</li>
+            </ul>
+          </div>
+          <div className="rounded-2xl border p-5 shadow-sm">
+            <h3 className="text-lg font-semibold">Automatic search</h3>
+            <p className="text-sm text-gray-500">$12 — one-time, never a subscription</p>
+            <ul className="mt-3 space-y-2 text-sm text-gray-700">
+              <li>• AI web monitoring for 6 months: daily the first week, then weekly, then monthly</li>
+              <li>• Loss report certificate, downloadable (not an official document)</li>
+              <li>• Printable sheet of QR stickers linked to your relay address</li>
+              <li>• No filing, no outreach and no published notice: those belong to Active search</li>
             </ul>
           </div>
           <div className="rounded-2xl border-2 border-green-500 p-5 shadow-sm">
@@ -192,7 +202,7 @@ export default function HelpCenterPage() {
             <summary className="cursor-pointer text-lg font-medium">Which plan should I choose?</summary>
             <div className="mt-3 text-gray-700">
               <p>
-                The free plan is a good starting point for visibility and automated matching. Choose <span className="font-medium">Extended Search</span> if you want broader automated coverage and official notifications. Select <span className="font-medium">Full Assistance</span> for human follow‑up, manual checks, and organized community outreach.
+                The <span className="font-medium">free listing</span> publishes your report and waits for someone to come across it. <span className="font-medium">Automatic search</span> ($12) adds six months of web monitoring, your loss report certificate and the QR sticker sheet, but nobody is contacted on your behalf. <span className="font-medium">Active search</span> ($25) is the only plan where a person acts: your report is filed with the lost-property service, the places likely to hold your item are contacted, a notice is published, and the monitoring runs for twelve months.
               </p>
             </div>
           </details>
