@@ -331,6 +331,7 @@ Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA
       {
         state_id: stateAbbr,
         city_slug: cityName.toLowerCase(),
+        tone_version: 2,
         guide,
         status,
         verified: false,

@@ -49,11 +49,11 @@ export async function GET(req: NextRequest) {
     // ⚠️ Pagination obligatoire : Supabase plafonne à 1000 lignes par requête.
     // Sans elle, au-delà de 1000 guides, des villes déjà traitées réapparaissaient
     // comme "à générer" et les batchs les régénéraient en boucle.
-    const guides: { state_id: string; city_slug: string; status: string }[] = [];
+    const guides: { state_id: string; city_slug: string; status: string; tone_version?: number; verified?: boolean }[] = [];
     for (let gFrom = 0; ; gFrom += 1000) {
       const { data: gPage, error: gErr } = await sb
         .from("city_guides")
-        .select("state_id, city_slug, status")
+        .select("state_id, city_slug, status, tone_version, verified")
         .order("id", { ascending: true })
         .range(gFrom, gFrom + 999);
       if (gErr || !gPage?.length) break;
@@ -62,6 +62,16 @@ export async function GET(req: NextRequest) {
     }
     const statusMap = new Map(
       guides.map((g) => [`${g.state_id}/${g.city_slug}`, g.status as string])
+    );
+    // Version de ton du guide (1 = ancien ton commercial, 2 = ton informatif).
+    // Sert au script de regeneration a reprendre exactement ou il s'est arrete.
+    const toneMap = new Map(
+      guides.map((g) => [`${g.state_id}/${g.city_slug}`, Number(g.tone_version ?? 1)])
+    );
+    // Guides relus a la main dans /admin/city-guides : une regeneration
+    // ecraserait la correction, donc les scripts doivent pouvoir les ecarter.
+    const verifiedMap = new Map(
+      guides.map((g) => [`${g.state_id}/${g.city_slug}`, !!g.verified])
     );
     // Les 5 villes à page dédiée codée en dur : jamais à générer
     for (const k of ["NY/new york", "CA/los angeles", "IL/chicago", "TX/houston", "AZ/phoenix"]) {
@@ -72,6 +82,8 @@ export async function GET(req: NextRequest) {
       state: c.state_id,
       population: c.population ?? null,
       guide_status: statusMap.get(`${String(c.state_id).toUpperCase()}/${String(c.city_ascii).toLowerCase()}`) || null,
+      tone_version: toneMap.get(`${String(c.state_id).toUpperCase()}/${String(c.city_ascii).toLowerCase()}`) ?? null,
+      verified: verifiedMap.get(`${String(c.state_id).toUpperCase()}/${String(c.city_ascii).toLowerCase()}`) ?? false,
       fb_group_done: !!c.fb_group_done,
     }));
     return NextResponse.json({ ok: true, cities: rows });
