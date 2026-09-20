@@ -22,6 +22,11 @@ const DRY = process.argv.includes("--dry");
 const COUNT_ONLY = process.argv.includes("--count");
 const COUNT = Math.max(1, Number(process.argv.find((a) => /^\d+$/.test(a)) || 5));
 const POOL = 50000;
+// --states=MA,CT,... : ne traiter que ces Etats (utile pour refaire un lot cible)
+const STATES_ARG = (process.argv.find((a) => a.startsWith("--states=")) || "").split("=")[1] || "";
+const STATES = STATES_ARG
+  ? new Set(STATES_ARG.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean))
+  : null;
 const DELAY_MS = 3000; // pause entre deux villes (Serper + Anthropic)
 
 const env =
@@ -71,7 +76,8 @@ const { cities } = await listRes.json();
 //  - verified = guide relu et corrige dans /admin/city-guides, la regeneration
 //    ecraserait ce travail.
 const aGuide = (c) => c.guide_status === "published";
-const publies = (cities || []).filter(aGuide);
+const publies = (cities || []).filter(aGuide)
+  .filter((c) => !STATES || STATES.has(String(c.state).toUpperCase()));
 const protegees = publies.filter((c) => c.verified === true);
 const regenerables = publies.filter((c) => c.verified !== true);
 const faits = regenerables.filter((c) => Number(c.tone_version) === 2);
@@ -85,7 +91,7 @@ if (restants.length && restants.every((c) => c.tone_version === null)) {
 }
 
 const pct = regenerables.length ? (100 * faits.length / regenerables.length).toFixed(1) : "0";
-console.log(`\n📊 Guides publiés : ${publies.length}`);
+console.log(`\n📊 Guides publiés${STATES ? " (" + [...STATES].join(", ") + ")" : ""} : ${publies.length}`);
 console.log(`   🔒 intouchables : ${protegees.length} relus à la main` +
   ` (+ les 5 pages écrites à la main, déjà hors liste)`);
 console.log(`   ✅ déjà en v2 : ${faits.length} / ${regenerables.length} (${pct} %)`);
