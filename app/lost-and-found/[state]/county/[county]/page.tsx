@@ -17,7 +17,7 @@ import { stateNameFromAbbr } from "@/lib/utils";
 import { buildCityPath } from "@/lib/slugify";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { holdingRule } from "@/lib/legalHolding";
-import { COUNTY_STATES, MIN_COUNTY_CITIES, countyToSlug } from "@/lib/county";
+import { COUNTY_STATES, MIN_COUNTY_CITIES, getCountyIndex } from "@/lib/county";
 
 export const revalidate = 86400; // ISR 24h
 
@@ -25,51 +25,6 @@ const MIN_CITIES = MIN_COUNTY_CITIES;
 
 type CityRow = { city_ascii: string; county_name: string | null; population: number | null };
 
-/** Villes de l'État qui ont un guide publié, indexées par slug de comté. */
-async function getCountyCities(stateAbbr: string) {
-  const sb = getSupabaseAdmin({ fresh: false });
-  if (!sb) return null;
-
-  // 1) villes de l'État avec leur comté
-  const cities: CityRow[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await sb
-      .from("us_cities")
-      .select("city_ascii, county_name, population")
-      .eq("state_id", stateAbbr)
-      .order("population", { ascending: false })
-      .range(from, from + 999);
-    if (error || !data?.length) break;
-    cities.push(...(data as CityRow[]));
-    if (data.length < 1000) break;
-  }
-  if (!cities.length) return null;
-
-  // 2) celles qui ont un guide publié
-  const published = new Set<string>();
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await sb
-      .from("city_guides")
-      .select("city_slug")
-      .eq("state_id", stateAbbr)
-      .eq("status", "published")
-      .range(from, from + 999);
-    if (error || !data?.length) break;
-    for (const g of data) if (g.city_slug) published.add(String(g.city_slug));
-    if (data.length < 1000) break;
-  }
-
-  // 3) regroupement par comté, villes à guide publié uniquement
-  const byCounty = new Map<string, { name: string; cities: CityRow[] }>();
-  for (const c of cities) {
-    if (!c.county_name) continue;
-    if (!published.has(String(c.city_ascii || "").trim().toLowerCase())) continue;
-    const slug = countyToSlug(c.county_name);
-    if (!byCounty.has(slug)) byCounty.set(slug, { name: c.county_name, cities: [] });
-    byCounty.get(slug)!.cities.push(c);
-  }
-  return byCounty;
-}
 
 type Props = { params: { state: string; county: string } };
 
@@ -79,7 +34,7 @@ export async function generateMetadata({ params }: Props) {
   const countySlug = (params.county || "").toLowerCase();
   if (!stateName) return { title: "Lost & Found in the USA" };
 
-  const byCounty = await getCountyCities(stateSlug.toUpperCase());
+  const byCounty = await getCountyIndex(stateSlug.toUpperCase());
   const entry = byCounty?.get(countySlug);
   const countyName = entry?.name || countySlug.replace(/-/g, " ");
 
@@ -104,7 +59,7 @@ export default async function CountyPage({ params }: Props) {
   const stateName = stateNameFromAbbr(stateSlug);
   if (!stateName) return notFound();
 
-  const byCounty = await getCountyCities(stateAbbr);
+  const byCounty = await getCountyIndex(stateAbbr);
   const entry = byCounty?.get(countySlug);
   if (!entry || entry.cities.length < MIN_CITIES) return notFound();
 

@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 
 import { getNearbyCities } from "@/lib/getNearbyCities";
+import { countyToSlug, getEligibleCountySlugs, isCountyState } from "@/lib/county";
 import { holdingRule } from "@/lib/legalHolding";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import CityMapSection from "@/components/CityMapSection";
@@ -365,6 +366,26 @@ export default async function Page({ params }: { params: { state: string; city: 
       nearbyCities = [];
     }
 
+    // 4 bis) Comte : un lien vers la page comte quand elle existe reellement.
+    // C'est le maillage qui manquait : sans lui chaque ville ne recoit qu'un
+    // seul lien interne, celui de la page Etat qui en distribue des centaines.
+    let countyLink: { name: string; href: string } | null = null;
+    try {
+      const rawCounty = String((cityData as any).county_name || "").trim();
+      if (rawCounty && isCountyState(stateAbbr)) {
+        const slug = countyToSlug(rawCounty);
+        const eligibles = await getEligibleCountySlugs(stateAbbr);
+        if (eligibles.has(slug)) {
+          countyLink = {
+            name: rawCounty,
+            href: `/lost-and-found/${String(stateAbbr).toLowerCase()}/county/${slug}`,
+          };
+        }
+      }
+    } catch {
+      countyLink = null;
+    }
+
     // 5) Image : photo stockée (image_url) — générée par IA lors de la création
     //    du guide (unique par ville), plus de fetch Pexels à la volée.
     const cityImage = (cityData.image_url as string | null) || null;
@@ -593,6 +614,19 @@ export default async function Page({ params }: { params: { state: string; city: 
                 </Link>
                 , including the legal holding period and where unclaimed items end up.
               </p>
+              {countyLink && (
+                <p className="text-sm text-gray-700 mb-3">
+                  Lost property is also handled at county level:{" "}
+                  <Link
+                    href={countyLink.href}
+                    prefetch={false}
+                    className="text-blue-700 hover:underline font-medium"
+                  >
+                    lost &amp; found in {countyLink.name} County
+                  </Link>
+                  .
+                </p>
+              )}
               <ul className="list-disc list-inside text-gray-700">
                 {nearbyCities.map((c: any) => {
                   const sidRaw = c.state_id ?? stateAbbr;
