@@ -139,7 +139,7 @@ export async function generateMetadata({
       supabase,
       stateAbbr,
       cityName,
-      "city_ascii, state_name, state_id, static_title, image_url, static_content"
+      "city_ascii, state_name, state_id, static_title, image_url, static_content, population"
     );
 
     if (!data) {
@@ -152,10 +152,38 @@ export async function generateMetadata({
       ? String(data.static_content).slice(0, 160)
       : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
 
+    // ====== Indexation conditionnee a la substance reelle de la page ======
+    // Une ville n'entre dans l'index que si elle a un guide publie, ou si elle
+    // est assez grande pour meriter une page sans guide. Cette regle existait
+    // dans generateMetadata.ts, un fichier que Next.js n'a jamais charge : la
+    // seule fonction prise en compte est celle-ci, dans page.tsx.
+    // SECURITE : toute erreur laisse la page indexable, pour qu'un incident de
+    // base ne puisse pas desindexer le site en masse.
+    let indexable = true;
+    try {
+      const population = Number((data as any).population || 0);
+      if (population < 100000) {
+        const admin = getSupabaseAdmin({ fresh: false });
+        if (admin) {
+          const { data: g, error: gErr } = await admin
+            .from("city_guides")
+            .select("id")
+            .eq("state_id", stateAbbr)
+            .eq("city_slug", String(data.city_ascii || "").trim().toLowerCase())
+            .eq("status", "published")
+            .maybeSingle();
+          if (!gErr) indexable = !!g;
+        }
+      }
+    } catch {
+      indexable = true;
+    }
+
     return {
       title,
       description,
       alternates: { canonical },
+      ...(indexable ? {} : { robots: { index: false, follow: true } }),
       openGraph: {
         title,
         description,
