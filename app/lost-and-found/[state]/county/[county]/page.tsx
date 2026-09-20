@@ -17,27 +17,13 @@ import { stateNameFromAbbr } from "@/lib/utils";
 import { buildCityPath } from "@/lib/slugify";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { holdingRule } from "@/lib/legalHolding";
+import { COUNTY_STATES, MIN_COUNTY_CITIES, countyToSlug } from "@/lib/county";
 
 export const revalidate = 86400; // ISR 24h
 
-/** États où les pages comté sont actives. Élargir après mesure. */
-const COUNTY_STATES = new Set(["FL"]);
-
-/** En dessous, le comté n'a pas assez de substance pour mériter une page. */
-const MIN_CITIES = 3;
+const MIN_CITIES = MIN_COUNTY_CITIES;
 
 type CityRow = { city_ascii: string; county_name: string | null; population: number | null };
-
-export function countyToSlug(name: string) {
-  return String(name)
-    .toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 /** Villes de l'État qui ont un guide publié, indexées par slug de comté. */
 async function getCountyCities(stateAbbr: string) {
