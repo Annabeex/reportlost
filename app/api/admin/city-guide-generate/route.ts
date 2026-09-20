@@ -181,21 +181,21 @@ export async function POST(req: NextRequest) {
     // 2) Rédaction stricte
     const raw = await callClaude(
       `Tu rédiges la page "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
-Tu es un EXPERT EN CONVERSION, pas un blogueur : cette page vend le service d'accompagnement de ReportLost
+Tu rédiges la fiche de référence des objets perdus de cette ville. Registre institutionnel et sobre, celui d'un service public bien tenu, jamais celui d'une page de vente : elle doit rester utile à quelqu'un qui ne fera jamais appel à ReportLost. Le service est présenté factuellement, comme une option parmi les démarches
 (un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale, et le signalement
-reste actif en recherche de correspondances pendant 12 mois). Chaque section doit ramener vers le formulaire de signalement.
+reste actif en recherche de correspondances pendant 12 mois). Seuls midCta et finalCta invitent à signaler ; aucune autre section ne pousse vers le formulaire.
 
-EXEMPLES D'OBJETS : quand tu cites des objets perdus en exemple (intro, FAQ, cartes, étapes), privilégie wallet, purse, ring, bracelet, phone, cat et dog (les objets qui convertissent le mieux) ; keys, laptop, backpack ou glasses seulement de temps en temps pour varier.
+EXEMPLES D'OBJETS : quand tu cites des objets perdus en exemple (intro, FAQ, cartes, étapes), environ deux tiers doivent être des objets à forte valeur personnelle ou administrative : ring, bracelet, necklace, earrings, watch, passport, ID or travel documents. Le tiers restant couvre le quotidien : wallet, purse, phone, keys, glasses, backpack, plus un objet typique de CETTE ville quand elle en a un évident. Cite un animal perdu (cat ou dog) au moins une fois dans le corps du texte, sans en faire l'exemple principal.
 
 ⚠️ PRINCIPE DIRECTEUR : des pages "similaires mais différentes". Garde exactement ce plan de page (le modèle New York ci-dessous), mais REFORMULE chaque phrase : synonymes, constructions retournées, jamais une phrase réutilisable sur une autre ville en changeant juste le nom. Et ajuste le contenu à la réalité locale : ajoute, modifie ou retire des détails selon la ville (pas de carte ni de question FAQ sur le métro s'il n'y a pas de métro, pas d'aéroport s'il n'y en a pas ; à l'inverse, mets en avant ce que CETTE ville a : une plage, un campus, un stade, une gare routière).
 
 Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
-- h1 : orienté action et bénéfice, ex "Lost something in <ville>? Report it and get it back." (reformulé à chaque ville).
-- heroSubtitle : la promesse du service, du type "One report and we route it to the right <police locale>, the relevant lost & found offices, and active local social channels.", avec les vrais noms locaux.
+- h1 : descriptif et aligné sur la recherche réelle, ex "Lost and found in <ville>, <État> : where to report and reclaim" (reformulé à chaque ville, sans point d'exclamation ni question rhétorique).
+- heroSubtitle : un constat factuel de la situation locale, du type "Lost property in <ville> is handled separately by <police locale>, <transports>, and the venues themselves.", avec les vrais noms locaux, suivi d'une seule phrase sobre sur ce que ReportLost peut prendre en charge.
 - steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Your report keeps searching for you), adaptées à la ville. L'étape 3 insiste sur la veille MAIS avec un cadrage rassurant, centré sur le signalement et non sur une "surveillance" : le signalement reste actif pendant toute la durée de la formule, la recherche automatisée continue de croiser les nouveaux posts "found", annonces et marketplaces avec la description, pour que la personne n'ait pas à vérifier elle-même chaque jour, avec alerte dès qu'un match crédible sort.
 - ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match", "for 12 months". La durée est de 12 mois, jamais "6 to 12 months" ni "6 or 12 months" : il n'existe plus qu'une seule formule payante. INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
 - intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
-- cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
+- cards : les vrais canaux locaux AVEC leurs liens officiels, présentés de façon strictement factuelle : qui gère, où, comment les joindre, ce qu'il faut fournir. Aucune mention de ReportLost dans les cartes, aucune phrase de vente.
 - midCta / finalCta : ton calme et rassurant. Le lecteur vient de perdre quelque chose, il est déjà inquiet : le texte doit le soulager, pas ajouter de la pression.
 
 ⛔ URGENCE ARTIFICIELLE, RÈGLE DE PRINCIPE : n'écris JAMAIS, nulle part dans la page, qu'il reste peu de temps, que chaque minute ou chaque heure compte, que les premières heures sont décisives, ou que le lecteur risque de perdre son objet en attendant. Cette règle s'applique à toute la page, pas seulement aux CTA, et à toute formulation équivalente même si elle n'est pas dans la liste ci-dessous.
@@ -222,7 +222,7 @@ Règles STRICTES de véracité :
 - FAQ : 4-6 questions locales concrètes, réponses factuelles basées sur les résultats (délais de garde, où réclamer). En cas de doute, formule prudente ("check with..."). Termine par une question sur ReportLost ("Is ReportLost.org official / does it replace the police?" avec la réponse honnête : service indépendant).
 
 Règles de STYLE :
-- Anglais américain naturel, chaleureux et concret.
+- Anglais américain naturel, précis et sobre. Ton informatif, jamais promotionnel.
 - JAMAIS de tiret cadratin ni de tiret de ponctuation ("—" ou " - "), utilise des virgules à la place.
 - N'utilise JAMAIS le mot "guide" dans les textes visibles, préfère "what to do", "where to report", "the right channel".
 - Icônes emoji + iconBg parmi : bg-blue-100, bg-yellow-100, bg-indigo-100, bg-sky-100, bg-green-100, bg-rose-100.

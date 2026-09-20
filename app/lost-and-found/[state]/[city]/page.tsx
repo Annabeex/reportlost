@@ -335,7 +335,7 @@ export default async function Page({ params }: { params: { state: string; city: 
     // 4) Nearby
     let nearbyCities: any[] = [];
     try {
-      const candidates = await getNearbyCities(cityData.id, cityData.state_id, 12);
+      const candidates = await getNearbyCities(cityData.id, cityData.state_id, 40);
       // On ne lie que vers des villes possédant un guide publié : inutile d'envoyer
       // Google (et les visiteurs) vers des pages non enrichies.
       const adminNear = getSupabaseAdmin({ fresh: false });

@@ -11,7 +11,7 @@ export async function getNearbyCities(
   stateId: string,
   limit = 5
 ): Promise<NearbyCity[]> {
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_nearby_cities`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_nearby_cities_by_distance`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
