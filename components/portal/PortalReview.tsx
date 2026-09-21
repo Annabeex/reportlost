@@ -304,7 +304,9 @@ export default function PortalReview() {
                   </button>
                   <span className="flex-1" />
                   <span className="text-[14px] text-gray-500">
-                    Nothing is sent until you decide.
+                    {m.lost.direct
+                      ? "Nothing is sent until you decide."
+                      : "This report was filed on ReportLost.org. If you confirm, ReportLost contacts the owner and puts them in touch with your office."}
                   </span>
                   <button
                     type="button"
@@ -312,7 +314,7 @@ export default function PortalReview() {
                     onClick={() => decide(m.id, "confirm")}
                     className="rounded-lg bg-[#16a34a] px-5 py-2.5 font-bold text-white disabled:opacity-50"
                   >
-                    {busy === m.id ? "Saving…" : words.notifyCta}
+                    {busy === m.id ? "Saving…" : m.lost.direct ? words.notifyCta : "Confirm the match"}
                   </button>
                 </div>
               </article>

@@ -172,7 +172,9 @@ export async function PATCH(req: NextRequest) {
     patch.status = "dismissed";
   } else if (action === "confirm") {
     patch.status = "confirmed";
-    patch.notified_owner_at = now;
+    // notified_owner_at n'est posé que si un message est RÉELLEMENT parti au
+    // propriétaire (voir plus bas). Avant, la date était écrite sans qu'aucun
+    // mail ne soit envoyé : le bureau croyait avoir prévenu quelqu'un.
   } else {
     // ask_proof : la question part au propriétaire, mais le rapprochement
     // reste ouvert — la décision n'est pas prise.
@@ -229,11 +231,56 @@ ReportLost.org, on behalf of ${ctx.org.name}`,
     }
   }
 
+  if (notified) {
+    await sb.from("org_matches").update({ notified_owner_at: now }).eq("id", match.id);
+  }
+
+  // Déclaration faite sur le site général (client ReportLost) : le bureau ne
+  // connaît pas cette personne et ne lui écrit pas. C'est Anna qui reprend la
+  // main : elle reçoit tout ce qu'il faut pour écrire elle-même au client, selon
+  // ses propres règles. Le mail part à l'adresse interne, jamais au client.
+  let relayed: boolean | null = null;
+  if (action === "confirm" && !String(match.lost_item_id).startsWith(CAMPUS_PREFIX)) {
+    const [{ data: lost }, { data: found }] = await Promise.all([
+      sb.from("lost_items").select("id, public_id, title, description, date, city, state_id, email, first_name").eq("id", match.lost_item_id).maybeSingle(),
+      sb.from("found_items").select("org_ref, title, description, date, dropoff_location, storage_location").eq("id", match.found_item_id).maybeSingle(),
+    ]);
+    const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://reportlost.org").replace(/\/+$/, "");
+    relayed = await sendMailDirect({
+      to: "support@reportlost.org",
+      subject: `Match confirmé par ${ctx.org.name} : dossier #${lost?.public_id || match.lost_item_id}`,
+      text: `Le bureau de ${ctx.org.name} vient de confirmer qu'un objet de son inventaire correspond à une déclaration du site. Le client N'A PAS été prévenu : c'est à vous de lui écrire.
+
+DÉCLARATION DU CLIENT
+Dossier : #${lost?.public_id || "?"} · ${base}/admin/case/${lost?.id || match.lost_item_id}
+Client : ${[lost?.first_name, lost?.email].filter(Boolean).join(" · ") || "?"}
+Objet : ${lost?.title || "?"}
+Perdu le : ${lost?.date || "?"}${lost?.city ? ` · ${lost.city}${lost.state_id ? `, ${lost.state_id}` : ""}` : ""}
+Description : ${lost?.description || "—"}
+
+OBJET DÉTENU PAR L'ÉTABLISSEMENT
+Référence : ${found?.org_ref || match.found_item_id}
+Objet : ${found?.title || "?"}
+Trouvé le : ${found?.date || "?"}${found?.dropoff_location ? ` · ${found.dropoff_location}` : ""}
+Description interne : ${found?.description || "—"}
+
+ÉTABLISSEMENT
+${ctx.org.name}${ctx.org.city ? ` · ${ctx.org.city}` : ""}
+Contact du bureau : ${ctx.org.public_email || ctx.email}
+Confirmé par : ${ctx.email}
+
+L'objet est passé en « Claim pending » dans leur inventaire. Ne décrivez pas l'objet au client : c'est à lui de le décrire au bureau, qui vérifie avant de rendre.`,
+      fromName: "ReportLost portail",
+      replyTo: ctx.org.public_email || ctx.email,
+      noBcc: true,
+    }).catch(() => false);
+  }
+
   // Un objet confirmé passe en réclamation en cours : il ne doit plus être
   // proposé pour d'autres rapprochements ni sortir à l'échéance sans regard.
   if (action === "confirm") {
     await sb.from("found_items").update({ status: "claim_pending" }).eq("id", match.found_item_id);
   }
 
-  return NextResponse.json({ ok: true, status: patch.status, notified });
+  return NextResponse.json({ ok: true, status: patch.status, notified, relayed });
 }

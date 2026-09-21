@@ -11,7 +11,9 @@ import { portalBase, type OrgScope } from "@/lib/orgScope";
 export default function PortalLogin() {
   const router = useRouter();
   const { scope, base, otherBase, words } = usePortal();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  // forgot  : demander le lien de réinitialisation
+  // newpass : arrivé par ce lien, choisir un nouveau mot de passe
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "newpass">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -65,12 +67,38 @@ export default function PortalLogin() {
     return () => { alive = false; };
   }, [acceptInvite]);
 
+  // Retour du mail « mot de passe oublié » : Supabase ouvre une session
+  // temporaire et le signale par l'événement PASSWORD_RECOVERY. On ne redirige
+  // PAS vers le tableau de bord : la personne doit d'abord choisir son mot de passe.
+  useEffect(() => {
+    const { data: sub } = supabaseBrowser.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("newpass");
+        setPassword("");
+        setMsg(null);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
     try {
-      if (mode === "signup") {
+      if (mode === "forgot") {
+        const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}${base}/login`,
+        });
+        if (error) throw error;
+        // Même message que l'adresse existe ou non : l'écran ne doit pas
+        // permettre de deviner qui a un compte.
+        setMsg("If an account exists for this address, a link to choose a new password is on its way. It is valid for one hour.");
+      } else if (mode === "newpass") {
+        const { error } = await supabaseBrowser.auth.updateUser({ password });
+        if (error) throw error;
+        router.push(`${base}/dashboard`);
+      } else if (mode === "signup") {
         const { error } = await supabaseBrowser.auth.signUp({
           email,
           password,
@@ -100,7 +128,7 @@ export default function PortalLogin() {
   return (
     <main className="mx-auto max-w-md px-6 py-16">
       <h1 className="text-2xl font-bold text-gray-900">
-        {mode === "signin" ? words.signinTitle : words.signupTitle}
+        {mode === "forgot" ? "Reset your password" : mode === "newpass" ? "Choose a new password" : mode === "signin" ? words.signinTitle : words.signupTitle}
       </h1>
       <p className="mt-1 text-sm text-gray-600">{words.loginSubtitle}</p>
       {invite && (
@@ -110,25 +138,36 @@ export default function PortalLogin() {
         </div>
       )}
       <form onSubmit={submit} className="mt-6 space-y-4">
+        {mode !== "newpass" && (
         <div>
           <label className="block font-medium mb-1">Work email</label>
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         </div>
+        )}
+        {mode !== "forgot" && (
         <div>
-          <label className="block font-medium mb-1">Password</label>
+          <label className="block font-medium mb-1">{mode === "newpass" ? "New password" : "Password"}</label>
           <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          {mode === "signin" && (
+            <button type="button" className="mt-1.5 text-sm text-gray-500 underline hover:text-gray-800"
+              onClick={() => { setMode("forgot"); setMsg(null); }}>
+              Forgot your password?
+            </button>
+          )}
         </div>
+        )}
         {msg && <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">{msg}</div>}
         <button type="submit" disabled={busy}
           className="w-full rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow disabled:opacity-60">
-          {busy ? "…" : mode === "signin" ? "Sign in" : "Create account"}
+          {busy ? "…" : mode === "forgot" ? "Send me the link" : mode === "newpass" ? "Save and open my dashboard" : mode === "signin" ? "Sign in" : "Create account"}
         </button>
       </form>
       <button type="button" className="mt-4 block text-sm text-emerald-700 underline"
         onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(null); }}>
-        {mode === "signin" ? "No account yet? Create one free" : "Already have an account? Sign in"}
+        {mode === "signin" ? "No account yet? Create one" : mode === "signup" ? "Already have an account? Sign in" : "Back to sign in"}
       </button>
 
       {/* Se tromper de portail est l'erreur la plus probable ici : on ne laisse
@@ -140,6 +179,8 @@ export default function PortalLogin() {
         <Link href={`${otherBase}/login`} className="underline hover:text-gray-800">
           {scope === "campus" ? "Use the organization portal" : "Use the campus portal"}
         </Link>
+        {" · "}
+        <Link href="/privacy/institutions" className="underline hover:text-gray-800">Privacy notice</Link>
       </p>
     </main>
   );

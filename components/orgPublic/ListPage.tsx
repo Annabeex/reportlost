@@ -179,7 +179,7 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
       </p>
 
       <p className="mt-6 text-center text-xs text-gray-400">
-        Powered by ReportLost.org · Free lost &amp; found management for organizations ·{" "}
+        <Link href="/privacy/institutions" className="underline">Privacy notice</Link> · Powered by ReportLost.org ·{" "}
         <Link href={`${portalBase(scopeOfType(org.type))}/login`} className="underline">Create your page</Link>
       </p>
     </main>

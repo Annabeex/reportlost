@@ -232,6 +232,11 @@ export default function OrgFoundForm({
         {busy ? "Sending…" : heldBy === "finder" ? "Send my report" : "Get my drop-off code"}
       </button>
 
+      <p className="text-center text-[12.5px] text-gray-500">
+        How this information is used and how long it is kept:{" "}
+        <a href="/privacy/institutions" target="_blank" rel="noopener" className="underline">privacy notice</a>
+      </p>
+
       {publicListing && (
         <p className="text-center text-[13px] text-gray-500">
           Looking for something you lost instead?{" "}

@@ -676,7 +676,10 @@ export default function PortalDashboard() {
               return (
                 <div key={it.id} className="relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
                 {leaving?.id === it.id && (
-                  <div className="absolute inset-0 z-10 flex flex-col gap-2 overflow-auto bg-white/98 p-3">
+                  // ⚠️ bg-white/98 n'existe pas dans Tailwind (l'échelle s'arrête à 95) :
+                  // la classe était ignorée et le panneau s'affichait SANS fond,
+                  // par-dessus la carte. Fond plein.
+                  <div className="absolute inset-0 z-10 flex flex-col gap-2 overflow-auto rounded-xl bg-white p-3">
                     <div className="text-[12.5px] font-bold text-gray-900">Where did it go?</div>
                     <select
                       value={leaving.disposition}

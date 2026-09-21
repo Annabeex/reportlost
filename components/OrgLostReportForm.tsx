@@ -109,6 +109,10 @@ export default function OrgLostReportForm({ orgSlug, orgName }: { orgSlug: strin
         className="w-full rounded-xl bg-[#16a34a] px-6 py-4 text-[17px] font-bold text-white shadow-sm hover:bg-[#15913f] disabled:opacity-60">
         {busy ? "Sending…" : `Send my report to ${orgName}`}
       </button>
+      <p className="text-center text-[12.5px] text-gray-500">
+        How this information is used and how long it is kept:{" "}
+        <a href="/privacy/institutions" target="_blank" rel="noopener" className="underline">privacy notice</a>
+      </p>
     </form>
   );
 }
