@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { REGIONS } from "@/lib/regions";
 
 type Kit = {
   cityUrl: string;
@@ -120,7 +121,7 @@ export default function GroupKitPage() {
     }
   };
 
-  const generate = async (cityArg?: string, stateArg?: string) => {
+  const generate = async (cityArg?: string, stateArg?: string, countyArg?: string) => {
     const c = (cityArg ?? city).trim();
     const s = (stateArg ?? state).trim();
     if (!c || s.length !== 2) return;
@@ -131,7 +132,7 @@ export default function GroupKitPage() {
       const res = await fetch('/api/admin/group-kit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city: c, state: s }),
+        body: JSON.stringify({ city: c, state: s, ...(countyArg ? { county: countyArg } : {}) }),
       });
       const j = await res.json().catch(() => null);
       if (!res.ok || !j?.ok) {
@@ -296,6 +297,32 @@ export default function GroupKitPage() {
           )}
         </div>
       )}
+
+      {/* Kits regionaux : une region touristique = un comte = une page comte */}
+      <section className="mt-10 rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-1 text-lg font-semibold text-gray-800">🏖️ Régions touristiques</h2>
+        <p className="mb-3 text-sm text-gray-600">
+          Un seul groupe pour toute la région. Le lien du kit renvoie vers la page comté, qui liste
+          toutes les villes couvertes.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {REGIONS.map((r) => (
+            <button
+              key={`${r.state}-${r.county}`}
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setCity(r.name);
+                setState(r.state);
+                generate(r.name, r.state, r.county);
+              }}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
+            >
+              {r.name} <span className="text-gray-500">({r.state})</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Liste de travail : villes par population + suivi des groupes créés */}
       <section className="mt-10 rounded-xl border border-gray-200 bg-white p-4">

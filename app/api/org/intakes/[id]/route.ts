@@ -4,7 +4,7 @@
 //   reject  : l'objet n'a jamais été remis → le dépôt et sa photo disparaissent.
 //   publish / unpublish : pour un signalement GARDÉ PAR SON TROUVEUR, l'afficher
 //             ou non sur la page publique (catégorie + date + lieu, rien d'autre).
-//             Toujours une décision d'agent, jamais automatique.
+//             Listé par défaut dès le signalement ; l'agent peut le masquer.
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";

@@ -15,8 +15,9 @@ alter table org_intakes drop constraint if exists org_intakes_held_by_check;
 alter table org_intakes add constraint org_intakes_held_by_check
   check (held_by in ('desk', 'finder'));
 
--- Visibilité sur la page publique : JAMAIS automatique. Un formulaire public
--- ne doit pas pouvoir alimenter une page publique sans qu'un agent l'ait vu.
+-- Visibilité sur la page publique. Un signalement gardé par son trouveur est
+-- listé dès sa création (catégorie générique + date + lieu) ; l'agent peut le
+-- masquer. La valeur est posée par la route /api/o/intake, pas par ce défaut.
 alter table org_intakes
   add column if not exists public_visible boolean not null default false,
   add column if not exists public_label text;

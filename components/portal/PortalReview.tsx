@@ -40,6 +40,9 @@ type Match = {
     description: string | null;
     date: string | null;
     city: string | null;
+    /** Déclaration faite directement à l'établissement (page publique). */
+    direct?: boolean;
+    contact?: { name: string | null; email: string | null; phone: string | null } | null;
   };
 };
 
@@ -225,6 +228,19 @@ export default function PortalReview() {
                         <dt className="w-24 flex-none text-gray-500">Report</dt>
                         <dd className="font-semibold">{m.lost.reference || "—"}</dd>
                       </div>
+                      {m.lost.direct && m.lost.contact && (
+                        <div className="flex gap-2">
+                          <dt className="w-24 flex-none text-gray-500">Contact</dt>
+                          <dd className="min-w-0 break-words font-semibold">
+                            {m.lost.contact.name}
+                            {m.lost.contact.email && (
+                              <> · <a href={`mailto:${m.lost.contact.email}`} className="underline">{m.lost.contact.email}</a></>
+                            )}
+                            {m.lost.contact.phone ? ` · ${m.lost.contact.phone}` : ""}
+                            <span className="block text-[12.5px] font-normal text-gray-500">Reported directly to your office</span>
+                          </dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
 

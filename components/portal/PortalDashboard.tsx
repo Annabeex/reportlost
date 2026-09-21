@@ -29,6 +29,20 @@ type Intake = {
   created_at: string;
 };
 
+/** Déclaration de perte adressée directement à l'établissement (page publique). */
+type LostReport = {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  lost_location: string | null;
+  lost_at: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  created_at: string;
+};
+
 // Au-delà, le navigateur peine — surtout sur un téléphone. Le reste s'affiche
 // à la demande ; la recherche, elle, porte toujours sur tout l'inventaire.
 const PAGE_SIZE = 120;
@@ -104,6 +118,7 @@ export default function PortalDashboard() {
   const [intakes, setIntakes] = useState<Intake[]>([]);
   const [shelf, setShelf] = useState<Record<string, string>>({});
   const [intakeBusy, setIntakeBusy] = useState("");
+  const [lostReports, setLostReports] = useState<LostReport[]>([]);
   // Sortie d'un objet : on ne l'enregistre pas sans savoir OÙ il est parti.
   // C'est cette ligne qu'on relira à quelqu'un qui se manifeste des mois après.
   const [leaving, setLeaving] = useState<
@@ -156,6 +171,10 @@ export default function PortalDashboard() {
       api("/api/org/intakes")
         .then((res) => res.json())
         .then((ij) => setIntakes(Array.isArray(ij.intakes) ? ij.intakes : []))
+        .catch(() => {});
+      api("/api/org/lost-reports")
+        .then((res) => res.json())
+        .then((lj) => setLostReports(Array.isArray(lj.reports) ? lj.reports : []))
         .catch(() => {});
     } catch {
       router.push(`${base}/login`);
@@ -238,6 +257,13 @@ export default function PortalDashboard() {
     setIntakes((prev) => prev.map((x) => (x.id === it.id ? { ...x, public_visible: next, public_label: j?.public_label || x.public_label } : x)));
   };
 
+  const closeLostReport = async (r: LostReport) => {
+    if (!confirm(`Close the report ${r.code} (${r.title})? Use this once the owner has the item back, or when the report is no longer relevant. It stops being compared with your inventory.`)) return;
+    const res = await api("/api/org/lost-reports", { method: "PATCH", body: JSON.stringify({ id: r.id, action: "close" }) });
+    if (res.ok) setLostReports((prev) => prev.filter((x) => x.id !== r.id));
+    else alert("Update failed");
+  };
+
   const resolveIntake = async (it: Intake, action: "confirm" | "reject") => {
     const kept = it.held_by === "finder";
     if (action === "reject" && !confirm(
@@ -311,8 +337,18 @@ export default function PortalDashboard() {
     );
   }, [finderReports, filter, query]);
 
+  // Déclarations de perte reçues : même règle, filtre dédié ou recherche.
+  const shownLostReports = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (filter !== "reports" && !q) return [];
+    if (!q) return lostReports;
+    return lostReports.filter((r) =>
+      `${r.code} ${r.title} ${r.description || ""} ${r.lost_location || ""} ${r.name} ${r.email}`.toLowerCase().includes(q)
+    );
+  }, [lostReports, filter, query]);
+
   const visible = useMemo(() => {
-    if (filter === "finder") return [];
+    if (filter === "finder" || filter === "reports") return [];
     let arr =
       filter === "all" ? items
       : filter === "overdue"
@@ -332,7 +368,8 @@ export default function PortalDashboard() {
   // Le dernier signalement vient d'être retiré : le filtre n'a plus lieu d'être.
   useEffect(() => {
     if (filter === "finder" && !loading && finderReports.length === 0) setFilter("stored");
-  }, [filter, loading, finderReports.length]);
+    if (filter === "reports" && !loading && lostReports.length === 0) setFilter("stored");
+  }, [filter, loading, finderReports.length, lostReports.length]);
 
   if (loading || !org) return <div className="p-10 text-gray-500">Loading…</div>;
 
@@ -375,14 +412,14 @@ export default function PortalDashboard() {
               Tools ▾
             </summary>
             <div className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 text-sm shadow-lg">
-              <a href={`/api/org/poster?slug=${org.slug}`} target="_blank" rel="noopener" title={words.posterHint}
+              <a href={`/api/org/poster?slug=${org.slug}`} target="_blank" rel="noopener"
+                title="One PDF: a full-page poster, a half-page poster and four cards to cut out. Each carries both QR codes, lost and found"
                 className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
-                QR poster · “Lost something?”
+                QR posters and cards (PDF)
               </a>
-              <a href={`/api/org/poster?slug=${org.slug}&kind=found`} target="_blank" rel="noopener"
-                title="Finders scan it, describe the item themselves, then hand it to the desk with a code"
-                className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
-                QR poster · “Found something?”
+              <a href={`/api/org/poster?slug=${org.slug}&paper=a4`} target="_blank" rel="noopener"
+                className="block px-4 py-2 text-[12.5px] text-gray-400 hover:bg-gray-50">
+                Same, A4 paper
               </a>
               <button type="button" onClick={exportCsv} disabled={exporting}
                 className="block w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 disabled:opacity-60">
@@ -511,6 +548,7 @@ export default function PortalDashboard() {
             ["returned", "Returned"], ["disposed", "Disposed"], ["all", "All"],
             // Absent tant qu'il n'y en a aucun : rien à montrer, rien à encombrer.
             ...(finderReports.length ? [["finder", `Kept by finder · ${finderReports.length}`]] : []),
+            ...(lostReports.length ? [["reports", `Lost reports · ${lostReports.length}`]] : []),
           ].map(([v, l]) => (
             <button key={v} type="button" onClick={() => setFilter(v)}
               className={`rounded-full px-3 py-1 text-xs border ${filter === v ? "bg-emerald-100 border-emerald-300 text-emerald-800 font-medium" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
@@ -571,10 +609,40 @@ export default function PortalDashboard() {
               ))}
             </section>
           )}
+          {shownLostReports.length > 0 && (
+            <section className="mb-4 overflow-hidden rounded-2xl border border-amber-200 bg-white">
+              <div className="border-b border-amber-100 bg-amber-50/60 px-4 py-2.5 text-[13.5px] text-amber-900">
+                <b>Reported lost to your office.</b> Filed from your public page. Each report is compared with
+                your inventory, now and every time an item is logged: matches appear in To review.
+              </div>
+              {shownLostReports.map((r) => (
+                <div key={r.id} className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0">
+                  <span className="flex-none rounded-lg bg-amber-50 px-2 py-1 font-mono text-[13.5px] font-bold text-amber-900">{r.code}</span>
+                  <div className="min-w-0 flex-1 basis-56">
+                    <div className="truncate text-[14.5px] font-semibold text-gray-900">{r.title}</div>
+                    <div className="text-[12.5px] leading-snug text-gray-500">
+                      lost {r.lost_at}{r.lost_location ? ` · ${r.lost_location}` : ""}
+                      {r.description ? ` · ${r.description}` : ""}
+                    </div>
+                    <div className="truncate text-[12.5px] text-gray-700">
+                      {r.name} · <a href={`mailto:${r.email}`} className="underline">{r.email}</a>{r.phone ? ` · ${r.phone}` : ""}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => closeLostReport(r)}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50">
+                    Close report
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
+          {filter === "reports" && shownLostReports.length === 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">No report matches.</div>
+          )}
           {filter === "finder" && shownReports.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">No report matches.</div>
           )}
-          {filter !== "finder" && visible.length === 0 && (
+          {filter !== "finder" && filter !== "reports" && visible.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">
               {items.length === 0 ? "No items logged yet." : "No items in this view."}
             </div>

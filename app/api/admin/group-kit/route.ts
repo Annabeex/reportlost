@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serperSearch } from "@/lib/matchWatch/core";
 import { extractJson } from "@/lib/extractJson";
+import { countyPath, countyToSlug, getEligibleCountySlugs } from "@/lib/county";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +46,31 @@ export async function POST(req: NextRequest) {
   const state = String(body?.state || "").trim().toUpperCase();
   if (!city || !state) return NextResponse.json({ ok: false, error: "ville et État requis" }, { status: 400 });
 
-  const cityUrl = `https://reportlost.org/lost-and-found/${state.toLowerCase()}/${slugify(city)}`;
+  // Kit regional (Cape Cod, Outer Banks...) : "city" porte le nom de la region
+  // et le lien vise la page comte, faute de page ville a ce nom.
+  const county = String(body?.county || "").trim();
+  const cityUrl = county
+    ? `https://reportlost.org${countyPath(state, county)}`
+    : `https://reportlost.org/lost-and-found/${state.toLowerCase()}/${slugify(city)}`;
+
+  // Le lien part dans un groupe Facebook public : il ne doit jamais aboutir a
+  // une 404. Une page comte n'existe que si l'Etat est active et que le comte
+  // compte assez de villes a guide publie.
+  if (county) {
+    const eligibles = await getEligibleCountySlugs(state).catch(() => new Set<string>());
+    if (!eligibles.has(countyToSlug(county))) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            `La page du comté de ${county} (${state}) n'existe pas encore : il faut au moins ` +
+            `3 villes de ce comté avec un guide publié. Génère d'abord leurs guides, ` +
+            `puis relance ce kit.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
 
   // Vrais objets/animaux trouvés publics récents (best effort, non bloquant).
   // Fenêtre "dernière semaine" (freshness qdr:w) + sources variées pour viser 3 posts.

@@ -210,7 +210,7 @@ export default function OrgFoundForm({
         </legend>
         <p className="mb-3 text-[13px] leading-relaxed text-gray-500">
           {heldBy === "finder"
-            ? "Your email goes to the lost and found office. The office gives it to the owner only after checking their description of the item. It is never shown publicly."
+            ? "Your email goes to the lost and found office. The office gives it to the owner only after checking their description of the item. It is never shown publicly: the public list shows a category, the date and the place, nothing else."
             : "Only used by the lost and found office if it has a question about the item. Never shown publicly."}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">

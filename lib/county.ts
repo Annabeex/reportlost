@@ -6,7 +6,9 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 // fichier de page : ces utilitaires doivent donc vivre ici.
 
 /** Etats ou les pages comte sont actives. Elargir apres mesure. */
-export const COUNTY_STATES = new Set(["FL"]);
+// FL = etat de mesure initial. Nouvelle-Angleterre, NJ et NC ajoutes pour les
+// kits Facebook regionaux (Cape Cod, Outer Banks, Cape May...).
+export const COUNTY_STATES = new Set(["FL", "MA", "ME", "NH", "VT", "RI", "CT", "NJ", "NC"]);
 
 /** En dessous, le comte n'a pas assez de substance pour meriter une page. */
 export const MIN_COUNTY_CITIES = 3;

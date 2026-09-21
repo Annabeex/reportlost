@@ -193,6 +193,72 @@ export async function runMatchForLostItem(lostId: string): Promise<number> {
 }
 
 /** Un établissement vient d'enregistrer un objet : on le compare aux pertes ouvertes. */
+/* ------------------------------------------------------------------ */
+/* Déclarations faites directement à un établissement                   */
+/* ------------------------------------------------------------------ */
+
+/** Dans org_matches.lost_item_id, une déclaration campus porte ce préfixe :
+ *  elle vit dans org_lost_reports, pas dans lost_items. */
+export const CAMPUS_PREFIX = "campus:";
+
+function campusToLost(r: any, city?: string | null): LostRow {
+  return {
+    id: `${CAMPUS_PREFIX}${r.id}`,
+    title: r.title,
+    // Le lieu de perte aide le moteur : « library » des deux côtés compte.
+    description: [r.description, r.lost_location].filter(Boolean).join(" · ") || null,
+    date: r.lost_at,
+    city: city || null,
+    created_at: r.created_at,
+  };
+}
+
+async function campusReportsAsLost(sb: any, orgId: string, city?: string | null): Promise<LostRow[]> {
+  const { data } = await sb
+    .from("org_lost_reports")
+    .select("id, title, description, lost_location, lost_at, created_at")
+    .eq("org_id", orgId)
+    .eq("status", "open")
+    .gte("lost_at", isoDaysAgo(WINDOW_DAYS))
+    .limit(400);
+  return (data || []).map((r: any) => campusToLost(r, city));
+}
+
+/** Une perte vient d'être déclarée à un établissement : on la compare à SON
+ *  inventaire, et à lui seul. */
+export async function runMatchForCampusReport(reportId: string): Promise<number> {
+  try {
+    const sb = getSupabaseAdmin();
+    if (!sb || !reportId) return 0;
+
+    const { data: rep } = await sb
+      .from("org_lost_reports")
+      .select("id, org_id, title, description, lost_location, lost_at, created_at, status")
+      .eq("id", reportId)
+      .maybeSingle();
+    if (!rep || rep.status !== "open") return 0;
+
+    const { data: founds } = await sb
+      .from("found_items")
+      .select(FOUND_FIELDS)
+      .eq("org_id", rep.org_id)
+      .in("status", ["stored", "claim_pending"])
+      .gte("date", isoDaysAgo(WINDOW_DAYS))
+      .limit(1000);
+    if (!founds?.length) return 0;
+
+    const city = (founds as FoundRow[])[0]?.city || null;
+    const results = matchOneToMany(campusToLost(rep, city), founds as FoundRow[]);
+    if (!results.length) return 0;
+
+    const byId = new Map((founds as FoundRow[]).map((f) => [String(f.id), f]));
+    return await persist(sb, results.slice(0, 12), byId, []);
+  } catch (e) {
+    console.warn("runMatchForCampusReport:", (e as Error)?.message || e);
+    return 0;
+  }
+}
+
 export async function runMatchForFoundItem(foundId: string): Promise<number> {
   try {
     const sb = getSupabaseAdmin();
@@ -208,8 +274,13 @@ export async function runMatchForFoundItem(foundId: string): Promise<number> {
       .limit(400);
     if ((found as any).city) q = q.ilike("city", String((found as any).city).trim());
 
-    const { data: losts } = await q;
-    if (!losts?.length) return 0;
+    const { data: siteLosts } = await q;
+
+    // Les déclarations faites directement à CET établissement (page publique,
+    // QR code « Lost something? ») : toujours comparées, quelle que soit la ville.
+    const campus = await campusReportsAsLost(sb, String((found as any).org_id), (found as any).city);
+    const losts = [...((siteLosts as LostRow[]) || []), ...campus];
+    if (!losts.length) return 0;
 
     const results = matchManyToOne(losts as LostRow[], found as FoundRow);
     if (!results.length) return 0;

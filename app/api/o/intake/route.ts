@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID, randomInt } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { isIsoDate } from "@/lib/orgItems";
+import { isIsoDate, guessPublicLabel } from "@/lib/orgItems";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -136,6 +136,13 @@ export async function POST(req: NextRequest) {
       finder_name: finderName || null,
       finder_email: finderEmail || null,
       held_by: heldBy,
+      // Gardé par son trouveur : listé tout de suite sur la page publique, sans
+      // attendre l'accueil (décision d'Anna : sinon l'objet n'est visible de
+      // personne tant qu'un agent n'y pense pas). Seule une CATÉGORIE tirée
+      // d'une liste fixe est publiée, jamais le texte saisi pour décrire
+      // l'objet. L'agent peut masquer une ligne avec « Public: off ».
+      public_visible: heldBy === "finder",
+      public_label: heldBy === "finder" ? guessPublicLabel(title) : null,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

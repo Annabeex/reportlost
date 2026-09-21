@@ -429,8 +429,9 @@ alter table org_intakes drop constraint if exists org_intakes_held_by_check;
 alter table org_intakes add constraint org_intakes_held_by_check
   check (held_by in ('desk', 'finder'));
 
--- Visibilité sur la page publique : JAMAIS automatique. Un formulaire public
--- ne doit pas pouvoir alimenter une page publique sans qu'un agent l'ait vu.
+-- Visibilité sur la page publique. Un signalement gardé par son trouveur est
+-- listé dès sa création (catégorie générique + date + lieu) ; l'agent peut le
+-- masquer. La valeur est posée par la route /api/o/intake, pas par ce défaut.
 alter table org_intakes
   add column if not exists public_visible boolean not null default false,
   add column if not exists public_label text;
@@ -448,3 +449,39 @@ alter table organizations
 comment on column organizations.finder_held_enabled is
   'Si faux, le formulaire « Found something? » ne propose que la remise à l''accueil.';
 
+
+-- ════════════════════════════════════════════════════════════════════
+-- org-portal-4.sql
+-- ════════════════════════════════════════════════════════════════════
+
+-- org-portal-4.sql
+--
+-- Déclarations de perte faites DIRECTEMENT à un établissement, depuis sa page
+-- publique (/o/<slug>, ouverte par le QR code « Lost something? »).
+-- Distinctes des déclarations du site (lost_items) : celles-ci appartiennent à
+-- l'établissement, son bureau voit le contact de la personne, et elles sont
+-- comparées à SON inventaire uniquement.
+--
+-- À exécuter AVANT de déployer. Relançable sans risque.
+
+create table if not exists org_lost_reports (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references organizations(id) on delete cascade,
+  code text not null,                       -- référence courte donnée à la personne
+  title text not null,
+  description text,
+  lost_location text,
+  lost_at date not null,
+  name text not null,
+  email text not null,
+  phone text,
+  status text not null default 'open',      -- open | closed
+  created_at timestamptz not null default now(),
+  closed_at timestamptz
+);
+
+create index if not exists org_lost_reports_org_idx on org_lost_reports (org_id, status);
+create index if not exists org_lost_reports_created_idx on org_lost_reports (created_at);
+
+-- Fermée à la clé publique, comme les autres tables du portail.
+alter table org_lost_reports enable row level security;

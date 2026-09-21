@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { CAMPUS_PREFIX } from "@/lib/orgMatchRun";
+import { sendMailDirect } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -52,13 +54,39 @@ export async function GET(req: NextRequest) {
   const foundIds = [...new Set(matches.map((m) => m.found_item_id))];
   const lostIds = [...new Set(matches.map((m) => m.lost_item_id))];
 
-  const [{ data: founds }, { data: losts }] = await Promise.all([
+  // Deux origines côté perte : les déclarations du site (lost_items) et celles
+  // faites directement à l'établissement (org_lost_reports, préfixe campus:).
+  const campusIds = lostIds.filter((id) => String(id).startsWith(CAMPUS_PREFIX)).map((id) => String(id).slice(CAMPUS_PREFIX.length));
+  const siteIds = lostIds.filter((id) => !String(id).startsWith(CAMPUS_PREFIX));
+
+  const [{ data: founds }, { data: losts }, { data: campus }] = await Promise.all([
     sb.from("found_items").select(FOUND_FIELDS).in("id", foundIds),
-    sb.from("lost_items").select(LOST_FIELDS).in("id", lostIds),
+    siteIds.length
+      ? sb.from("lost_items").select(LOST_FIELDS).in("id", siteIds)
+      : Promise.resolve({ data: [] as any[] }),
+    campusIds.length
+      ? sb.from("org_lost_reports")
+          .select("id, code, title, description, lost_location, lost_at, name, email, phone")
+          .eq("org_id", ctx.org.id)
+          .in("id", campusIds)
+      : Promise.resolve({ data: [] as any[] }),
   ]);
 
   const fById = new Map((founds || []).map((f: any) => [String(f.id), f]));
   const lById = new Map((losts || []).map((l: any) => [String(l.id), l]));
+  for (const r of campus || []) {
+    lById.set(`${CAMPUS_PREFIX}${r.id}`, {
+      public_id: r.code,
+      title: r.title,
+      description: [r.description, r.lost_location ? `Lost at: ${r.lost_location}` : ""].filter(Boolean).join(" · "),
+      date: r.lost_at,
+      city: null,
+      // La personne s'est adressée à l'établissement lui-même : son bureau
+      // voit donc son contact, contrairement aux déclarations du site.
+      direct: true,
+      contact: { name: r.name, email: r.email, phone: r.phone },
+    });
+  }
 
   const rows = matches
     .map((m) => {
@@ -94,6 +122,8 @@ export async function GET(req: NextRequest) {
           description: l.description,
           date: l.date,
           city: l.city,
+          direct: !!l.direct,
+          contact: l.contact || null,
         },
       };
     })
@@ -166,11 +196,43 @@ export async function PATCH(req: NextRequest) {
     actor_email: ctx.email,
   });
 
+  // Déclaration faite directement à l'établissement : « Notify » écrit
+  // réellement à la personne. Le message ne décrit PAS l'objet : c'est à elle
+  // de le décrire au bureau, qui vérifie avant de rendre.
+  let notified: boolean | null = null;
+  if (action === "confirm" && String(match.lost_item_id).startsWith(CAMPUS_PREFIX)) {
+    const { data: rep } = await sb
+      .from("org_lost_reports")
+      .select("code, title, name, email")
+      .eq("org_id", ctx.org.id)
+      .eq("id", String(match.lost_item_id).slice(CAMPUS_PREFIX.length))
+      .maybeSingle();
+    if (rep?.email) {
+      const contact = ctx.org.public_email || ctx.email;
+      notified = await sendMailDirect({
+        to: rep.email,
+        subject: `${ctx.org.name}: an item may match your report ${rep.code}`,
+        text: `Hello ${rep.name},
+
+The lost and found office of ${ctx.org.name} holds an item that may match your report ${rep.code} (${rep.title}).
+
+Please contact the office at ${contact}, or reply to this message, and describe your item in detail. The office checks the description before any handover, and may ask for a photo ID.
+
+This message does not confirm that the item is yours.
+
+ReportLost.org, on behalf of ${ctx.org.name}`,
+        fromName: ctx.org.name,
+        replyTo: contact,
+        noBcc: true,
+      }).catch(() => false);
+    }
+  }
+
   // Un objet confirmé passe en réclamation en cours : il ne doit plus être
   // proposé pour d'autres rapprochements ni sortir à l'échéance sans regard.
   if (action === "confirm") {
     await sb.from("found_items").update({ status: "claim_pending" }).eq("id", match.found_item_id);
   }
 
-  return NextResponse.json({ ok: true, status: patch.status });
+  return NextResponse.json({ ok: true, status: patch.status, notified });
 }
