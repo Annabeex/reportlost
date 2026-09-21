@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { ORG_TYPES } from "@/lib/orgScope";
+import { ORG_TYPES, RESERVED_SLUGS } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   // slug unique
   let slug = slugify(`${name} ${city || ""}`);
   const { data: taken } = await sb.from("organizations").select("id").eq("slug", slug).maybeSingle();
-  if (taken) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+  // Un slug homonyme d'un écran du portail rendrait la page publique inatteignable.
+  if (taken || RESERVED_SLUGS.has(slug) || !slug) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
   const { data: org, error } = await sb
     .from("organizations")

@@ -9,15 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { buildItemRow, reserveRefs, guessPublicLabel } from "@/lib/orgItems";
+import { removePhoto } from "@/lib/orgPhotos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Chemin dans le bucket, déduit de l'URL publique. */
-function storagePath(url?: string | null): string | null {
-  const m = String(url || "").match(/\/object\/public\/images\/(.+)$/);
-  return m ? decodeURIComponent(m[1].split("?")[0]) : null;
-}
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext(req);
@@ -41,8 +36,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (action === "publish" || action === "unpublish") {
-    if (intake.held_by !== "finder" || intake.status !== "pending") {
-      return NextResponse.json({ error: "Only an open report kept by its finder can be listed." }, { status: 400 });
+    if (intake.status !== "pending") {
+      return NextResponse.json({ error: "Only an open report can be listed." }, { status: 400 });
     }
     const label = String(b?.public_label || "").trim().slice(0, 60) || intake.public_label || guessPublicLabel(intake.title);
     const { error } = await sb
@@ -67,8 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (action === "reject") {
-    const path = storagePath(intake.photo_url);
-    if (path) await sb.storage.from("images").remove([path]).catch(() => {});
+    await removePhoto(sb, intake.photo_url);
     // Le formulaire public le promet : un dépôt jamais remis est supprimé,
     // description, photo et contact compris. On efface donc la ligne entière.
     await sb.from("org_intakes").delete().eq("id", intake.id);

@@ -1,5 +1,5 @@
 // app/api/org/lost-reports/route.ts — déclarations de perte reçues directement
-// par l'établissement (page publique /o/<slug>).
+// par l'établissement (page publique /campus/<slug> ou /at/<slug>).
 //   GET   : les déclarations ouvertes
 //   PATCH : { id, action: "close" | "reopen" }
 import { NextRequest, NextResponse } from "next/server";

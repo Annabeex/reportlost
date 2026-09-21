@@ -10,10 +10,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { setActiveOrgId } from "@/components/OrgSwitcher";
 import PortalNav from "@/components/portal/PortalNav";
-import { usePortal, portalFetch } from "@/lib/portal";
+import { usePortal, portalFetch, portalUpload } from "@/lib/portal";
 import { scopeOfType, portalBase } from "@/lib/orgScope";
 import { orgRetention, retentionDeadline, deadlineTracking } from "@/lib/orgRetention";
 import { compressImage } from "@/lib/imageCompress";
@@ -64,6 +63,9 @@ export default function PortalNewItem() {
   // Ce que l'IA a proposé : sert uniquement à afficher « (suggested) » en face
   // du bon champ. Dès que l'agent corrige, la mention disparaît.
   const [suggested, setSuggested] = useState<Record<string, boolean>>({});
+  // form.photo_url porte la RÉFÉRENCE privée de la photo (ce que le serveur
+  // enregistre) ; l'aperçu, lui, est un lien signé de courte durée.
+  const [photoPreview, setPhotoPreview] = useState("");
   const [photoMeta, setPhotoMeta] = useState<{ bytes: number; at: string } | null>(null);
   const [readMs, setReadMs] = useState<number | null>(null);
   // Plafond mensuel du scan : le compteur ne s'affiche qu'après un scan, pour
@@ -116,14 +118,14 @@ export default function PortalNewItem() {
 
   // ✨ Lecture de la photo : l'IA ne remplit que les champs encore vides,
   // elle n'écrase jamais ce que l'agent a déjà tapé.
-  const analyze = async (photoUrl: string) => {
+  const analyze = async (photoRef: string) => {
     setAnalyzing(true);
     setReadMs(null);
     const started = Date.now();
     try {
       const r = await api("/api/org/analyze-item", {
         method: "POST",
-        body: JSON.stringify({ image_url: photoUrl }),
+        body: JSON.stringify({ photo_ref: photoRef }),
       });
       const j = await r.json();
       if (r.status === 402) {
@@ -162,20 +164,20 @@ export default function PortalNewItem() {
       // Réduite avant l'envoi : ≈ 300 Ko au lieu de plusieurs Mo. C'est ce
       // qui rend la saisie au téléphone rapide, et le stockage négligeable.
       const file = await compressImage(original);
-      // Nom aléatoire : l'adresse de la photo ne doit pas se deviner.
-      const ext = (file.name.match(/\.([a-zA-Z0-9]{2,5})$/)?.[1] || "jpg").toLowerCase();
-      const id = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const path = `org_items/${id}.${ext}`;
-      const { error } = await supabaseBrowser.storage.from("images").upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data } = supabaseBrowser.storage.from("images").getPublicUrl(path);
-      const publicUrl = data?.publicUrl || "";
-      setForm((f) => ({ ...f, photo_url: publicUrl }));
+      // L'envoi passe par le serveur : bucket privé, type réel vérifié.
+      const fd = new FormData();
+      fd.set("photo", file, file.name);
+      const r = await portalUpload(scope, "/api/org/photos", fd);
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j?.ref) throw new Error(j?.error || `Error ${r.status}`);
+      const ref = String(j.ref);
+      setForm((f) => ({ ...f, photo_url: ref }));
+      setPhotoPreview(String(j.url || ""));
       setPhotoMeta({
         bytes: file.size,
         at: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       });
-      if (publicUrl && mode === "scan") analyze(publicUrl);
+      if (mode === "scan") analyze(ref);
     } catch (e: any) {
       setErr(`Photo upload failed: ${e?.message || e}`);
     } finally {
@@ -202,6 +204,7 @@ export default function PortalNewItem() {
         setSaved(`${j.org_ref || "Item"} saved · ${form.title}`);
         setForm((f) => ({ ...f, title: "", description: "", photo_url: "", public_label: "" }));
         setSuggested({});
+        setPhotoPreview("");
         setPhotoMeta(null);
         setReadMs(null);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -224,6 +227,7 @@ export default function PortalNewItem() {
 
   const clearPhoto = () => {
     setForm((f) => ({ ...f, photo_url: "" }));
+    setPhotoPreview("");
     setPhotoMeta(null);
     setReadMs(null);
   };
@@ -328,7 +332,7 @@ export default function PortalNewItem() {
               <>
                 <div className="relative bg-[#eef0f3]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.photo_url} alt="" className="h-[260px] w-full object-contain sm:h-[420px]" />
+                  <img src={photoPreview} alt="" className="h-[260px] w-full object-contain sm:h-[420px]" />
                   {analyzing && <div className="rl-scan-beam" />}
                 </div>
                 <div className="mt-auto flex items-center justify-between gap-4 px-5 py-4">

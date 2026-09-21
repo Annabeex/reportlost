@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { signRows } from "@/lib/orgPhotos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,5 +20,5 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, intakes: data || [] });
+  return NextResponse.json({ ok: true, intakes: await signRows(sb, data || [], "photo_url") });
 }

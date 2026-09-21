@@ -31,6 +31,23 @@ export function usePortal() {
   };
 }
 
+/** Envoi d'un fichier (multipart) avec la même authentification. Pas de
+ *  Content-Type ici : le navigateur doit poser lui-même la frontière multipart. */
+export async function portalUpload(scope: OrgScope, url: string, form: FormData) {
+  const { data: { session } } = await supabaseBrowser.auth.getSession();
+  if (!session) throw new Error("no-session");
+  const id = activeOrgId(scope);
+  return fetch(url, {
+    method: "POST",
+    body: form,
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "x-org-scope": scope,
+      ...(id ? { "x-org-id": id } : {}),
+    },
+  });
+}
+
 /** fetch authentifié, portant le portail et l'établissement actif. */
 export async function portalFetch(scope: OrgScope, url: string, init?: RequestInit) {
   const { data: { session } } = await supabaseBrowser.auth.getSession();

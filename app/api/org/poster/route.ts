@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { buildPosterPdf } from "@/lib/orgPosterPdf";
+import { publicPath } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const { data: org } = await sb
       .from("organizations")
-      .select("slug, name, city, state_id, verified, public_listing")
+      .select("*") // short_code compris s'il existe : sans lui, le kit encode l'adresse longue
       .eq("slug", slug)
       .maybeSingle();
     if (!org) return NextResponse.json({ ok: false, error: "Organisation introuvable" }, { status: 404 });
@@ -39,6 +40,8 @@ export async function GET(req: NextRequest) {
     const bytes = await buildPosterPdf(
       {
         slug: org.slug,
+        path: publicPath(org),
+        shortCode: org.short_code || null,
         name: org.name,
         city: org.city,
         state_id: org.state_id,

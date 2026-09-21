@@ -485,3 +485,149 @@ create index if not exists org_lost_reports_created_idx on org_lost_reports (cre
 
 -- Fermée à la clé publique, comme les autres tables du portail.
 alter table org_lost_reports enable row level security;
+
+-- ════════════════════════════════════════════════════════════════════
+-- org-portal-5.sql
+-- ════════════════════════════════════════════════════════════════════
+
+-- org-portal-5.sql
+--
+-- Code court par établissement, pour les QR codes. Un QR code qui encode
+-- reportlost.org/q/k7m2p compte 29 modules de côté ; la même affiche avec
+-- l'adresse complète de la page en compte 41. Moins dense = plus lisible en
+-- petit format (cartes), et nettement plus propre à l'œil.
+--   reportlost.org/q/<code>  → page de l'établissement (objets détenus)
+--   reportlost.org/f/<code>  → formulaire « Found something? »
+--
+-- À exécuter AVANT de déployer. Relançable sans risque.
+
+-- 5 caractères sans voyelles ni caractères ambigus (0/o, 1/l) : rien qui
+-- ressemble à un mot, rien qui se confonde si quelqu'un le recopie à la main.
+create or replace function org_short_code() returns text
+language plpgsql
+as $$
+declare
+  alphabet constant text := '23456789bcdfghjkmnpqrstvwxz';
+  candidate text;
+  i integer;
+begin
+  loop
+    candidate := '';
+    for i in 1..5 loop
+      candidate := candidate || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
+    end loop;
+    exit when not exists (select 1 from organizations o where o.short_code = candidate);
+  end loop;
+  return candidate;
+end;
+$$;
+
+alter table organizations add column if not exists short_code text;
+
+-- Un établissement à la fois : dans un UPDATE unique, chaque ligne ignorerait
+-- le code que la précédente vient de recevoir.
+do $$
+declare r record;
+begin
+  for r in select id from organizations where short_code is null loop
+    update organizations set short_code = org_short_code() where id = r.id;
+  end loop;
+end $$;
+
+alter table organizations alter column short_code set default org_short_code();
+alter table organizations alter column short_code set not null;
+
+create unique index if not exists organizations_short_code_idx on organizations (short_code);
+
+revoke execute on function org_short_code() from public, anon, authenticated;
+grant  execute on function org_short_code() to service_role;
+
+-- ════════════════════════════════════════════════════════════════════
+-- org-portal-6.sql
+-- ════════════════════════════════════════════════════════════════════
+
+-- org-portal-6.sql — sécurité du portail établissements
+--
+--   1. bucket PRIVÉ pour les photos d'inventaire (fermé à la clé publique)
+--   2. found_items : les lignes d'un établissement deviennent illisibles avec
+--      la clé publique du site, QUEL QUE SOIT l'état actuel de la table
+--
+-- À exécuter AVANT de déployer. Relançable sans risque.
+
+-- ── 1. Bucket privé ─────────────────────────────────────────────────────────
+-- Aucune policy n'est créée sur ce bucket, exprès : sans policy, seule la clé
+-- service_role (le serveur) peut y lire ou y écrire. L'affichage passe par des
+-- liens signés à durée limitée (lib/orgPhotos.ts).
+do $$
+begin
+  if to_regclass('storage.buckets') is not null then
+    insert into storage.buckets (id, name, public)
+    values ('org-private', 'org-private', false)
+    on conflict (id) do update set public = false;
+  end if;
+end $$;
+
+-- ── 2. found_items ──────────────────────────────────────────────────────────
+-- Le site public lit found_items avec la clé publique (pages villes, catégories).
+-- Cette clé est visible de tous dans le code du site : avec elle, n'importe qui
+-- pouvait demander directement à la base les lignes des établissements —
+-- description privée, emplacement de stockage, adresse de la photo.
+--
+-- Étape A — si la table n'avait aucune protection par ligne, on l'active en
+-- conservant exactement ce que le site public faisait : LIRE. (Les écritures
+-- du site passent toutes par le serveur, qui ignore ces règles.)
+do $$
+begin
+  if not (select relrowsecurity from pg_class where oid = 'public.found_items'::regclass) then
+    if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'found_items' and policyname = 'found_items_public_read') then
+      create policy found_items_public_read on public.found_items
+        for select to anon, authenticated using (true);
+    end if;
+    alter table public.found_items enable row level security;
+  end if;
+end $$;
+
+-- Étape B — règle RESTRICTIVE : elle s'ajoute à toutes les autres avec un ET.
+-- Quelles que soient les règles déjà en place, la clé publique ne voit, ne crée
+-- et ne modifie que des lignes SANS établissement. Impossible aussi de glisser
+-- un faux objet dans l'inventaire d'une université.
+drop policy if exists found_items_org_rows_private on public.found_items;
+create policy found_items_org_rows_private on public.found_items
+  as restrictive for all to anon, authenticated
+  using (org_id is null)
+  with check (org_id is null);
+
+-- ════════════════════════════════════════════════════════════════════
+-- org-portal-7.sql
+-- ════════════════════════════════════════════════════════════════════
+
+-- org-portal-7.sql — suites du diagnostic de sécurité du 21/09/2026
+--
+-- Le diagnostic a montré que la clé publique du site ne peut LIRE ni lost_items
+-- ni found_items (aucune règle de lecture) : noms, e-mails, téléphones et
+-- inventaires ne sont pas exposés. Deux ouvertures restaient en ÉCRITURE.
+--
+-- À exécuter après org-portal-6.sql. Relançable sans risque.
+
+-- ── 1. found_items : plus d'insertion directe avec la clé publique ──────────
+-- La règle « Allow insert for all » laissait n'importe qui créer des lignes dans
+-- found_items depuis son navigateur. Le formulaire public « I found an item »
+-- n'en a pas besoin : il passe par /api/found-items, côté serveur. Seule la page
+-- de test /dashboardmodule (derrière le mot de passe admin) s'en servait.
+drop policy if exists "Allow insert for all" on public.found_items;
+
+-- ── 2. Bucket public « images » : des images, et pas trop lourdes ───────────
+-- Tout visiteur peut y envoyer un fichier (c'est voulu : photos des
+-- déclarations). Mais sans limite de type ni de taille, le bucket pouvait servir
+-- à héberger n'importe quoi sous votre adresse Supabase — page piégée, fichier
+-- volumineux. Personne ne peut écraser ni supprimer un fichier existant (aucune
+-- règle UPDATE / DELETE) : ce point-là était déjà sain.
+do $$
+begin
+  if to_regclass('storage.buckets') is not null then
+    update storage.buckets
+    set file_size_limit = 15728640, -- 15 Mo : une photo de téléphone non compressée passe
+        allowed_mime_types = array['image/jpeg','image/png','image/webp','image/heic','image/heif','image/gif']
+    where id = 'images';
+  end if;
+end $$;

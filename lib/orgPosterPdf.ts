@@ -26,7 +26,14 @@ export type PosterOrg = {
   name: string;
   city?: string | null;
   state_id?: string | null;
-  /** true si la page publique /o/<slug> est réellement consultable. */
+  /** Chemin de la page publique : /campus/<slug> ou /org/<slug> (publicPath). */
+  path: string;
+  /** Code court de l'établissement : les QR codes encodent reportlost.org/q/<code>
+   *  et /f/<code>, qui redirigent vers la page. Une adresse de 30 caractères
+   *  donne un QR code de 29 modules au lieu de 41 : plus aéré, et lisible en
+   *  format carte. Absent → on encode l'adresse longue. */
+  shortCode?: string | null;
+  /** true si la liste publique est réellement consultable. */
   publicPage?: boolean;
 };
 
@@ -64,6 +71,71 @@ async function gradientPng(wMm: number, hMm: number, tone: Tone, round: "all" | 
   const [a, b] = GRAD[tone];
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><path d="${path}" fill="url(#g)"/></svg>`;
   return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+/* ------------------------------------------------------------------ */
+/* QR code dessiné : points ronds, yeux arrondis, repère au centre      */
+/* ------------------------------------------------------------------ */
+//
+// Le QR code brut (carrés noirs collés) est ce qui enlaidit une affiche. On
+// garde exactement la même matrice, mais on la dessine : chaque module devient
+// un point, les trois yeux de repérage des anneaux adoucis à cœur rond, et le
+// centre porte l'épingle ReportLost. La correction d'erreur passe à Q (25 %)
+// pour absorber le centre masqué.
+//
+// ⚠️ Chaque valeur ci-dessous a été mesurée avec un décodeur (OpenCV), du
+// format affiche au format carte. Ce qui coûte de la lisibilité, c'est
+// l'arrondi EXTÉRIEUR des yeux : au-delà de 0,6 module le code ne se lit plus
+// en petit. Points ronds et cœur rond, eux, ne coûtent rien. Ne pas « arrondir
+// un peu plus » sans refaire la mesure.
+function qrSvg(url: string, tone: Tone): string {
+  const qr = QRCode.create(url, { errorCorrectionLevel: "Q" });
+  const n: number = qr.modules.size;
+  const data: Uint8Array = qr.modules.data;
+  const dark = QR_DARK[tone];
+  const [g1, g2] = GRAD[tone];
+
+  const inEye = (x: number, y: number) =>
+    (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+  // Centre réservé au repère : 7 modules si le code est assez grand, sinon 5.
+  const k = n >= 29 ? 7 : 5;
+  const c0 = (n - k) / 2;
+  const inLogo = (x: number, y: number) => x >= c0 && x < c0 + k && y >= c0 && y < c0 + k;
+
+  let dots = "";
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      if (!data[y * n + x] || inEye(x, y) || inLogo(x, y)) continue;
+      dots += `<circle cx="${x + 0.5}" cy="${y + 0.5}" r="0.5"/>`;
+    }
+  }
+
+  const eye = (x: number, y: number) =>
+    `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" rx="0.6" fill="none" stroke="${dark}" stroke-width="1"/>` +
+    `<circle cx="${x + 3.5}" cy="${y + 3.5}" r="1.5" fill="${dark}"/>`;
+
+  // Repère central : pastille en dégradé + épingle blanche (même dessin que
+  // l'icône du portail), avec un module de blanc tout autour.
+  const lx = c0 + 0.6, ls = k - 1.2, cx = n / 2, cy = n / 2 - ls * 0.08, r = ls * 0.2;
+  const tip = cy + ls * 0.4;
+  const ang = Math.asin(r / (tip - cy));
+  const tx = r * Math.cos(ang), ty = r * Math.sin(ang);
+  const logo =
+    `<rect x="${lx}" y="${lx}" width="${ls}" height="${ls}" rx="${ls * 0.24}" fill="url(#lg)"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/>` +
+    `<path d="M ${cx - tx} ${cy + ty} L ${cx + tx} ${cy + ty} L ${cx} ${tip} Z" fill="#fff"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${r * 0.45}" fill="${g1}"/>`;
+
+  const px = 40; // pixels par module : net même sur l'affiche pleine page
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${n * px}" height="${n * px}" viewBox="0 0 ${n} ${n}">` +
+    `<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${g1}"/><stop offset="1" stop-color="${g2}"/></linearGradient></defs>` +
+    `<rect width="${n}" height="${n}" fill="#fff"/>` +
+    `<g fill="${dark}">${dots}</g>` +
+    eye(0, 0) + eye(n - 7, 0) + eye(0, n - 7) +
+    logo +
+    `</svg>`
+  );
 }
 
 function roundedRectPath(wPt: number, hPt: number, rPt: number): string {
@@ -136,11 +208,12 @@ export async function buildPosterPdf(org: PosterOrg, base: string, paper: Poster
   // « Lost something? » ouvre la page de l'établissement : la liste des objets
   // qu'il détient, puis, si l'objet n'y est pas, la déclaration de perte qui
   // lui est adressée.
-  const lostUrl = `${site}/o/${encodeURIComponent(org.slug)}`;
-  const foundUrl = `${site}/o/${encodeURIComponent(org.slug)}/found`;
+  const code = String(org.shortCode || "").trim().toLowerCase();
+  const lostUrl = code ? `${site}/q/${code}` : `${site}${org.path}`;
+  const foundUrl = code ? `${site}/f/${code}` : `${site}${org.path}/found`;
 
   const qrPng = (url: string, tone: Tone): Promise<Buffer> =>
-    QRCode.toBuffer(url, { errorCorrectionLevel: "M", margin: 0, scale: 14, color: { dark: QR_DARK[tone], light: "#ffffff" } });
+    sharp(Buffer.from(qrSvg(url, tone))).png().toBuffer();
 
   const pdf = await PDFDocument.create();
   pdf.setTitle(`Lost & Found display kit - ${org.name}`);
@@ -192,7 +265,7 @@ export async function buildPosterPdf(org: PosterOrg, base: string, paper: Poster
   }
 
   const footer = org.publicPage
-    ? `Items currently held here: ${host}/o/${org.slug}`
+    ? `Items currently held here: ${host}${org.path}`
     : host;
 
   // ── Page 1 : affiche pleine page ─────────────────────────────────────────

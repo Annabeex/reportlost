@@ -2,6 +2,7 @@
 // établissement. Ne révèle rien : enregistre la demande (avec la description
 // fournie comme preuve), passe l'objet en claim_pending et notifie
 // l'établissement. C'est lui qui juge la preuve et recontacte.
+// L'objet reste listé pendant l'examen, et peut recevoir plusieurs réclamations.
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMailDirect } from "@/lib/mailer";
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         .select("id, org_id, title, public_label, held_by, status, public_visible, finder_name, finder_email, found_at, found_location")
         .eq("id", itemId)
         .maybeSingle();
-      if (!rep || rep.org_id !== org.id || rep.held_by !== "finder" || rep.status !== "pending" || !rep.public_visible) {
+      if (!rep || rep.org_id !== org.id || rep.status !== "pending" || !rep.public_visible) {
         return NextResponse.json({ error: "This item is no longer available for claims." }, { status: 400 });
       }
       await sb.from("org_item_events").insert({
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
         subject: `Claim received: ${rep.public_label || rep.title} (kept by its finder)`,
         text: `Hello,
 
-Someone claimed an item listed on your ReportLost page (${org.name}). This item is not at your desk: the person who found it kept it and left their contact.
+Someone claimed an item listed on your ReportLost page (${org.name}). This item is not at your desk: it is still with the person who found it, who left their contact.
 
 Item: ${rep.title} · found ${rep.found_at}${rep.found_location ? ` · ${rep.found_location}` : ""}
 Finder: ${[rep.finder_name, rep.finder_email].filter(Boolean).join(" · ")}
@@ -89,9 +90,30 @@ ReportLost.org`,
       .select("id, org_id, org_ref, public_label, title, status, public_visible")
       .eq("id", itemId)
       .maybeSingle();
-    if (!item || item.org_id !== org.id || !item.public_visible || item.status !== "stored") {
+    if (!item || item.org_id !== org.id || !item.public_visible || !["stored", "claim_pending"].includes(String(item.status))) {
       return NextResponse.json({ error: "This item is no longer available for claims." }, { status: 400 });
     }
+
+    // Plusieurs personnes peuvent réclamer le même objet : le bureau les voit
+    // toutes et choisit. Deux garde-fous : une même adresse ne réclame pas deux
+    // fois le même objet, et un objet n'accumule pas les réclamations sans fin.
+    const { data: previous } = await sb
+      .from("org_item_events")
+      .select("actor_email")
+      .eq("org_id", org.id)
+      .eq("item_id", String(item.id))
+      .eq("type", "claim_received")
+      .limit(50);
+    if ((previous || []).some((p: any) => String(p.actor_email || "").toLowerCase() === email.toLowerCase())) {
+      return NextResponse.json({ ok: true, already: true });
+    }
+    if ((previous || []).length >= 15) {
+      return NextResponse.json(
+        { error: "This item already has several claims under review. Please contact the office directly." },
+        { status: 429 }
+      );
+    }
+    const others = (previous || []).length;
 
     // Passe en réclamation + trace complète dans le journal
     await sb.from("found_items").update({ status: "claim_pending" }).eq("id", item.id);
@@ -110,7 +132,7 @@ ReportLost.org`,
       subject: `Claim received: ${item.public_label || item.title} (${item.org_ref || item.id})`,
       text: `Hello,
 
-Someone claimed an item listed on your ReportLost page (${org.name}).
+Someone claimed an item listed on your ReportLost page (${org.name}).${others > 0 ? `\n\nThis item already has ${others} other claim${others > 1 ? "s" : ""}. The item stays listed while you review them: open it in your dashboard to compare them side by side.` : ""}
 
 Item: ${item.public_label || item.title} · ref ${item.org_ref || item.id}
 Claimant: ${name} · ${email}${phone ? ` · ${phone}` : ""}

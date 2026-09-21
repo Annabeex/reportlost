@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMailDirect } from "@/lib/mailer";
-import { portalBase, scopeOfType } from "@/lib/orgScope";
+import { signRows } from "@/lib/orgPhotos";
+import { portalBase, scopeOfType, publicPath } from "@/lib/orgScope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,11 +22,13 @@ export async function GET() {
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { data: items } = await sb
+  const { data: rawItems } = await sb
     .from("found_items")
     .select("id, org_id, org_ref, title, image_url, status, date, public_visible")
     .not("org_id", "is", null)
     .order("created_at", { ascending: false });
+  // Photos privées : l'admin les voit par liens signés, comme l'établissement.
+  const items = await signRows(sb, (rawItems || []) as any[]);
   const counts: Record<string, { total: number; stored: number; claims: number }> = {};
   const preview: Record<string, any[]> = {};
   for (const it of items || []) {
@@ -108,7 +111,7 @@ export async function PATCH(req: NextRequest) {
 
 Good news: your organization has been approved. Your public lost & found page is now live:
 
-https://reportlost.org/o/${org.slug}
+https://reportlost.org${publicPath(org)}
 
 What it shows: only the generic label, the found date and the drop-off location of the items you chose to list. Details and photos stay private and are used to verify ownership claims.
 

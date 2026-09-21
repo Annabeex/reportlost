@@ -231,11 +231,16 @@ async function searchTable(
 
   const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  let q = sb
+  // Dépôts du public uniquement : l'inventaire d'un établissement (titre
+  // détaillé, photo) sert à vérifier les réclamations, il ne sort jamais ici.
+  const publicOnly = <T extends { is: (c: string, v: null) => T }>(query: T): T =>
+    table === "found_items" ? query.is("org_id", null) : query;
+
+  let q = publicOnly(sb
     .from(table)
     .select(sel)
     .or(or1)
-    .gte("created_at", thirtyDaysAgoIso)
+    .gte("created_at", thirtyDaysAgoIso))
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -244,11 +249,11 @@ async function searchTable(
   // fallback if description doesn't exist
   if (error) {
     const or2 = buildOrFilter(keywords, ["title"]);
-    q = sb
+    q = publicOnly(sb
       .from(table)
       .select(sel)
       .or(or2)
-      .gte("created_at", thirtyDaysAgoIso)
+      .gte("created_at", thirtyDaysAgoIso))
       .order("created_at", { ascending: false })
       .limit(limit);
     ({ data, error } = await q);

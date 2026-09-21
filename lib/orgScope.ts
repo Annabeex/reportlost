@@ -33,6 +33,25 @@ export function portalBase(scope: OrgScope): string {
   return scope === "campus" ? "/campus" : "/org";
 }
 
+/** Page publique d'un établissement :
+ *    reportlost.org/campus/<slug>  université, collège, école
+ *    reportlost.org/at/<slug>      police, mairie, transport, hôtel, autre
+ *  (« ReportLost at Tucson Police » : l'adresse se lit comme une phrase.)
+ *  Les anciennes formes /o/<slug> et /org/<slug> redirigent ici. */
+export function publicBase(scope: OrgScope): string {
+  return scope === "campus" ? "/campus" : "/at";
+}
+export function publicPath(org: { slug: string; type?: string | null }, sub = ""): string {
+  return `${publicBase(scopeOfType(org.type))}/${org.slug}${sub}`;
+}
+
+/** Noms pris par les écrans du portail sous /campus et /org : un établissement
+ *  ne peut pas s'appeler ainsi, son adresse publique tomberait sur le portail. */
+export const RESERVED_SLUGS = new Set([
+  "login", "dashboard", "items", "review", "team", "import", "onboarding",
+  "settings", "new", "admin", "api", "found", "embed", "help",
+]);
+
 /** Types proposés à l'inscription, restreints au portail d'entrée : on ne crée
  *  pas un commissariat depuis /campus. */
 export const ORG_TYPES: Record<OrgScope, { v: string; l: string }[]> = {

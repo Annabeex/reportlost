@@ -8,6 +8,32 @@ const nextConfig = {
     ],
   },
 
+  // En-têtes de sécurité. Le portail et l'admin ne doivent jamais s'afficher
+  // dans le cadre d'un autre site (détournement de clic sur « Record the
+  // return », « Remove »…). Les pages publiques gardent le réglage par défaut.
+  async headers() {
+    const base = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    ];
+    const noFrame = [
+      ...base,
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+      // Rien de ce que ces écrans affichent ne doit rester dans un cache partagé.
+      { key: "Cache-Control", value: "no-store" },
+    ];
+    return [
+      { source: "/:path*", headers: base },
+      ...["login", "dashboard", "items/:path*", "review", "team", "import", "onboarding"].flatMap((p) => [
+        { source: `/campus/${p}`, headers: noFrame },
+        { source: `/org/${p}`, headers: noFrame },
+      ]),
+      { source: "/admin/:path*", headers: noFrame },
+      { source: "/api/org/:path*", headers: [...base, { key: "Cache-Control", value: "no-store" }] },
+    ];
+  },
+
   async redirects() {
     return [
       // ✅ Force www -> non-www (canonical)

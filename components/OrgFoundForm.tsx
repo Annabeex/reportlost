@@ -14,7 +14,10 @@ export default function OrgFoundForm({
   orgName,
   publicListing,
   allowKeep,
+  listHref,
 }: {
+  /** Adresse de la page publique de l'établissement (/campus/<slug> ou /at/<slug>). */
+  listHref: string;
   orgSlug: string;
   orgName: string;
   publicListing: boolean;
@@ -115,8 +118,9 @@ export default function OrgFoundForm({
           description with it and confirms it has the item.
         </p>
         <p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-relaxed text-gray-500">
-          The item is not recorded until the desk confirms it. If it is never handed in, this
-          description and its photo are deleted.
+          Until the desk confirms it has the item, it is listed as still being with you, under a
+          generic category only. If it is never handed in, the office may give your email to the
+          owner once their description is checked.
         </p>
         <button
           type="button"
@@ -206,16 +210,16 @@ export default function OrgFoundForm({
 
       <fieldset className="rounded-xl border border-gray-200 bg-[#f7f8fa] p-4">
         <legend className="px-1 text-[14px] font-semibold text-gray-700">
-          Your contact{heldBy === "desk" && <span className="font-normal text-gray-400"> (optional)</span>}
+          Your contact
         </legend>
         <p className="mb-3 text-[13px] leading-relaxed text-gray-500">
           {heldBy === "finder"
             ? "Your email goes to the lost and found office. The office gives it to the owner only after checking their description of the item. It is never shown publicly: the public list shows a category, the date and the place, nothing else."
-            : "Only used by the lost and found office if it has a question about the item. Never shown publicly."}
+            : "Your email goes to the lost and found office. It is used only if the item does not reach the desk: the office then gives it to the owner, after checking their description. It is never shown publicly."}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <input value={form.finder_name} onChange={set("finder_name")} maxLength={80} placeholder="Name" autoComplete="name" className={FIELD} />
-          <input type="email" required={heldBy === "finder"} value={form.finder_email} onChange={set("finder_email")} maxLength={160} placeholder="Email" autoComplete="email" className={FIELD} />
+          <input type="email" required value={form.finder_email} onChange={set("finder_email")} maxLength={160} placeholder="Email" autoComplete="email" className={FIELD} />
         </div>
       </fieldset>
 
@@ -231,7 +235,7 @@ export default function OrgFoundForm({
       {publicListing && (
         <p className="text-center text-[13px] text-gray-500">
           Looking for something you lost instead?{" "}
-          <a href={`/o/${orgSlug}`} className="underline">See the items held by {orgName}</a>
+          <a href={listHref} className="underline">See the items held by {orgName}</a>
         </p>
       )}
     </form>

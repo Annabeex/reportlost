@@ -1,4 +1,4 @@
-// app/api/org/items/[id]/route.ts — changement de statut + journal d'audit
+// app/api/org/items/[id]/route.ts — journal de l'objet (GET), changement de statut (PATCH)
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -14,6 +14,34 @@ const EVENT_BY_STATUS: Record<string, string> = {
   returned: "returned",
   disposed: "disposed",
 };
+
+// GET : le journal de l'objet (création, réclamations avec la preuve fournie,
+// rapprochements, sortie). C'est ici que l'agent lit une réclamation : jusqu'ici
+// elle n'existait que dans le mail envoyé à l'établissement.
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const ctx = await getOrgContext(req);
+  if (!ctx?.org) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const sb = getSupabaseAdmin()!;
+
+  const { data: item } = await sb
+    .from("found_items")
+    .select("id, org_id")
+    .eq("id", params.id)
+    .maybeSingle();
+  if (!item || item.org_id !== ctx.org.id) {
+    return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  }
+
+  const { data: events, error } = await sb
+    .from("org_item_events")
+    .select("id, type, note, actor_email, created_at")
+    .eq("org_id", ctx.org.id)
+    .eq("item_id", String(params.id))
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, events: events || [] });
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const ctx = await getOrgContext(req);

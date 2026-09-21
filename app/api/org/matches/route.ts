@@ -12,6 +12,7 @@ import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { CAMPUS_PREFIX } from "@/lib/orgMatchRun";
 import { sendMailDirect } from "@/lib/mailer";
+import { signRows } from "@/lib/orgPhotos";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
-  const fById = new Map((founds || []).map((f: any) => [String(f.id), f]));
+  const fById = new Map((await signRows(sb, (founds || []) as any[])).map((f: any) => [String(f.id), f]));
   const lById = new Map((losts || []).map((l: any) => [String(l.id), l]));
   for (const r of campus || []) {
     lById.set(`${CAMPUS_PREFIX}${r.id}`, {

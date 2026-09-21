@@ -31,6 +31,14 @@ const num = (n, d) => Number((process.argv.find((a) => a.startsWith(`--${n}=`)) 
 const PHOTO_DAYS = num("photo-days", 30);
 const RECORD_DAYS = num("record-days", 365);
 const BUCKET = "images";
+// Depuis le passage au bucket privé, image_url vaut « private:<chemin> ».
+// (Le ménage tourne aussi tout seul chaque jour : /api/org-maintenance.)
+const locate = (u) => {
+  const v = String(u || "");
+  if (v.startsWith("private:")) return { bucket: "org-private", path: v.slice(8) };
+  const p = v.split(`/object/public/${BUCKET}/`)[1];
+  return p ? { bucket: BUCKET, path: decodeURIComponent(p) } : null;
+};
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 const iso = (d) => new Date(Date.now() - d * 86400000).toISOString();
 
@@ -50,16 +58,16 @@ console.log(
 // ── 1. Photos des objets partis il y a plus de PHOTO_DAYS ──────────────────
 const photos = await rest(
   `found_items?select=id,org_ref,title,image_url,disposed_at,disposition` +
-  `&disposed_at=lt.${iso(PHOTO_DAYS)}&image_url=not.is.null&photo_purged_at=is.null&limit=1000`
+  `&org_id=not.is.null&disposed_at=lt.${iso(PHOTO_DAYS)}&image_url=not.is.null&photo_purged_at=is.null&limit=1000`
 );
 console.log(`Photos à supprimer : ${photos.length}`);
 let photoOk = 0;
 for (const it of photos) {
-  const path = String(it.image_url).split(`/object/public/${BUCKET}/`)[1];
+  const loc = locate(it.image_url);
   const line = `  ${it.org_ref || it.id}  ${String(it.title || "").slice(0, 34)}  parti ${String(it.disposed_at).slice(0, 10)} (${it.disposition || "—"})`;
   if (!APPLY) { console.log(line); continue; }
-  if (path) {
-    const del = await fetch(`${URL_}/storage/v1/object/${BUCKET}/${encodeURI(decodeURIComponent(path))}`, {
+  if (loc) {
+    const del = await fetch(`${URL_}/storage/v1/object/${loc.bucket}/${encodeURI(loc.path)}`, {
       method: "DELETE", headers: H,
     });
     if (!del.ok && del.status !== 404) { console.log(`${line}  ⚠️ storage ${del.status}`); continue; }
@@ -78,7 +86,7 @@ for (const it of photos) {
 // ── 2. Fiches des objets partis il y a plus de RECORD_DAYS ─────────────────
 const records = await rest(
   `found_items?select=id,org_ref,title,disposed_at,disposition,image_url` +
-  `&disposed_at=lt.${iso(RECORD_DAYS)}&limit=1000`
+  `&org_id=not.is.null&disposed_at=lt.${iso(RECORD_DAYS)}&limit=1000`
 );
 console.log(`\nFiches à supprimer : ${records.length}`);
 let recOk = 0;
@@ -87,9 +95,9 @@ for (const it of records) {
   if (!APPLY) { console.log(line); continue; }
   // Filet : une photo encore présente à ce stade part avec la fiche, sinon
   // elle deviendrait un orphelin que plus rien ne référence.
-  const path = it.image_url ? String(it.image_url).split(`/object/public/${BUCKET}/`)[1] : null;
-  if (path) {
-    await fetch(`${URL_}/storage/v1/object/${BUCKET}/${encodeURI(decodeURIComponent(path))}`, {
+  const loc = locate(it.image_url);
+  if (loc) {
+    await fetch(`${URL_}/storage/v1/object/${loc.bucket}/${encodeURI(loc.path)}`, {
       method: "DELETE", headers: H,
     }).catch(() => {});
   }

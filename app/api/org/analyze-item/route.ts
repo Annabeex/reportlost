@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { ownsRef, signOne } from "@/lib/orgPhotos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 // sans plafond, l'outil offert devient une facture ouverte. organizations.ai_quota
 // le relève au cas par cas — c'est la marche payante, on vend un quota.
 const MONTHLY_QUOTA = Math.max(0, Number(process.env.ORG_AI_MONTHLY_QUOTA || 100));
+const UNVERIFIED_QUOTA = 10;
 
 const SYSTEM = `You help a front desk agent log a found item from a photo. Reply ONLY with valid JSON:
 {"title":"...","description":"...","public_label":"..."}
@@ -32,9 +34,12 @@ export async function POST(req: NextRequest) {
     if (!ctx?.org) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const b = await req.json().catch(() => null);
-    const imageUrl = String(b?.image_url || "").trim();
-    if (!/^https?:\/\//.test(imageUrl)) {
-      return NextResponse.json({ error: "image_url requise" }, { status: 400 });
+    // Avant : n'importe quelle adresse http(s) était transmise au modèle, aux
+    // frais du site. Désormais uniquement une photo envoyée par cet
+    // établissement, lue par un lien signé de deux minutes.
+    const photoRef = String(b?.photo_ref || "").trim();
+    if (!ownsRef(photoRef, ctx.org.id)) {
+      return NextResponse.json({ error: "photo_ref requise" }, { status: 400 });
     }
 
     const key = process.env.ANTHROPIC_API_KEY;
@@ -44,12 +49,17 @@ export async function POST(req: NextRequest) {
     // sa vérification : deux agents qui scannent en même temps ne peuvent pas
     // passer tous les deux. Un échec de l'appel est remboursé plus bas.
     const sb = getSupabaseAdmin();
+    const imageUrl = sb ? await signOne(sb, photoRef, 120) : null;
+    if (!imageUrl) return NextResponse.json({ error: "photo introuvable" }, { status: 400 });
     let used = 0;
     let quota = MONTHLY_QUOTA;
     if (sb) {
       const { data, error: qErr } = await sb.rpc("org_ai_consume", {
         p_org: ctx.org.id,
-        p_limit: MONTHLY_QUOTA,
+        // Tant qu'Anna n'a pas validé l'établissement : quelques scans pour
+        // essayer, pas plus. Sinon créer des comptes en série suffirait à
+        // faire tourner le modèle aux frais du site.
+        p_limit: ctx.org.verified ? MONTHLY_QUOTA : Math.min(MONTHLY_QUOTA, UNVERIFIED_QUOTA),
       });
       if (qErr) {
         // Compteur indisponible : on refuse plutôt que de laisser passer.

@@ -20,6 +20,12 @@ export const config = {
     "/api/case_followup/:path*",
     "/api/stations/update",
 
+    // Routes de diagnostic : /api/test-mail?to=… envoyait un mail depuis le
+    // domaine à n'importe quelle adresse, sans aucune authentification.
+    "/api/test-mail/:path*",
+    "/api/test-mail-direct/:path*",
+    "/api/diag/:path*",
+
     // pages case (lecture publique OK, mais on protège l’édition ?edit=1)
     "/case/:path*",
   ],
@@ -75,7 +81,9 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/scan-demo") ||
     pathname.startsWith("/api/admin") ||
     pathname.startsWith("/api/case_followup") || // 🔒 comptes rendus + notes internes (lecture ET écriture)
-    pathname === "/api/stations/update"
+    pathname === "/api/stations/update" ||
+    pathname.startsWith("/api/test-mail") || // couvre aussi /api/test-mail-direct
+    pathname.startsWith("/api/diag")
   ) {
     const res = requireBasicAuth(req);
     if (res) return res;

@@ -8,7 +8,8 @@
 // Pas de lecture par IA sur ce chemin : c'est le seul appel payant du portail,
 // on ne l'ouvre pas à un formulaire sans connexion.
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
+import { uploadOrgPhoto } from "@/lib/orgPhotos";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { isIsoDate, guessPublicLabel } from "@/lib/orgItems";
 
@@ -16,18 +17,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// La photo arrive déjà compressée par le navigateur (≈ 300 Ko). Au-delà de
-// 3 Mo, ce n'est pas notre formulaire qui l'envoie.
-const MAX_PHOTO_BYTES = 3_000_000;
-const PHOTO_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
 // Garde-fous contre le remplissage : par établissement, pas par visiteur —
 // l'adresse IP d'un campus est la même pour tout le monde.
-const MAX_PENDING = 60;
+const MAX_PENDING = 300; // un dépôt reste ouvert jusqu'à 6 mois
 const MAX_PER_HOUR = 25;
 
 const clean = (v: FormDataEntryValue | null, max: number) =>
@@ -59,9 +51,12 @@ export async function POST(req: NextRequest) {
     if (!isIsoDate(foundAt) || foundAt > today) {
       return NextResponse.json({ error: "Please enter the date the item was found." }, { status: 400 });
     }
-    if (heldBy === "finder" && !finderEmail) {
+    // L'e-mail est demandé dans les DEUX cas (décision d'Anna) : quelqu'un qui
+    // annonce « je le dépose à l'accueil » et ne vient pas garde l'objet de
+    // fait. Sans son adresse, le propriétaire n'a plus aucun moyen de le récupérer.
+    if (!finderEmail) {
       return NextResponse.json(
-        { error: "Please leave your email: it is the only way the owner can get the item back from you." },
+        { error: "Please leave your email: if the item is not handed in, it is the only way the owner can get it back." },
         { status: 400 }
       );
     }
@@ -96,19 +91,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Photo (facultative), envoyée par le serveur : le formulaire public n'a
-    // aucun droit d'écriture direct sur le stockage.
+    // Photo (facultative). Envoyée par le serveur dans le bucket PRIVÉ : le
+    // formulaire public n'a aucun droit d'écriture sur le stockage, et la photo
+    // n'est visible que du bureau de l'établissement.
     let photoUrl: string | null = null;
     const photo = form.get("photo");
     if (photo && typeof photo !== "string" && photo.size > 0) {
-      const ext = PHOTO_TYPES[photo.type];
-      if (!ext) return NextResponse.json({ error: "The photo must be a JPEG, PNG or WebP image." }, { status: 400 });
-      if (photo.size > MAX_PHOTO_BYTES) return NextResponse.json({ error: "The photo is too large." }, { status: 400 });
-      const path = `org_items/intake/${randomUUID()}.${ext}`;
-      const buf = Buffer.from(await photo.arrayBuffer());
-      const { error: upErr } = await sb.storage.from("images").upload(path, buf, { contentType: photo.type, upsert: false });
-      // Une photo qui ne passe pas ne doit pas faire perdre le dépôt.
-      if (!upErr) photoUrl = sb.storage.from("images").getPublicUrl(path).data?.publicUrl || null;
+      const up = await uploadOrgPhoto(sb, org.id, photo, "intake");
+      // Une photo refusée ne doit pas faire perdre le dépôt : il part sans elle.
+      if ("ref" in up) photoUrl = up.ref;
     }
 
     // Code court, unique parmi les dépôts en attente de cet établissement.
@@ -136,13 +127,16 @@ export async function POST(req: NextRequest) {
       finder_name: finderName || null,
       finder_email: finderEmail || null,
       held_by: heldBy,
-      // Gardé par son trouveur : listé tout de suite sur la page publique, sans
+      // Tant que l'accueil n'a pas l'objet en main, il est chez la personne qui
+      // l'a trouvé, qu'elle ait prévu de le déposer ou non : les deux cas sont
+      // listés de la même façon, jusqu'à la confirmation de l'accueil.
+      // Listé tout de suite sur la page publique, sans
       // attendre l'accueil (décision d'Anna : sinon l'objet n'est visible de
       // personne tant qu'un agent n'y pense pas). Seule une CATÉGORIE tirée
       // d'une liste fixe est publiée, jamais le texte saisi pour décrire
       // l'objet. L'agent peut masquer une ligne avec « Public: off ».
-      public_visible: heldBy === "finder",
-      public_label: heldBy === "finder" ? guessPublicLabel(title) : null,
+      public_visible: true,
+      public_label: guessPublicLabel(title),
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

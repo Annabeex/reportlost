@@ -64,7 +64,7 @@ function family(src) {
   if (s.startsWith("/lost-and-found")) return "page État";
   if (s.startsWith("/universities")) return "page université";
   if (s.startsWith("/lost/")) return "annonce publique";
-  if (s.startsWith("/o/")) return "page établissement";
+  if (s.startsWith("/o/") || /^\/(campus|org|at)\/[^/]+/.test(s)) return "page établissement";
   return s;
 }
 

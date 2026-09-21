@@ -2,6 +2,7 @@
 // Admin → Organisations : un bloc par établissement (bandeau compact avec les
 // actions Valider/Suspendre) puis SES OBJETS en vignettes, 4 par ligne, avec
 // la photo réelle ou l'image de catégorie du site en fallback.
+import { publicPath } from "@/lib/orgScope";
 import { useEffect, useState } from "react";
 
 type OrgItem = {
@@ -138,7 +139,7 @@ export default function AdminOrgsPage() {
           {o.public_email || o.member_email || "pas d'email"}
         </span>
         <span className="ml-auto" />
-        <a href={`/o/${o.slug}`} target="_blank" rel="noopener"
+        <a href={publicPath(o)} target="_blank" rel="noopener"
           className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50"
           title={o.verified ? "Voir la page publique" : "La page sera visible après validation"}>
           👁 Page publique

@@ -9,7 +9,7 @@ import PortalNav from "@/components/portal/PortalNav";
 import RetentionSetting from "@/components/portal/RetentionSetting";
 import { DISPOSITIONS, LEAVING_STATUSES, type Disposition } from "@/lib/orgDisposition";
 import { usePortal, portalFetch } from "@/lib/portal";
-import { scopeOfType, portalBase } from "@/lib/orgScope";
+import { scopeOfType, portalBase, publicPath } from "@/lib/orgScope";
 import { deadlineTracking } from "@/lib/orgRetention";
 
 type Intake = {
@@ -42,6 +42,10 @@ type LostReport = {
   phone: string | null;
   created_at: string;
 };
+
+/** Dépôt annoncé « je le dépose à l'accueil » et encore attendu (moins de 48 h). */
+const stillExpected = (i: Intake) =>
+  i.held_by !== "finder" && Date.now() - new Date(i.created_at).getTime() < 48 * 3600_000;
 
 // Au-delà, le navigateur peine — surtout sur un téléphone. Le reste s'affiche
 // à la demande ; la recherche, elle, porte toujours sur tout l'inventaire.
@@ -119,6 +123,10 @@ export default function PortalDashboard() {
   const [shelf, setShelf] = useState<Record<string, string>>({});
   const [intakeBusy, setIntakeBusy] = useState("");
   const [lostReports, setLostReports] = useState<LostReport[]>([]);
+  // Fiche ouverte : le journal de l'objet, dont les réclamations reçues.
+  const [detail, setDetail] = useState<
+    { item: Item; events: { id: number; type: string; note: string | null; actor_email: string | null; created_at: string }[] | null } | null
+  >(null);
   // Sortie d'un objet : on ne l'enregistre pas sans savoir OÙ il est parti.
   // C'est cette ligne qu'on relira à quelqu'un qui se manifeste des mois après.
   const [leaving, setLeaving] = useState<
@@ -257,6 +265,17 @@ export default function PortalDashboard() {
     setIntakes((prev) => prev.map((x) => (x.id === it.id ? { ...x, public_visible: next, public_label: j?.public_label || x.public_label } : x)));
   };
 
+  const openDetail = async (item: Item) => {
+    setDetail({ item, events: null });
+    try {
+      const r = await api(`/api/org/items/${encodeURIComponent(item.id)}`);
+      const j = await r.json();
+      setDetail((d) => (d && d.item.id === item.id ? { item, events: Array.isArray(j.events) ? j.events : [] } : d));
+    } catch {
+      setDetail((d) => (d && d.item.id === item.id ? { item, events: [] } : d));
+    }
+  };
+
   const closeLostReport = async (r: LostReport) => {
     if (!confirm(`Close the report ${r.code} (${r.title})? Use this once the owner has the item back, or when the report is no longer relevant. It stops being compared with your inventory.`)) return;
     const res = await api("/api/org/lost-reports", { method: "PATCH", body: JSON.stringify({ id: r.id, action: "close" }) });
@@ -265,7 +284,7 @@ export default function PortalDashboard() {
   };
 
   const resolveIntake = async (it: Intake, action: "confirm" | "reject") => {
-    const kept = it.held_by === "finder";
+    const kept = !stillExpected(it);
     if (action === "reject" && !confirm(
       kept
         ? `Remove the report "${it.title}"? Use this once the owner has the item back, or when the report is no longer valid. The finder's contact and photo are deleted.`
@@ -325,8 +344,12 @@ export default function PortalDashboard() {
   // Deux natures de dépôts par QR code : ceux qui attendent à l'accueil, et
   // ceux que leur trouveur a gardés (l'établissement ne stocke rien, il sait
   // seulement qui a l'objet).
-  const deskIntakes = useMemo(() => intakes.filter((i) => i.held_by !== "finder"), [intakes]);
-  const finderReports = useMemo(() => intakes.filter((i) => i.held_by === "finder"), [intakes]);
+  // Un dépôt annoncé « je le dépose à l'accueil » reste deux jours dans le
+  // bandeau du haut, là où l'agent l'attend. Passé ce délai, la personne n'est
+  // pas venue : l'objet est de fait chez elle, et la fiche rejoint les objets
+  // gardés par leur trouveur — sans encombrer le haut du tableau de bord.
+  const deskIntakes = useMemo(() => intakes.filter(stillExpected), [intakes]);
+  const finderReports = useMemo(() => intakes.filter((i) => !stillExpected(i)), [intakes]);
   // Hors du filtre dédié, ils ne remontent que si la recherche les trouve.
   const shownReports = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -394,11 +417,11 @@ export default function PortalDashboard() {
             <h1 className="text-2xl font-bold text-gray-900 truncate">{org.name}</h1>
             <p className="text-sm text-gray-500">
               {org.verified && org.public_listing ? (
-                <a href={`/o/${org.slug}`} target="_blank" rel="noopener" className="underline hover:text-emerald-700">
-                  reportlost.org/o/{org.slug} ↗
+                <a href={publicPath(org)} target="_blank" rel="noopener" className="underline hover:text-emerald-700">
+                  reportlost.org{publicPath(org)} ↗
                 </a>
               ) : (
-                <>reportlost.org/o/{org.slug}</>
+                <>reportlost.org{publicPath(org)}</>
               )}
             </p>
           </div>
@@ -563,7 +586,7 @@ export default function PortalDashboard() {
           {shownReports.length > 0 && (
             <section className="mb-4 overflow-hidden rounded-2xl border border-violet-200 bg-white">
               <div className="border-b border-violet-100 bg-violet-50/60 px-4 py-2.5 text-[13.5px] text-violet-900">
-                <b>Not at your desk.</b> Each of these items is kept by the person who found it. Check a
+                <b>Not at your desk.</b> Each of these items is still with the person who found it. Check a
                 claimant&apos;s description against the report, then put them in touch.
               </div>
               {shownReports.map((it) => (
@@ -578,7 +601,7 @@ export default function PortalDashboard() {
                       {it.description ? ` · ${it.description}` : ""}
                     </div>
                     <div className="truncate text-[12.5px] text-gray-700">
-                      Kept by {it.finder_name || "the finder"} ·{" "}
+                      {it.held_by === "finder" ? "Kept by" : "Planned to hand it in, still with"} {it.finder_name || "the finder"} ·{" "}
                       <a href={`mailto:${it.finder_email}`} className="underline">{it.finder_email}</a>
                     </div>
                   </div>
@@ -723,6 +746,17 @@ export default function PortalDashboard() {
                       {it.org_ref || ""}{it.date ? ` · ${it.date}` : ""}{it.storage_location ? ` · 📍 ${it.storage_location}` : ""}
                     </div>
                   </div>
+                  {it.status === "claim_pending" ? (
+                    <button type="button" onClick={() => openDetail(it)}
+                      className="mx-2.5 mt-2 rounded-lg bg-blue-600 px-2 py-1.5 text-[12px] font-bold text-white hover:bg-blue-700">
+                      See the claims
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => openDetail(it)}
+                      className="mx-2.5 mt-1 self-start text-[11px] text-gray-400 underline hover:text-gray-700">
+                      History
+                    </button>
+                  )}
                   <div className="mt-auto flex items-center gap-1.5 px-2.5 py-2">
                     <select
                       value={it.status || "stored"}
@@ -750,6 +784,85 @@ export default function PortalDashboard() {
               );
             })}
           </div>
+          {detail && (
+            <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+              onClick={() => setDetail(null)}>
+              <div role="dialog" aria-modal="true" aria-label={`History of ${detail.item.org_ref || "item"}`}
+                className="max-h-[88vh] w-full max-w-xl overflow-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl"
+                onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-start gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={detail.item.image_url || catImage(detail.item.title)} alt="" width={72} height={72}
+                    className="h-[72px] w-[72px] flex-none rounded-xl object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12.5px] font-semibold text-gray-500">{detail.item.org_ref}</div>
+                    <div className="text-[17px] font-bold leading-snug text-gray-900">{detail.item.title}</div>
+                    {detail.item.description && (
+                      <p className="mt-1 text-[13.5px] leading-relaxed text-gray-600">{detail.item.description}</p>
+                    )}
+                    <div className="mt-1 text-[12.5px] text-gray-500">
+                      found {detail.item.date}{detail.item.dropoff_location ? ` · ${detail.item.dropoff_location}` : ""}
+                      {detail.item.storage_location ? ` · stored: ${detail.item.storage_location}` : ""}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setDetail(null)} aria-label="Close"
+                    className="flex-none rounded-lg px-2 py-1 text-[20px] leading-none text-gray-400 hover:text-gray-700">×</button>
+                </div>
+
+                {detail.item.status === "claim_pending" && (
+                  <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[13.5px] leading-relaxed text-blue-900">
+                    Compare each claimant&apos;s description with your own notes and photo above. Write to them to
+                    ask for one more detail if needed. The item stays on your public list while you review, so
+                    several people may claim it: only one description will fit.
+                  </p>
+                )}
+
+                <div className="mt-4 space-y-2.5">
+                  {detail.events === null && <p className="text-sm text-gray-500">Loading…</p>}
+                  {detail.events?.length === 0 && <p className="text-sm text-gray-500">No history recorded for this item.</p>}
+                  {detail.events?.map((ev) => {
+                    const claim = ev.type === "claim_received";
+                    return (
+                      <div key={ev.id} className={`rounded-xl border px-4 py-3 ${claim ? "border-blue-200 bg-white" : "border-gray-200 bg-[#f7f8fa]"}`}>
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                          <span className={`text-[13px] font-bold ${claim ? "text-blue-800" : "text-gray-700"}`}>
+                            {claim ? "Claim received" : ev.type.replace(/_/g, " ")}
+                          </span>
+                          <span className="text-[12px] text-gray-400">
+                            {new Date(ev.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        {ev.note && <p className="mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-gray-700">{ev.note}</p>}
+                        {claim && ev.actor_email && (
+                          <a
+                            href={`mailto:${ev.actor_email}?subject=${encodeURIComponent(`Your claim at ${org.name} (${detail.item.org_ref || ""})`)}`}
+                            className="mt-2 inline-block rounded-lg border border-blue-300 px-3 py-1.5 text-[13px] font-semibold text-blue-800 hover:bg-blue-50">
+                            Write to {ev.actor_email}
+                          </a>
+                        )}
+                        {!claim && ev.actor_email && <p className="mt-0.5 text-[12px] text-gray-400">by {ev.actor_email}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {detail.item.status === "claim_pending" && (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button type="button"
+                      onClick={() => { const it = detail.item; setDetail(null); onStatusPicked(it.id, "returned"); }}
+                      className="rounded-xl bg-[#16a34a] px-4 py-2.5 text-[14px] font-bold text-white">
+                      It is theirs: record the return
+                    </button>
+                    <button type="button"
+                      onClick={async () => { const it = detail.item; if (await setStatus(it.id, "stored", { note: "No claim accepted, item back to In storage" })) setDetail(null); }}
+                      className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50">
+                      No valid claim: back to In storage
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {visible.length > shown && (
             <button type="button" onClick={() => setShown((n) => n + PAGE_SIZE)}
               className="mx-auto mt-4 block rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">

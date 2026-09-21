@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { buildItemRow, reserveRefs, isIsoDate } from "@/lib/orgItems";
+import { signRows, ownsRef } from "@/lib/orgPhotos";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +31,9 @@ export async function GET(req: NextRequest) {
     items.push(...(data || []));
     if (!data || data.length < PAGE) break;
   }
-  return NextResponse.json({ ok: true, items });
+  // Les photos sont privées : le navigateur reçoit des liens signés, valables
+  // quelques heures, jamais l'emplacement réel du fichier.
+  return NextResponse.json({ ok: true, items: await signRows(sb, items) });
 }
 
 export async function POST(req: NextRequest) {
@@ -44,6 +47,13 @@ export async function POST(req: NextRequest) {
   if (!title) return NextResponse.json({ error: "Titre requis" }, { status: 400 });
   if (!isIsoDate(found_at)) return NextResponse.json({ error: "Date requise" }, { status: 400 });
 
+  // La photo doit être une référence privée de CET établissement (obtenue par
+  // /api/org/photos). Une adresse quelconque, ou la photo d'un autre, est refusée.
+  const photoRef = String(b?.photo_url || "").trim();
+  if (photoRef && !ownsRef(photoRef, ctx.org.id)) {
+    return NextResponse.json({ error: "Photo invalide : renvoyez-la." }, { status: 400 });
+  }
+
   // Référence F-#### : compteur atomique (voir lib/orgItems.ts).
   let ref: string;
   try {
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
     title,
     found_at,
     description: b?.description,
-    photo_url: b?.photo_url,
+    photo_url: photoRef || null,
     found_location: b?.found_location,
     storage_location: b?.storage_location,
     public_visible: b?.public_visible !== false,
