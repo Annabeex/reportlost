@@ -15,7 +15,8 @@ import { setActiveOrgId } from "@/components/OrgSwitcher";
 import PortalNav from "@/components/portal/PortalNav";
 import { usePortal, portalFetch } from "@/lib/portal";
 import { scopeOfType, portalBase } from "@/lib/orgScope";
-import { orgRetention, retentionDeadline } from "@/lib/orgRetention";
+import { orgRetention, retentionDeadline, deadlineTracking } from "@/lib/orgRetention";
+import { compressImage } from "@/lib/imageCompress";
 
 const CARD = "rounded-2xl border border-gray-200 bg-white";
 const FIELD =
@@ -153,14 +154,19 @@ export default function PortalNewItem() {
   };
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const original = e.target.files?.[0];
+    if (!original) return;
     setUploading(true);
     setErr(null);
     try {
-      const safe = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
-      const path = `org_items/${Date.now()}-${safe}`;
-      const { error } = await supabaseBrowser.storage.from("images").upload(path, file, { upsert: true });
+      // Réduite avant l'envoi : ≈ 300 Ko au lieu de plusieurs Mo. C'est ce
+      // qui rend la saisie au téléphone rapide, et le stockage négligeable.
+      const file = await compressImage(original);
+      // Nom aléatoire : l'adresse de la photo ne doit pas se deviner.
+      const ext = (file.name.match(/\.([a-zA-Z0-9]{2,5})$/)?.[1] || "jpg").toLowerCase();
+      const id = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `org_items/${id}.${ext}`;
+      const { error } = await supabaseBrowser.storage.from("images").upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabaseBrowser.storage.from("images").getPublicUrl(path);
       const publicUrl = data?.publicUrl || "";
@@ -178,6 +184,11 @@ export default function PortalNewItem() {
     }
   };
 
+  // « Save and log another » : un carton d'objets se vide sans repasser par
+  // l'inventaire. Le lieu et la date restent, ce sont souvent les mêmes.
+  const againRef = useRef(false);
+  const [saved, setSaved] = useState("");
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -186,11 +197,22 @@ export default function PortalNewItem() {
       const r = await api("/api/org/items", { method: "POST", body: JSON.stringify(form) });
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error || r.statusText);
+      if (againRef.current) {
+        againRef.current = false;
+        setSaved(`${j.org_ref || "Item"} saved · ${form.title}`);
+        setForm((f) => ({ ...f, title: "", description: "", photo_url: "", public_label: "" }));
+        setSuggested({});
+        setPhotoMeta(null);
+        setReadMs(null);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       router.push(`${base}/dashboard`);
     } catch (e: any) {
       if (String(e?.message) === "no-session") { router.push(`${base}/login`); return; }
       setErr(String(e?.message || e));
     } finally {
+      againRef.current = false;
       setBusy(false);
     }
   };
@@ -209,6 +231,7 @@ export default function PortalNewItem() {
   if (!org) return <div className="p-10 text-gray-500">Loading…</div>;
 
   const retention = orgRetention(org);
+  const tracking = deadlineTracking(org);
   const hold = retentionDeadline(org, form.found_at);
   const Suggest = ({ on }: { on?: boolean }) =>
     on ? <span className="font-normal text-gray-400"> (suggested)</span> : null;
@@ -226,6 +249,12 @@ export default function PortalNewItem() {
 
       <form onSubmit={submit} className="mx-auto max-w-6xl px-5 py-8">
         <h1 className="text-3xl font-bold tracking-tight">Log a New Found Item</h1>
+
+        {saved && (
+          <div role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[14.5px] font-semibold text-emerald-900">
+            {saved}
+          </div>
+        )}
 
         {/* Deux chemins, annoncés d'emblée. Une photo suffit le plus souvent ;
             la saisie manuelle reste là pour ce qui ne se photographie pas. */}
@@ -299,7 +328,7 @@ export default function PortalNewItem() {
               <>
                 <div className="relative bg-[#eef0f3]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.photo_url} alt="" className="h-[420px] w-full object-contain" />
+                  <img src={form.photo_url} alt="" className="h-[260px] w-full object-contain sm:h-[420px]" />
                   {analyzing && <div className="rl-scan-beam" />}
                 </div>
                 <div className="mt-auto flex items-center justify-between gap-4 px-5 py-4">
@@ -331,7 +360,7 @@ export default function PortalNewItem() {
             ) : (
               <label
                 htmlFor="org-photo"
-                className="m-5 mt-0 flex h-[420px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-[#f7f8fa] text-center hover:border-[#2ea052] hover:bg-[#f2fbf5]"
+                className="m-5 mt-0 flex h-[220px] cursor-pointer sm:h-[420px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-[#f7f8fa] text-center hover:border-[#2ea052] hover:bg-[#f2fbf5]"
               >
                 <span className="text-[42px]">📷</span>
                 <span className="mt-3 text-[17px] font-bold text-gray-800">
@@ -432,7 +461,7 @@ export default function PortalNewItem() {
                 <dt className="text-gray-600">Reference</dt>
                 <dd className="font-bold text-gray-400">assigned on save</dd>
               </div>
-              <div className="flex items-center justify-between gap-3 border-b border-gray-200 py-2.5">
+              <div className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="text-gray-600">Found on</dt>
                 <dd className="flex items-center gap-2">
                   <span className="hidden font-bold sm:inline">{fmtLong(form.found_at)}</span>
@@ -447,7 +476,8 @@ export default function PortalNewItem() {
                   />
                 </dd>
               </div>
-              <div className="flex items-center justify-between gap-3 py-3.5">
+              {tracking && (
+              <div className="flex items-center justify-between gap-3 border-t border-gray-200 py-3.5">
                 <dt className="text-gray-600">Eligible for transfer</dt>
                 <dd className="text-right">
                   <span className="font-bold">{fmtShort(hold)}</span>{" "}
@@ -463,6 +493,7 @@ export default function PortalNewItem() {
                   </span>
                 </dd>
               </div>
+              )}
             </dl>
 
             {err && (
@@ -474,9 +505,18 @@ export default function PortalNewItem() {
             <button
               type="submit"
               disabled={busy || uploading}
+              onClick={() => { againRef.current = false; }}
               className="mt-auto rounded-xl bg-[#16a34a] px-6 py-4 text-[17px] font-bold text-white shadow-sm hover:bg-[#15913f] disabled:opacity-60"
             >
               {busy ? "Saving…" : "Save item"}
+            </button>
+            <button
+              type="submit"
+              disabled={busy || uploading}
+              onClick={() => { againRef.current = true; }}
+              className="rounded-xl border border-[#16a34a] bg-white px-6 py-3.5 text-[16px] font-bold text-[#15803d] hover:bg-[#f2fbf5] disabled:opacity-60"
+            >
+              Save and log another
             </button>
             <button
               type="button"

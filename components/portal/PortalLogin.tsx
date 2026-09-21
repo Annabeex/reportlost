@@ -1,10 +1,12 @@
 "use client";
 // Connexion / inscription. Écran commun, vocabulaire du portail d'entrée.
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { usePortal } from "@/lib/portal";
+import { usePortal, portalFetch } from "@/lib/portal";
+import { setActiveOrgId } from "@/components/OrgSwitcher";
+import { portalBase, type OrgScope } from "@/lib/orgScope";
 
 export default function PortalLogin() {
   const router = useRouter();
@@ -15,6 +17,54 @@ export default function PortalLogin() {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Invitation d'un collègue : le lien du mail arrive ici avec ?invite=<token>.
+  // Lu dans window.location plutôt que useSearchParams, qui imposerait une
+  // frontière Suspense à une page par ailleurs statique.
+  const [invite, setInvite] = useState<{ token: string; email: string; org_name: string } | null>(null);
+
+  const acceptInvite = useCallback(
+    async (token: string): Promise<boolean> => {
+      const r = await portalFetch(scope, "/api/org/invite", { method: "POST", body: JSON.stringify({ token }) });
+      const j = await r.json().catch(() => null);
+      if (!r.ok) {
+        setMsg(j?.error || "This invitation could not be accepted.");
+        return false;
+      }
+      const target: OrgScope = j?.scope === "campus" || j?.scope === "agency" ? j.scope : scope;
+      setActiveOrgId(target, String(j.org_id || ""));
+      router.push(`${portalBase(target)}/dashboard`);
+      return true;
+    },
+    [router, scope]
+  );
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("invite") || "";
+    if (!token) return;
+    let alive = true;
+    (async () => {
+      const r = await fetch(`/api/org/invite?token=${encodeURIComponent(token)}`);
+      const j = await r.json().catch(() => null);
+      if (!alive) return;
+      if (!r.ok || !j?.ok) {
+        setMsg(
+          j?.state === "expired"
+            ? "This invitation has expired. Ask your colleague to send a new one."
+            : "This invitation link is no longer valid."
+        );
+        return;
+      }
+      setInvite({ token, email: j.email, org_name: j.org_name });
+      setEmail(j.email);
+      setMode("signup");
+      // Déjà connecté (retour du mail de confirmation, par exemple) : on
+      // rejoint l'établissement sans redemander le mot de passe.
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (alive && session) await acceptInvite(token);
+    })();
+    return () => { alive = false; };
+  }, [acceptInvite]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -24,7 +74,9 @@ export default function PortalLogin() {
         const { error } = await supabaseBrowser.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}${base}/login` },
+          options: {
+            emailRedirectTo: `${window.location.origin}${base}/login${invite ? `?invite=${encodeURIComponent(invite.token)}` : ""}`,
+          },
         });
         if (error) throw error;
         setMsg("Account created. Check your inbox to confirm your email, then sign in.");
@@ -32,6 +84,10 @@ export default function PortalLogin() {
       } else {
         const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (invite) {
+          await acceptInvite(invite.token);
+          return;
+        }
         router.push(`${base}/dashboard`);
       }
     } catch (err: any) {
@@ -47,6 +103,12 @@ export default function PortalLogin() {
         {mode === "signin" ? words.signinTitle : words.signupTitle}
       </h1>
       <p className="mt-1 text-sm text-gray-600">{words.loginSubtitle}</p>
+      {invite && (
+        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+          You are invited to join <b>{invite.org_name}</b>. Sign in, or create your account, with{" "}
+          <b>{invite.email}</b>.
+        </div>
+      )}
       <form onSubmit={submit} className="mt-6 space-y-4">
         <div>
           <label className="block font-medium mb-1">Work email</label>

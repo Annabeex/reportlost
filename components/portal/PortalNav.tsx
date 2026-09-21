@@ -18,7 +18,7 @@ export default function PortalNav({
   onChangeOrg,
   crossPortal = 0,
 }: {
-  current: "review" | "inventory" | "new";
+  current: "review" | "inventory" | "new" | "team" | "import";
   pending?: number;
   orgs: { id: string; name: string; type: string; city?: string | null }[];
   activeId: string;
@@ -41,7 +41,7 @@ export default function PortalNav({
         <span className="text-[19px] font-bold tracking-tight">
           ReportLost <span className="font-semibold text-gray-400">{words.brandSuffix}</span>
         </span>
-        <nav className="flex gap-5 text-[14.5px] text-gray-600">
+        <nav className="flex flex-wrap gap-x-5 gap-y-1 text-[14.5px] text-gray-600">
           {link("review", `${base}/review`, (
             <>
               To review
@@ -54,6 +54,7 @@ export default function PortalNav({
           ))}
           {link("inventory", `${base}/dashboard`, "Inventory")}
           {link("new", `${base}/items/new`, "Log an item")}
+          {link("team", `${base}/team`, "Team")}
         </nav>
         <div className="flex items-center gap-3">
           <OrgSwitcher orgs={orgs} activeId={activeId} onChange={onChangeOrg} />

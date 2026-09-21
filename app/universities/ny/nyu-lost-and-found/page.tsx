@@ -114,6 +114,9 @@ export default async function NyuLostFoundPage() {
     const { data } = await supabase
       .from("found_items")
       .select("id, title, date, city, image_url, created_at")
+      // Dépôts publics uniquement : l'inventaire d'un établissement (titre
+      // détaillé, photo) sert à vérifier les réclamations, il ne sort jamais.
+      .is("org_id", null)
       .or(NYC_FILTER)
       .order("created_at", { ascending: false })
       .limit(20);

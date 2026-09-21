@@ -10,6 +10,28 @@ import RetentionSetting from "@/components/portal/RetentionSetting";
 import { DISPOSITIONS, LEAVING_STATUSES, type Disposition } from "@/lib/orgDisposition";
 import { usePortal, portalFetch } from "@/lib/portal";
 import { scopeOfType, portalBase } from "@/lib/orgScope";
+import { deadlineTracking } from "@/lib/orgRetention";
+
+type Intake = {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  found_location: string | null;
+  found_at: string;
+  photo_url: string | null;
+  finder_name: string | null;
+  finder_email: string | null;
+  /** desk = sera remis à l'accueil ; finder = gardé par la personne qui l'a trouvé. */
+  held_by?: string | null;
+  public_visible?: boolean;
+  public_label?: string | null;
+  created_at: string;
+};
+
+// Au-delà, le navigateur peine — surtout sur un téléphone. Le reste s'affiche
+// à la demande ; la recherche, elle, porte toujours sur tout l'inventaire.
+const PAGE_SIZE = 120;
 
 type Item = {
   id: string;
@@ -74,6 +96,14 @@ export default function PortalDashboard() {
   const [filter, setFilter] = useState<string>("stored");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string>("");
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const [exporting, setExporting] = useState(false);
+  // Dépôts par QR code : décrits par la personne qui a trouvé l'objet, en
+  // attente que l'accueil confirme l'avoir en main.
+  const [intakes, setIntakes] = useState<Intake[]>([]);
+  const [shelf, setShelf] = useState<Record<string, string>>({});
+  const [intakeBusy, setIntakeBusy] = useState("");
   // Sortie d'un objet : on ne l'enregistre pas sans savoir OÙ il est parti.
   // C'est cette ligne qu'on relira à quelqu'un qui se manifeste des mois après.
   const [leaving, setLeaving] = useState<
@@ -106,6 +136,7 @@ export default function PortalDashboard() {
       }
 
       setOrg(mj.org);
+      setRole(String(mj.role || ""));
       setOrgs(Array.isArray(mj.orgs) ? mj.orgs : []);
       const all = Array.isArray(mj.allOrgs) ? mj.allOrgs : [];
       setCross(all.filter((o: any) => scopeOfType(o.type) !== scope).length);
@@ -121,6 +152,10 @@ export default function PortalDashboard() {
       api("/api/org/matches?status=new")
         .then((res) => res.json())
         .then((mj2) => setPending(Array.isArray(mj2.matches) ? mj2.matches.length : 0))
+        .catch(() => {});
+      api("/api/org/intakes")
+        .then((res) => res.json())
+        .then((ij) => setIntakes(Array.isArray(ij.intakes) ? ij.intakes : []))
         .catch(() => {});
     } catch {
       router.push(`${base}/login`);
@@ -170,24 +205,141 @@ export default function PortalDashboard() {
     else alert("Update failed");
   };
 
+  const toggleDeadlines = async () => {
+    const next = !deadlineTracking(org);
+    const r = await api("/api/org/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ deadline_tracking: next }),
+    });
+    if (r.ok) {
+      setOrg((o: any) => ({ ...o, deadline_tracking: next }));
+      if (!next && filter === "overdue") setFilter("stored");
+    } else alert("Update failed");
+  };
+
+  const toggleFinderHeld = async () => {
+    const next = org.finder_held_enabled === false;
+    const r = await api("/api/org/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ finder_held_enabled: next }),
+    });
+    if (r.ok) setOrg((o: any) => ({ ...o, finder_held_enabled: next }));
+    else alert("Update failed");
+  };
+
+  // Signalement gardé par son trouveur : l'afficher ou non sur la page publique.
+  const publishReport = async (it: Intake, next: boolean) => {
+    const r = await api(`/api/org/intakes/${encodeURIComponent(it.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action: next ? "publish" : "unpublish" }),
+    });
+    const j = await r.json().catch(() => null);
+    if (!r.ok) { alert(j?.error || "Update failed"); return; }
+    setIntakes((prev) => prev.map((x) => (x.id === it.id ? { ...x, public_visible: next, public_label: j?.public_label || x.public_label } : x)));
+  };
+
+  const resolveIntake = async (it: Intake, action: "confirm" | "reject") => {
+    const kept = it.held_by === "finder";
+    if (action === "reject" && !confirm(
+      kept
+        ? `Remove the report "${it.title}"? Use this once the owner has the item back, or when the report is no longer valid. The finder's contact and photo are deleted.`
+        : `Delete the drop-off ${it.code} (${it.title})? Use this when the item was never handed in.`
+    )) return;
+    setIntakeBusy(it.id);
+    try {
+      const r = await api(`/api/org/intakes/${encodeURIComponent(it.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action, storage_location: shelf[it.id] || "" }),
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok && r.status !== 409) { alert(j?.error || "Update failed"); return; }
+      setIntakes((prev) => prev.filter((x) => x.id !== it.id));
+      if (action === "confirm") {
+        const ri = await api("/api/org/items");
+        const ji = await ri.json();
+        setItems(Array.isArray(ji.items) ? ji.items : []);
+      }
+    } finally {
+      setIntakeBusy("");
+    }
+  };
+
+  // Le téléchargement passe par fetch : la route exige le jeton de session,
+  // qu'un simple lien <a href> n'enverrait pas.
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const status = ["stored", "claim_pending", "returned", "disposed"].includes(filter) ? `?status=${filter}` : "";
+      const r = await api(`/api/org/items/export${status}`);
+      if (!r.ok) throw new Error();
+      const name = (r.headers.get("content-disposition") || "").match(/filename="([^"]+)"/)?.[1] || "lost-and-found.csv";
+      const url = URL.createObjectURL(await r.blob());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      alert("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const stats = useMemo(() => {
     const stored = items.filter((i) => i.status === "stored" || i.status === "claim_pending");
     return {
       stored: items.filter((i) => i.status === "stored").length,
       claims: items.filter((i) => i.status === "claim_pending").length,
-      urgent: stored.filter((i) => { const d = daysLeft(i.legal_deadline); return d !== null && d <= 7; }).length,
+      overdue: stored.filter((i) => { const d = daysLeft(i.legal_deadline); return d !== null && d <= 0; }).length,
       returned: items.filter((i) => i.status === "returned").length,
     };
   }, [items]);
 
+  // Deux natures de dépôts par QR code : ceux qui attendent à l'accueil, et
+  // ceux que leur trouveur a gardés (l'établissement ne stocke rien, il sait
+  // seulement qui a l'objet).
+  const deskIntakes = useMemo(() => intakes.filter((i) => i.held_by !== "finder"), [intakes]);
+  const finderReports = useMemo(() => intakes.filter((i) => i.held_by === "finder"), [intakes]);
+  // Hors du filtre dédié, ils ne remontent que si la recherche les trouve.
+  const shownReports = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (filter !== "finder" && !q) return [];
+    if (!q) return finderReports;
+    return finderReports.filter((i) =>
+      `${i.code} ${i.title} ${i.description || ""} ${i.found_location || ""} ${i.finder_name || ""} ${i.finder_email || ""}`.toLowerCase().includes(q)
+    );
+  }, [finderReports, filter, query]);
+
   const visible = useMemo(() => {
-    let arr = filter === "all" ? items : items.filter((i) => i.status === filter);
+    if (filter === "finder") return [];
+    let arr =
+      filter === "all" ? items
+      : filter === "overdue"
+        ? items.filter((i) => {
+            if (i.status !== "stored" && i.status !== "claim_pending") return false;
+            const d = daysLeft(i.legal_deadline);
+            return d !== null && d <= 0;
+          })
+        : items.filter((i) => i.status === filter);
     const q = query.trim().toLowerCase();
     if (q) arr = arr.filter((i) => `${i.org_ref} ${i.title} ${i.description} ${i.storage_location}`.toLowerCase().includes(q));
     return arr;
   }, [items, filter, query]);
 
+  // Un changement de filtre ou de recherche repart du début de la liste.
+  useEffect(() => { setShown(PAGE_SIZE); }, [filter, query]);
+  // Le dernier signalement vient d'être retiré : le filtre n'a plus lieu d'être.
+  useEffect(() => {
+    if (filter === "finder" && !loading && finderReports.length === 0) setFilter("stored");
+  }, [filter, loading, finderReports.length]);
+
   if (loading || !org) return <div className="p-10 text-gray-500">Loading…</div>;
+
+  const isAdmin = role === "admin";
+  const tracking = deadlineTracking(org);
+  const pill = (on: boolean) =>
+    `rounded-full border px-3 py-1.5 text-xs font-medium ${on ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`;
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -213,44 +365,83 @@ export default function PortalDashboard() {
               )}
             </p>
           </div>
-          <button type="button" onClick={togglePublicListing}
-            title="When off, your public page and all items are hidden from visitors"
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium ${org.public_listing ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
-            {org.public_listing ? "🌐 Public page: on" : "🔒 Public page: off"}
-          </button>
-          <a href={`/api/org/poster?slug=${org.slug}`} target="_blank" rel="noopener"
-            title={words.posterHint}
-            className="rounded-lg border border-[#2ea052] bg-white px-3 py-2.5 text-sm font-medium text-[#226638] hover:bg-[#f2fbf5]">
-            🖨️ QR poster
-          </a>
           <Link href={`${base}/items/new`}
             className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
             + Log a found item
           </Link>
-          <button type="button" className="text-sm text-gray-500 underline"
-            onClick={async () => { await supabaseBrowser.auth.signOut(); router.push(`${base}/login`); }}>
-            Sign out
+          {/* Tout ce qui ne sert pas dix fois par jour est rangé ici. */}
+          <details className="relative">
+            <summary className="cursor-pointer list-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
+              Tools ▾
+            </summary>
+            <div className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 text-sm shadow-lg">
+              <a href={`/api/org/poster?slug=${org.slug}`} target="_blank" rel="noopener" title={words.posterHint}
+                className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
+                QR poster · “Lost something?”
+              </a>
+              <a href={`/api/org/poster?slug=${org.slug}&kind=found`} target="_blank" rel="noopener"
+                title="Finders scan it, describe the item themselves, then hand it to the desk with a code"
+                className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
+                QR poster · “Found something?”
+              </a>
+              <button type="button" onClick={exportCsv} disabled={exporting}
+                className="block w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+                {exporting ? "Preparing the file…" : !STATUS_LABEL[filter] ? "Export all items (CSV)" : `Export “${STATUS_LABEL[filter]}” (CSV)`}
+              </button>
+              {isAdmin && (
+                <Link href={`${base}/import`} className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
+                  Import items from another system
+                </Link>
+              )}
+              <button type="button"
+                className="block w-full border-t border-gray-100 px-4 py-2.5 text-left text-gray-500 hover:bg-gray-50"
+                onClick={async () => { await supabaseBrowser.auth.signOut(); router.push(`${base}/login`); }}>
+                Sign out
+              </button>
+            </div>
+          </details>
+        </div>
+
+        {/* Réglages de l'établissement : deux interrupteurs, rien de plus. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button type="button" onClick={togglePublicListing} disabled={!isAdmin}
+            title="When off, your public page and all items are hidden from visitors"
+            className={pill(!!org.public_listing)}>
+            {org.public_listing ? "Public page: on" : "Public page: off"}
+          </button>
+          <button type="button" onClick={toggleDeadlines} disabled={!isAdmin} aria-pressed={tracking}
+            title="When on, each item in storage shows whether its holding period is over"
+            className={pill(tracking)}>
+            {tracking ? "Holding deadlines: on" : "Holding deadlines: off"}
+          </button>
+          <button type="button" onClick={toggleFinderHeld} disabled={!isAdmin} aria-pressed={org.finder_held_enabled !== false}
+            title="When on, a person who found an item can keep it and leave an email instead of bringing it to the desk"
+            className={pill(org.finder_held_enabled !== false)}>
+            {org.finder_held_enabled !== false ? "Items kept by finders: accepted" : "Items kept by finders: refused"}
           </button>
         </div>
 
-        <RetentionSetting
-          org={org}
-          onSave={async (days) => {
-            const r = await api("/api/org/settings", {
-              method: "PATCH",
-              body: JSON.stringify({ retention_days: days }),
-            });
-            const j = await r.json().catch(() => null);
-            if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
-            setOrg((o: any) => ({ ...o, retention_days: days }));
-            // Les dates limites ont changé côté serveur : on relit l'inventaire
-            // plutôt que d'afficher des compteurs d'urgence périmés.
-            const ri = await api("/api/org/items");
-            const ji = await ri.json();
-            setItems(Array.isArray(ji.items) ? ji.items : []);
-            return Number(j?.recomputed || 0);
-          }}
-        />
+        {tracking && (
+          <RetentionSetting
+            org={org}
+            canEdit={isAdmin}
+            onSave={async (days) => {
+              const r = await api("/api/org/settings", {
+                method: "PATCH",
+                body: JSON.stringify({ retention_days: days }),
+              });
+              const j = await r.json().catch(() => null);
+              if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
+              setOrg((o: any) => ({ ...o, retention_days: days }));
+              // Les dates limites ont changé côté serveur : on relit l'inventaire
+              // plutôt que d'afficher des compteurs périmés.
+              const ri = await api("/api/org/items");
+              const ji = await ri.json();
+              setItems(Array.isArray(ji.items) ? ji.items : []);
+              return Number(j?.recomputed || 0);
+            }}
+          />
+        )}
 
         {!org.verified && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -259,15 +450,68 @@ export default function PortalDashboard() {
           </div>
         )}
 
-        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {/* Dépôts par QR code : n'apparaît que s'il y en a. */}
+        {deskIntakes.length > 0 && (
+          <section className="mt-5 rounded-2xl border border-blue-200 bg-white">
+            <div className="flex flex-wrap items-baseline gap-x-2 border-b border-blue-100 px-4 py-3">
+              <h2 className="text-[15px] font-bold text-gray-900">Handed in via QR code</h2>
+              <span className="text-[13px] text-gray-500">
+                {deskIntakes.length} to confirm · the finder shows you a code, you confirm once the item is in your hands
+              </span>
+            </div>
+            {deskIntakes.map((it) => (
+              <div key={it.id} className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={it.photo_url || catImage(it.title)} alt="" width={56} height={56} className="h-14 w-14 flex-none rounded-lg object-cover" />
+                <span className="flex-none rounded-lg bg-blue-50 px-2.5 py-1.5 font-mono text-[17px] font-bold tracking-wider text-blue-900">{it.code}</span>
+                <div className="min-w-0 flex-1 basis-40">
+                  <div className="truncate text-[14.5px] font-semibold text-gray-900" title={it.description || ""}>{it.title}</div>
+                  <div className="truncate text-[12.5px] text-gray-500">
+                    found {it.found_at}{it.found_location ? ` · ${it.found_location}` : ""}
+                    {it.finder_name || it.finder_email ? ` · by ${[it.finder_name, it.finder_email].filter(Boolean).join(", ")}` : ""}
+                  </div>
+                </div>
+                <input
+                  value={shelf[it.id] || ""}
+                  onChange={(e) => setShelf((m) => ({ ...m, [it.id]: e.target.value }))}
+                  placeholder="Storage location"
+                  aria-label={`Storage location for drop-off ${it.code}`}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-[14px] sm:w-40"
+                />
+                <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "confirm")}
+                  className="rounded-lg bg-[#16a34a] px-3.5 py-2 text-[13.5px] font-bold text-white disabled:opacity-60">
+                  {intakeBusy === it.id ? "…" : "Confirm receipt"}
+                </button>
+                <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "reject")}
+                  className="text-[13px] text-gray-400 underline hover:text-red-600">
+                  Never received
+                </button>
+              </div>
+            ))}
+          </section>
+        )}
+
+        <div className={`mt-5 grid grid-cols-2 gap-3 ${tracking ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
           <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold">{stats.stored}</div><div className="text-xs text-gray-500">Items in storage</div></div>
           <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold text-blue-700">{stats.claims}</div><div className="text-xs text-gray-500">Claims pending</div></div>
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold text-amber-600">{stats.urgent}</div><div className="text-xs text-gray-500">Deadline under 7 days</div></div>
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold text-emerald-700">{stats.returned}</div><div className="text-xs text-gray-500">Returned</div></div>
+          {tracking && (
+            <button type="button" onClick={() => setFilter("overdue")}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-left hover:border-amber-300">
+              <div className={`text-2xl font-semibold ${stats.overdue ? "text-amber-600" : "text-gray-900"}`}>{stats.overdue}</div>
+              <div className="text-xs text-gray-500">Holding period over</div>
+            </button>
+          )}
+          <div className={`rounded-xl border border-gray-200 bg-white px-4 py-3 ${tracking ? "" : "col-span-2 md:col-span-1"}`}><div className="text-2xl font-semibold text-emerald-700">{stats.returned}</div><div className="text-xs text-gray-500">Returned</div></div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          {[["stored", "In storage"], ["claim_pending", "Claims"], ["returned", "Returned"], ["disposed", "Disposed"], ["all", "All"]].map(([v, l]) => (
+          {[
+            ["stored", "In storage"], ["claim_pending", "Claims"],
+            ...(tracking ? [["overdue", "Holding period over"]] : []),
+            ["returned", "Returned"], ["disposed", "Disposed"], ["all", "All"],
+            // Absent tant qu'il n'y en a aucun : rien à montrer, rien à encombrer.
+            ...(finderReports.length ? [["finder", `Kept by finder · ${finderReports.length}`]] : []),
+          ].map(([v, l]) => (
             <button key={v} type="button" onClick={() => setFilter(v)}
               className={`rounded-full px-3 py-1 text-xs border ${filter === v ? "bg-emerald-100 border-emerald-300 text-emerald-800 font-medium" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
               {l}
@@ -278,13 +522,65 @@ export default function PortalDashboard() {
         </div>
 
         <div className="mt-3">
-          {visible.length === 0 && (
+          {shownReports.length > 0 && (
+            <section className="mb-4 overflow-hidden rounded-2xl border border-violet-200 bg-white">
+              <div className="border-b border-violet-100 bg-violet-50/60 px-4 py-2.5 text-[13.5px] text-violet-900">
+                <b>Not at your desk.</b> Each of these items is kept by the person who found it. Check a
+                claimant&apos;s description against the report, then put them in touch.
+              </div>
+              {shownReports.map((it) => (
+                <div key={it.id} className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={it.photo_url || catImage(it.title)} alt="" width={56} height={56} className="h-14 w-14 flex-none rounded-lg object-cover" />
+                  <span className="flex-none rounded-lg bg-violet-50 px-2 py-1 font-mono text-[14px] font-bold tracking-wider text-violet-900" title="Reference given to the finder">{it.code}</span>
+                  <div className="min-w-0 flex-1 basis-48">
+                    <div className="truncate text-[14.5px] font-semibold text-gray-900" title={it.description || ""}>{it.title}</div>
+                    <div className="truncate text-[12.5px] text-gray-500">
+                      found {it.found_at}{it.found_location ? ` · ${it.found_location}` : ""}
+                      {it.description ? ` · ${it.description}` : ""}
+                    </div>
+                    <div className="truncate text-[12.5px] text-gray-700">
+                      Kept by {it.finder_name || "the finder"} ·{" "}
+                      <a href={`mailto:${it.finder_email}`} className="underline">{it.finder_email}</a>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => publishReport(it, !it.public_visible)}
+                    title={it.public_visible
+                      ? `Listed on your public page as "${it.public_label || "Item"}", without the finder's contact. Click to hide`
+                      : "Not on your public page. Click to list it (generic category, date and place only)"}
+                    className={`rounded-lg border px-2.5 py-1.5 text-[12.5px] ${it.public_visible ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
+                    {it.public_visible ? "Public: on" : "Public: off"}
+                  </button>
+                  <input
+                    value={shelf[it.id] || ""}
+                    onChange={(e) => setShelf((m) => ({ ...m, [it.id]: e.target.value }))}
+                    placeholder="Storage location"
+                    aria-label={`Storage location for ${it.title}`}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-[13.5px] sm:w-36"
+                  />
+                  <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "confirm")}
+                    title="The finder brought the item in after all: it enters your inventory"
+                    className="rounded-lg border border-[#16a34a] bg-white px-3 py-2 text-[13px] font-bold text-[#15803d] disabled:opacity-60">
+                    {intakeBusy === it.id ? "…" : "Now at the desk"}
+                  </button>
+                  <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "reject")}
+                    className="text-[13px] text-gray-400 underline hover:text-red-600">
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
+          {filter === "finder" && shownReports.length === 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">No report matches.</div>
+          )}
+          {filter !== "finder" && visible.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">
-              No items here yet. Log your first found item, it takes 30 seconds.
+              {items.length === 0 ? "No items logged yet." : "No items in this view."}
             </div>
           )}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {visible.map((it) => {
+            {visible.slice(0, shown).map((it) => {
               const d = daysLeft(it.legal_deadline);
               return (
                 <div key={it.id} className="relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -342,9 +638,13 @@ export default function PortalDashboard() {
                     <span className={`absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLE[it.status || "stored"]}`}>
                       {STATUS_LABEL[it.status || "stored"]}
                     </span>
-                    {d !== null && (it.status === "stored" || it.status === "claim_pending") && d <= 7 && (
-                      <span className="absolute right-1.5 top-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
-                        {d > 0 ? `${d}d left` : "eligible"}
+                    {/* Échéance : uniquement si l'établissement a activé le suivi.
+                        Dépassée en ambre, sinon un simple décompte gris. */}
+                    {tracking && d !== null && (it.status === "stored" || it.status === "claim_pending") && (
+                      <span
+                        title={`Holding period ends ${it.legal_deadline}`}
+                        className={`absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${d <= 0 ? "bg-amber-100 text-amber-900" : "bg-white/90 text-gray-600"}`}>
+                        {d <= 0 ? "Hold over" : `${d}d left`}
                       </span>
                     )}
                   </div>
@@ -382,6 +682,12 @@ export default function PortalDashboard() {
               );
             })}
           </div>
+          {visible.length > shown && (
+            <button type="button" onClick={() => setShown((n) => n + PAGE_SIZE)}
+              className="mx-auto mt-4 block rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              Show {Math.min(PAGE_SIZE, visible.length - shown)} more · {visible.length - shown} not shown
+            </button>
+          )}
         </div>
       </div>
     </div>

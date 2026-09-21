@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { retentionDeadline } from "@/lib/orgRetention";
+import { buildItemRow, reserveRefs, isIsoDate } from "@/lib/orgItems";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,16 +13,24 @@ export async function GET(req: NextRequest) {
   const sb = getSupabaseAdmin()!;
 
   const status = req.nextUrl.searchParams.get("status");
-  let q = sb
-    .from("found_items")
-    .select("id, org_ref, title, description, image_url, date, dropoff_location, storage_location, status, legal_deadline, public_visible, public_label, created_at")
-    .eq("org_id", ctx.org.id)
-    .order("created_at", { ascending: false })
-    .limit(500);
-  if (status) q = q.eq("status", status);
-  const { data, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, items: data || [] });
+  // Supabase plafonne chaque requête à 1000 lignes : on pagine, sinon un
+  // inventaire repris d'un autre logiciel serait tronqué sans rien dire.
+  const PAGE = 1000;
+  const items: any[] = [];
+  for (let from = 0; from < 5000; from += PAGE) {
+    let q = sb
+      .from("found_items")
+      .select("id, org_ref, title, description, image_url, date, dropoff_location, storage_location, status, legal_deadline, public_visible, public_label, created_at")
+      .eq("org_id", ctx.org.id)
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (status) q = q.eq("status", status);
+    const { data, error } = await q;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    items.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return NextResponse.json({ ok: true, items });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,38 +42,26 @@ export async function POST(req: NextRequest) {
   const title = String(b?.title || "").trim();
   const found_at = String(b?.found_at || "").slice(0, 10);
   if (!title) return NextResponse.json({ error: "Titre requis" }, { status: 400 });
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(found_at)) return NextResponse.json({ error: "Date requise" }, { status: 400 });
+  if (!isIsoDate(found_at)) return NextResponse.json({ error: "Date requise" }, { status: 400 });
 
-  // Référence F-#### par organisation
-  const { count } = await sb
-    .from("found_items")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", ctx.org.id);
-  const org_ref = `F-${String((count || 0) + 1).padStart(4, "0")}`;
+  // Référence F-#### : compteur atomique (voir lib/orgItems.ts).
+  let ref: string;
+  try {
+    [ref] = await reserveRefs(sb, ctx.org.id, 1);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
 
-  const row = {
-    org_id: ctx.org.id,
-    org_ref,
-    title: title.slice(0, 120),
-    description: String(b?.description || "").trim().slice(0, 2000) || null,
-    image_url: String(b?.photo_url || "").trim() || null,
-    date: found_at,
-    city: ctx.org.city,
-    dropoff_location: String(b?.found_location || "").trim().slice(0, 200) || null,
-    storage_location: String(b?.storage_location || "").trim().slice(0, 120) || null,
-    status: "stored",
-    // Politique de l'établissement si elle est réglée, loi de l'État pour
-    // la police et les mairies, 30 jours provisoires sinon.
-    legal_deadline: retentionDeadline(ctx.org, found_at),
-    // Visibilité publique : libellé générique uniquement (jamais la description)
+  const row = buildItemRow(ctx.org, ref, {
+    title,
+    found_at,
+    description: b?.description,
+    photo_url: b?.photo_url,
+    found_location: b?.found_location,
+    storage_location: b?.storage_location,
     public_visible: b?.public_visible !== false,
-    public_label: String(b?.public_label || "").trim().slice(0, 60) || title.split(/\s+/).slice(0, 2).join(" "),
-    // Colonnes héritées des dépôts publics (analyse d'image) : NOT NULL en base
-    labels: [] as string[],
-    logos: [] as string[],
-    objects: [] as string[],
-    ocr_text: "",
-  };
+    public_label: b?.public_label,
+  });
 
   const { data, error } = await sb.from("found_items").insert(row).select("id, org_ref").single();
 

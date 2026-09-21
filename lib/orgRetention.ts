@@ -44,7 +44,17 @@ type OrgLike = {
   type?: string | null;
   state_id?: string | null;
   retention_days?: number | null;
+  deadline_tracking?: boolean | null;
 };
+
+/** L'établissement suit-il les échéances de garde à l'écran ?
+ *  Réglage explicite s'il existe. Sinon : oui pour la police et les mairies,
+ *  que la loi de l'État oblige, non pour les autres — un bureau de campus qui
+ *  ne s'en sert pas ne doit pas voir son inventaire couvert de compteurs. */
+export function deadlineTracking(org: OrgLike | null | undefined): boolean {
+  if (typeof org?.deadline_tracking === "boolean") return org.deadline_tracking;
+  return STATUTE_TYPES.has(String(org?.type || "").toLowerCase());
+}
 
 export function normalizeRetentionDays(v: unknown): number | null {
   const n = Math.round(Number(v));

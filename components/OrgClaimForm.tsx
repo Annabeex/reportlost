@@ -4,7 +4,18 @@
 // l'établissement qui compare avec ses notes internes et sa photo.
 import { useState } from "react";
 
-export default function OrgClaimForm({ orgSlug, itemId, label }: { orgSlug: string; itemId: string; label: string }) {
+export default function OrgClaimForm({
+  orgSlug,
+  itemId,
+  label,
+  kind = "item",
+}: {
+  orgSlug: string;
+  itemId: string;
+  label: string;
+  /** "report" = signalement gardé par la personne qui a trouvé l'objet. */
+  kind?: "item" | "report";
+}) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", proof: "", website: "" });
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
@@ -18,7 +29,7 @@ export default function OrgClaimForm({ orgSlug, itemId, label }: { orgSlug: stri
       const r = await fetch("/api/o/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ org_slug: orgSlug, item_id: itemId, ...form }),
+        body: JSON.stringify({ org_slug: orgSlug, item_id: itemId, kind, ...form }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error || "Something went wrong.");

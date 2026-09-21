@@ -35,6 +35,15 @@ export default function LostStarterCard({
     if (city) p.set("city", city);
     const v = item.trim();
     if (v) p.set("item", v);
+    // Origine du depot. La navigation vers /report se fait cote client
+    // (router.push) : document.referrer n'est alors PAS mis a jour et
+    // designerait Google ou Facebook au lieu de cette page. On la transmet
+    // donc explicitement ; ReportForm donne priorite a ?from=.
+    try {
+      p.set("from", window.location.pathname.slice(0, 120));
+    } catch {
+      /* rendu serveur : ignore */
+    }
     return `/report?${p.toString()}`;
   };
 

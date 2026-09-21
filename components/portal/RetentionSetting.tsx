@@ -12,8 +12,11 @@ import { orgRetention, MIN_RETENTION_DAYS, MAX_RETENTION_DAYS } from "@/lib/orgR
 export default function RetentionSetting({
   org,
   onSave,
+  canEdit = true,
 }: {
   org: any;
+  /** false pour un membre « staff » : il voit la durée, il ne la change pas. */
+  canEdit?: boolean;
   /** Renvoie le nombre d'objets recalculés, ou lève. */
   onSave: (days: number) => Promise<number>;
 }) {
@@ -88,7 +91,7 @@ export default function RetentionSetting({
             Cancel
           </button>
         </span>
-      ) : (
+      ) : !canEdit ? null : (
         <button
           type="button"
           onClick={() => { setValue(String(r.days)); setOpen(true); }}

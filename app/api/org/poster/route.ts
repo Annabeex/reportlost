@@ -1,6 +1,9 @@
 // app/api/org/poster/route.ts — affiche A4 "Lost something? Scan to report it"
 // pour le guichet d'un établissement. Même design que la planche stickers
 // (piste B) : bandeau dégradé signature, carte blanche, QR vert foncé.
+// GET ?slug=...&kind=found — variante « Found something? » : le QR code ouvre
+// le formulaire de dépôt (/o/<slug>/found), rempli par la personne qui a
+// trouvé l'objet avant de le remettre à l'accueil.
 // GET ?slug=... — public : aucune donnée sensible, l'org doit pouvoir
 // l'imprimer et la partager librement.
 import { NextRequest, NextResponse } from "next/server";
@@ -57,8 +60,11 @@ export async function GET(req: NextRequest) {
     const base =
       (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "") ||
       `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host")}`;
+    const found = url.searchParams.get("kind") === "found";
     // src trackée : permet de mesurer les signalements venus de cette affiche
-    const scanUrl = `${base}/report?src=o-${encodeURIComponent(org.slug)}`;
+    const scanUrl = found
+      ? `${base}/o/${encodeURIComponent(org.slug)}/found`
+      : `${base}/report?src=o-${encodeURIComponent(org.slug)}`;
 
     const [qrPng, bandHeader, bandFooter] = await Promise.all([
       QRCode.toBuffer(scanUrl, { errorCorrectionLevel: "M", margin: 0, scale: 14, color: { dark: "#14532d", light: "#ffffff" } }) as Promise<Buffer>,
@@ -85,7 +91,7 @@ export async function GET(req: NextRequest) {
     // ---- Bandeau haut ----
     img(gHeader, 12, 12, 186, 26);
     {
-      const t = "LOST SOMETHING?";
+      const t = found ? "FOUND SOMETHING?" : "LOST SOMETHING?";
       const w = helvB.widthOfTextAtSize(t, 30);
       page.drawText(t, { x: PAGE_W / 2 - w / 2, y: PAGE_H - mm(21) - 30 + 6, size: 30, font: helvB, color: WHITE });
     }
@@ -101,7 +107,7 @@ export async function GET(req: NextRequest) {
       borderColor: BORDER,
       borderWidth: 1.5,
     });
-    textCenter("Report your lost item in 2 minutes", cardY + 10, 13, helvB);
+    textCenter(found ? "Describe it here, then bring it to the desk" : "Report your lost item in 2 minutes", cardY + 10, 13, helvB);
     const qrSize = 92;
     img(qr, (210 - qrSize) / 2, cardY + 22, qrSize, qrSize);
     textCenter("SCAN ME", cardY + 22 + qrSize + 6, 15, helvB);
@@ -109,7 +115,11 @@ export async function GET(req: NextRequest) {
 
     // ---- Les 3 étapes ----
     const stepsTop = cardY + cardH + 14;
-    const steps: [string, string][] = [
+    const steps: [string, string][] = found ? [
+      ["1.", "Scan the code and describe the item you found"],
+      ["2.", "You receive a short drop-off code"],
+      ["3.", "Hand the item to the front desk and show the code"],
+    ] : [
       ["1.", "Scan the code and describe what you lost"],
       ["2.", "Your report is sent to the right local services"],
       ["3.", "It stays active, searching for a match, and you get notified"],
@@ -134,7 +144,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="reportlost-poster-${org.slug}.pdf"`,
+        "Content-Disposition": `inline; filename="reportlost-poster-${found ? "found-" : ""}${org.slug}.pdf"`,
         "Cache-Control": "public, max-age=3600",
       },
     });

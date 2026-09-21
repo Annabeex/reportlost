@@ -14,6 +14,8 @@ const ALLOWED = new Set([
   "visit_ai",
   "visit_direct",
   "visit_referral",
+  // Visite confirmee humaine (premier defilement, toucher, clic ou touche)
+  "visit_human",
   // Entonnoir du formulaire de dépôt (diagnostic conversion)
   "form_view",
   "form_step1_done",
@@ -42,11 +44,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: "bot" });
     }
 
-    const { event } = await req.json();
-    if (!ALLOWED.has(String(event))) return NextResponse.json({ ok: false }, { status: 400 });
+    const body = await req.json();
+    const event = String(body?.event || "");
+    if (!ALLOWED.has(event)) return NextResponse.json({ ok: false }, { status: 400 });
+
+    // Page d'arrivee : chemin du site uniquement. Jamais de query string (elle
+    // peut transporter ce que la personne a tape), jamais d'URL externe.
+    let path: string | null = null;
+    const rawPath = typeof body?.path === "string" ? body.path : "";
+    if (rawPath.startsWith("/") && !rawPath.startsWith("//")) {
+      path = rawPath.split("?")[0].split("#")[0].slice(0, 160);
+    }
+    const SOURCES = new Set(["organic", "social", "ai", "direct", "referral"]);
+    const src = SOURCES.has(String(body?.src)) ? String(body.src) : null;
 
     const sb = getSupabaseAdmin();
-    if (sb) await sb.from("events").insert({ event: String(event) });
+    if (sb) {
+      const row: Record<string, any> = { event };
+      if (path) row.path = path;
+      if (src) row.src = src;
+      const { error } = await sb.from("events").insert(row);
+      // Si les colonnes path/src n'existent pas encore en base, on retombe sur
+      // l'ancien format plutot que de perdre la visite.
+      if (error && (path || src)) await sb.from("events").insert({ event });
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false }, { status: 200 }); // jamais bloquant côté client

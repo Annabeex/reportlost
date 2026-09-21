@@ -1,5 +1,5 @@
 // app/api/org/settings/route.ts — réglages de l'organisation
-// (page publique on/off, durée de conservation)
+// (page publique on/off, durée de conservation, suivi des échéances on/off)
 import { NextRequest, NextResponse } from "next/server";
 import { getOrgContext } from "@/lib/orgAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -12,10 +12,17 @@ export async function PATCH(req: NextRequest) {
   const ctx = await getOrgContext(req);
   if (!ctx?.org) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  // Les réglages engagent tout l'établissement : réservés aux administrateurs.
+  if (ctx.role !== "admin") {
+    return NextResponse.json({ error: "Only an administrator of this account can change settings." }, { status: 403 });
+  }
+
   const b = await req.json().catch(() => null);
   const patch: Record<string, any> = {};
 
   if (typeof b?.public_listing === "boolean") patch.public_listing = b.public_listing;
+  if (typeof b?.deadline_tracking === "boolean") patch.deadline_tracking = b.deadline_tracking;
+  if (typeof b?.finder_held_enabled === "boolean") patch.finder_held_enabled = b.finder_held_enabled;
 
   let newDays: number | null = null;
   if (b?.retention_days !== undefined) {

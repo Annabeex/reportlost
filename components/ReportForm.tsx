@@ -228,6 +228,21 @@ export default function ReportForm({
       // transporter ce que la personne a tapé.
       const fromParam = (params.get("from") || "").trim().slice(0, 120);
       let source = fromParam;
+      // Formulaire integre directement dans une page (pas sur /report) :
+      // l'origine est la page elle-meme.
+      if (!source) {
+        const here = window.location.pathname || "";
+        if (here && !here.startsWith("/report")) source = here.slice(0, 160);
+      }
+      // Navigation interne vers /report : document.referrer n'est pas mis a
+      // jour par Next.js. VisitTracker garde la derniere page vue en session.
+      if (!source) {
+        try {
+          source = (sessionStorage.getItem("rl_last_page") || "").slice(0, 160);
+        } catch {
+          source = "";
+        }
+      }
       if (!source) {
         const ref = String(document.referrer || "");
         if (!ref) {

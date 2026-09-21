@@ -16,6 +16,8 @@ export type Org = {
   verified: boolean;
   plan: string;
   retention_days: number | null;
+  deadline_tracking: boolean | null;
+  finder_held_enabled: boolean | null;
 };
 
 export type OrgContext = {
@@ -52,7 +54,7 @@ export async function getOrgContext(req: NextRequest): Promise<OrgContext | null
   // changer. On charge désormais toutes ses organisations.
   const { data: memberships } = await sb
     .from("org_members")
-    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan, public_listing, retention_days, retention_set_at)")
+    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan, public_listing, retention_days, retention_set_at, deadline_tracking, finder_held_enabled)")
     .eq("user_id", userId);
 
   const rows = (memberships || []) as any[];

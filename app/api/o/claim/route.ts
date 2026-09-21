@@ -42,6 +42,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
 
+    // Signalement gardé par la personne qui a trouvé l'objet : même principe,
+    // la preuve part à l'établissement, qui met en relation s'il la juge bonne.
+    // L'adresse du trouveur n'est JAMAIS donnée par ce formulaire.
+    if (String(b?.kind || "") === "report") {
+      const { data: rep } = await sb
+        .from("org_intakes")
+        .select("id, org_id, title, public_label, held_by, status, public_visible, finder_name, finder_email, found_at, found_location")
+        .eq("id", itemId)
+        .maybeSingle();
+      if (!rep || rep.org_id !== org.id || rep.held_by !== "finder" || rep.status !== "pending" || !rep.public_visible) {
+        return NextResponse.json({ error: "This item is no longer available for claims." }, { status: 400 });
+      }
+      await sb.from("org_item_events").insert({
+        org_id: org.id,
+        item_id: `report:${rep.id}`,
+        type: "claim_received",
+        note: `Claimant: ${name} <${email}>${phone ? " · " + phone : ""}\nProof provided:\n${proof}`,
+        actor_email: email,
+      });
+      await sendMailDirect({
+        to: org.public_email || "support@reportlost.org",
+        subject: `Claim received: ${rep.public_label || rep.title} (kept by its finder)`,
+        text: `Hello,
+
+Someone claimed an item listed on your ReportLost page (${org.name}). This item is not at your desk: the person who found it kept it and left their contact.
+
+Item: ${rep.title} · found ${rep.found_at}${rep.found_location ? ` · ${rep.found_location}` : ""}
+Finder: ${[rep.finder_name, rep.finder_email].filter(Boolean).join(" · ")}
+Claimant: ${name} · ${email}${phone ? ` · ${phone}` : ""}
+
+The claimant's description (compare it with the finder's report and photo before putting them in touch):
+${proof}
+
+Open your dashboard, filter "Kept by finder": ${"https://reportlost.org" + portalBase(scopeOfType(org.type)) + "/dashboard"}
+
+ReportLost.org`,
+        fromName: "ReportLost",
+        replyTo: email,
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     const { data: item } = await sb
       .from("found_items")
       .select("id, org_id, org_ref, public_label, title, status, public_visible")
