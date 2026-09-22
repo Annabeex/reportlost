@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await sb
     .from("org_lost_reports")
-    .select("id, code, title, description, lost_location, lost_at, name, email, phone, created_at")
+    .select("id, code, title, description, lost_location, lost_at, name, email, phone, created_at, seen_at")
     .eq("org_id", ctx.org.id)
     .eq("status", "open")
     .order("created_at", { ascending: false })
@@ -34,6 +34,12 @@ export async function PATCH(req: NextRequest) {
   const b = await req.json().catch(() => null);
   const id = String(b?.id || "");
   const action = String(b?.action || "");
+  // "seen" : l'agent a ouvert la liste, les déclarations ne sont plus « nouvelles ».
+  if (action === "seen") {
+    await sb.from("org_lost_reports").update({ seen_at: new Date().toISOString() })
+      .eq("org_id", ctx.org.id).eq("status", "open").is("seen_at", null);
+    return NextResponse.json({ ok: true });
+  }
   if (!id || (action !== "close" && action !== "reopen")) {
     return NextResponse.json({ error: "requête invalide" }, { status: 400 });
   }

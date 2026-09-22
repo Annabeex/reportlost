@@ -33,7 +33,7 @@ async function getData(slug: string) {
   if (!sb) return null;
   const { data: org } = await sb
     .from("organizations")
-    .select("id, slug, name, type, city, state_id, verified, public_listing, public_intro, public_hours, public_location")
+    .select("id, slug, name, type, city, state_id, verified, public_listing, public_intro, public_hours, public_location, public_show_date, public_show_place")
     .eq("slug", slug.toLowerCase())
     .maybeSingle();
   if (!org || !org.verified) return null;
@@ -136,6 +136,8 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
         <OrgPublicItems
           orgSlug={org.slug}
           orgName={org.name}
+          showDate={org.public_show_date !== false}
+          showPlace={org.public_show_place !== false}
           items={items.map((it) => ({
             id: String(it.id), kind: "item" as const,
             label: it.public_label || it.title || "Item", date: it.date, place: it.dropoff_location,

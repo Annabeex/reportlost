@@ -22,6 +22,8 @@ export type Org = {
   public_hours: string | null;
   public_location: string | null;
   auto_match: boolean | null;
+  public_show_date: boolean | null;
+  public_show_place: boolean | null;
 };
 
 export type OrgContext = {
@@ -58,7 +60,7 @@ export async function getOrgContext(req: NextRequest): Promise<OrgContext | null
   // changer. On charge désormais toutes ses organisations.
   const { data: memberships } = await sb
     .from("org_members")
-    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan, public_listing, retention_days, retention_set_at, deadline_tracking, finder_held_enabled, public_intro, public_hours, public_location, auto_match)")
+    .select("role, organizations(id, slug, name, type, state_id, city, public_email, verified, plan, public_listing, retention_days, retention_set_at, deadline_tracking, finder_held_enabled, public_intro, public_hours, public_location, auto_match, public_show_date, public_show_place)")
     .eq("user_id", userId);
 
   const rows = (memberships || []) as any[];

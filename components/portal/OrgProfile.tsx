@@ -13,15 +13,15 @@ export default function OrgProfile({
 }: {
   org: any;
   canEdit: boolean;
-  onSave: (patch: Record<string, string>) => Promise<void>;
+  onSave: (patch: Record<string, string | boolean>) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", city: "", state_id: "", public_email: "", public_intro: "", public_hours: "", public_location: "" });
+  const [form, setForm] = useState({ name: "", city: "", state_id: "", public_email: "", public_intro: "", public_hours: "", public_location: "", public_listing: true, public_show_date: true, public_show_place: true });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   const start = () => {
-    setForm({ name: org.name || "", city: org.city || "", state_id: org.state_id || "", public_email: org.public_email || "", public_intro: org.public_intro || "", public_hours: org.public_hours || "", public_location: org.public_location || "" });
+    setForm({ name: org.name || "", city: org.city || "", state_id: org.state_id || "", public_email: org.public_email || "", public_intro: org.public_intro || "", public_hours: org.public_hours || "", public_location: org.public_location || "", public_listing: org.public_listing !== false, public_show_date: org.public_show_date !== false, public_show_place: org.public_show_place !== false });
     setErr("");
     setOpen(true);
   };
@@ -44,11 +44,12 @@ export default function OrgProfile({
   if (!canEdit) return null;
   return (
     <>
-      <button type="button" onClick={start} title="Edit name, contact, opening hours and public page text" aria-label="Edit institution settings"
-        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <button type="button" onClick={start} title="Name, contact, public list, opening hours and page text"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-gray-400">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
         </svg>
+        Settings and public page
       </button>
       {open && (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
@@ -74,7 +75,23 @@ export default function OrgProfile({
         </label>
       </div>
 
-      <div className="mt-4 border-t border-gray-100 pt-4 text-[13px] font-semibold text-gray-700">On your public page <span className="font-normal text-gray-400">(all optional)</span></div>
+      <div className="mt-4 border-t border-gray-100 pt-4 text-[13px] font-semibold text-gray-700">Public list of items</div>
+      <div className="mt-2 space-y-2 text-[13.5px] text-gray-700">
+        <label className="flex items-start gap-2">
+          <input type="checkbox" checked={form.public_listing} onChange={(e) => setForm((f) => ({ ...f, public_listing: e.target.checked }))} className="mt-0.5 h-4 w-4 accent-emerald-600" />
+          <span>List the items you hold on your public page<span className="block text-[12.5px] text-gray-500">Generic category only. When off, the page keeps the lost item report form and the hand-in form.</span></span>
+        </label>
+        <label className={`flex items-center gap-2 ${form.public_listing ? "" : "opacity-50"}`}>
+          <input type="checkbox" disabled={!form.public_listing} checked={form.public_show_date} onChange={(e) => setForm((f) => ({ ...f, public_show_date: e.target.checked }))} className="h-4 w-4 accent-emerald-600" />
+          Show the date each item was found
+        </label>
+        <label className={`flex items-center gap-2 ${form.public_listing ? "" : "opacity-50"}`}>
+          <input type="checkbox" disabled={!form.public_listing} checked={form.public_show_place} onChange={(e) => setForm((f) => ({ ...f, public_show_place: e.target.checked }))} className="h-4 w-4 accent-emerald-600" />
+          Show where each item was found
+        </label>
+      </div>
+
+      <div className="mt-4 border-t border-gray-100 pt-4 text-[13px] font-semibold text-gray-700">Text on your public page <span className="font-normal text-gray-400">(all optional)</span></div>
       <div className="mt-2 grid gap-3">
         <label className="block text-[13px] font-semibold text-gray-700">
           Introduction, shown at the top

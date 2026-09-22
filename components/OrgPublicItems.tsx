@@ -38,9 +38,9 @@ function fmtDate(d?: string | null) {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 
-function matches(it: PublicItem, q: string) {
+function matches(it: PublicItem, q: string, showDate: boolean, showPlace: boolean) {
   const label = it.label.toLowerCase();
-  const hay = `${label} ${it.place || ""} ${fmtDate(it.date)} ${it.date || ""}`.toLowerCase();
+  const hay = `${label} ${showPlace ? it.place || "" : ""} ${showDate ? `${fmtDate(it.date)} ${it.date || ""}` : ""}`.toLowerCase();
   if (hay.includes(q)) return true;
   const syn = SYNONYMS[label] || [];
   return syn.some((s) => s.includes(q) || q.includes(s));
@@ -51,26 +51,33 @@ export default function OrgPublicItems({
   orgName,
   items,
   reports,
+  showDate = true,
+  showPlace = true,
 }: {
   orgSlug: string;
   orgName: string;
+  /** Réglages de l'établissement : la date et le lieu peuvent être masqués. */
+  showDate?: boolean;
+  showPlace?: boolean;
   items: PublicItem[];
   reports: PublicItem[];
 }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
-  const shownItems = useMemo(() => (q ? items.filter((i) => matches(i, q)) : items), [items, q]);
-  const shownReports = useMemo(() => (q ? reports.filter((i) => matches(i, q)) : reports), [reports, q]);
+  const shownItems = useMemo(() => (q ? items.filter((i) => matches(i, q, showDate, showPlace)) : items), [items, q, showDate, showPlace]);
+  const shownReports = useMemo(() => (q ? reports.filter((i) => matches(i, q, showDate, showPlace)) : reports), [reports, q, showDate, showPlace]);
   const total = items.length + reports.length;
 
   const row = (it: PublicItem) => (
     <div key={`${it.kind}-${it.id}`} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-gray-900">{it.label}</span>
-        <span className="text-sm text-gray-500">
-          found {fmtDate(it.date)}
-          {it.place ? ` at ${it.place}` : ""}
-        </span>
+        {(showDate || (showPlace && it.place)) && (
+          <span className="text-sm text-gray-500">
+            {showDate ? `found ${fmtDate(it.date)}` : "found"}
+            {showPlace && it.place ? ` at ${it.place}` : ""}
+          </span>
+        )}
         <span className="ml-auto" />
         <OrgClaimForm orgSlug={orgSlug} itemId={it.id} label={it.label} kind={it.kind} />
       </div>

@@ -42,6 +42,7 @@ type LostReport = {
   email: string;
   phone: string | null;
   created_at: string;
+  seen_at?: string | null;
 };
 
 /** Dépôt annoncé « je le dépose à l'accueil » et encore attendu (moins de 48 h). */
@@ -69,7 +70,7 @@ type Item = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  stored: "In storage",
+  stored: "Found",
   claim_pending: "Claim pending",
   returned: "Returned",
   disposed: "Disposed",
@@ -116,6 +117,7 @@ export default function PortalDashboard() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>("");
+  const isAdmin = role === "admin";
   const [shown, setShown] = useState(PAGE_SIZE);
   const [exporting, setExporting] = useState(false);
   // Dépôts par QR code : décrits par la personne qui a trouvé l'objet, en
@@ -223,15 +225,6 @@ export default function PortalDashboard() {
     else alert("Update failed");
   };
 
-  const togglePublicListing = async () => {
-    const next = !org.public_listing;
-    const r = await api("/api/org/settings", {
-      method: "PATCH",
-      body: JSON.stringify({ public_listing: next }),
-    });
-    if (r.ok) setOrg((o: any) => ({ ...o, public_listing: next }));
-    else alert("Update failed");
-  };
 
   const toggleDeadlines = async () => {
     const next = !deadlineTracking(org);
@@ -246,6 +239,7 @@ export default function PortalDashboard() {
   };
 
   const toggleAutoMatch = async () => {
+    if (!isAdmin) return;
     const next = org.auto_match === false;
     const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify({ auto_match: next }) });
     if (r.ok) setOrg((o: any) => ({ ...o, auto_match: next }));
@@ -359,9 +353,9 @@ export default function PortalDashboard() {
   const deskIntakes = useMemo(() => intakes.filter(stillExpected), [intakes]);
   const finderReports = useMemo(() => intakes.filter((i) => !stillExpected(i)), [intakes]);
   // Hors du filtre dédié, ils ne remontent que si la recherche les trouve.
-  const shownReports = useMemo(() => {
+  const finderCards = useMemo(() => {
+    if (filter !== "stored" && filter !== "all") return [];
     const q = query.trim().toLowerCase();
-    if (filter !== "finder" && !q) return [];
     if (!q) return finderReports;
     return finderReports.filter((i) =>
       `${i.code} ${i.title} ${i.description || ""} ${i.found_location || ""} ${i.finder_name || ""} ${i.finder_email || ""}`.toLowerCase().includes(q)
@@ -379,7 +373,7 @@ export default function PortalDashboard() {
   }, [lostReports, filter, query]);
 
   const visible = useMemo(() => {
-    if (filter === "finder" || filter === "reports") return [];
+    if (filter === "reports") return [];
     let arr =
       filter === "all" ? items
       : filter === "overdue"
@@ -398,13 +392,12 @@ export default function PortalDashboard() {
   useEffect(() => { setShown(PAGE_SIZE); }, [filter, query]);
   // Le dernier signalement vient d'être retiré : le filtre n'a plus lieu d'être.
   useEffect(() => {
-    if (filter === "finder" && !loading && finderReports.length === 0) setFilter("stored");
     if (filter === "reports" && !loading && lostReports.length === 0) setFilter("stored");
   }, [filter, loading, finderReports.length, lostReports.length]);
 
   if (loading || !org) return <div className="p-10 text-gray-500">Loading…</div>;
 
-  const isAdmin = role === "admin";
+  const unseenReports = lostReports.filter((r) => !r.seen_at).length;
   const tracking = deadlineTracking(org);
   const pill = (on: boolean) =>
     `rounded-full border px-3 py-1.5 text-xs font-medium ${on ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`;
@@ -422,19 +415,7 @@ export default function PortalDashboard() {
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-0">
-            <h1 className="flex items-center gap-1.5 text-2xl font-bold text-gray-900">
-              <span className="truncate">{org.name}</span>
-              <OrgProfile
-                        org={org}
-                        canEdit={isAdmin}
-                        onSave={async (patch) => {
-                          const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify(patch) });
-                          const j = await r.json().catch(() => null);
-                          if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
-                          setOrg((o: any) => ({ ...o, ...patch, public_email: patch.public_email || null }));
-                        }}
-                      />
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 truncate">{org.name}</h1>
             <p className="text-sm text-gray-500">
               {org.verified ? (
                 <a href={publicPath(org)} target="_blank" rel="noopener" className="underline hover:text-emerald-700">
@@ -467,10 +448,21 @@ export default function PortalDashboard() {
                 className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
                 QR posters and cards (PDF)
               </a>
-              <a href={`/api/org/poster?slug=${org.slug}&paper=a4`} target="_blank" rel="noopener"
-                className="block px-4 py-2 text-[12.5px] text-gray-400 hover:bg-gray-50">
-                Same, A4 paper
-              </a>
+              {isAdmin && (
+                <div className="border-t border-gray-100">
+                  <OrgProfile
+                              org={org}
+                              canEdit={isAdmin}
+                              onSave={async (patch) => {
+                                const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify(patch) });
+                                const j = await r.json().catch(() => null);
+                                if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
+                                setOrg((o: any) => ({ ...o, ...patch, public_email: patch.public_email || null }));
+                                if (patch.public_listing === false && filter === "overdue") setFilter("stored");
+                              }}
+                            />
+                </div>
+              )}
               <button type="button" onClick={exportCsv} disabled={exporting}
                 className="block w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 disabled:opacity-60">
                 {exporting ? "Preparing the file…" : !STATUS_LABEL[filter] ? "Export all items (CSV)" : `Export “${STATUS_LABEL[filter]}” (CSV)`}
@@ -491,11 +483,6 @@ export default function PortalDashboard() {
 
         {/* Réglages de l'établissement : deux interrupteurs, rien de plus. */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button type="button" onClick={togglePublicListing} disabled={!isAdmin}
-            title="When off, your public page and all items are hidden from visitors"
-            className={pill(!!org.public_listing)}>
-            {org.public_listing ? "Public page: on" : "Public page: off"}
-          </button>
           <button type="button" onClick={toggleDeadlines} disabled={!isAdmin} aria-pressed={tracking}
             title="When on, each item in storage shows whether its holding period is over"
             className={pill(tracking)}>
@@ -505,11 +492,6 @@ export default function PortalDashboard() {
             title="When on, a person who found an item can keep it and leave an email instead of bringing it to the desk"
             className={pill(org.finder_held_enabled !== false)}>
             {org.finder_held_enabled !== false ? "Items kept by finders: accepted" : "Items kept by finders: refused"}
-          </button>
-          <button type="button" onClick={toggleAutoMatch} disabled={!isAdmin} aria-pressed={org.auto_match !== false}
-            title="When on, each lost item report is compared with your inventory and possible matches wait in To review. When off, nothing is suggested"
-            className={pill(org.auto_match !== false)}>
-            {org.auto_match !== false ? "Automatic matching: on" : "Automatic matching: off"}
           </button>
         </div>
 
@@ -584,7 +566,7 @@ export default function PortalDashboard() {
         )}
 
         <div className={`mt-5 grid grid-cols-2 gap-3 ${tracking ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold">{stats.stored}</div><div className="text-xs text-gray-500">Items in storage</div></div>
+          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold">{stats.stored}</div><div className="text-xs text-gray-500">Found, at the desk</div></div>
           <div className="rounded-xl border border-gray-200 bg-white px-4 py-3"><div className="text-2xl font-semibold text-blue-700">{stats.claims}</div><div className="text-xs text-gray-500">Claims pending</div></div>
           {tracking && (
             <button type="button" onClick={() => setFilter("overdue")}
@@ -598,81 +580,55 @@ export default function PortalDashboard() {
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {[
-            ["stored", "In storage"], ["claim_pending", "Claims"],
+            ["stored", "Found"], ["claim_pending", "Claims"],
             ...(tracking ? [["overdue", "Holding period over"]] : []),
             ["returned", "Returned"], ["disposed", "Disposed"], ["all", "All"],
             // Absent tant qu'il n'y en a aucun : rien à montrer, rien à encombrer.
-            ...(finderReports.length ? [["finder", `Kept by finder · ${finderReports.length}`]] : []),
-            ...(lostReports.length ? [["reports", `Lost reports · ${lostReports.length}`]] : []),
           ].map(([v, l]) => (
             <button key={v} type="button" onClick={() => setFilter(v)}
               className={`rounded-full px-3 py-1 text-xs border ${filter === v ? "bg-emerald-100 border-emerald-300 text-emerald-800 font-medium" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
               {l}
             </button>
           ))}
+          {lostReports.length > 0 && (
+            <button type="button"
+              onClick={async () => {
+                setFilter("reports");
+                if (unseenReports > 0) {
+                  await api("/api/org/lost-reports", { method: "PATCH", body: JSON.stringify({ action: "seen" }) }).catch(() => {});
+                  setLostReports((prev) => prev.map((r) => ({ ...r, seen_at: r.seen_at || new Date().toISOString() })));
+                }
+              }}
+              className={`relative rounded-full border px-3 py-1 text-xs ${filter === "reports" ? "bg-amber-100 border-amber-300 text-amber-900 font-medium" : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"}`}>
+              Lost reports
+              {unseenReports > 0 && (
+                <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10.5px] font-bold text-white">{unseenReports} new</span>
+              )}
+            </button>
+          )}
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search ref, title, shelf…"
             className="ml-auto w-full sm:w-64 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         </div>
 
         <div className="mt-3">
-          {shownReports.length > 0 && (
-            <section className="mb-4 overflow-hidden rounded-2xl border border-violet-200 bg-white">
-              <div className="border-b border-violet-100 bg-violet-50/60 px-4 py-2.5 text-[13.5px] text-violet-900">
-                <b>Not at your desk.</b> Each of these items is still with the person who found it. Check a
-                claimant&apos;s description against the report, then put them in touch.
-              </div>
-              {shownReports.map((it) => (
-                <div key={it.id} className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={it.photo_url || catImage(it.title)} alt="" width={56} height={56} className="h-14 w-14 flex-none rounded-lg object-cover" />
-                  <span className="flex-none rounded-lg bg-violet-50 px-2 py-1 font-mono text-[14px] font-bold tracking-wider text-violet-900" title="Reference given to the finder">{it.code}</span>
-                  <div className="min-w-0 flex-1 basis-48">
-                    <div className="truncate text-[14.5px] font-semibold text-gray-900" title={it.description || ""}>{it.title}</div>
-                    <div className="truncate text-[12.5px] text-gray-500">
-                      found {it.found_at}{it.found_location ? ` · ${it.found_location}` : ""}
-                      {it.description ? ` · ${it.description}` : ""}
-                    </div>
-                    <div className="truncate text-[12.5px] text-gray-700">
-                      {it.held_by === "finder" ? "Kept by" : "Planned to hand it in, still with"} {it.finder_name || "the finder"} ·{" "}
-                      <a href={`mailto:${it.finder_email}`} className="underline">{it.finder_email}</a>
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => publishReport(it, !it.public_visible)}
-                    title={it.public_visible
-                      ? `Listed on your public page as "${it.public_label || "Item"}", without the finder's contact. Click to hide`
-                      : "Not on your public page. Click to list it (generic category, date and place only)"}
-                    className={`rounded-lg border px-2.5 py-1.5 text-[12.5px] ${it.public_visible ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
-                    {it.public_visible ? "Public: on" : "Public: off"}
-                  </button>
-                  <input
-                    value={shelf[it.id] || ""}
-                    onChange={(e) => setShelf((m) => ({ ...m, [it.id]: e.target.value }))}
-                    placeholder="Storage location"
-                    aria-label={`Storage location for ${it.title}`}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-[13.5px] sm:w-36"
-                  />
-                  <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "confirm")}
-                    title="The finder brought the item in after all: it enters your inventory"
-                    className="rounded-lg border border-[#16a34a] bg-white px-3 py-2 text-[13px] font-bold text-[#15803d] disabled:opacity-60">
-                    {intakeBusy === it.id ? "…" : "Now at the desk"}
-                  </button>
-                  <button type="button" disabled={intakeBusy === it.id} onClick={() => resolveIntake(it, "reject")}
-                    className="text-[13px] text-gray-400 underline hover:text-red-600">
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </section>
-          )}
           {shownLostReports.length > 0 && (
             <section className="mb-4 overflow-hidden rounded-2xl border border-amber-200 bg-white">
               <div className="border-b border-amber-100 bg-amber-50/60 px-4 py-2.5 text-[13.5px] text-amber-900">
-                <b>Reported lost to your office.</b> Filed from your public page. Each report is compared with
-                your inventory, now and every time an item is logged: matches appear in To review.
+                <b>Reported lost to your office.</b> Filed from your public page.{" "}
+                {org.auto_match !== false
+                  ? "Each report is compared with your inventory, now and every time an item is logged: matches appear in To review."
+                  : "Automatic matching is off: compare these reports with your inventory yourself."}
+                {isAdmin && (
+                  <button type="button" onClick={toggleAutoMatch}
+                    className="ml-2 rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[12px] font-medium text-amber-900 hover:bg-amber-100">
+                    {org.auto_match !== false ? "Matching: automatic · switch to manual" : "Matching: manual · switch to automatic"}
+                  </button>
+                )}
               </div>
               {shownLostReports.map((r) => (
                 <div key={r.id} className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0">
                   <span className="flex-none rounded-lg bg-amber-50 px-2 py-1 font-mono text-[13.5px] font-bold text-amber-900">{r.code}</span>
+                  {!r.seen_at && <span className="flex-none rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">new</span>}
                   <div className="min-w-0 flex-1 basis-56">
                     <div className="truncate text-[14.5px] font-semibold text-gray-900">{r.title}</div>
                     <div className="text-[12.5px] leading-snug text-gray-500">
@@ -694,15 +650,63 @@ export default function PortalDashboard() {
           {filter === "reports" && shownLostReports.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">No report matches.</div>
           )}
-          {filter === "finder" && shownReports.length === 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">No report matches.</div>
-          )}
-          {filter !== "finder" && filter !== "reports" && visible.length === 0 && (
+          {filter !== "reports" && visible.length === 0 && finderCards.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white px-4 py-8 text-center text-gray-500">
               {items.length === 0 ? "No items logged yet." : "No items in this view."}
             </div>
           )}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* Objets encore chez la personne qui les a trouvés : même grille,
+                statut « Kept by finder ». Le menu déroulant fait entrer l'objet
+                à l'accueil ou retire le signalement. */}
+            {finderCards.map((it) => (
+              <div key={`intake-${it.id}`} className="relative flex flex-col overflow-hidden rounded-xl border border-violet-200 bg-white">
+                <div className="relative h-24 bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={it.photo_url || catImage(it.title)} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-800">Kept by finder</span>
+                  <span className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-violet-900" title="Reference given to the finder">{it.code}</span>
+                </div>
+                <div className="px-2.5 pt-2">
+                  <div className="truncate text-sm font-medium text-gray-900" title={it.description || ""}>{it.title}</div>
+                  <div className="truncate text-[11px] text-gray-400" title={`Found ${it.found_at}${it.found_location ? ` · ${it.found_location}` : ""}`}>
+                    {it.found_at}{it.found_location ? ` · ${it.found_location}` : ""}
+                  </div>
+                  <a href={`mailto:${it.finder_email}`} className="block truncate text-[11px] text-violet-800 underline" title={it.finder_name || ""}>
+                    {it.finder_name ? `${it.finder_name} · ` : ""}{it.finder_email}
+                  </a>
+                </div>
+                <input
+                  value={shelf[it.id] || ""}
+                  onChange={(e) => setShelf((m) => ({ ...m, [it.id]: e.target.value }))}
+                  placeholder="Storage location, once at the desk"
+                  aria-label={`Storage location for ${it.title}`}
+                  className="mx-2.5 mt-1.5 rounded-lg border border-gray-200 px-2 py-1 text-[11px]"
+                />
+                <div className="mt-auto flex items-center gap-1.5 px-2.5 py-2">
+                  <select
+                    value="finder"
+                    disabled={intakeBusy === it.id}
+                    onChange={(e) => {
+                      if (e.target.value === "stored") resolveIntake(it, "confirm");
+                      else if (e.target.value === "remove") resolveIntake(it, "reject");
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-violet-300 px-1.5 py-1 text-[11px]"
+                    title="Kept by the finder. Choose Found once the item is at the desk"
+                  >
+                    <option value="finder">Kept by finder</option>
+                    <option value="stored">Found (now at the desk)</option>
+                    <option value="remove">Remove report</option>
+                  </select>
+                  <button type="button"
+                    onClick={() => publishReport(it, !it.public_visible)}
+                    title={it.public_visible ? "Listed on your public page — click to hide" : "Hidden from your public page — click to show"}
+                    className={`rounded-lg border px-2 py-1 text-[11px] ${it.public_visible ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-gray-300 bg-gray-50 text-gray-400"}`}>
+                    {it.public_visible ? "👁" : "🚫"}
+                  </button>
+                </div>
+              </div>
+            ))}
             {visible.slice(0, shown).map((it) => {
               const d = daysLeft(it.legal_deadline);
               return (
@@ -799,7 +803,7 @@ export default function PortalDashboard() {
                       className="min-w-0 flex-1 rounded-lg border border-gray-300 px-1.5 py-1 text-[11px]"
                       title="Change status"
                     >
-                      <option value="stored">In storage</option>
+                      <option value="stored">Found</option>
                       <option value="claim_pending">Claim pending</option>
                       <option value="returned">Returned</option>
                       <option value="disposed">Disposed</option>
@@ -889,9 +893,9 @@ export default function PortalDashboard() {
                       It is theirs: record the return
                     </button>
                     <button type="button"
-                      onClick={async () => { const it = detail.item; if (await setStatus(it.id, "stored", { note: "No claim accepted, item back to In storage" })) setDetail(null); }}
+                      onClick={async () => { const it = detail.item; if (await setStatus(it.id, "stored", { note: "No claim accepted, item back to Found" })) setDetail(null); }}
                       className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50">
-                      No valid claim: back to In storage
+                      No valid claim: back to Found
                     </button>
                   </div>
                 )}
