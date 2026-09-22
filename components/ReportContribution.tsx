@@ -49,62 +49,8 @@ const ASSET_VER = "1";
 
 /* ───────────────────────── Jauge : icônes par palier ─────────────────────── */
 
-const ICONS_AUTO = ["informations.svg", "ai-search.svg", "datasearch.svg"].map(
-  (f) => `/images/icons/level2/${f}?v=${ASSET_VER}`
-);
 
-const ICONS_ACTIVE = [
-  "information.svg", "ai-search.svg", "map-us.svg", "database.svg", "megaphone.svg",
-  "phone.svg", "report.svg", "facebook.svg", "file.svg", "globalsearch.svg",
-  "gmail.svg", "google-maps.svg", "checkplateform.svg", "locations.svg", "x.svg",
-  "lostfoundservice.svg", "safari.png", "big-data.svg", "feedback.svg",
-  "telegramme.svg", "yahoo.svg", "contacts.png", "mail-anonyme.svg",
-  "manualcheck.svg", "datasearch.svg", "web.svg", "geolocalisation.svg",
-].map((f) => `/images/icons/level3/${f}?v=${ASSET_VER}`);
 
-/** Les trois crans de la jauge. L'ordre est celui de la piste, de gauche à droite. */
-const STOPS = [
-  {
-    price: 0,
-    label: "Free",
-    title: "Published, not searched",
-    icons: [] as string[],
-    cta: "Continue",
-    text: (
-      <>
-        <b className="font-bold text-green-800">Free listing:</b> your report waits in the public
-        database. Nothing is filed, nobody is contacted.
-      </>
-    ),
-  },
-  {
-    price: 12,
-    label: "$12",
-    title: "Searched automatically",
-    icons: ICONS_AUTO,
-    cta: "Continue — $12",
-    text: (
-      <>
-        <b className="font-bold text-green-800">Automatic search:</b> AI search for 6 months, a loss
-        report certificate, and stickers to print.
-      </>
-    ),
-  },
-  {
-    price: 25,
-    label: "$25",
-    title: "Searched and announced",
-    icons: ICONS_ACTIVE,
-    cta: "Continue — $25",
-    text: (
-      <>
-        <b className="font-bold text-green-800">Active search:</b> everything above. Plus the human
-        part: filing with the lost-property service, outreach where you lost it, and your report
-        distributed through the appropriate channels.
-      </>
-    ),
-  },
-] as const;
 
 function Check({ className = "" }: { className?: string }) {
   return (
@@ -124,25 +70,6 @@ function Check({ className = "" }: { className?: string }) {
 }
 
 /** Mégaphone du curseur : il grossit, et gagne une onde par palier. */
-function Megaphone({ level, color }: { level: number; color: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={1.9}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      style={{ width: [20, 26, 32][level], height: [20, 26, 32][level] }}
-    >
-      <path d="M3.2 9.6h3.4l6.6-4.4v13.6l-6.6-4.4H3.2z" fill={color} fillOpacity={0.18} />
-      <path d="M6.3 14.4v3.2a1.6 1.6 0 0 0 3.2 0v-1.1" />
-      {level > 0 && <path d="M16.6 9.2a4.8 4.8 0 0 1 0 5.6" />}
-      {level > 1 && <path d="M19.3 6.6a9 9 0 0 1 0 10.8" />}
-    </svg>
-  );
-}
 
 export default function ReportContribution({
   amount,
@@ -161,12 +88,10 @@ export default function ReportContribution({
 
   const PRICE = { 1: 0, 2: 12, 3: 25, 4: 25 } as const;
 
-  const [screen, setScreen] = useState<"plans" | "gauge">("plans");
   // Présélection : la formule complète, sauf arrivée par le lien de rattrapage.
   const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
     petMode ? 4 : showAutoPlan ? 2 : 3
   );
-  const [level, setLevel] = useState<0 | 1 | 2>(0);
 
   useEffect(() => {
     // Retour en arrière depuis le paiement : on réaffiche ce qui avait été choisi.
@@ -189,7 +114,7 @@ export default function ReportContribution({
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     }
-  }, [screen]);
+  }, []);
 
   const commit = (value: number) => {
     setFormData((prev: any) => ({
@@ -201,14 +126,9 @@ export default function ReportContribution({
   };
 
   const proceed = () => {
-    // L'annonce gratuite ne part pas directement : on accuse réception, et on
-    // laisse une dernière occasion de monter d'un cran.
-    if (selectedPlan === 1) {
-      setFormData((prev: any) => ({ ...prev, contribution: 0, paymentRequired: false }));
-      setLevel(0);
-      setScreen("gauge");
-      return;
-    }
+    // « Free » mene directement a l'ecran final (etape 5 de ReportForm), qui
+    // confirme la publication, envoie le mail et presente la jauge de relance.
+    // L'ancien ecran intermediaire faisait perdre le mail a qui s'y arretait.
     commit(PRICE[selectedPlan]);
   };
 
@@ -236,129 +156,6 @@ export default function ReportContribution({
       Search fee: ${value}
     </div>
   );
-
-  /* ─────────────────────────────── Écran 2 : jauge ───────────────────────── */
-
-  if (screen === "gauge") {
-    const stop = STOPS[level];
-    const pct = level * 50;
-
-    return (
-      <section className="px-3 sm:px-4 md:px-6">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-[21px] font-bold tracking-tight text-gray-900">We have your report</h2>
-          <p className="mt-1.5 max-w-[62ch] text-[15px] text-gray-600">
-            It is recorded under your reference and will be published. No search has started yet.
-          </p>
-
-          <div className="mt-6 overflow-hidden rounded-2xl border border-green-200 bg-white">
-            <div
-              className="flex min-h-[52px] items-center px-5 py-3"
-              style={{ backgroundColor: LIGHT_GREEN_BG }}
-            >
-              <h3 className="text-[17.5px] font-semibold" style={{ color: DARK_GREEN }}>
-                {stop.title}
-              </h3>
-            </div>
-
-            <div className="px-5 pb-5 pt-4">
-              {/* Ce que le cran met en mouvement. Vide au gratuit : rien n'est diffusé. */}
-              <div className="flex min-h-[22px] flex-wrap gap-1.5 pb-1">
-                {stop.icons.map((src) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={src} src={src} alt="" className="h-[18px] w-[18px] object-contain" />
-                ))}
-              </div>
-
-              <div className="mx-6 mt-7 sm:mx-9">
-                <div
-                  className="relative h-[50px] cursor-pointer select-none"
-                  onPointerDown={(e) => {
-                    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-                    const r = e.currentTarget.getBoundingClientRect();
-                    const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-                    setLevel(Math.round(p * 2) as 0 | 1 | 2);
-                  }}
-                >
-                  <div className="absolute left-0 right-0 top-[21px] h-2 rounded-full bg-gray-200" />
-                  <div
-                    className="absolute left-0 top-[21px] h-2 rounded-full transition-[width] duration-150"
-                    style={{ width: `${pct}%`, backgroundColor: DARK_GREEN }}
-                  />
-                  {[0, 1, 2].map((j) => (
-                    <div
-                      key={j}
-                      className="absolute top-[19px] h-3 w-3 -translate-x-1/2 rounded-full border-2"
-                      style={{
-                        left: `${j * 50}%`,
-                        borderColor: j <= level ? DARK_GREEN : "#cbd5e1",
-                        backgroundColor: j <= level ? DARK_GREEN : "#fff",
-                      }}
-                    />
-                  ))}
-                  <div
-                    className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 bg-white shadow-sm transition-[left,width,height] duration-150"
-                    style={{
-                      left: `${pct}%`,
-                      width: [30, 38, 46][level],
-                      height: [30, 38, 46][level],
-                      borderColor: level > 0 ? DARK_GREEN : "#cbd5e1",
-                      backgroundColor: level > 0 ? DARK_GREEN : "#fff",
-                    }}
-                  >
-                    <Megaphone level={level} color={level > 0 ? "#ffffff" : "#94a3b8"} />
-                  </div>
-                </div>
-
-                <div className="mt-3.5 flex justify-between">
-                  {STOPS.map((s, j) => (
-                    <button
-                      key={s.price}
-                      type="button"
-                      onClick={() => setLevel(j as 0 | 1 | 2)}
-                      className={`text-[13px] font-semibold ${
-                        j === level ? "text-[#1f6b3a]" : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="mt-5 min-h-[46px] text-[14.5px] leading-relaxed text-gray-600">
-                {stop.text}
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/images/icons/secure.svg?v=${ASSET_VER}`} alt="" className="h-4 w-4" />
-            One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS v4.0
-            certified.
-          </p>
-
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => setScreen("plans")}
-              className="rounded-md border border-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-50"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              onClick={() => commit(stop.price)}
-              className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-[#26723e] to-[#2ea052] px-5 py-2.5 font-semibold text-white hover:from-[#226638] hover:to-[#279449]"
-            >
-              {stop.cta}
-            </button>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   /* ────────────────────────────── Écran 1 : formules ─────────────────────── */
 

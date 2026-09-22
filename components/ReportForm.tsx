@@ -12,6 +12,7 @@ import ReportFormStep1 from "./ReportFormStep1";
 import ReportFormStep2 from "./ReportFormStep2";
 import WhatHappensNext from "./WhatHappensNext";
 import ReportContribution from "./ReportContribution";
+import SearchGauge, { type GaugeLevel } from "./SearchGauge";
 import CheckoutForm from "./CheckoutForm";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -752,6 +753,27 @@ export default function ReportForm({
   const [itemFromUrl, setItemFromUrl] = useState(false);
   const [showAutoPlan, setShowAutoPlan] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
+  // Ecran final gratuit : cran de la jauge, et paiement ouvert depuis la jauge.
+  const [gaugeLevel, setGaugeLevel] = useState<GaugeLevel>(0);
+  const [upsellFromFree, setUpsellFromFree] = useState(false);
+  // La jauge ouvre le paiement sur place : on reste a l'etape 5, qui affiche le
+  // formulaire de paiement des que la contribution devient positive.
+  const startUpsell = (price: number) => {
+    setUpsellFromFree(true);
+    setFormData((prev: any) => ({ ...prev, contribution: price, paymentRequired: true }));
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {}
+  };
+  // « Back » depuis ce paiement revient sur la jauge, pas a l'ecran des formules.
+  const backFromCheckout = () => {
+    if (upsellFromFree) {
+      setUpsellFromFree(false);
+      setFormData((prev: any) => ({ ...prev, contribution: 0, paymentRequired: false }));
+      return;
+    }
+    handleBack();
+  };
   const [detailsSaved, setDetailsSaved] = useState(false);
   /**
    * Le rid mémorisé sert à retomber sur la MÊME ligne quand la personne
@@ -1054,12 +1076,11 @@ clearStoredRid();
       {step === 5 &&
         (Number(formData.contribution) <= 0 ||
         formData?.paymentRequired === false ? (
-          // ✅ Pas de paiement (Mode Gratuit ou University)
-          // Registre aligné sur l'e-mail de publication : la publication
-          // gratuite est un état intermédiaire, pas un aboutissement. Plus de
-          // « Thanks! », plus de « upgrade to a higher assistance level »
-          // (vocabulaire d'abonnement, et qui renvoyait à l'e-mail alors que
-          // le bouton est juste là). L'ambre porte l'état, le vert l'action.
+          // ✅ Pas de paiement (gratuit ou universite) : ECRAN FINAL UNIQUE.
+          // Fusion de l'ancien ecran « jauge » et de cette confirmation. Le mail
+          // de publication part a l'affichage (effet plus haut, step === 5) :
+          // plus aucun clic n'est necessaire pour terminer. La jauge sert de
+          // relance, et ses boutons ouvrent le paiement sans recharger la page.
           <section className="w-full min-h-screen bg-white px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-gray-200">
               <div className="border-b border-amber-200 bg-amber-50 px-5 py-4">
@@ -1090,64 +1111,73 @@ clearStoredRid();
                     </span>
                   </span>
                 </p>
+                {formData?.email ? (
+                  <p className="mt-2.5 flex items-start gap-2.5 text-[14.5px] leading-snug text-gray-600">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full border border-gray-200 bg-white text-[11px] text-gray-500"
+                    >
+                      ✉
+                    </span>
+                    <span>
+                      Confirmation sent to{" "}
+                      <b className="font-semibold text-gray-800">{String(formData.email)}</b>
+                      <span className="mt-0.5 block text-[13px] text-gray-500">
+                        with your reference and the link to your listing.
+                      </span>
+                    </span>
+                  </p>
+                ) : null}
               </div>
 
-              <div className="px-5 py-6 sm:px-6">
-                <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Your report is online</h2>
-                <p className="mt-2 text-[15px] leading-relaxed text-gray-600">
-                  Anyone looking for your item can find it. No one is contacting the local lost &amp;
-                  found desks, no report is filed with the police, and no one is comparing new
-                  &ldquo;found&rdquo; posts with your description &mdash; that is what Active search
-                  adds.
+              <div className="px-5 py-6">
+                <h2 className="text-[21px] font-bold text-gray-900">Want us to search for it?</h2>
+                <p className="mb-5 mt-1.5 text-[14.5px] text-gray-600">
+                  Move the megaphone to see what each level adds.
                 </p>
 
-                <div className="mt-5 flex max-w-sm items-baseline justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5">
-                  <span className="text-[15px] font-bold text-gray-900">$25</span>
-                  <span className="text-[12.5px] text-gray-500">
-                    one payment · 12 months · no renewal
-                  </span>
-                </div>
+                <SearchGauge level={gaugeLevel} onChange={setGaugeLevel} />
 
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <a
-                    href={contributeUrl}
-                    className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-5 py-2.5 font-semibold text-white shadow hover:from-[#226638] hover:to-[#279449]"
+                <button
+                  type="button"
+                  onClick={() => startUpsell(gaugeLevel === 1 ? 12 : 25)}
+                  className="mt-5 block w-full rounded-xl bg-[#1f6b3a] px-5 py-3.5 text-center text-[16px] font-bold text-white hover:brightness-110"
+                >
+                  {gaugeLevel === 1 ? "Activate the automatic search — $12" : "Activate my search — $25"}
+                </button>
+                {gaugeLevel === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGaugeLevel(1);
+                      startUpsell(12);
+                    }}
+                    className="mt-2.5 block w-full text-center text-[13.5px] text-[#1f6b3a] underline underline-offset-2"
                   >
-                    Activate my search
-                  </a>
+                    or only the automatic search — $12
+                  </button>
+                ) : null}
+
+                <p className="mt-4 text-[12px] leading-snug text-gray-500">
+                  🔒 One-time payment, never a subscription. Processed securely by Stripe.com, PCI DSS
+                  v4.0 certified.
+                </p>
+
+                <div className="mt-5 flex items-center justify-between text-[13px]">
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="rounded-lg border border-gray-300 px-4 py-2.5 font-medium text-gray-800 hover:bg-gray-50"
+                    className="text-gray-500 underline underline-offset-2 hover:text-gray-700"
                   >
-                    ← Back
+                    ← Back to plans
                   </button>
+                  <span className="text-gray-400">
+                    {/^\d{5}$/.test(String(formData.public_id || ""))
+                      ? `Reference ${formData.public_id} · `
+                      : ""}
+                    your free listing stays online either way.
+                  </span>
                 </div>
-
-                {/* Rattrapage, montré seulement ici : la personne a déjà écarté
-                    les 25 $, donc la formule automatique ne cannibalise rien. */}
-                <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-                  <p className="text-[13.5px] leading-relaxed text-gray-700">
-                    Only want the automated part? <strong>$12</strong> covers the web monitoring for
-                    six months with every credible match reviewed by a person, your loss report
-                    certificate and your printable sticker sheet. No outreach, no filing.
-                  </p>
-                  <a
-                    href={autoOfferUrl}
-                    className="mt-1.5 inline-block text-[13.5px] font-semibold text-green-800 underline underline-offset-2 hover:text-green-900"
-                  >
-                    Add the automatic search — $12 →
-                  </a>
-                </div>
-
-                <p className="mt-4 text-[11.5px] text-gray-400">
-                  {/* getReferenceCode est asynchrone : ici on n'affiche la
-                      référence que si le public_id à 5 chiffres est déjà connu. */}
-                  {/^\d{5}$/.test(String(formData.public_id || ""))
-                    ? `Reference ${formData.public_id} · `
-                    : ""}
-                  your free listing stays online either way.
-                </p>
               </div>
             </div>
           </section>
@@ -1298,7 +1328,7 @@ clearStoredRid();
                 amount={Number(formData.contribution || 0)}
                 reportId={String(formData.report_id || "")}
                 onSuccess={handleSuccessfulPayment}
-                onBack={handleBack}
+                onBack={backFromCheckout}
                 tierLabel={Number(formData.contribution) === 12 ? "Automatic search" : "Active search"}
                 key={`co-${formData.report_id}-${formData.contribution}`}
               />
