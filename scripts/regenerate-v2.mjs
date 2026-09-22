@@ -24,6 +24,12 @@ const COUNT = Math.max(1, Number(process.argv.find((a) => /^\d+$/.test(a)) || 5)
 const POOL = 50000;
 // --states=MA,CT,... : ne traiter que ces Etats (utile pour refaire un lot cible)
 const STATES_ARG = (process.argv.find((a) => a.startsWith("--states=")) || "").split("=")[1] || "";
+// --only=MA/brookline,ME/freeport : ne refaire QUE ces villes, meme deja en v2
+// (pour corriger une page precise sans toucher au reste)
+const ONLY_ARG = (process.argv.find((a) => a.startsWith("--only=")) || "").split("=")[1] || "";
+const ONLY = ONLY_ARG
+  ? new Set(ONLY_ARG.split(",").map((s) => s.trim().toLowerCase().replace(/-/g, " ")).filter(Boolean))
+  : null;
 const STATES = STATES_ARG
   ? new Set(STATES_ARG.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean))
   : null;
@@ -81,8 +87,9 @@ const publies = (cities || []).filter(aGuide)
 const protegees = publies.filter((c) => c.verified === true);
 const regenerables = publies.filter((c) => c.verified !== true);
 const faits = regenerables.filter((c) => Number(c.tone_version) === 2);
+const cle = (c) => `${String(c.state).toLowerCase()}/${String(c.city).toLowerCase()}`;
 const restants = regenerables
-  .filter((c) => Number(c.tone_version) !== 2)
+  .filter((c) => (ONLY ? ONLY.has(cle(c)) : Number(c.tone_version) !== 2))
   .sort((a, b) => (b.population || 0) - (a.population || 0));
 
 if (restants.length && restants.every((c) => c.tone_version === null)) {
