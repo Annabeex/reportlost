@@ -22,29 +22,29 @@ export async function GET() {
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { data: rawItems } = await sb
-    .from("found_items")
-    .select("id, org_id, org_ref, title, image_url, status, date, public_visible")
-    .not("org_id", "is", null)
-    .order("created_at", { ascending: false });
-  // Photos privées : l'admin les voit par liens signés, comme l'établissement.
-  const items = await signRows(sb, (rawItems || []) as any[]);
+  // Avant : TOUS les objets de TOUS les établissements chargés à chaque
+  // ouverture. Désormais les compteurs sont calculés en base, et l'aperçu se
+  // limite aux 12 derniers objets par établissement.
+  const orgIds = (orgs || []).map((o) => String(o.id));
   const counts: Record<string, { total: number; stored: number; claims: number }> = {};
   const preview: Record<string, any[]> = {};
-  for (const it of items || []) {
-    const k = String(it.org_id);
-    counts[k] = counts[k] || { total: 0, stored: 0, claims: 0 };
-    counts[k].total++;
-    if (it.status === "stored") counts[k].stored++;
-    if (it.status === "claim_pending") counts[k].claims++;
-    preview[k] = preview[k] || [];
-    if (preview[k].length < 60) {
-      preview[k].push({
-        id: it.id, org_ref: it.org_ref, title: it.title, image_url: it.image_url,
-        status: it.status, date: it.date, public_visible: it.public_visible,
-      });
-    }
-  }
+  await Promise.all(orgIds.map(async (id) => {
+    const head = (extra?: (q: any) => any) => {
+      let q = sb.from("found_items").select("id", { count: "exact", head: true }).eq("org_id", id);
+      if (extra) q = extra(q);
+      return q.then((r: any) => r.count || 0);
+    };
+    const [total, stored, claims, { data: last }] = await Promise.all([
+      head(),
+      head((q) => q.eq("status", "stored")),
+      head((q) => q.eq("status", "claim_pending")),
+      sb.from("found_items")
+        .select("id, org_ref, title, image_url, status, date, public_visible")
+        .eq("org_id", id).order("created_at", { ascending: false }).limit(12),
+    ]);
+    counts[id] = { total, stored, claims };
+    preview[id] = await signRows(sb, (last || []) as any[]);
+  }));
 
   // Email du membre fondateur (compte de connexion), utile quand public_email est vide
   const { data: members } = await sb.from("org_members").select("org_id, user_id");

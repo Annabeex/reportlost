@@ -8,6 +8,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import OrgSwitcher from "@/components/OrgSwitcher";
+import SupportDialog from "@/components/portal/SupportDialog";
 import { usePortal } from "@/lib/portal";
 
 export default function PortalNav({
@@ -57,6 +58,7 @@ export default function PortalNav({
           {link("team", `${base}/team`, "Team")}
         </nav>
         <div className="flex items-center gap-3">
+          <SupportDialog />
           <OrgSwitcher orgs={orgs} activeId={activeId} onChange={onChangeOrg} />
           {crossPortal > 0 && (
             <Link href={`${otherBase}/dashboard`} className="text-[13px] text-gray-400 underline hover:text-gray-700">

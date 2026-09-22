@@ -12,7 +12,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import OrgClaimForm from "@/components/OrgClaimForm";
+import OrgPublicItems from "@/components/OrgPublicItems";
 import OrgLostReportForm from "@/components/OrgLostReportForm";
 import { portalBase, scopeOfType, publicPath, type OrgScope } from "@/lib/orgScope";
 
@@ -83,10 +83,6 @@ export async function listMetadata(slug: string): Promise<Metadata> {
   };
 }
 
-function fmtDate(d?: string | null) {
-  if (!d) return "";
-  return new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric" });
-}
 
 export default async function ListPage({ slug, scope }: { slug: string; scope: OrgScope }) {
   const data = await getData(slug);
@@ -112,52 +108,19 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
         )}
       </div>
 
-      {!listed ? null : items.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center text-gray-500">
-          No items listed at the moment. Check back soon, new finds are added regularly.
-        </div>
-      ) : (
-        <div className="mt-6 space-y-2">
-          {items.map((it) => (
-            <div key={it.id} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-gray-900">{it.public_label || it.title}</span>
-                <span className="text-sm text-gray-500">
-                  found {fmtDate(it.date)}
-                  {it.dropoff_location ? ` at ${it.dropoff_location}` : ""}
-                </span>
-                <span className="ml-auto" />
-                <OrgClaimForm orgSlug={org.slug} itemId={String(it.id)} label={it.public_label || it.title || "this item"} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {reports.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-[17px] font-bold text-gray-900">Kept by the person who found them</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            These items are not at the {org.name} desk yet. Each one is still with the person who found
-            it, who left a contact with the office. Describe the item precisely: if your description matches, the
-            office puts you in touch.
-          </p>
-          <div className="mt-3 space-y-2">
-            {reports.map((r) => (
-              <div key={r.id} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-gray-900">{r.public_label || "Item"}</span>
-                  <span className="text-sm text-gray-500">
-                    found {fmtDate(r.found_at)}
-                    {r.found_location ? ` at ${r.found_location}` : ""}
-                  </span>
-                  <span className="ml-auto" />
-                  <OrgClaimForm orgSlug={org.slug} itemId={String(r.id)} label={r.public_label || "this item"} kind="report" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {listed && (
+        <OrgPublicItems
+          orgSlug={org.slug}
+          orgName={org.name}
+          items={items.map((it) => ({
+            id: String(it.id), kind: "item" as const,
+            label: it.public_label || it.title || "Item", date: it.date, place: it.dropoff_location,
+          }))}
+          reports={reports.map((r) => ({
+            id: String(r.id), kind: "report" as const,
+            label: r.public_label || "Item", date: r.found_at, place: r.found_location,
+          }))}
+        />
       )}
 
       <section id="report" className="mt-10 scroll-mt-6">
