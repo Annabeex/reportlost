@@ -3,6 +3,7 @@
 // à l'inventaire, avec quel rôle, et l'invitation d'un collègue par e-mail.
 import { useCallback, useEffect, useState } from "react";
 import PortalNav from "@/components/portal/PortalNav";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { usePortalSession } from "@/lib/portalSession";
 
 type Member = { user_id: string; role: string; email: string; joined_at: string; me: boolean };
@@ -24,6 +25,19 @@ export default function PortalTeam() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [copyLink, setCopyLink] = useState("");
+  // Changement de l'adresse de connexion du compte courant. Supabase envoie un
+  // lien de confirmation à la nouvelle adresse (et, selon le réglage du projet,
+  // à l'ancienne) : rien ne change tant qu'il n'est pas cliqué.
+  const [newEmail, setNewEmail] = useState("");
+  const [emailMsg, setEmailMsg] = useState("");
+
+  const changeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailMsg("");
+    const { error } = await supabaseBrowser.auth.updateUser({ email: newEmail.trim() });
+    setEmailMsg(error ? error.message : `A confirmation link was sent to ${newEmail.trim()}. Your sign-in address changes once you click it.`);
+    if (!error) setNewEmail("");
+  };
 
   const orgId = String(org?.id || "");
 
@@ -163,6 +177,21 @@ export default function PortalTeam() {
             </div>
           ))}
         </div>
+
+        <form onSubmit={changeEmail} className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
+          <h2 className="text-[15px] font-bold text-gray-900">Your sign-in email</h2>
+          <p className="mt-1 text-[13px] text-gray-500">
+            The address you use to sign in. Not the office address shown to claimants, which is edited from the inventory page.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input type="email" required value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new.address@institution.edu"
+              className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-[15px] focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+            <button type="submit" className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50">
+              Change
+            </button>
+          </div>
+          {emailMsg && <p className="mt-2 text-[13.5px] text-gray-700">{emailMsg}</p>}
+        </form>
 
         {invites.length > 0 && (
           <>

@@ -33,7 +33,7 @@ async function getData(slug: string) {
   if (!sb) return null;
   const { data: org } = await sb
     .from("organizations")
-    .select("id, slug, name, type, city, state_id, verified, public_listing")
+    .select("id, slug, name, type, city, state_id, verified, public_listing, public_intro, public_hours, public_location")
     .eq("slug", slug.toLowerCase())
     .maybeSingle();
   if (!org || !org.verified) return null;
@@ -97,7 +97,9 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
         <p className="text-sm text-emerald-100">{TYPE_LABEL[org.type] || "Organization"}{org.city ? ` · ${org.city}${org.state_id ? `, ${org.state_id}` : ""}` : ""}</p>
         <h1 className="text-2xl font-bold">Lost &amp; Found — {org.name}</h1>
         <p className="mt-1 text-sm text-emerald-50">
-          {listed
+          {org.public_intro
+            ? org.public_intro
+            : listed
             ? "Items currently held by this organization. Recognize yours? Claim it by describing it precisely: details are checked before any handover."
             : "This organization does not publish the list of items it holds. Report what you lost below: the office compares your report with its inventory."}
         </p>
@@ -107,6 +109,23 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
           </a>
         )}
       </div>
+
+      {(org.public_hours || org.public_location) && (
+        <div className="mt-4 grid gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm sm:grid-cols-2">
+          {org.public_location && (
+            <div>
+              <div className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Where to go</div>
+              <div className="mt-0.5 whitespace-pre-line text-gray-900">{org.public_location}</div>
+            </div>
+          )}
+          {org.public_hours && (
+            <div>
+              <div className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Opening hours</div>
+              <div className="mt-0.5 whitespace-pre-line text-gray-900">{org.public_hours}</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {listed && (
         <OrgPublicItems

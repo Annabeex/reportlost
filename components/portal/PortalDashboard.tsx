@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { setActiveOrgId } from "@/components/OrgSwitcher";
 import PortalNav from "@/components/portal/PortalNav";
 import RetentionSetting from "@/components/portal/RetentionSetting";
+import OrgProfile from "@/components/portal/OrgProfile";
 import { DISPOSITIONS, LEAVING_STATUSES, type Disposition } from "@/lib/orgDisposition";
 import { usePortal, portalFetch } from "@/lib/portal";
 import { scopeOfType, portalBase, publicPath } from "@/lib/orgScope";
@@ -461,6 +462,17 @@ export default function PortalDashboard() {
             </div>
           </details>
         </div>
+
+        <OrgProfile
+          org={org}
+          canEdit={isAdmin}
+          onSave={async (patch) => {
+            const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify(patch) });
+            const j = await r.json().catch(() => null);
+            if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
+            setOrg((o: any) => ({ ...o, ...patch, public_email: patch.public_email || null }));
+          }}
+        />
 
         {/* Réglages de l'établissement : deux interrupteurs, rien de plus. */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
