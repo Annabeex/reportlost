@@ -50,6 +50,16 @@ const STOP = new Set([
   "with","without","from","by","this","that","these","those","i","me","we","you","he","she","they",
   "have","has","had","lost","found","item","items","think","maybe","around","near","about","some",
   "any","very","really","just","left","forgot","forgotten","somewhere","please","help","thanks",
+  // « don't know », « not sure », « unknown » : ce qu'on écrit dans un champ
+  // lieu quand on ne sait pas. Ce ne sont pas des mots à comparer.
+  "don","dont","t","know","not","sure","unknown","unsure","idk","no","idea","somewhere","anywhere",
+]);
+
+/** Motifs et matières : aussi discriminants qu'une couleur. */
+const PATTERNS = new Set([
+  "plaid","tartan","checkered","checked","striped","stripes","floral","polka","dots","leopard",
+  "camo","camouflage","paisley","houndstooth","leather","suede","denim","wool","knit","knitted",
+  "cashmere","silk","velvet","canvas","nylon","metal","metallic","wooden","glitter","transparent","clear",
 ]);
 
 // Variantes courantes → forme canonique. Une personne écrit « cell phone »,
@@ -165,13 +175,25 @@ export function scoreMatch(lost: LostRow, found: FoundRow): MatchResult | null {
   const reasons: string[] = [];
   let score = 0;
 
-  // 1) Fenêtre de dates. Un objet ne peut pas être trouvé avant d'être perdu
-  //    (une journée de tolérance pour les saisies approximatives), et au-delà
-  //    de 45 jours le rapprochement n'a plus de sens sur un campus.
+  // 1) Fenêtre de dates. Au-delà de 45 jours le rapprochement n'a plus de sens
+  //    sur un campus. Un objet trouvé AVANT la date de perte déclarée reste un
+  //    candidat jusqu'à 7 jours d'écart : les gens se trompent sur le jour où
+  //    ils ont perdu l'objet (une écharpe ramassée le 8, déclarée perdue « le
+  //    10 », était rejetée). Le score est plus bas : c'est au bureau de juger.
   const gap = daysBetween(lost.date, found.date);
   if (gap !== null) {
-    if (gap < -1 || gap > 45) return null;
-    if (gap >= 0 && gap <= 2) { score += 25; reasons.push(`trouvé ${gap === 0 ? "le jour même" : `${gap} j après`}`); }
+    if (gap < -7 || gap > 45) return null;
+    // Trouvé avant la date déclarée : à 1 ou 2 jours c'est presque toujours
+    // une erreur de mémoire, on garde une bonne part des points ; au-delà,
+    // moins.
+    // 1 à 2 jours avant : erreur de mémoire probable, on garde une bonne part
+    // des points. 3 à 7 jours avant : gros doute, malus franc — seul un objet
+    // très ressemblant (type + couleur/motif/marque) reste candidat.
+    if (gap < 0) {
+      score += gap >= -2 ? 16 : -20;
+      reasons.push(`trouvé ${-gap} j avant la date de perte déclarée`);
+    }
+    else if (gap >= 0 && gap <= 2) { score += 25; reasons.push(`trouvé ${gap === 0 ? "le jour même" : `${gap} j après`}`); }
     else if (gap <= 7) { score += 18; reasons.push(`trouvé ${gap} j après`); }
     else if (gap <= 21) { score += 10; reasons.push(`trouvé ${gap} j après`); }
     else { score += 4; reasons.push(`trouvé ${gap} j après`); }
@@ -212,6 +234,8 @@ export function scoreMatch(lost: LostRow, found: FoundRow): MatchResult | null {
   if (colorHit.length) { score += 12; reasons.push(`couleur : ${colorHit.join(", ")}`); }
   const brandHit = common.filter((t) => BRANDS.has(t));
   if (brandHit.length) { score += 13; reasons.push(`marque : ${brandHit.join(", ")}`); }
+  const patternHit = common.filter((t) => PATTERNS.has(t));
+  if (patternHit.length) { score += 12; reasons.push(`motif / matière : ${patternHit.join(", ")}`); }
 
   // 5) Contradiction de couleur : deux couleurs citées, aucune commune.
   const lostColors = [...lostSet].filter((t) => COLORS.has(t));

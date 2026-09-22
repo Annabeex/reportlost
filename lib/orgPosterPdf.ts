@@ -235,6 +235,9 @@ export async function buildPosterPdf(org: PosterOrg, base: string, paper: Poster
     { tone: "blue" as Tone, title: "Found something?", cta: "Scan to hand it in", sub: "Describe the item, then bring it to the front desk with the code you receive.", url: foundUrl },
   ];
   const qr = await Promise.all(SIDES.map(async (s) => pdf.embedPng(await qrPng(s.url, s.tone))));
+  // L'adresse en toutes lettres sous chaque code, très discrète : pour qui n'a
+  // pas d'appareil photo sous la main, ou lit l'affiche sur un écran.
+  const shortUrl = (u: string) => u.replace(/^https?:\/\//, "");
 
   const embedBand = async (w: number, h: number, tone: Tone, round: "all" | "top", r?: number) =>
     pdf.embedPng(await gradientPng(w, h, tone, round, r));
@@ -252,8 +255,9 @@ export async function buildPosterPdf(org: PosterOrg, base: string, paper: Poster
 
     const qy = y + o.band + o.gap;
     t.image(qr[i], x + (w - o.qr) / 2, qy, o.qr, o.qr);
+    t.center(shortUrl(s.url), x + w / 2, qy + o.qr + 1.2, o.sub * 0.8, helv, LIGHT);
 
-    let ty = qy + o.qr + o.gap * 0.8;
+    let ty = qy + o.qr + o.gap * 0.8 + ptToMm(o.sub * 0.8);
     t.center(s.cta, x + w / 2, ty, o.cta, bold, INK[s.tone]);
     ty += ptToMm(o.cta) + 1.6;
     if (o.subLines > 0) {
@@ -342,6 +346,7 @@ export async function buildPosterPdf(org: PosterOrg, base: string, paper: Poster
           t.image(qr[i], cx - q / 2, y + 11, q, q);
           t.center(SIDES[i].title, cx, y + 11 + q + 2, 8, bold, INK[SIDES[i].tone]);
           t.center(SIDES[i].cta, cx, y + 11 + q + 5.6, 6.5, helv, GRAY);
+          t.center(shortUrl(SIDES[i].url), cx, y + 11 + q + 8.6, 5, helv, LIGHT);
         }
       }
     }

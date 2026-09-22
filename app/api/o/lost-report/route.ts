@@ -113,7 +113,9 @@ Reference: ${code}
 Item: ${title}
 Date lost: ${lostAt}${lostLocation ? `\nPlace: ${lostLocation}` : ""}
 
-The office compares your report with the items it holds, including items handed in after today. If one matches, the office contacts you at this address. You do not need to file the report again.
+${matched > 0
+  ? "An item held by the office may match your report. A staff member checks it and contacts you at this address if it is yours."
+  : "At the moment, no item held by the office matches your report. Your report stays open: it is compared with every item handed in from now on, and the office contacts you at this address if one matches. You do not need to file the report again."}
 
 ReportLost.org, on behalf of ${org.name}`,
       fromName: "ReportLost",

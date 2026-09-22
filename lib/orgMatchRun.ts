@@ -167,8 +167,11 @@ export async function runMatchForLostItem(lostId: string): Promise<number> {
       .limit(400);
     if ((lost as any).city) q = q.ilike("city", String((lost as any).city).trim());
 
-    const { data: founds } = await q;
-    if (!founds?.length) return 0;
+    const { data: foundsAll } = await q;
+    // Les établissements qui ont coupé le rapprochement automatique sortent
+    // du jeu : rien ne doit apparaître dans leur « To review ».
+    const founds = await keepAutoMatch(sb, (foundsAll || []) as FoundRow[]);
+    if (!founds.length) return 0;
 
     const results = matchOneToMany(lost as LostRow, founds as FoundRow[]);
     if (!results.length) return 0;
@@ -193,6 +196,24 @@ export async function runMatchForLostItem(lostId: string): Promise<number> {
 }
 
 /** Un établissement vient d'enregistrer un objet : on le compare aux pertes ouvertes. */
+/* ------------------------------------------------------------------ */
+/* Réglage par établissement                                            */
+/* ------------------------------------------------------------------ */
+
+/** organizations.auto_match : un bureau peut couper le rapprochement. */
+async function autoMatchEnabled(sb: any, orgId: string): Promise<boolean> {
+  const { data } = await sb.from("organizations").select("auto_match").eq("id", orgId).maybeSingle();
+  return data?.auto_match !== false;
+}
+
+async function keepAutoMatch(sb: any, founds: FoundRow[]): Promise<FoundRow[]> {
+  const ids = [...new Set(founds.map((f) => f.org_id).filter(Boolean))] as string[];
+  if (!ids.length) return founds;
+  const { data } = await sb.from("organizations").select("id, auto_match").in("id", ids);
+  const off = new Set((data || []).filter((o: any) => o.auto_match === false).map((o: any) => String(o.id)));
+  return founds.filter((f) => !off.has(String(f.org_id)));
+}
+
 /* ------------------------------------------------------------------ */
 /* Déclarations faites directement à un établissement                   */
 /* ------------------------------------------------------------------ */
@@ -237,6 +258,7 @@ export async function runMatchForCampusReport(reportId: string): Promise<number>
       .eq("id", reportId)
       .maybeSingle();
     if (!rep || rep.status !== "open") return 0;
+    if (!(await autoMatchEnabled(sb, rep.org_id))) return 0;
 
     const { data: founds } = await sb
       .from("found_items")
@@ -266,6 +288,7 @@ export async function runMatchForFoundItem(foundId: string): Promise<number> {
 
     const { data: found } = await sb.from("found_items").select(FOUND_FIELDS).eq("id", foundId).maybeSingle();
     if (!found || !(found as any).org_id) return 0;
+    if (!(await autoMatchEnabled(sb, String((found as any).org_id)))) return 0;
 
     let q = sb
       .from("lost_items")

@@ -245,6 +245,13 @@ export default function PortalDashboard() {
     } else alert("Update failed");
   };
 
+  const toggleAutoMatch = async () => {
+    const next = org.auto_match === false;
+    const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify({ auto_match: next }) });
+    if (r.ok) setOrg((o: any) => ({ ...o, auto_match: next }));
+    else alert("Update failed");
+  };
+
   const toggleFinderHeld = async () => {
     const next = org.finder_held_enabled === false;
     const r = await api("/api/org/settings", {
@@ -415,17 +422,36 @@ export default function PortalDashboard() {
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 truncate">{org.name}</h1>
+            <h1 className="flex items-center gap-1.5 text-2xl font-bold text-gray-900">
+              <span className="truncate">{org.name}</span>
+              <OrgProfile
+                        org={org}
+                        canEdit={isAdmin}
+                        onSave={async (patch) => {
+                          const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify(patch) });
+                          const j = await r.json().catch(() => null);
+                          if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
+                          setOrg((o: any) => ({ ...o, ...patch, public_email: patch.public_email || null }));
+                        }}
+                      />
+            </h1>
             <p className="text-sm text-gray-500">
-              {org.verified && org.public_listing ? (
+              {org.verified ? (
                 <a href={publicPath(org)} target="_blank" rel="noopener" className="underline hover:text-emerald-700">
                   reportlost.org{publicPath(org)} ↗
                 </a>
               ) : (
-                <>reportlost.org{publicPath(org)}</>
+                <>reportlost.org{publicPath(org)} · live once your account is approved</>
               )}
             </p>
           </div>
+          {org.verified && (
+            <a href={publicPath(org)} target="_blank" rel="noopener"
+              title={org.public_listing ? "What students see: your listed items, the claim and report forms" : "Your list is off: students see only the lost item report form"}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              View public page ↗
+            </a>
+          )}
           <Link href={`${base}/items/new`}
             className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
             + Log a found item
@@ -463,17 +489,6 @@ export default function PortalDashboard() {
           </details>
         </div>
 
-        <OrgProfile
-          org={org}
-          canEdit={isAdmin}
-          onSave={async (patch) => {
-            const r = await api("/api/org/settings", { method: "PATCH", body: JSON.stringify(patch) });
-            const j = await r.json().catch(() => null);
-            if (!r.ok) throw new Error(j?.error || `Error ${r.status}`);
-            setOrg((o: any) => ({ ...o, ...patch, public_email: patch.public_email || null }));
-          }}
-        />
-
         {/* Réglages de l'établissement : deux interrupteurs, rien de plus. */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" onClick={togglePublicListing} disabled={!isAdmin}
@@ -490,6 +505,11 @@ export default function PortalDashboard() {
             title="When on, a person who found an item can keep it and leave an email instead of bringing it to the desk"
             className={pill(org.finder_held_enabled !== false)}>
             {org.finder_held_enabled !== false ? "Items kept by finders: accepted" : "Items kept by finders: refused"}
+          </button>
+          <button type="button" onClick={toggleAutoMatch} disabled={!isAdmin} aria-pressed={org.auto_match !== false}
+            title="When on, each lost item report is compared with your inventory and possible matches wait in To review. When off, nothing is suggested"
+            className={pill(org.auto_match !== false)}>
+            {org.auto_match !== false ? "Automatic matching: on" : "Automatic matching: off"}
           </button>
         </div>
 

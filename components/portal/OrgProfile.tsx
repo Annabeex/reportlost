@@ -42,16 +42,20 @@ export default function OrgProfile({
   };
 
   if (!canEdit) return null;
-  if (!open) {
-    return (
-      <button type="button" onClick={start} className="text-[13px] text-gray-500 underline hover:text-gray-900">
-        Edit name, contact and public page
-      </button>
-    );
-  }
   return (
-    <form onSubmit={save} className="mt-3 w-full rounded-xl border border-gray-200 bg-white p-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <>
+      <button type="button" onClick={start} title="Edit name, contact, opening hours and public page text" aria-label="Edit institution settings"
+        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      </button>
+      {open && (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={() => setOpen(false)}>
+    <form onSubmit={save} role="dialog" aria-modal="true" aria-label="Institution settings" onClick={(e) => e.stopPropagation()}
+      className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-t-2xl bg-white p-5 text-left text-base font-normal sm:rounded-2xl">
+      <h2 className="text-[17px] font-bold text-gray-900">{org.name}</h2>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-[13px] font-semibold text-gray-700 sm:col-span-2">
           Institution name
           <input required minLength={3} maxLength={120} value={form.name} onChange={set("name")} className={`${FIELD} mt-1 font-normal`} />
@@ -102,5 +106,8 @@ export default function OrgProfile({
         <button type="button" onClick={() => setOpen(false)} className="text-[13.5px] text-gray-500 underline">Cancel</button>
       </div>
     </form>
+    </div>
+      )}
+    </>
   );
 }

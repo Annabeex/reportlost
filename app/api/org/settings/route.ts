@@ -23,6 +23,7 @@ export async function PATCH(req: NextRequest) {
   if (typeof b?.public_listing === "boolean") patch.public_listing = b.public_listing;
   if (typeof b?.deadline_tracking === "boolean") patch.deadline_tracking = b.deadline_tracking;
   if (typeof b?.finder_held_enabled === "boolean") patch.finder_held_enabled = b.finder_held_enabled;
+  if (typeof b?.auto_match === "boolean") patch.auto_match = b.auto_match;
 
   // Identité de l'établissement. Le slug (adresse publique, QR codes imprimés)
   // ne change PAS avec le nom : une affiche déjà posée doit continuer de mener

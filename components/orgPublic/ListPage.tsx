@@ -103,11 +103,16 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
             ? "Items currently held by this organization. Recognize yours? Claim it by describing it precisely: details are checked before any handover."
             : "This organization does not publish the list of items it holds. Report what you lost below: the office compares your report with its inventory."}
         </p>
-        {listed && (
-          <a href="#report" className="mt-3 inline-block rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold text-white underline-offset-2 hover:bg-white/25">
-            Not in the list? Report it to {org.name}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {listed && (
+            <a href="#report" className="inline-block rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/25">
+              Not in the list? Report it to {org.name}
+            </a>
+          )}
+          <a href={publicPath(org, "/found")} className="inline-block rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1e3a8a] hover:bg-blue-50">
+            Found something? Hand it in
           </a>
-        )}
+        </div>
       </div>
 
       {(org.public_hours || org.public_location) && (
@@ -152,13 +157,6 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
         </p>
         <OrgLostReportForm orgSlug={org.slug} orgName={org.name} />
       </section>
-
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Found an item here?{" "}
-        <a href={publicPath(org, "/found")} className="font-semibold underline">
-          Describe it and hand it in at the front desk
-        </a>
-      </p>
 
       <p className="mt-6 text-center text-xs text-gray-400">
         <Link href="/privacy/institutions" className="underline">Privacy notice</Link> · Powered by ReportLost.org ·{" "}

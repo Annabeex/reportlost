@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "node:crypto";
 import { uploadOrgPhoto } from "@/lib/orgPhotos";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendMailDirect } from "@/lib/mailer";
 import { isIsoDate, guessPublicLabel } from "@/lib/orgItems";
 
 export const runtime = "nodejs";
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     const { data: org } = await sb
       .from("organizations")
-      .select("id, verified, finder_held_enabled")
+      .select("id, name, verified, finder_held_enabled")
       .eq("slug", slug)
       .maybeSingle();
     if (!org || !org.verified) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -139,6 +140,36 @@ export async function POST(req: NextRequest) {
       public_label: guessPublicLabel(title),
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Accusé de réception au trouveur : la référence, et ce qui se passe ensuite.
+    // Reprend l'écran de confirmation, pour qu'il reste sous la main.
+    const body =
+      heldBy === "finder"
+        ? `Hello${finderName ? ` ${finderName}` : ""},
+
+Your report is recorded. The ${org.name} lost and found office now knows you have this item: ${title}.
+
+Reference: ${code}
+
+When someone describes the item correctly, the office gives them your email address (${finderEmail}) so you can arrange the handover. Your contact is never shown publicly.
+
+You can still bring the item to the front desk at any time: give the reference above and the desk finds your report, nothing to fill in again.`
+        : `Hello${finderName ? ` ${finderName}` : ""},
+
+Thank you. Your description of the item (${title}) is recorded by the ${org.name} lost and found office.
+
+Drop-off code: ${code}
+
+Bring the item to the front desk and show this code. The desk finds your description with it and confirms it has the item. Until then, the item is listed as still being with you, under a generic category only, and your email address stays private. If it is never handed in, the office may give your email to the owner once their description is checked.`;
+    await sendMailDirect({
+      to: finderEmail,
+      subject: `${org.name} lost and found: your reference ${code}`,
+      text: `${body}
+
+ReportLost.org, on behalf of ${org.name}`,
+      fromName: "ReportLost",
+      noBcc: true,
+    }).catch(() => false);
 
     return NextResponse.json({ ok: true, code, held_by: heldBy });
   } catch (e: any) {
