@@ -130,14 +130,56 @@ export default function AboutPage() {
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        A Small Team, A Clear Mission
+        A small independent business, based in France
       </h2>
 
-      <p className="mb-10">
-        ReportLost is operated by a small, dedicated team focused on improving
-        how lost and found information is shared online — with care,
-        responsibility, and attention to detail.
+      <p className="mb-4">
+        ReportLost is a small independent business, run from France. It is not a
+        police department, an airport, a transit agency or a lost-and-found
+        office, and it is not affiliated with any of them. Every office we work
+        with is listed on our pages with its own contact details &mdash; you can
+        always file directly, yourself, for free.
       </p>
+
+      <p className="mb-4">
+        What we do is the part most people don&apos;t have the time or the
+        patience for: finding the right desk for where you lost your item,
+        filing your report with the offices that accept third-party reports, and
+        monitoring found-item listings across the web for months afterwards.
+      </p>
+
+      <p className="mb-6">
+        What we cannot do is promise your item comes back. Most lost items are
+        never handed in to anyone. We charge for the work, not for the result
+        &mdash; and we say so before you pay, not after.
+      </p>
+
+      <div className="mb-10 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-7 text-gray-700">
+        <div>
+          <span className="inline-block w-36 text-gray-500">Trade name</span>
+          ReportLost
+        </div>
+        <div>
+          <span className="inline-block w-36 text-gray-500">Legal form</span>
+          Entreprise individuelle (French sole proprietorship)
+        </div>
+        <div>
+          <span className="inline-block w-36 text-gray-500">SIREN</span>
+          753&nbsp;879&nbsp;477
+        </div>
+        <div>
+          <span className="inline-block w-36 text-gray-500">Registered at</span>
+          38 avenue du Calais, 44730 Saint-Michel-Chef-Chef, France
+        </div>
+        <div>
+          <span className="inline-block w-36 text-gray-500">VAT</span>
+          Not applicable &mdash; French small-business exemption (art. 293 B CGI)
+        </div>
+        <div>
+          <span className="inline-block w-36 text-gray-500">Contact</span>
+          support@reportlost.org
+        </div>
+      </div>
 
       <p className="text-sm">
         💌 <strong>Questions, feedback, or press inquiries?</strong>

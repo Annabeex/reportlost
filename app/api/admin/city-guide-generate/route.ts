@@ -18,6 +18,51 @@ export const maxDuration = 120;
 const MODEL =
   process.env.CITY_GUIDE_MODEL || process.env.CASE_CHAT_MODEL || process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
+const ETATS: [string, string][] = [
+  ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],
+  ["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],
+  ["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],
+  ["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],
+  ["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],
+  ["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+  ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],
+  ["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],
+  ["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],
+  ["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],
+  ["DC","District of Columbia"],["PR","Puerto Rico"],
+];
+
+/**
+ * Un résultat de recherche est-il plausible pour CET État ?
+ * Faux uniquement quand un AUTRE État est nommé en toutes lettres (ou porté par
+ * le domaine, type ".de.us") et que le nôtre ne l'est nulle part. Tout le reste
+ * passe : mieux vaut laisser filer un cas douteux que jeter le bon contact.
+ */
+function okEtat(r: { title: string; link: string; snippet: string }, abbr: string, nom: string, ville = ""): boolean {
+  const texte = `${r.title} ${r.link} ${r.snippet}`;
+  const bas = texte.toLowerCase();
+  const nous =
+    new RegExp(`\\b${nom.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(texte) ||
+    new RegExp(`\\b${abbr}\\b`).test(texte) ||
+    new RegExp(`\\.${abbr.toLowerCase()}\\.us\\b`).test(bas) ||
+    new RegExp(`\\b${abbr.toLowerCase()}\\.gov\\b`).test(bas);
+  if (nous) return true;
+  // ⚠️ Des villes portent le nom d'un État : California (PA), Indiana (PA),
+  // Nevada (MO), Delaware (OH), Wyoming (MI), Oregon (OH), Washington (une
+  // vingtaine). Sans cette garde, le filtre prenait le nom de la ville pour la
+  // preuve d'un autre État et jetait la totalite des résultats.
+  const villeBas = ville.toLowerCase().trim();
+  for (const [a, n] of ETATS) {
+    if (a === abbr) continue;
+    if (villeBas && (villeBas === n.toLowerCase() || villeBas.includes(n.toLowerCase()))) continue;
+    const autre =
+      new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(texte) ||
+      new RegExp(`\\.${a.toLowerCase()}\\.us\\b`).test(bas);
+    if (autre) return false;
+  }
+  return true;
+}
+
 async function serper(q: string, num = 6): Promise<{ title: string; link: string; snippet: string }[]> {
   const key = process.env.SERPER_API_KEY;
   if (!key) throw new Error("SERPER_API_KEY manquant");
@@ -164,7 +209,18 @@ export async function POST(req: NextRequest) {
       `${cityName} ${stateAbbr} animal shelter lost pet`,
       `${cityName} ${stateAbbr} lost and found facebook group OR reddit`,
     ];
-    const sets = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
+    const setsBruts = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
+
+    // 🛑 Filtre « bon État ». Google répond à "Laurel FL city hall" par le site
+    // de la mairie de Laurel, DELAWARE : le nom de la ville lui suffit, l'État
+    // est traité comme un indice faible. Le modèle recopiait ensuite ce lien.
+    // On retire donc, AVANT de les lui montrer, les résultats qui nomment
+    // explicitement un autre État sans jamais nommer le nôtre. Conservateur :
+    // en cas de doute on garde, c'est le prompt qui tranche ensuite.
+    const setsFiltres = setsBruts.map((set) => set.filter((r) => okEtat(r, stateAbbr, stateName, cityName)));
+    const sets = setsFiltres.map((set, i) => (set.length ? set : []));
+    const retires = setsBruts.reduce((n, s2, i) => n + (s2.length - setsFiltres[i].length), 0);
+    if (retires) console.log(`[city-guide] ${retires} résultat(s) écartés : autre État que ${stateAbbr}.`);
     // 🛑 Garde-fou : sans AUCUN résultat de recherche (crédits Serper épuisés,
     // clé invalide...), on refuse de générer un guide dégradé sans vrais
     // contacts locaux, plutôt que de brûler des tokens pour une page vide.
@@ -193,7 +249,7 @@ Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost
 - h1 : descriptif et aligné sur la recherche réelle, ex "Lost and found in <ville>, <État> : where to report and reclaim" (reformulé à chaque ville, sans point d'exclamation ni question rhétorique).
 - heroSubtitle : un constat factuel de la situation locale, du type "Lost property in <ville> is handled separately by <police locale>, <transports>, and the venues themselves.", avec les vrais noms locaux, suivi d'une seule phrase claire et affirmative sur ce que ReportLost prend en charge. ⛔ INTERDIT DANS LE SOUS-TITRE : toute restriction, reserve ou condition sur le perimetre du service. N'ecris JAMAIS ici "where it's accepted", "where accepted", "where the department accepts third-party reports", "where possible", "when available", ni aucune variante de ce genre. C'est le tout premier texte que lit quelqu'un qui vient de perdre un objet : il doit etre affirmatif. La nuance sur les depots acceptes par un tiers appartient au corps de la page, jamais au sous-titre.
 - steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Your report keeps searching for you), adaptées à la ville. L'étape 3 insiste sur la veille MAIS avec un cadrage rassurant, centré sur le signalement et non sur une "surveillance" : le signalement reste actif pendant toute la durée de la formule, la recherche automatisée continue de croiser les nouveaux posts "found", annonces et marketplaces avec la description, pour que la personne n'ait pas à vérifier elle-même chaque jour, avec alerte dès qu'un match crédible sort.
-- ARGUMENT CLÉ à mettre en avant (heroSubtitle ET intro) : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match", "for 12 months". La durée est de 12 mois, jamais "6 to 12 months" ni "6 or 12 months" : il n'existe plus qu'une seule formule payante. INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
+- ARGUMENT CLÉ : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match". ⛔ LA DURÉE NE FIGURE JAMAIS DANS LE h1 NI DANS LE heroSubtitle : ni "12 months", ni "for a year", ni aucune variante. Un titre annonce ce qui est fait, pas les conditions de l'offre. La durée (12 mois, jamais une autre, jamais "6 to 12 months" ni "6 or 12 months") s'écrit dans le CORPS de la page : intro, cartes ou FAQ. INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
 - intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
 - cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
 - midCta / finalCta : ton calme et rassurant. Le lecteur vient de perdre quelque chose, il est déjà inquiet : le texte doit le soulager, pas ajouter de la pression.
@@ -207,13 +263,38 @@ Ce qui est AUTORISÉ, une seule fois par page, sans point d'exclamation : consta
 Règles STRICTES d'ALIGNEMENT AVEC LES CONDITIONS GÉNÉRALES (ce que le service fait réellement) :
 - Le dépôt auprès du service d'objets trouvés compétent se fait LÀ OÙ CE SERVICE ACCEPTE un signalement par un tiers. Écris donc "we file the report where the department accepts third-party reports, and give you the exact office, link and steps where it does not", UNIQUEMENT dans le corps de la page (intro, cartes ou FAQ) et JAMAIS dans le h1 ni dans le heroSubtitle. N'écris JAMAIS que ReportLost dépose systématiquement une plainte ou un rapport de police.
 - La veille dure 12 mois. Jamais d'autre durée.
-- INTERDIT : toute promesse de résultat ("we will find it", "guaranteed", "we guarantee"). Le service est une obligation de moyens.
+- INTERDIT : toute promesse de résultat. Le service est une obligation de moyens, jamais de résultat.
+  Formulations bannies PARTOUT (h1, heroSubtitle, intro, cartes, titres de section, CTA, FAQ),
+  y compris toute variante proche : "get it back", "get your item back", "we'll get it back",
+  "get it back faster", "bring it back", "recover your item/belongings/wallet", "we will find it",
+  "guaranteed", "we guarantee", "reunite you with", "be reunited with", "found within X days",
+  "100%". ⛔ En particulier, n'écris JAMAIS un titre du type "Lost something in <ville>? Report it
+  and get it back." ni un CTA "Ready to get your item back?". Écris ce que le service FAIT La formulation retenue, pour le titre comme pour
+  le bloc d'appel à l'action, est "Here is where to report it." (ou une phrase qui dit où signaler).
+  ("where to report it", "file a report", "we take the steps for you"), jamais ce qu'il obtiendrait.
+  SEULE EXCEPTION : la question de FAQ "Can ReportLost guarantee I'll get my item back?", dont la
+  réponse doit être un non clair et sans ambiguïté.
 - INTERDIT : les absolus sur la portée ("every shelter", "all local groups", "all police departments", "everywhere", "any lost item"). Écris "the relevant shelters", "the local groups that matter", "the right department".
 - INTERDIT : toute statistique, pourcentage ou chiffre de performance ("84% of lost items are found", "most items are recovered within X days"). Nous n'en publions aucun.
 - INTERDIT : présenter une activité qui n'existe pas dans cette ville (nombre de signalements, objets récemment retrouvés sur place). Aucune donnée d'activité locale inventée.
 
 Règles STRICTES de véracité :
 - N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).
+- ⛔ VÉRIFICATION DE L'ÉTAT, la règle la plus importante de cette liste. Des dizaines de villes
+  américaines portent le même nom. Avant de retenir un lien, un téléphone ou une adresse, vérifie
+  que le résultat de recherche désigne bien CETTE ville dans CET État : le nom de l'État, son
+  abréviation, le nom du comté ou un domaine officiel de l'État doivent apparaître dans le titre,
+  l'URL ou l'extrait. Si rien ne le confirme, N'UTILISE PAS ce contact. Un exemple réel de ce qu'il
+  ne faut plus jamais produire : sur la page de Laurel, FLORIDE, avoir cité townoflaurel.net, qui
+  est la mairie de Laurel, DELAWARE, et le 352-334-2600, qui est le réseau de bus de Gainesville.
+- Mieux vaut UNE coordonnée juste que quatre dont une fausse. Quand la ville n'a pas d'administration
+  propre (lieu-dit, census-designated place, quartier non incorporé), ne lui invente ni mairie ni
+  police : le bon interlocuteur est le shérif du comté, et c'est lui qu'il faut nommer.
+- L'indicatif téléphonique doit être cohérent avec la région. Un numéro dont l'indicatif dessert
+  manifestement une autre partie de l'État est à écarter.
+- ⛔ Une page Facebook, Instagram ou X n'est JAMAIS une coordonnée de service. Le lien d'une carte
+  doit pointer vers le site officiel du service ou sa page contact. Si seul un profil social existe,
+  la carte n'a pas de lien.
 - Les liens doivent pointer vers les structures elles-mêmes : services officiels (police, ville/mairie, transports publics, aéroports, universités, animal control, humane society, SPCA) ou entreprises privées directement concernées (compagnie de taxi locale, Uber/Lyft, hôtel, centre commercial, stade, compagnie aérienne). INTERDIT : tout service d'objets trouvés tiers ou plateforme concurrente de ReportLost (annuaires lost & found, services d'alerte payants), agrégateurs, articles de presse, blogs. Le test : le lien est-il l'entité qui détient ou reçoit l'objet ? Oui, on garde. C'est un intermédiaire de recherche comme nous ? Non.
 - N'inclus une carte "aéroport" ou "transit" QUE si la ville en a réellement un d'après les résultats. Une petite ville a typiquement : police, city hall, commerces/lieux publics, animaux perdus, 4 cartes suffisent alors.
 - La carte "Lost pet" doit TOUJOURS terminer son texte par un lien interne vers le parcours dédié : <a href="/report-lost-pet"><strong>file a priority lost pet report</strong></a> (c'est le seul lien interne autorisé dans les cartes).
