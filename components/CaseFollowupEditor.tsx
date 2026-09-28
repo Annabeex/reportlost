@@ -69,7 +69,7 @@ function baseDefaults(publicId?: string, lostId?: string): Block[] {
       "When appropriate we push the listing to specialized networks (pet recovery platforms, resale marketplaces, institutional pages) and local classified boards.",
     ]},
     { id: uid(), title: "Automated Monitoring & Human Verification", paragraphs: [
-      "We combine automated scans, image-similarity checking, and human review. Active monitoring runs with multiple daily checks.",
+      "We combine automated scans, image-similarity checking, and match scoring. Active monitoring runs with multiple daily checks.",
     ]},
     { id: uid(), title: "What Happens If We Find a Match", paragraphs: [
       "We verify photos and identifying marks.",

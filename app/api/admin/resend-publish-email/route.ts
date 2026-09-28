@@ -130,7 +130,7 @@ Payments are processed securely by Stripe (PCI DSS v4.0). Once the payment is co
       <li>the filing of your report with the competent lost-property service, as soon as we hold the information it requires;</li>
       <li>outreach to the places likely to be holding your item;</li>
       <li>a visual notice published with an anonymous relay address tied to your case;</li>
-      <li>twelve months of AI web monitoring, every credible match reviewed by a person;</li>
+      <li>twelve months of AI web monitoring, every result scored before it reaches you;</li>
       <li>a loss report certificate, which is not an official document;</li>
       <li>a printable sheet of QR stickers routing finders to your relay address.</li>
     </ul>

@@ -80,7 +80,10 @@ export default function CaseFollowup({
   const fmt = (d: Date) =>
     d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const updated = updatedAt ? new Date(updatedAt) : null;
-  const nextUpdate = updated ? new Date(updated.getTime() + 14 * 86400000) : null;
+  // Aucune date de prochain point n'est annoncée, ni ici ni dans le bloc de
+  // veille. On ne recontacte pas le client au calendrier : on le recontacte
+  // quand il y a quelque chose à lui dire. Annoncer une date, c'est créer une
+  // attente qu'il faudrait honorer même sans nouvelle.
 
   // Vue publique et rien à montrer : on n'affiche RIEN. L'ancien encart
   // « No public update yet — open the admin editor » parlait à l'administratrice
@@ -170,13 +173,12 @@ export default function CaseFollowup({
 
       {/* Prochain point + canal de retour */}
       <div className="rounded-2xl border border-emerald-200 bg-white px-5 py-4">
-        {nextUpdate && (
-          <p className="text-gray-900">
-            📅 Your next scheduled update: <strong>around {fmt(nextUpdate)}</strong>. We will reach
-            out sooner if anything new comes up.
-          </p>
-        )}
-        <p className={`text-sm text-gray-600 ${nextUpdate ? "mt-2" : ""}`}>
+        <p className="text-gray-900">
+          📬 We write to you when there is something to report: a possible match, or a development
+          on your case. There are no scheduled updates in between, so no news from us simply means
+          nothing has come up yet.
+        </p>
+        <p className="mt-2 text-sm text-gray-600">
           Something to add to your report? Just reply to any of our emails, your case number
           travels with it.
         </p>

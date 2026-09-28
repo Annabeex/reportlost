@@ -867,7 +867,7 @@ What $25 covers (one payment, never a subscription, active for 12 months):
 • Your report is filed with the competent lost-property service, usually the local police department, as soon as we hold the information it requires.
 • The places likely to hold your item are contacted: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost & found desks.
 • A visual notice is created and published on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.
-• An AI search engine scans the web on your item's keywords for 12 months: daily the first week, then weekly, then monthly. Every credible match is reviewed by a person before it reaches you.
+• An AI search engine scans the web on your item's keywords for 12 months: daily the first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.
 • A loss report certificate, downloadable from your case page. It is not an official document and does not replace a police report.
 • A printable sheet of QR stickers routing finders to your relay address.
 
@@ -919,7 +919,7 @@ Thank you for using ReportLost — we’re here to help.
       <li>Your report is <b>filed with the competent lost-property service</b>, usually the local police department, as soon as we hold the information it requires.</li>
       <li><b>The places likely to hold your item are contacted</b>: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost &amp; found desks.</li>
       <li><b>A visual notice is created and published</b> on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.</li>
-      <li><b>An AI search engine scans the web for 12 months</b> on your item&rsquo;s keywords: daily the first week, then weekly, then monthly. Every credible match is reviewed by a person before it reaches you.</li>
+      <li><b>An AI search engine scans the web for 12 months</b> on your item&rsquo;s keywords: daily the first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.</li>
       <li><b>A loss report certificate</b>, downloadable from your case page. It is not an official document and does not replace a police report.</li>
       <li><b>A printable sheet of QR stickers</b> routing finders to your relay address.</li>
     </ul>

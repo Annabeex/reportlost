@@ -90,7 +90,8 @@ export default function CaseWatchStatus({
                 <b className="text-gray-900">
                   {credible} result{credible > 1 ? "s" : ""} worth a look
                 </b>{" "}
-                {credible > 1 ? "have" : "has"} been forwarded to you by email.
+                {credible > 1 ? "have" : "has"} been flagged and {credible > 1 ? "are" : "is"} being
+                reviewed. We will write to you if it holds up.
               </>
             ) : (
               <>
@@ -144,7 +145,7 @@ export default function CaseWatchStatus({
 
       <div className="mx-6 mt-4 mb-5 flex flex-wrap gap-x-6 gap-y-1.5 border-t border-gray-100 pt-3.5 text-[13px] text-gray-600">
         <span>🔁 Daily for the first week, then weekly, then monthly.</span>
-        <span>👤 Every credible result is read by a person before it reaches you.</span>
+        <span>🎯 Every result is scored by our matching system, and only the credible ones reach you.</span>
       </div>
     </section>
   );

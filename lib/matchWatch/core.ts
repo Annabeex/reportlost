@@ -229,7 +229,91 @@ export function prefilter(results: SerperResult[], terms: string[], seenUrls: Se
 // ---------------------------------------------------------------------------
 // 5) Jugement Haiku : trouveur vs propriétaire, cohérence lieu/date/descriptif
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 3 bis) Filtres durs, AVANT le juge
+// ---------------------------------------------------------------------------
+// Le prompt demandait déjà au modèle d'écarter les annonces antérieures à la
+// perte et celles d'une autre région. Il ne le fait pas de façon fiable : le
+// dossier #96208 (portefeuille perdu le 14/09 à Shelbyville, Indiana) a reçu un
+// MAYBE 62 % sur un post écossais publié le 6/09 — huit jours AVANT la perte,
+// et sur un autre continent. Une règle qu'un code peut appliquer ne se confie
+// pas à un modèle. Ces filtres s'exécutent avant l'appel à Haiku : ils coûtent
+// zéro token et ne se trompent pas.
+
+/** Interprète la date renvoyée par Serper : "Sep 6, 2026" ou "2 weeks ago". */
+export function parsePostDate(raw: string | null | undefined, now = Date.now()): Date | null {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+
+  const rel = s.match(/(\d+)\s*(minute|hour|day|week|month|year)s?\s+ago/i);
+  if (rel) {
+    const n = Number(rel[1]);
+    const ms: Record<string, number> = {
+      minute: 60000, hour: 3600000, day: 86400000,
+      week: 604800000, month: 2629800000, year: 31557600000,
+    };
+    return new Date(now - n * (ms[rel[2].toLowerCase()] || 0));
+  }
+  if (/^(yesterday)$/i.test(s)) return new Date(now - 86400000);
+  if (/^(today|just now)$/i.test(s)) return new Date(now);
+
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Domaines nationaux incompatibles avec une perte aux États-Unis. */
+const TLD_HORS_US = /\.(uk|ie|au|nz|za|in|ph|sg|my|pk|ng|ke)(\/|$|\?)/i;
+
+/**
+ * Marqueurs d'anglais non américain. Deux catégories : les « forts », qui
+ * suffisent seuls, et les orthographes, qui doivent se cumuler (« centre »
+ * existe dans des noms de rue américains).
+ */
+const MARQUEURS_FORTS = /(£|\bpostcode\b|\bcar park\b|\blorry\b|\bpetrol\b|\bchemist\b|\bhigh street\b|\bcouncil estate\b|\bpram\b|\bmobile number\b|\bthe barbers\b|\bwhilst\b|\bqueue\b)/i;
+const MARQUEURS_FAIBLES = /(\bcolour\b|\bfavourite\b|\bneighbourhood\b|\bcentre\b|\bmetre\b|\blicence\b|\bjewellery\b|\btyre\b|\bkerb\b|\baluminium\b|\bmum\b|\brealise\b|\borganised\b)/i;
+
+export type Rejet = { rejete: true; raison: string } | { rejete: false };
+
+/**
+ * Vérifie ce qui est vérifiable sans modèle : la chronologie et le continent.
+ * Tolérance d'un jour sur la date, les fuseaux et les dates relatives de Serper
+ * n'étant pas à l'heure près.
+ */
+export function filtreDur(report: LostReport, r: SerperResult, now = Date.now()): Rejet {
+  // 1) une annonce publiée avant la perte ne peut pas concerner cet objet
+  const perte = report.lossDate ? new Date(report.lossDate) : null;
+  const publie = parsePostDate((r as any).date, now);
+  if (perte && publie && !Number.isNaN(perte.getTime())) {
+    const joursAvant = (perte.getTime() - publie.getTime()) / 86400000;
+    if (joursAvant > 1) {
+      return { rejete: true, raison: `publié ${Math.round(joursAvant)} j avant la perte` };
+    }
+  }
+
+  // 2) un domaine national étranger, pour une perte aux États-Unis
+  if (TLD_HORS_US.test(r.link || "")) {
+    return { rejete: true, raison: `domaine hors US (${(r.link || "").slice(0, 60)})` };
+  }
+
+  // 3) l'anglais du texte n'est pas américain
+  const texte = `${r.title || ""} ${(r as any).snippet || ""}`;
+  if (MARQUEURS_FORTS.test(texte)) {
+    return { rejete: true, raison: `vocabulaire non américain (${texte.match(MARQUEURS_FORTS)?.[0]})` };
+  }
+  const faibles = texte.match(new RegExp(MARQUEURS_FAIBLES.source, "gi")) || [];
+  if (new Set(faibles.map((x) => x.toLowerCase())).size >= 2) {
+    return { rejete: true, raison: `orthographes non américaines (${[...new Set(faibles)].join(", ")})` };
+  }
+
+  return { rejete: false };
+}
+
 export async function judgeCandidate(report: LostReport, r: SerperResult): Promise<Candidate> {
+  // Ce que le code peut trancher, le code le tranche : pas d'appel au modèle.
+  const dur = filtreDur(report, r);
+  if (dur.rejete) return { ...r, verdict: "no", confidence: 0, reason: `écarté : ${dur.raison}` };
+
   const reportStr = [
     `Item: ${report.title ?? ""}`,
     `Description: ${report.description ?? ""}`,

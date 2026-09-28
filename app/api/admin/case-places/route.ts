@@ -12,6 +12,14 @@ export const maxDuration = 60;
 
 const MODEL = process.env.CASE_CHAT_MODEL || process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
+// Même défaut, même remède que pour les pages villes : Google répond au NOM de
+// la ville et traite l'État comme un indice faible. Le dossier #11093 (Denton,
+// TEXAS) s'est vu proposer tips@dentonmdpolice.com, la police de Denton dans le
+// MARYLAND, et la police de Paris, Texas, à 150 km. On écarte donc les résultats
+// qui nomment un autre État avant que le modèle ne les voie.
+import { okEtat } from "@/lib/okEtat";
+import { stateNameFromAbbr } from "@/lib/utils";
+
 async function callClaude(system: string, user: string, maxTokens = 2000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY manquant");
@@ -93,7 +101,14 @@ Adresse relais anonyme du dossier : item${item.public_id || ""}@reportlost.org`;
     );
 
     // 2) Recherches Serper en parallèle
-    const resultSets = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
+    const resultSetsBruts = await Promise.all(queries.map((q) => serper(q).catch(() => [])));
+    const etat = String(item.state_id || "").toUpperCase();
+    const nomEtat = etat ? (stateNameFromAbbr(etat.toLowerCase()) || "") : "";
+    const resultSets = etat
+      ? resultSetsBruts.map((set) => set.filter((r) => okEtat(r, etat, nomEtat, String(item.city || ""))))
+      : resultSetsBruts;
+    const ecartes = resultSetsBruts.reduce((n, s2, i) => n + (s2.length - resultSets[i].length), 0);
+    if (ecartes) console.log(`[case-places] ${ecartes} résultat(s) écartés : autre État que ${etat}.`);
     const results = queries
       .map((q, i) => {
         const rows = resultSets[i]

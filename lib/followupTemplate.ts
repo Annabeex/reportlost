@@ -112,7 +112,7 @@ export function buildFollowupBlocks(opts: {
       id: uid("monitor"),
       title: "Automated Monitoring & Human Verification",
       paragraphs: [
-        "Automated scanning, image comparison and human review work together. The web is scanned on your keywords every day during the first week, then weekly, then monthly, for twelve months. Every credible match is read by a person before it reaches you.",
+        "Automated scanning, image comparison and human review work together. The web is scanned on your keywords every day during the first week, then weekly, then monthly, for twelve months. Every result is scored by our matching system, and only the credible ones reach you.",
       ],
     },
     {

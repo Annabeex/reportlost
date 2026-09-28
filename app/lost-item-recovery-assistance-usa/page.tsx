@@ -63,7 +63,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What happens when ReportLost finds a possible match?",
-    a: "You receive the match by email with a link to the source. Every potential match is first reviewed by a human before being forwarded, so you only receive credible leads.",
+    a: "You receive the match by email with a link to the source. Every potential match is scored by our matching system before being forwarded, so you only receive credible leads.",
   },
   {
     q: "Does ReportLost guarantee that my item will be recovered?",
@@ -209,7 +209,7 @@ export default function RecoveryAssistancePage() {
               stickers, each routing a finder to your anonymous relay address.
             </li>
             <li>
-              <strong>6. Human verification.</strong> Potential matches are reviewed by a person before
+              <strong>6. Match scoring.</strong> Potential matches are scored by our matching system before
               being forwarded to you, so you only receive credible leads.
             </li>
             <li>
@@ -247,7 +247,7 @@ export default function RecoveryAssistancePage() {
                   ✔️ <strong>12 months</strong> of AI web monitoring: daily the first week, then weekly, then
                   monthly
                 </li>
-                <li>✔️ Matches reviewed by a human before you get them</li>
+                <li>✔️ Matches scored before you get them</li>
                 <li>✔️ Loss report certificate, downloadable from your case page</li>
                 <li>✔️ Printable sheet of QR stickers linked to your relay address</li>
               </ul>

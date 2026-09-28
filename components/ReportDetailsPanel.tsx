@@ -168,7 +168,7 @@ export default function ReportDetailsPanel({
       children: (
         <div className="prose max-w-none text-sm leading-relaxed">
           <p>
-            We combine automated scans, image-similarity checking, and human review. Active
+            We combine automated scans, image-similarity checking, and match scoring. Active
             monitoring runs for <strong>30 days</strong> with multiple daily checks. After 30
             days the listing is archived and scanned at a reduced frequency unless you request
             removal.

@@ -126,10 +126,14 @@ export async function POST(req: NextRequest) {
         const reportId = String(row.id);
         const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
-        // Formule automatique : la veille EST le produit vendu, elle démarre
-        // donc d'office. Les dossiers Active search gardent le déclenchement
-        // manuel depuis l'admin, volontairement.
-        const isAutoPlan = paidAmount > 0 && paidAmount < 25;
+        // La veille démarre au paiement pour TOUTE formule payante. Elle était
+        // réservée à la formule automatique, l'Active search devant être armée à
+        // la main depuis l'admin : conséquence, le client à 25 $ ne voyait aucun
+        // bloc de veille sur son compte rendu tant qu'on n'y avait pas pensé,
+        // là où celui à 12 $ le voyait tout de suite. La formule la plus chère
+        // démarrait après la moins chère. Le bouton de l'admin reste disponible
+        // pour les exceptions.
+        const isAutoPlan = paidAmount > 0;
 
         // Update payment fields if needed
         try {
@@ -239,7 +243,7 @@ Thank you for using ReportLost.`;
 Thank you. Your Automatic search is active, and the first scan runs tonight.
 
 What this covers, for the next 6 months:
-- The web is scanned on your item's keywords: every day this first week, then weekly, then monthly. Every credible result is reviewed by a person before it reaches you.
+- The web is scanned on your item's keywords: every day this first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.
 - Your loss report confirmation, downloadable at any time. It is not an official document and does not replace a police report.
 - Your QR sticker sheet, a PDF to print yourself on adhesive paper.
 
@@ -266,7 +270,7 @@ Thank you for using ReportLost.`;
 
     <p style="margin:0 0 8px"><b>What this covers, for the next 6 months</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
-      <li>The web is scanned on your item&rsquo;s keywords: every day this first week, then weekly, then monthly. Every credible result is reviewed by a person before it reaches you.</li>
+      <li>The web is scanned on your item&rsquo;s keywords: every day this first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.</li>
       <li>Your <b>loss report confirmation</b>, downloadable at any time. It is not an official document and does not replace a police report.</li>
       <li>Your <b>QR sticker sheet</b>, a PDF to print yourself on adhesive paper.</li>
     </ul>
