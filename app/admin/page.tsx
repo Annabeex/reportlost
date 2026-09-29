@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import AdminDailyChart from "@/components/AdminDailyChart";
 
 // ——————————————————————————————
 // Types (simples pour éviter les faux positifs TS)
@@ -501,6 +502,8 @@ export default function AdminPage() {
             </a>
           </div>
         </div>
+
+        <AdminDailyChart days={30} />
 
         {/* 📊 Stats en 3 familles : Activité / Production / Visites */}
         <div className="grid gap-3 md:grid-cols-3">
