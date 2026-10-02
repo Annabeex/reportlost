@@ -97,9 +97,9 @@ export default function CaseWatchStatus({
               <>
                 Your item&rsquo;s keywords are checked against public listings, classifieds,
                 community groups and found-item pages.{" "}
-                <b className="text-gray-900">No credible match so far.</b> That is the usual
-                picture in the early weeks: most items are posted by whoever found them days
-                later, not the same day.
+                <b className="text-gray-900">No credible match so far.</b> Found-item listings
+                may appear days after an item is found, so monitoring continues throughout the
+                selected service period.
               </>
             )}
           </p>

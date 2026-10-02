@@ -13,6 +13,7 @@ interface Props {
   ) => void;
   onNext: () => void;
   onBack: () => void;
+  onProgressStepChange?: (step: number) => void;
   setFormData: (updater: any) => void;
   isSubmitting?: boolean; // ✅ NEW
 }
@@ -85,6 +86,7 @@ export default function ReportFormStep2({
   onChange,
   onNext,
   onBack,
+  onProgressStepChange,
   setFormData,
   isSubmitting = false, // ✅ NEW
 }: Props) {
@@ -119,6 +121,10 @@ export default function ReportFormStep2({
       clearTimeout(t);
     };
   }, [stage]);
+
+  useEffect(() => {
+    onProgressStepChange?.(stage === "contact" ? 3 : 4);
+  }, [stage, onProgressStepChange]);
 
   const btnGreen =
     "inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449] text-white font-semibold px-6 py-2.5 shadow";
@@ -207,10 +213,8 @@ export default function ReportFormStep2({
               <div>
                 <h3 className="text-[18px] font-semibold text-[#1f6b3a]">Declaration</h3>
                 <p className="mt-1 text-[16px] leading-6 text-[#0f2b1c]">
-                  Your report will be handled by a member of our team.
-                  <br />
-                  We operate <span className="font-semibold">7 days a week</span> to provide the best
-                  possible service.
+                  We use these details for report and case updates. They are not shown on your public listing. Next,
+                  you can compare the free listing, $12 automatic search, and $25 team-assisted search.
                 </p>
               </div>
             </div>
@@ -400,8 +404,9 @@ export default function ReportFormStep2({
           <div className="mt-6">
             <InfoSection icon={<MagnifierOutline />} title="Searches">
               <p className="text-[15px] text-[#0f2b1c]">
-                Each report is actively searched and shared across multiple platforms for better
-                results.
+                A free report is published as a searchable public listing. Automatic search adds six months of
+                public-web monitoring for $12. Team-assisted search adds relevant local outreach and 12 months of
+                monitoring for $25.
               </p>
             </InfoSection>
           </div>
@@ -409,7 +414,7 @@ export default function ReportFormStep2({
           {/* Radios (hors encadré) */}
           <div className="pl-8 space-y-2 text-[16px] mt-3">
             {[
-              { key: true, label: "Yes, email me a summary of the searches." },
+              { key: true, label: "Yes, email me a summary if I choose team-assisted search." },
               { key: false, label: "No, thanks." },
             ].map(({ key, label }) => (
               <label key={String(key)} className="flex items-center gap-2 cursor-pointer">
@@ -449,7 +454,7 @@ export default function ReportFormStep2({
 
           {/* ✅ Texte d’aide sous le bouton */}
           <p className="text-sm text-gray-600 mt-2 text-right" aria-live="polite">
-            This saves your details — your request isn’t finalized yet.
+            Your details are saved. Next, compare the free listing and the two optional search services.
           </p>
         </>
       )}

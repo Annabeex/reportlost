@@ -74,11 +74,11 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: "My pet is lost in the Phoenix area — what should I do?",
-    a: "Report and search on Petco Love Lost, and check Maricopa County Animal Care & Control (602-506-7387; West shelter at 2500 S. 27th Ave). Note the county doesn't impound stray cats, but you can still list them online. The Arizona Humane Society can help, and a microchip is your best chance at a fast reunion.",
+    a: "Report and search on Petco Love Lost, and check Maricopa County Animal Care & Control (602-506-7387; West shelter at 2500 S. 27th Ave). Note the county doesn't impound stray cats, but you can still list them online. The Arizona Humane Society can help; make sure the contact details on your pet's microchip registration are current.",
   },
   {
     q: "Is ReportLost.org an official government service?",
-    a: "No. We're an independent service that helps you reach the right official channels faster and get the word out locally. The official offices are the ones that store and release recovered property.",
+    a: "No. We're an independent service. We provide information about relevant official channels and offer optional team-assisted outreach. Official offices store and release found property.",
   },
 ];
 
@@ -89,12 +89,12 @@ export function PhoenixTitleSection() {
         Phoenix, AZ · Lost &amp; Found
       </span>
       <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight">
-        Lost something in Phoenix? Report it and let&apos;s track it down.
+        Lost and found in Phoenix
       </h1>
       <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-4">
-        One report and we&apos;ll steer you to the right <strong>Phoenix Police property bureau</strong>, the relevant{" "}
-        <strong>Valley Metro, Sky Harbor and rideshare lost &amp; found</strong>, and the local groups most likely to
-        help.
+        This guide lists lost-and-found contacts for the <strong>Phoenix Police property bureau</strong>,{" "}
+        <strong>Valley Metro, Sky Harbor and rideshare providers</strong>, venues and local services. ReportLost is
+        independent; the available report options are shown before submission.
       </p>
     </section>
   );
@@ -129,7 +129,7 @@ export function PhoenixExtraContent({
       {/* Étapes */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          How we help you get it back in the Valley
+          How reporting works in the Valley
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mt-8">
           <div className="text-center">
@@ -141,16 +141,16 @@ export function PhoenixExtraContent({
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
-            <h3 className="font-bold mt-3 text-gray-900">2. We aim it at the right desk</h3>
+            <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              Valley Metro, Sky Harbor, the Phoenix Police property bureau, and the busiest Valley groups.
+              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center text-2xl">🤝</div>
-            <h3 className="font-bold mt-3 text-gray-900">3. We flag any match</h3>
+            <h3 className="font-bold mt-3 text-gray-900">3. Search and review possible matches</h3>
             <p className="text-sm text-gray-600 mt-2">
-              If your item shows up, you&apos;ll know — and can set up a pickup.
+              The paid option includes 12 months of public-web monitoring. Potential matches are reviewed before notification.
             </p>
           </div>
         </div>
@@ -169,14 +169,14 @@ export function PhoenixExtraContent({
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
             <p>
-              Across the Valley of the Sun — from downtown Phoenix and the light rail to Sky Harbor and the desert
-              trailheads — a phone, wallet or pet can go missing just about anywhere. Phoenix has a handful of
-              separate lost-and-found systems, and each covers different ground. Report it here and we&apos;ll direct
-              you to the right one and the police area that covers where it happened.
+              Phoenix has separate lost-property processes for Valley Metro, Sky Harbor, venues and public agencies.
+              Use the official links below to identify the channel relevant to where the item was lost. ReportLost
+              is independent and offers three report options: a free listing, six-month automatic monitoring for $12,
+              and team-assisted search with 12-month monitoring and relevant local outreach for $25.
             </p>
             <p>
-              On Valley Metro, at PHX, in a rideshare or at a Scottsdale-adjacent resort, timing counts — Sky
-              Harbor, for instance, holds most items only about ten days.
+              Holding and collection policies vary by office. Contact the service responsible for the loss location
+              to confirm its current process.
             </p>
           </div>
           {cityImage && (
@@ -224,7 +224,7 @@ export function PhoenixExtraContent({
             <h3 className="font-bold text-lg text-gray-900">Uber, Lyft or taxi</h3>
             <p className="text-sm text-gray-600 mt-2 leading-relaxed">
               Report the item and message your driver from the Uber or Lyft app. For a taxi, call the company with
-              your pickup time and route. We help you gather the details that get a faster reply.
+              your pickup time and route. These details can help the company identify the relevant trip.
             </p>
           </div>
 
@@ -283,25 +283,19 @@ export function PhoenixExtraContent({
       </section>
 
       {/* CTA milieu */}
-      <section className="bg-blue-50 rounded-xl border border-blue-100 p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Don&apos;t let the window close</h2>
+      <section className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-xl font-semibold text-gray-900">Holding policies vary by office</h2>
         <p className="mt-2 text-gray-600">
-          Some Phoenix offices only hold items for about ten days. Get your report in now.
+          Some Phoenix offices report holding periods of about ten days. Contact the office responsible for the loss location to confirm its current policy.
         </p>
-        <a
-          href="#report-form"
-          className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
-        >
-          Report my lost item →
-        </a>
       </section>
 
       {/* Secteurs de Phoenix */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900">Which part of Phoenix did you lose it in?</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">
-          Phoenix is vast and low-density. Knowing the area helps you target the right transit stop, police
-          precinct and the venues worth calling first.
+          The Phoenix area is geographically large. Neighborhood details below can help identify a nearby transit office,
+          police unit or venue.
         </p>
         <div className="mt-6 space-y-4">
           {areas.map((a) => (
@@ -315,10 +309,9 @@ export function PhoenixExtraContent({
 
       {/* Réseaux sociaux */}
       <section className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-bold text-gray-900">Get more eyes on it across the Valley</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Phoenix community channels</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">
-          Most items come back thanks to a helpful stranger, not an office. We help you post a clean alert to the
-          Phoenix-area communities with the most reach:
+          Local social channels provide another way to share a report. Examples of Phoenix-area community channels:
         </p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5 text-sm">
           {[
@@ -369,8 +362,8 @@ export function PhoenixExtraContent({
 
       {/* CTA final */}
       <section className="text-center py-6">
-        <h2 className="text-2xl font-bold text-gray-900">Ready to find it?</h2>
-        <p className="text-gray-600 mt-2">One report reaches every channel that matters across Phoenix.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Choose a report option</h2>
+        <p className="text-gray-600 mt-2">Free listing, $12 automatic search, or $25 team-assisted search.</p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"

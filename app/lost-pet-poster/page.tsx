@@ -44,11 +44,11 @@ const FAQ = [
   },
   {
     q: "What else should I do besides posters?",
-    a: "File a report with your local animal shelter and animal control, check their found listings daily, post on Nextdoor and local Facebook groups, and make sure your pet's microchip registration is up to date. ReportLost can also run this outreach for you and keep your report active, searching for a match, for up to 12 months.",
+    a: "File a report with your local animal shelter and animal control, check their found listings daily, post on Nextdoor and local Facebook groups, and make sure your pet's microchip registration is up to date. The $25 team-assisted pet search includes relevant outreach and 12 months of public-web monitoring. The free poster and public listing do not include these services.",
   },
   {
     q: "Does ReportLost help find lost pets?",
-    a: "Yes. Beyond this free poster, our assistance plans include contacting local shelters and services, publishing your alert on social channels including local groups, and monitoring public web sources for new 'found pet' posts for 12 months.",
+    a: "Yes. In addition to this free poster, the optional $25 team-assisted pet search includes relevant outreach to local shelters and services, a notice for relevant local groups, and 12 months of public-web monitoring for potential matches.",
   },
 ];
 
@@ -136,11 +136,10 @@ export default function LostPetPosterPage() {
 
         {/* CTA assistance */}
         <section className="rounded-xl border border-blue-100 bg-blue-50 p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Want us to run the search with you?</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Team-assisted pet search</h2>
           <p className="mx-auto mt-2 max-w-2xl text-gray-700">
             ReportLost can contact local shelters and services, publish your alert on social channels including
-            local community groups, and keep your report active, checking new &ldquo;found pet&rdquo; posts for a
-            match for up to 12 months — while you cover the neighborhood with posters.
+            local community groups, and monitor public-web sources for potential matches for 12 months. These services are included with the $25 team-assisted pet search; the free poster remains available on its own.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link

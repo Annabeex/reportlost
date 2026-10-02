@@ -52,27 +52,27 @@ const newYork: CityGuide = {
   state: "NY",
   citySlug: "new york",
   badge: "New York City, NY · Lost & Found",
-  h1: "Lost something in New York City? Report it and get it back.",
+  h1: "Lost and found information for New York City",
   heroSubtitle:
-    "One report and we route it to the right <strong>NYPD precinct</strong>, the relevant <strong>MTA, taxi and airport lost &amp; found</strong>, and active <strong>local social channels</strong>.",
+    "Use this guide to identify lost-and-found contacts for the <strong>NYPD</strong>, <strong>MTA, taxis and airports</strong>, venues and local services. ReportLost is independent; available options are shown before a report is submitted.",
   imageAltFallback: "View of New York City",
-  stepsHeading: "How we help you recover it in New York",
+  stepsHeading: "How to report a lost item in New York",
   steps: [
-    { icon: "📝", iconBg: "bg-blue-100", title: "1. You report the loss", body: "Describe the item and where you lost it. The more detail, the better the match." },
-    { icon: "📡", iconBg: "bg-blue-100", title: "2. We route it to the right places", body: "The NYPD precinct covering that spot, plus MTA / TLC / airport lost &amp; found and the right social groups." },
-    { icon: "🤝", iconBg: "bg-green-100", title: "3. You get matched & notified", body: "If someone finds or turns in your item, you're alerted to arrange pickup." },
+    { icon: "📝", iconBg: "bg-blue-100", title: "1. Record the loss", body: "Note the item’s identifying details, the date and the place where it may have been left." },
+    { icon: "📡", iconBg: "bg-blue-100", title: "2. Check the relevant contact", body: "Use the official agency or venue links below. ReportLost’s available options and included services are shown on the report form." },
+    { icon: "🤝", iconBg: "bg-green-100", title: "3. Review replies and potential matches", body: "For paid search options, potential public-web matches are reviewed before notification. Replies from agencies and venues follow their own procedures." },
   ],
   intro: [
-    `With more than 8 million residents and over 60 million visitors a year, New York City is one of the easiest places in the world to lose a phone, a wallet, a set of keys — or even a pet. The good news: the city has dozens of well-run lost-and-found systems. The hard part is knowing which one handles your case. Report it here and we point you to the right channel and the NYPD precinct that covers exactly where you lost it.`,
-    `Whether it happened on the subway, in a yellow cab, at JFK or LaGuardia, in a Midtown hotel or a Central Park bench, acting fast makes a real difference — most lost-and-found offices work on strict deadlines.`,
+    `New York City has separate lost-and-found processes for transit, taxis, airports, police, venues and animal services. The guide below lists contact details and filing instructions for common situations.`,
+    `Transit providers, airports, police departments and venues each have their own lost-property process and claim policies. Use the contact details below for the place where the item may have been left.`,
   ],
-  guideHeading: "Exactly what to do, based on where you lost it",
+  guideHeading: "Lost-and-found contacts by location type",
   guideSubtitle:
-    "New York has dozens of separate lost-and-found systems. Reporting to the wrong one wastes days — here is the right channel for each.",
+    "Transit providers, airports, agencies and venues maintain separate lost-and-found processes. The links below identify the relevant contact for each type of location.",
   cards: [
     {
       icon: "🚇", iconBg: "bg-blue-100", title: "Subway, bus or Staten Island Railway (MTA)",
-      body: `Tell the nearest station booth agent, or file a claim with <strong>NYC Transit Lost &amp; Found</strong> at lostandfound.mta.info or by calling <strong>511</strong> (24/7). Items are held at least <strong>3 months</strong>; the central office is by appointment only, after they contact you.`,
+      body: `Tell the nearest station booth agent, or file a claim with <strong>NYC Transit Lost &amp; Found</strong> at lostandfound.mta.info or by calling <strong>511</strong> (24/7). The agency lists a minimum holding period of <strong>3 months</strong>; the central office is by appointment after it contacts a claimant.`,
       links: [{ label: "File an MTA claim →", href: "https://lostandfound.mta.info/" }, { label: "How it works", href: "https://www.mta.info/lost-and-found" }],
     },
     {
@@ -92,17 +92,17 @@ const newYork: CityGuide = {
     },
     {
       icon: "🌳", iconBg: "bg-green-100", title: "Street, park, shop or venue",
-      body: `Ask the venue's front desk or security first (museums, malls, stadiums and hotels keep their own lost &amp; found). For items lost on the street, the nearest NYPD precinct is best — and a public alert on local groups raises the odds an honest finder reaches you.`,
+      body: `Ask the venue's front desk or security first (museums, malls, stadiums and hotels keep their own lost &amp; found). For items lost on the street, contact the relevant NYPD precinct. A public listing can also share item details with local residents through the protected relay.`,
       links: [{ label: "NYC311 lost & found →", href: "https://portal.311.nyc.gov/" }],
     },
     {
       icon: "🐾", iconBg: "bg-rose-100", title: "Lost pet (dog, cat, other)",
-      body: `File a lost-pet report with <strong>Animal Care Centers of NYC (ACC)</strong> and search their found database daily — it links to <strong>Petco Love Lost</strong> facial recognition. Any shelter or vet scans for a <strong>microchip</strong>, so keep your details current. Post to neighborhood groups and Nextdoor fast.`,
+      body: `File a lost-pet report with <strong>Animal Care Centers of NYC (ACC)</strong> and search their found database — it links to <strong>Petco Love Lost</strong> facial recognition. Ask shelters or veterinary clinics about microchip scans, and keep your registration details current. You can also post in neighborhood groups and Nextdoor.`,
       links: [{ label: "ACC lost & found →", href: "https://www.nycacc.org/services/lost-and-found/" }, { label: "Petco Love Lost", href: "https://lost.petcolove.org/" }],
     },
   ],
-  midCtaHeading: "Don't wait — the first 48 hours matter most",
-  midCtaBody: "Lost & found offices clear items on strict deadlines. Get in the system now.",
+  midCtaHeading: "Choose a report option",
+  midCtaBody: "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25 and 12 months of monitoring.",
   areasHeading: "Lost something in a specific NYC neighborhood?",
   areasSubtitle:
     "New York City spans five boroughs and hundreds of neighborhoods. Pick the area closest to where you lost your item — each has its own transit hubs, precincts and hotspots.",
@@ -113,9 +113,9 @@ const newYork: CityGuide = {
     { name: "The Bronx", href: "/lost-and-found/ny/bronx", blurb: "Yankee Stadium, the Bronx Zoo, Fordham and the Grand Concourse. Event days and the 4/B/D lines are common spots for misplaced belongings." },
     { name: "Staten Island", href: "/lost-and-found/ny/staten-island", blurb: "The Staten Island Ferry and the SIR railway. Items lost on the ferry or railway go through the MTA / Staten Island Railway lost & found." },
   ],
-  socialHeading: "Amplify your report on New York's social channels",
+  socialHeading: "New York community channels",
   socialSubtitle:
-    "Most items come back through a person, not an office. We help you create a clean, shareable post and point you to the most active NYC communities:",
+    "Local social channels provide another way to share a report. These are examples of NYC community channels:",
   social: [
     ["Facebook groups", "“NYC Lost & Found”, borough & neighborhood groups"],
     ["Reddit", "r/nyc, r/AskNYC, borough subreddits"],
@@ -130,7 +130,7 @@ const newYork: CityGuide = {
     { q: "I left something in a New York taxi — what now?", a: "Call 311 with the medallion number from your receipt. If you paid by card, your statement often shows it. For Uber/Lyft use the in-app lost-item flow." },
     { q: "How long does the NYPD hold found property?", a: "It depends on value, but for non-evidence property you should claim it within 120 days of it being vouchered, or it may be disposed of." },
     { q: "My pet is lost in NYC — where do I start?", a: "File a lost-pet report with Animal Care Centers of NYC (ACC), search their found database daily, and use the linked Petco Love Lost facial-recognition search. Keep your microchip info current." },
-    { q: "Is ReportLost.org official / does it replace the police?", a: "No — we're an independent service that helps you report to the right official channels faster and amplify your search across social communities. The official offices hold the items." },
+    { q: "Is ReportLost.org official / does it replace the police?", a: "No. ReportLost is independent. Official agencies and venues handle their own filing procedures and retain and release found property. Paid team-assisted search includes relevant local outreach." },
   ],
   nearby: [
     { label: "Brooklyn", href: "/lost-and-found/ny/brooklyn" },
@@ -142,8 +142,8 @@ const newYork: CityGuide = {
     { label: "Newark, NJ", href: "/lost-and-found/nj/newark" },
     { label: "Hoboken, NJ", href: "/lost-and-found/nj/hoboken" },
   ],
-  finalCtaHeading: "Ready to get your item back?",
-  finalCtaBody: "One report. Every relevant channel in New York City.",
+  finalCtaHeading: "Create a lost-item report",
+  finalCtaBody: "Review the available report options and official channels for New York City.",
   ctaLabel: "Report my lost item →",
   finalCtaLabel: "Start my report →",
   disclaimer:
@@ -157,32 +157,32 @@ const losAngeles: CityGuide = {
   state: "CA",
   citySlug: "los angeles",
   badge: "Los Angeles, CA · Lost & Found",
-  h1: "Lost something in Los Angeles? Report it and get it back.",
+  h1: "Lost and found information for Los Angeles",
   heroSubtitle:
-    "One report and we route it to the right <strong>LAPD area</strong>, the relevant <strong>Metro, LAX and rideshare lost &amp; found</strong>, and active <strong>local social channels</strong>.",
+    "Use this guide to identify lost-and-found contacts for the <strong>LAPD</strong>, <strong>Metro, LAX and rideshare providers</strong>, venues and local services. ReportLost is independent; available options are shown before a report is submitted.",
   imageAltFallback: "View of Los Angeles",
-  stepsHeading: "How we help you recover it in Los Angeles",
+  stepsHeading: "How to report a lost item in Los Angeles",
   steps: [
-    { icon: "📝", iconBg: "bg-blue-100", title: "1. You report the loss", body: "Describe the item and where you lost it. The more detail, the better the match." },
-    { icon: "📡", iconBg: "bg-blue-100", title: "2. We route it to the right places", body: "The LAPD area covering that spot, plus Metro / LAX / rideshare lost &amp; found and the right social groups." },
-    { icon: "🤝", iconBg: "bg-green-100", title: "3. You get matched & notified", body: "If someone finds or turns in your item, you're alerted to arrange pickup." },
+    { icon: "📝", iconBg: "bg-blue-100", title: "1. Record the loss", body: "Note the item’s identifying details, the date and the place where it may have been left." },
+    { icon: "📡", iconBg: "bg-blue-100", title: "2. Check the relevant contact", body: "Use the official agency or venue links below. ReportLost’s available options and included services are shown on the report form." },
+    { icon: "🤝", iconBg: "bg-green-100", title: "3. Review replies and potential matches", body: "For paid search options, potential public-web matches are reviewed before notification. Replies from agencies and venues follow their own procedures." },
   ],
   intro: [
-    `Spread across roughly 500 square miles, Los Angeles is a city where losing a phone, a wallet, a set of keys — or a pet — can happen anywhere from a Metro train to a beach in Venice. The good news is that LA has several dedicated lost-and-found systems. The hard part is knowing which one handles your case. Report it here and we point you to the right channel and the LAPD area that covers exactly where you lost it.`,
-    `Whether it happened on the Metro, at LAX, in a rideshare, at a Hollywood venue or on the Westside, acting fast matters — most lost-and-found offices hold items on strict deadlines.`,
+    `Los Angeles has separate lost-and-found processes for Metro, airports, police, rideshare providers, venues and animal services. The guide below lists contact details and filing instructions for common situations.`,
+    `Transit providers, airports, police departments and venues each have their own lost-property process and claim policies. Use the contact details below for the place where the item may have been left.`,
   ],
-  guideHeading: "Exactly what to do, based on where you lost it",
+  guideHeading: "Lost-and-found contacts by location type",
   guideSubtitle:
-    "Los Angeles has many separate lost-and-found systems. Reporting to the wrong one wastes days — here is the right channel for each.",
+    "Transit providers, airports, agencies and venues maintain separate lost-and-found processes. The links below identify the relevant contact for each type of location.",
   cards: [
     {
       icon: "🚇", iconBg: "bg-blue-100", title: "Metro bus or train (and Metrolink)",
-      body: `File a Lost Item Report online with Metro. You'll get a reference number by email; wait 3 business days, then verify at the Lost &amp; Found office. Items are held 90 days. Lost it on a Metrolink train? Call or text 800-371-5465.`,
+      body: `File a Lost Item Report online with Metro. You'll get a reference number by email; wait 3 business days, then verify at the Lost &amp; Found office. The agency lists a 90-day holding period. For Metrolink trains, call or text 800-371-5465.`,
       links: [{ label: "File a Metro report →", href: "https://lostandfound.metro.net/" }, { label: "Metrolink", href: "https://metrolinktrains.com/customer-service/lost--found/" }],
     },
     {
       icon: "🚕", iconBg: "bg-yellow-100", title: "Uber, Lyft or taxi",
-      body: `Use the app's "I lost an item" flow to contact your driver (Uber and Lyft both have one). For a traditional taxi, call the company directly with your trip time, pickup and drop-off. We help you gather the exact details.`,
+      body: `Use the app's "I lost an item" flow to contact an Uber or Lyft driver. For a traditional taxi, contact the company with your trip time, pickup and drop-off.`,
     },
     {
       icon: "👮", iconBg: "bg-indigo-100", title: "Handed to the police (LAPD)",
@@ -196,7 +196,7 @@ const losAngeles: CityGuide = {
     },
     {
       icon: "🌴", iconBg: "bg-green-100", title: "Street, beach, shop or venue",
-      body: `Ask the venue's front desk or security first (malls, museums, stadiums, hotels and Union Station keep their own lost &amp; found). For items lost outdoors, a public alert on local groups is often what gets an honest finder to reach you.`,
+      body: `Ask the venue's front desk or security first (malls, museums, stadiums, hotels and Union Station keep their own lost &amp; found). For items lost outdoors, a public listing on local groups can share the item details with nearby residents.`,
     },
     {
       icon: "🐾", iconBg: "bg-rose-100", title: "Lost pet (dog, cat, other)",
@@ -204,8 +204,8 @@ const losAngeles: CityGuide = {
       links: [{ label: "LA Animal Services →", href: "https://www.laanimalservices.com/lost-pet" }, { label: "Petco Love Lost", href: "https://lost.petcolove.org/" }, { label: "LA County", href: "https://animalcare.lacounty.gov/if-you-lost-your-pet/" }],
     },
   ],
-  midCtaHeading: "Don't wait — the first 48 hours matter most",
-  midCtaBody: "Lost & found offices clear items on strict deadlines. Get in the system now.",
+  midCtaHeading: "Choose a report option",
+  midCtaBody: "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25 and 12 months of monitoring.",
   areasHeading: "Lost something in a specific LA area?",
   areasSubtitle:
     "Los Angeles is huge and spread out. Knowing the area helps you target the right transit hub, LAPD division and local hotspots.",
@@ -213,13 +213,13 @@ const losAngeles: CityGuide = {
     { name: "Downtown LA (DTLA)", blurb: "Union Station, the Financial District, the Arts District and LA Live. Union Station has its own lost & found, and Metro's A/B/D/E lines converge here." },
     { name: "Hollywood & Los Feliz", blurb: "Hollywood Blvd, the Walk of Fame, Griffith Observatory and Los Feliz. High foot traffic and nightlife mean lots of phones and wallets left behind." },
     { name: "Westside (Westwood, UCLA, Brentwood)", blurb: "UCLA has its own campus lost & found; for items lost off-campus, LAPD's West LA area and rideshare lost-item flows are your best bet." },
-    { name: "Venice & the coast", blurb: "The Venice Boardwalk, Abbot Kinney and the beaches. Items lost on the sand are rarely recovered — post a public alert fast." },
+    { name: "Venice & the coast", blurb: "The Venice Boardwalk, Abbot Kinney and the beaches. For items lost on the sand, check with the relevant beach or city service and share a public listing if useful." },
     { name: "The San Fernando Valley", blurb: "Sherman Oaks, Van Nuys, North Hollywood and Studio City. Metro's B/G lines and Hollywood Burbank Airport serve the Valley." },
     { name: "Koreatown, Silver Lake & Echo Park", blurb: "Dense, transit-heavy neighborhoods with busy bars and restaurants — check the venue first, then Metro Lost & Found." },
   ],
-  socialHeading: "Amplify your report on LA's social channels",
+  socialHeading: "Los Angeles community channels",
   socialSubtitle:
-    "Most items come back through a person, not an office. We help you create a clean, shareable post and point you to the most active LA communities:",
+    "Local social channels provide another way to share a report. These are examples of LA community channels:",
   social: [
     ["Facebook groups", "“LA Lost & Found”, neighborhood & Valley groups"],
     ["Reddit", "r/LosAngeles, r/AskLosAngeles"],
@@ -235,7 +235,7 @@ const losAngeles: CityGuide = {
     { q: "I lost something at LAX — what do I do?", a: "For items lost in public areas of the airport, submit a claim to LAX Airport Police Lost & Found (they use the Crowdfind system). Property is held about 97 days and is mailed to you at your expense. For items left on a plane or at the gate, contact your airline; for a rideshare or taxi, contact that company directly." },
     { q: "I left something in an Uber, Lyft or taxi in LA.", a: "Use the app's 'I lost an item' flow to contact your driver (Uber and Lyft both have one). For a traditional taxi, call the taxi company directly with your trip details." },
     { q: "My pet is lost in Los Angeles — where do I start?", a: "File a report with LA Animal Services and use Petco Love Lost — LA shelters use it as the main lost-and-found tool through the LA Lost Pet Coalition. Contact your microchip company too, and make sure your details are current." },
-    { q: "Is ReportLost.org official or does it replace the police?", a: "No. ReportLost.org is an independent service that helps you report to the right official channels faster and amplify your search across local social communities. The official offices retain and release the items." },
+    { q: "Is ReportLost.org official or does it replace the police?", a: "No. ReportLost.org is independent. Official agencies and venues handle their own filing procedures and retain and release found property. Paid team-assisted search includes relevant local outreach." },
   ],
   nearby: [
     { label: "Long Beach", href: "/lost-and-found/ca/long-beach" },
@@ -247,8 +247,8 @@ const losAngeles: CityGuide = {
     { label: "Beverly Hills", href: "/lost-and-found/ca/beverly-hills" },
     { label: "Anaheim", href: "/lost-and-found/ca/anaheim" },
   ],
-  finalCtaHeading: "Ready to get your item back?",
-  finalCtaBody: "One report. Every relevant channel in Los Angeles.",
+  finalCtaHeading: "Create a lost-item report",
+  finalCtaBody: "Review the available report options and official channels for Los Angeles.",
   ctaLabel: "Report my lost item →",
   finalCtaLabel: "Start my report →",
   disclaimer:
@@ -262,23 +262,23 @@ const chicago: CityGuide = {
   state: "IL",
   citySlug: "chicago",
   badge: "Chicago, IL · Lost & Found",
-  h1: "Left something behind in Chicago? Report it and start the search.",
+  h1: "Lost and found information for Chicago",
   heroSubtitle:
-    "File one report and we'll point you to the right <strong>Chicago Police district</strong>, the relevant <strong>CTA, airport and rideshare lost &amp; found</strong>, and the local groups that actually get items returned.",
+    "Use this guide to identify lost-and-found contacts for the <strong>Chicago Police</strong>, <strong>CTA, airports and rideshare providers</strong>, venues and local services. ReportLost is independent; available options are shown before a report is submitted.",
   imageAltFallback: "View of Chicago",
-  stepsHeading: "How ReportLost helps you recover it in Chicago",
+  stepsHeading: "How to report a lost item in Chicago",
   steps: [
-    { icon: "📝", iconBg: "bg-blue-100", title: "1. Tell us what & where", body: "A quick description of the item and the spot you lost it is all we need to get started." },
-    { icon: "📡", iconBg: "bg-blue-100", title: "2. We match it to the right desk", body: "CTA, an airport office, the Chicago Police district for that block, and the busiest local groups." },
-    { icon: "🤝", iconBg: "bg-green-100", title: "3. We alert you on a match", body: "When your item surfaces, you hear about it and can arrange to pick it up." },
+    { icon: "📝", iconBg: "bg-blue-100", title: "1. Record the loss", body: "Note the item’s identifying details, the date and the place where it may have been left." },
+    { icon: "📡", iconBg: "bg-blue-100", title: "2. Check the relevant contact", body: "Use the official agency or venue links below. ReportLost’s available options and included services are shown on the report form." },
+    { icon: "🤝", iconBg: "bg-green-100", title: "3. Review replies and potential matches", body: "For paid search options, potential public-web matches are reviewed before notification. Replies from agencies and venues follow their own procedures." },
   ],
   intro: [
-    `From the 'L' platforms downtown to the lakefront and the neighborhoods, Chicago is a big, busy city where a phone, a wallet, a bag — or a pet — can slip away in a moment. The city runs several lost-and-found systems, but they don't talk to each other, so the trick is starting with the right one. Report it here and we'll send you to the correct channel and the police district that covers where it happened.`,
-    `On the CTA, at O'Hare or Midway, in a rideshare, or at a Loop restaurant — the sooner you report, the better your odds. Several offices hold items for only a few weeks before moving them on.`,
+    `Chicago has separate lost-and-found processes for CTA, airports, police, rideshare providers, venues and animal services. The guide below lists contact details and filing instructions for common situations.`,
+    `CTA, airport, rideshare and venue reports each follow a different process. Review the relevant office’s current instructions and retention policy.`,
   ],
-  guideHeading: "Where to report — depending on where you lost it",
+  guideHeading: "Lost-and-found contacts by location type",
   guideSubtitle:
-    "Each part of Chicago's lost-and-found network handles different places. Start with the right one and you save days.",
+    "Chicago's lost-and-found agencies handle different locations. Use the links below to identify the relevant office.",
   cards: [
     {
       icon: "🚆", iconBg: "bg-blue-100", title: "CTA bus or 'L' train (and Metra)",
@@ -291,7 +291,7 @@ const chicago: CityGuide = {
     },
     {
       icon: "👮", iconBg: "bg-indigo-100", title: "Turned in to the police (CPD)",
-      body: `Recovered property is held by the CPD's Evidence &amp; Recovered Property Section. Bring your inventory receipt and a photo ID. Heads up: you generally have <strong>30 days</strong> to claim it before it can be disposed of.`,
+      body: `Recovered property is held by the CPD's Evidence &amp; Recovered Property Section. Bring your inventory receipt and a photo ID. The reported claim period is generally <strong>30 days</strong>; confirm the date and process with the department.`,
       links: [{ label: "How CPD property works →", href: "https://www.chicagopolice.org/police-records-procedures/notice-to-owners-of-property/" }],
     },
     {
@@ -306,15 +306,15 @@ const chicago: CityGuide = {
     },
     {
       icon: "🐾", iconBg: "bg-rose-100", title: "Lost pet (dog, cat, other)",
-      body: `Watch the Chicago Animal Care &amp; Control listings on petharbor.com/chicago, text LOST to 1-855-LOST312 for step-by-step help, and post to Petco Love Lost. A microchip is the single best way to be reunited — keep yours up to date.`,
+      body: `Watch the Chicago Animal Care &amp; Control listings on petharbor.com/chicago, text LOST to 1-855-LOST312 for step-by-step help, and post to Petco Love Lost. Keep your pet’s microchip registration details current.`,
       links: [{ label: "Chicago Animal Care →", href: "https://www.chicago.gov/city/en/depts/cacc/provdrs/care/svcs/lost_pet_recovery.html" }, { label: "Petco Love Lost", href: "https://lost.petcolove.org/" }],
     },
   ],
-  midCtaHeading: "The clock is ticking — report it today",
-  midCtaBody: "Chicago offices clear unclaimed items on tight timelines. Get your report in the system now.",
+  midCtaHeading: "Choose a report option",
+  midCtaBody: "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25 and 12 months of monitoring.",
   areasHeading: "Which Chicago neighborhood did you lose it in?",
   areasSubtitle:
-    "Chicago is a city of neighborhoods, each with its own transit stops, police district and hotspots. Pinning down the area speeds everything up.",
+    "The relevant transit operator, police district or venue depends on the loss location. Use the area information below to identify likely contacts.",
   areas: [
     { name: "The Loop & River North", blurb: "Downtown offices, Millennium Park, Union Station and the busiest CTA transfers. Rush-hour crowds mean plenty of phones and wallets left on the 'L'." },
     { name: "North Side (Lincoln Park, Lakeview, Wrigleyville)", blurb: "Game days at Wrigley, lakefront paths and a dense bar scene — check the venue first, then CTA Lost & Found." },
@@ -322,9 +322,9 @@ const chicago: CityGuide = {
     { name: "South Side (Hyde Park, Bronzeville)", blurb: "The University of Chicago, Metra Electric and the Museum of Science and Industry. Campus and museum desks keep their own lost & found." },
     { name: "West Loop & Pilsen", blurb: "Restaurant Row, the United Center and a growing transit hub. Venues and rideshares are the first places to check." },
   ],
-  socialHeading: "Get more eyes on it across Chicago's communities",
+  socialHeading: "Chicago community channels",
   socialSubtitle:
-    "A returned item usually comes from a helpful stranger, not an office. We help you write a clean, shareable post and aim it at the most active Chicago communities:",
+    "Local social channels provide another way to share a report. Examples of Chicago community channels:",
   social: [
     ["Facebook groups", "Neighborhood & “Chicago Lost & Found” groups"],
     ["Reddit", "r/chicago, r/AskChicago"],
@@ -340,7 +340,7 @@ const chicago: CityGuide = {
     { q: "I lost something at O'Hare or Midway.", a: "For O'Hare, contact the airport Lost & Found (Terminal 2, lower level). For Midway, call the Communication Center. Items left at a TSA checkpoint go through TSA, and anything left on the plane or at the gate is handled by your airline." },
     { q: "What about an Uber, Lyft or taxi?", a: "Open the app's lost-item help to reach your driver (Uber and Lyft both offer this). For a metered cab, call the taxi company with your pickup time and route." },
     { q: "My pet went missing in Chicago — what's the first step?", a: "Check the Chicago Animal Care & Control listings (petharbor.com/chicago), text LOST to 1-855-LOST312 for guidance, and post to Petco Love Lost. Have any shelter or vet scan for a microchip and keep your registration current." },
-    { q: "Is ReportLost.org an official city service?", a: "No — we're independent. We help you reach the correct official channels quickly and spread the word across local communities. The official lost-and-found offices are the ones that hold and release recovered items." },
+    { q: "Is ReportLost.org an official city service?", a: "No — we're independent. We provide information about official channels and optional local outreach, depending on the service selected. The official lost-and-found offices are the ones that hold and release recovered items." },
   ],
   nearby: [
     { label: "Evanston", href: "/lost-and-found/il/evanston" },
@@ -352,8 +352,8 @@ const chicago: CityGuide = {
     { label: "Schaumburg", href: "/lost-and-found/il/schaumburg" },
     { label: "Joliet", href: "/lost-and-found/il/joliet" },
   ],
-  finalCtaHeading: "Ready to track it down?",
-  finalCtaBody: "One report reaches every channel that matters in Chicago.",
+  finalCtaHeading: "Create a lost-item report",
+  finalCtaBody: "Review the available report options and official channels for Chicago.",
   ctaLabel: "Report my lost item →",
   finalCtaLabel: "Start my report →",
   disclaimer:
@@ -367,32 +367,32 @@ const houston: CityGuide = {
   state: "TX",
   citySlug: "houston",
   badge: "Houston, TX · Lost & Found",
-  h1: "Lost something in Houston? Report it and we'll route it to the right hands.",
+  h1: "Lost and found information for Houston",
   heroSubtitle:
-    "Send one report and we'll connect you with the right <strong>HPD property channel</strong>, the relevant <strong>METRO, airport and rideshare lost &amp; found</strong>, and the local groups most likely to spot it.",
+    "Use this guide to identify lost-and-found contacts for <strong>HPD</strong>, <strong>METRO, airports and rideshare providers</strong>, venues and local services. ReportLost is independent; available options are shown before a report is submitted.",
   imageAltFallback: "View of Houston",
-  stepsHeading: "How ReportLost gets your item back in Houston",
+  stepsHeading: "How to report a lost item in Houston",
   steps: [
-    { icon: "📝", iconBg: "bg-blue-100", title: "1. Describe your loss", body: "Tell us the item and roughly where and when it went missing — details make the match." },
-    { icon: "📡", iconBg: "bg-blue-100", title: "2. We send it to the right office", body: "METRO, the airport, the HPD property channel for that area, and the busiest Houston groups." },
-    { icon: "🤝", iconBg: "bg-green-100", title: "3. You get the good news", body: "If it turns up, we let you know so you can arrange to collect it." },
+    { icon: "📝", iconBg: "bg-blue-100", title: "1. Record the loss", body: "Note the item’s identifying details, the date and the place where it may have been left." },
+    { icon: "📡", iconBg: "bg-blue-100", title: "2. Check the relevant contact", body: "Use the official agency or venue links below. ReportLost’s available options and included services are shown on the report form." },
+    { icon: "🤝", iconBg: "bg-green-100", title: "3. Review replies and potential matches", body: "For paid search options, potential public-web matches are reviewed before notification. Replies from agencies and venues follow their own procedures." },
   ],
   intro: [
-    `As the largest city in Texas and one of the most spread-out in the country, Houston gives a lost phone, wallet or pet a lot of ground to disappear into — from the METRORail downtown to the Galleria, the Medical Center and two major airports. Each has its own lost-and-found process, and they work independently. Report it here and we'll steer you to the right one and the police area that covers where it happened.`,
-    `Whether it slipped away on a Park &amp; Ride bus, at IAH or Hobby, in a rideshare, or at a Montrose restaurant, don't sit on it — some offices only hold items for about a month.`,
+    `Houston has separate lost-and-found processes for METRO, airports, police, rideshare providers, venues and animal services. The guide below lists contact details and filing instructions for common situations.`,
+    `Transit providers, airports, rideshare companies, restaurants and venues each have their own lost-property procedures and retention policies.`,
   ],
-  guideHeading: "The right place to report, by where it went missing",
+  guideHeading: "Lost-and-found contacts by location type",
   guideSubtitle:
-    "Houston's lost-and-found offices don't overlap. Match your situation below and skip the runaround.",
+    "Houston's lost-and-found offices handle different locations. Use the links below to find the appropriate office.",
   cards: [
     {
       icon: "🚈", iconBg: "bg-blue-100", title: "METRO bus, METRORail or Park & Ride",
-      body: `Call 713-658-0854 or email METRO with your item description and route or vehicle number. If it's found, you'll get a claim number and pick it up at the RideStore on Main Street. Items are held around 30 days.`,
+      body: `Call 713-658-0854 or email METRO with your item description and route or vehicle number. If it's found, you'll get a claim number and pick it up at the RideStore on Main Street. The reported holding period is around 30 days.`,
       links: [{ label: "METRO Lost & Found →", href: "https://www.ridemetro.org/riding-metro/lost-and-found" }],
     },
     {
       icon: "🚕", iconBg: "bg-yellow-100", title: "Uber, Lyft or taxi",
-      body: `Both Uber and Lyft let you report a lost item and message your driver from the app. For a taxi, call the company directly with your pickup time and route. We help you assemble the details that speed it up.`,
+      body: `Uber and Lyft provide in-app lost-item flows. For a taxi, contact the company with your trip time and route.`,
     },
     {
       icon: "👮", iconBg: "bg-indigo-100", title: "Turned in to the police (HPD)",
@@ -406,29 +406,29 @@ const houston: CityGuide = {
     },
     {
       icon: "🤠", iconBg: "bg-green-100", title: "Street, mall, shop or venue",
-      body: `Front desks and security at malls, stadiums, museums and hotels keep their own lost &amp; found — always ask there first. For anything lost in public, a shareable alert to Houston groups widens the net fast.`,
+      body: `Front desks and security at malls, stadiums, museums and hotels keep their own lost &amp; found — always ask there first. For anything lost in public, a shareable notice to Houston groups provides another way to share the item details.`,
     },
     {
       icon: "🐾", iconBg: "bg-rose-100", title: "Lost pet (dog, cat, other)",
-      body: `Report and search on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St. The Houston SPCA and Houston Humane Society help too. If your pet has a microchip, contact the chip company right away.`,
+      body: `Report and search on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St. The Houston SPCA and Houston Humane Society help too. If your pet has a microchip, contact the chip company as well.`,
       links: [{ label: "BARC lost pets →", href: "https://www.houstontx.gov/barc/lost_pet.html" }, { label: "Petco Love Lost", href: "https://lost.petcolove.org/" }, { label: "Houston SPCA", href: "https://houstonspca.org/resources-programs/found-animals/" }],
     },
   ],
-  midCtaHeading: "Move quickly — most items don't wait around",
-  midCtaBody: "Several Houston offices hold unclaimed items for only weeks. File your report now.",
+  midCtaHeading: "Choose a report option",
+  midCtaBody: "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25 and 12 months of monitoring.",
   areasHeading: "Which part of Houston did you lose it in?",
   areasSubtitle:
-    "Houston is enormous and car-centric. Knowing the district points you to the right transit hub, police station and the venues worth calling first.",
+    "Houston covers a wide area. The neighborhood details below can help identify the relevant transit hub, police station or venue.",
   areas: [
     { name: "Downtown & Midtown", blurb: "The theater district, sports venues and the METRORail Red Line. The METRO RideStore on Main Street is where recovered transit items are picked up." },
     { name: "The Galleria & Uptown", blurb: "Houston's biggest shopping district — malls and hotels keep their own lost & found, so ask the front desk before anything else." },
     { name: "Texas Medical Center & Museum District", blurb: "One of the busiest medical complexes in the world, plus Rice University and the museums. Campus and hospital desks handle their own found items." },
-    { name: "Montrose & The Heights", blurb: "Walkable, restaurant- and bar-heavy neighborhoods where items are most often left at venues — a quick call usually beats waiting." },
+    { name: "Montrose & The Heights", blurb: "Walkable, restaurant- and bar-heavy neighborhoods where items are most often left at venues — contact the relevant venue for its current process." },
     { name: "Energy Corridor & the west side", blurb: "Sprawling office parks and Park & Ride commuter routes. Items lost on a Park & Ride bus go through METRO Lost & Found." },
   ],
-  socialHeading: "Spread the word across Houston",
+  socialHeading: "Houston community channels",
   socialSubtitle:
-    "More often than not, an honest neighbor is what reunites you with your item. We help you post a clean alert to the Houston communities that see the most traffic:",
+    "Local social channels provide another way to share a report. These are examples of Houston community channels:",
   social: [
     ["Facebook groups", "Neighborhood & “Houston Lost & Found” groups"],
     ["Reddit", "r/houston, r/askhouston"],
@@ -443,8 +443,8 @@ const houston: CityGuide = {
     { q: "How does the Houston Police Department handle found property?", a: "Found and unclaimed property is managed by the HPD Property Division (1202 Washington Ave). To claim an item, email Property.Investigations@Houstontx.gov with a description and proof of ownership. Public notices of found property stay up for at least 90 days." },
     { q: "I lost something at Bush Intercontinental (IAH) or Hobby (HOU).", a: "Each airport has its own Lost & Found with an online form — IAH and Hobby are handled separately. Security-checkpoint items go through TSA at that airport, and anything left on the plane is held by your airline." },
     { q: "What about an Uber, Lyft or taxi ride?", a: "Use the app's lost-item feature to message your driver (both Uber and Lyft have one). For a taxi, call the company with your trip time and pickup/drop-off details." },
-    { q: "My pet is missing in Houston — where do I begin?", a: "Search and report on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St or call 832-395-9084. The Houston SPCA and Houston Humane Society can help too. If your pet is microchipped, alert the chip company right away." },
-    { q: "Are you the city's official lost and found?", a: "No. ReportLost.org is an independent service that helps you reach the right official channels faster and spread the word locally. The official offices are the ones that store and release recovered property." },
+    { q: "My pet is missing in Houston — where do I begin?", a: "Search and report on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St or call 832-395-9084. The Houston SPCA and Houston Humane Society can help too. If your pet is microchipped, contact the chip company as well." },
+    { q: "Are you the city's official lost and found?", a: "No. ReportLost.org is an independent service that provides information about official channels and offers optional local outreach with the team-assisted service. The official offices are the ones that store and release recovered property." },
   ],
   nearby: [
     { label: "Sugar Land", href: "/lost-and-found/tx/sugar-land" },
@@ -456,8 +456,8 @@ const houston: CityGuide = {
     { label: "Galveston", href: "/lost-and-found/tx/galveston" },
     { label: "Spring", href: "/lost-and-found/tx/spring" },
   ],
-  finalCtaHeading: "Ready to get it back?",
-  finalCtaBody: "One report covers every channel that counts in Houston.",
+  finalCtaHeading: "Create a lost-item report",
+  finalCtaBody: "Review the available report options and official channels for Houston.",
   ctaLabel: "Report my lost item →",
   finalCtaLabel: "Start my report →",
   disclaimer:
@@ -471,23 +471,23 @@ const phoenix: CityGuide = {
   state: "AZ",
   citySlug: "phoenix",
   badge: "Phoenix, AZ · Lost & Found",
-  h1: "Lost something in Phoenix? Report it and let's track it down.",
+  h1: "Lost and found information for Phoenix",
   heroSubtitle:
-    "One report and we'll steer you to the right <strong>Phoenix Police property bureau</strong>, the relevant <strong>Valley Metro, Sky Harbor and rideshare lost &amp; found</strong>, and the local groups most likely to help.",
+    "Use this guide to identify lost-and-found contacts for the <strong>Phoenix Police property bureau</strong>, <strong>Valley Metro, Sky Harbor and rideshare providers</strong>, venues and local services. ReportLost is independent; available options are shown before a report is submitted.",
   imageAltFallback: "View of Phoenix",
-  stepsHeading: "How we help you get it back in the Valley",
+  stepsHeading: "How to report a lost item in Phoenix",
   steps: [
-    { icon: "📝", iconBg: "bg-blue-100", title: "1. Log what you lost", body: "A short description and the spot it went missing is enough for us to get moving." },
-    { icon: "📡", iconBg: "bg-blue-100", title: "2. We aim it at the right desk", body: "Valley Metro, Sky Harbor, the Phoenix Police property bureau, and the busiest Valley groups." },
-    { icon: "🤝", iconBg: "bg-green-100", title: "3. We flag any match", body: "If your item shows up, you'll know — and can set up a pickup." },
+    { icon: "📝", iconBg: "bg-blue-100", title: "1. Record the loss", body: "Note the item’s identifying details, the date and the place where it may have been left." },
+    { icon: "📡", iconBg: "bg-blue-100", title: "2. Check the relevant contact", body: "Use the official agency or venue links below. ReportLost’s available options and included services are shown on the report form." },
+    { icon: "🤝", iconBg: "bg-green-100", title: "3. Review replies and potential matches", body: "Paid search options include email notifications for reviewed potential public-web matches. Finder replies use the protected relay address." },
   ],
   intro: [
-    `Across the Valley of the Sun — from downtown Phoenix and the light rail to Sky Harbor and the desert trailheads — a phone, wallet or pet can go missing just about anywhere. Phoenix has a handful of separate lost-and-found systems, and each covers different ground. Report it here and we'll direct you to the right one and the police area that covers where it happened.`,
-    `On Valley Metro, at PHX, in a rideshare or at a Scottsdale-adjacent resort, timing counts — Sky Harbor, for instance, holds most items only about ten days.`,
+    `Phoenix has separate lost-and-found processes for Valley Metro, Sky Harbor, police, rideshare providers, venues and animal services. The guide below lists contact details and filing instructions for common situations.`,
+    `On Valley Metro, at PHX, in a rideshare or at a Scottsdale-adjacent resort, Sky Harbor, for instance, publishes its own item-holding information; check its current lost-and-found instructions.`,
   ],
-  guideHeading: "Pick the right lost & found for your situation",
+  guideHeading: "Phoenix lost-and-found contacts by location",
   guideSubtitle:
-    "Phoenix's offices each cover different places. Start with the one below that fits, and you'll save yourself days of calls.",
+    "Phoenix's offices cover different locations. Use the guide below to identify the office that handles the place where the item may have been left.",
   cards: [
     {
       icon: "🚈", iconBg: "bg-blue-100", title: "Valley Metro rail or bus",
@@ -496,7 +496,7 @@ const phoenix: CityGuide = {
     },
     {
       icon: "🚕", iconBg: "bg-yellow-100", title: "Uber, Lyft or taxi",
-      body: `Report the item and message your driver from the Uber or Lyft app. For a taxi, call the company with your pickup time and route. We help you gather the details that get a faster reply.`,
+      body: `Report the item and message your driver from the Uber or Lyft app. For a taxi, call the company with your pickup time and route. We help you gather the details that help the company identify the trip.`,
     },
     {
       icon: "👮", iconBg: "bg-indigo-100", title: "Turned in to the police (Phoenix PD)",
@@ -518,11 +518,11 @@ const phoenix: CityGuide = {
       links: [{ label: "Maricopa County →", href: "https://www.maricopa.gov/162/Lost-Found-Pet" }, { label: "Petco Love Lost", href: "https://lost.petcolove.org/" }, { label: "AZ Humane", href: "https://www.azhumane.org/lost-a-pet/" }],
     },
   ],
-  midCtaHeading: "Don't let the window close",
-  midCtaBody: "Some Phoenix offices only hold items for about ten days. Get your report in now.",
+  midCtaHeading: "Choose a report option",
+  midCtaBody: "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25 and 12 months of monitoring.",
   areasHeading: "Which part of Phoenix did you lose it in?",
   areasSubtitle:
-    "Phoenix is vast and low-density. Knowing the area helps you target the right transit stop, police precinct and the venues worth calling first.",
+    "The Phoenix area is geographically large. Neighborhood details below can help identify a nearby transit office, police unit or venue.",
   areas: [
     { name: "Downtown & the light rail corridor", blurb: "Sports arenas, ASU Downtown and the Valley Metro Rail line along Central Ave. Central Station is where many recovered transit items end up." },
     { name: "Midtown & Uptown", blurb: "The museums, Park Central and the Camelback corridor. Venues and offices along the rail line keep their own lost & found." },
@@ -530,9 +530,9 @@ const phoenix: CityGuide = {
     { name: "Sky Harbor & the airport area", blurb: "PHX, the Sky Train and the rental-car center. Items in the terminals or on the Sky Train go through Sky Harbor Lost & Found." },
     { name: "North Phoenix, Deer Valley & Ahwatukee", blurb: "Spread-out residential areas and trailheads. Items lost on a hike are rarely handed in — a public alert is your best shot." },
   ],
-  socialHeading: "Get more eyes on it across the Valley",
+  socialHeading: "Phoenix community channels",
   socialSubtitle:
-    "Most items come back thanks to a helpful stranger, not an office. We help you post a clean alert to the Phoenix-area communities with the most reach:",
+    "Local social channels provide another way to share a report. These are examples of Phoenix-area community channels:",
   social: [
     ["Facebook groups", "Neighborhood & “Phoenix Lost & Found” groups"],
     ["Reddit", "r/phoenix, r/askphoenix"],
@@ -547,8 +547,8 @@ const phoenix: CityGuide = {
     { q: "How do I claim property held by the Phoenix Police?", a: "Contact the Phoenix Police Property Management Bureau at (602) 261-8371 (100 E. Elwood St). You'll need government ID and proof of ownership. For unclaimed items, you generally have 30 days from the date of publication to make a claim." },
     { q: "I lost something at Sky Harbor (PHX).", a: "For terminals, the PHX Sky Train, buses or parking, call Sky Harbor Lost & Found at 602-273-3333 or email lostandfound@phoenix.gov. Items are held only about 10 days (keys 30). Checkpoint items go through TSA; anything left on the plane is held by your airline." },
     { q: "What about a rideshare or taxi?", a: "Uber and Lyft both have an in-app 'I lost an item' option to reach your driver. For a taxi, call the company directly with your trip time and route." },
-    { q: "My pet is lost in the Phoenix area — what should I do?", a: "Report and search on Petco Love Lost, and check Maricopa County Animal Care & Control (602-506-7387; West shelter at 2500 S. 27th Ave). Note the county doesn't impound stray cats, but you can still list them online. The Arizona Humane Society can help, and a microchip is your best chance at a fast reunion." },
-    { q: "Is ReportLost.org an official government service?", a: "No. We're an independent service that helps you reach the right official channels faster and get the word out locally. The official offices are the ones that store and release recovered property." },
+    { q: "My pet is lost in the Phoenix area — what should I do?", a: "Report and search on Petco Love Lost, and check Maricopa County Animal Care & Control (602-506-7387; West shelter at 2500 S. 27th Ave). Note the county doesn't impound stray cats, but you can still list them online. The Arizona Humane Society can help, and keep your pet’s microchip registration details current." },
+    { q: "Is ReportLost.org an official government service?", a: "No. We're an independent service that provides information about official channels and offers optional local outreach with the team-assisted service. The official offices are the ones that store and release recovered property." },
   ],
   nearby: [
     { label: "Tempe", href: "/lost-and-found/az/tempe" },
@@ -560,8 +560,8 @@ const phoenix: CityGuide = {
     { label: "Peoria", href: "/lost-and-found/az/peoria" },
     { label: "Surprise", href: "/lost-and-found/az/surprise" },
   ],
-  finalCtaHeading: "Ready to find it?",
-  finalCtaBody: "One report reaches every channel that matters across Phoenix.",
+  finalCtaHeading: "Create a lost-item report",
+  finalCtaBody: "Review the available report options and official channels for Phoenix.",
   ctaLabel: "Report my lost item →",
   finalCtaLabel: "Start my report →",
   disclaimer:

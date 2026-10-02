@@ -156,8 +156,8 @@ export async function POST(req: NextRequest) {
     const description =
       body.description?.slice(0, 255) ||
       (body.reportId
-        ? `ReportLost Active search - report #${body.reportId}`
-        : "ReportLost Active search");
+        ? `ReportLost search service for report #${body.reportId}`
+        : "ReportLost search service");
 
     const metadata: Record<string, string> = {};
     if (body.reportId != null) metadata.report_id = String(body.reportId);

@@ -36,7 +36,7 @@ const areas: { name: string; blurb: string }[] = [
   {
     name: "Montrose & The Heights",
     blurb:
-      "Walkable, restaurant- and bar-heavy neighborhoods where items are most often left at venues — a quick call usually beats waiting.",
+      "Walkable, restaurant- and bar-heavy neighborhoods where items may be left at venues. Contact the venue's lost-property desk directly.",
   },
   {
     name: "Energy Corridor & the west side",
@@ -75,11 +75,11 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: "My pet is missing in Houston — where do I begin?",
-    a: "Search and report on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St or call 832-395-9084. The Houston SPCA and Houston Humane Society can help too. If your pet is microchipped, alert the chip company right away.",
+    a: "Search and report on Petco Love Lost, and check BARC (the city shelter) at 3200 Carr St or call 832-395-9084. The Houston SPCA and Houston Humane Society can help too. If your pet is microchipped, contact the chip company and confirm your details are current.",
   },
   {
     q: "Are you the city's official lost and found?",
-    a: "No. ReportLost.org is an independent service that helps you reach the right official channels faster and spread the word locally. The official offices are the ones that store and release recovered property.",
+    a: "No. ReportLost.org is an independent service. We provide information about relevant official channels and offer optional team-assisted outreach. Official offices store and release found property.",
   },
 ];
 
@@ -90,11 +90,11 @@ export function HoustonTitleSection() {
         Houston, TX · Lost &amp; Found
       </span>
       <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight">
-        Lost something in Houston? Report it and we&apos;ll route it to the right hands.
+        Lost something in Houston? Review your report options.
       </h1>
       <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-4">
-        Send one report and we&apos;ll connect you with the right <strong>HPD property channel</strong>, the relevant{" "}
-        <strong>METRO, airport and rideshare lost &amp; found</strong>, and the local groups most likely to spot it.
+        Create a free public listing, add automatic public-web monitoring for $12 (six months), or choose team-assisted
+        search for $25 (12 months of monitoring plus relevant local outreach).
       </p>
     </section>
   );
@@ -129,7 +129,7 @@ export function HoustonExtraContent({
       {/* Étapes */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          How ReportLost gets your item back in Houston
+          How reporting works in Houston
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mt-8">
           <div className="text-center">
@@ -141,16 +141,16 @@ export function HoustonExtraContent({
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
-            <h3 className="font-bold mt-3 text-gray-900">2. We send it to the right office</h3>
+            <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              METRO, the airport, the HPD property channel for that area, and the busiest Houston groups.
+              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center text-2xl">🤝</div>
-            <h3 className="font-bold mt-3 text-gray-900">3. You get the good news</h3>
+            <h3 className="font-bold mt-3 text-gray-900">3. Search and review possible matches</h3>
             <p className="text-sm text-gray-600 mt-2">
-              If it turns up, we let you know so you can arrange to collect it.
+              The paid option includes 12 months of public-web monitoring. Potential matches are reviewed before notification.
             </p>
           </div>
         </div>
@@ -169,15 +169,14 @@ export function HoustonExtraContent({
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
             <p>
-              As the largest city in Texas and one of the most spread-out in the country, Houston gives a lost
-              phone, wallet or pet a lot of ground to disappear into — from the METRORail downtown to the Galleria,
-              the Medical Center and two major airports. Each has its own lost-and-found process, and they work
-              independently. Report it here and we&apos;ll steer you to the right one and the police area that covers
-              where it happened.
+              Houston has separate lost-property processes for METRO, its airports, venues and public agencies.
+              Use the official links below to identify the channel relevant to where the item was lost. ReportLost
+              is independent and offers three report options: a free listing, six-month automatic monitoring for $12,
+              and team-assisted search with 12-month monitoring and relevant local outreach for $25.
             </p>
             <p>
-              Whether it slipped away on a Park &amp; Ride bus, at IAH or Hobby, in a rideshare, or at a Montrose
-              restaurant, don&apos;t sit on it — some offices only hold items for about a month.
+              Holding and collection policies vary by office. Contact the service responsible for the loss location
+              to confirm its current process.
             </p>
           </div>
           {cityImage && (
@@ -261,7 +260,7 @@ export function HoustonExtraContent({
             <h3 className="font-bold text-lg text-gray-900">Street, mall, shop or venue</h3>
             <p className="text-sm text-gray-600 mt-2 leading-relaxed">
               Front desks and security at malls, stadiums, museums and hotels keep their own lost &amp; found — always
-              ask there first. For anything lost in public, a shareable alert to Houston groups widens the net fast.
+              ask there first. For items lost in public, a shareable notice can also be submitted to relevant Houston groups.
             </p>
           </div>
 
@@ -286,15 +285,15 @@ export function HoustonExtraContent({
 
       {/* CTA milieu */}
       <section className="bg-blue-50 rounded-xl border border-blue-100 p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Move quickly — most items don&apos;t wait around</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Create a Houston lost-item report</h2>
         <p className="mt-2 text-gray-600">
-          Several Houston offices hold unclaimed items for only weeks. File your report now.
+          Document the item and review the relevant local reporting channels.
         </p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
         >
-          Report my lost item →
+          Create a report
         </a>
       </section>
 
@@ -371,8 +370,8 @@ export function HoustonExtraContent({
 
       {/* CTA final */}
       <section className="text-center py-6">
-        <h2 className="text-2xl font-bold text-gray-900">Ready to get it back?</h2>
-        <p className="text-gray-600 mt-2">One report covers every channel that counts in Houston.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Choose a report option</h2>
+        <p className="text-gray-600 mt-2">Free listing, $12 automatic search, or $25 team-assisted search.</p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"

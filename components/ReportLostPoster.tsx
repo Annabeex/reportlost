@@ -37,9 +37,9 @@ export type PosterProps = {
 
 const defaults = {
   headerTitle: "Lost or Found Something?",
-  headerSubtitle: "Scan this QR — quick, free & secure",
+  headerSubtitle: "Scan this QR to submit a free report",
   introText:
-    "If the item isn’t registered here, please report it on ReportLost.org — it’s free and helps match items faster.",
+    "If the item isn’t registered here, please report it on ReportLost.org. The free listing helps connect the item with its owner.",
   lostTitle: "Lost something?",
   lostLines: [
     "Submit a short report with a photo or description.",
@@ -48,7 +48,7 @@ const defaults = {
   foundTitle: "Found something?",
   foundLines: [
     "Before leaving it here, please scan the QR and fill out the short ‘Found item’ form.",
-    "Your report helps locate the rightful owner more quickly.",
+    "Your report helps connect the item with its rightful owner.",
   ],
   brandBlue: "#1E4B86",
   brandGreen: "#12A150",

@@ -19,7 +19,7 @@ ReportLost.org provides two types of services:
 - Submit a lost item report or a found item report,
 - Publish a report on ReportLost.org to make it easier to discover online (including via search engines).
 
-**B) Optional paid assistance (selected plans):**
+**B) Optional paid team-assisted search:**
 - Human oversight and manual follow-up actions related to a report,
 - Outreach to relevant lost-and-found services and locations when appropriate,
 - Additional visibility actions such as creating a shareable visual and distributing it on selected channels.
@@ -27,12 +27,12 @@ ReportLost.org provides two types of services:
 ### 3. Reporting Is Free / Optional Paid Assistance
 Submitting a report is **free**.
 
-ReportLost.org also offers **optional paid assistance plans** that may include manual follow-up work performed by a member of our team. The availability, scope, and pricing of these plans are displayed before purchase.
+ReportLost.org also offers an **optional team-assisted search** that includes manual follow-up work performed by a member of our team. Its scope and $25 one-time price are displayed before purchase.
 
 Payments are due regardless of whether an item is ultimately found.
 
 ### 4. Refund Policy
-When a paid assistance plan is purchased, the fee generally covers **work that may begin shortly after purchase** (review, preparation, outreach, monitoring, and related actions). For this reason, paid assistance fees are typically **non-refundable** once work has started.
+The team-assisted search fee covers review, preparation, outreach, monitoring, and related actions. The fee is generally **non-refundable** once work has started.
 
 Refunds may be granted in limited cases, such as:
 - a technical billing error (e.g., duplicate charge),
@@ -52,8 +52,8 @@ You may also describe the item manually. You remain responsible for ensuring you
 By submitting a report, you authorize ReportLost.org to:
 - Publish report content on our platform,
 - Display the report in relevant categories or pages to improve discoverability,
-- Share the report through selected channels when appropriate (especially for paid assistance plans),
-- Contact third-party services (transport companies, municipalities, venues, etc.) when relevant and when permitted by the chosen assistance plan.
+- Share the report through selected channels when appropriate,
+- Contact third-party services (transport companies, municipalities, venues, etc.) when relevant and permitted.
 
 We may redact or remove sensitive, unlawful, or inappropriate content before publication or distribution.
 

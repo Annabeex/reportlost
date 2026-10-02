@@ -28,11 +28,11 @@ ReportLost.org offers:
 - Submission of lost item and found item reports,
 - Publication of reports on ReportLost.org to improve online visibility and searchability. A published report is a **public page**: it can be read by anyone and indexed by search engines. You may ask us to remove it at any time by writing to support@reportlost.org from the address used for the report.
 
-**B) Optional paid assistance**
+**B) Optional paid search services**
 
-Two assistance plans are offered at checkout, each as a one-time fee. Lost pets are handled under the full plan, with priority processing:
+Automatic search is available for a one-time $12 fee. Team-assisted search is available for a one-time $25 fee. Lost-pet reports use the team-assisted service with outreach adapted to relevant animal services:
 
-**Active search ($25)** covers six deliverables, for 12 months from activation:
+**Team-assisted search ($25)** covers the following services, with public-web monitoring active for 12 months from activation:
 
 1. **Filing with the competent lost-property service.** We transmit your report to the service responsible for the loss location, in most cases the local police department or the municipal lost-property office. This is done provided we hold the information that service requires; where local rules oblige the owner to file personally, we provide the relevant office, reporting link and step-by-step instructions instead.
 2. **Outreach to the places likely to hold the item.** Selected from your loss location: transport operator, hotel, restaurant, venue, airport, taxi company, nearby businesses and surrounding lost-property desks.
@@ -41,11 +41,11 @@ Two assistance plans are offered at checkout, each as a one-time fee. Lost pets 
 5. **A loss report certificate**, issued on our website and downloadable from your case page. It records your declaration and its date. **It is not an official document and does not replace a police report or any document issued by a public authority.**
 6. **A printable sheet of QR stickers**, to be printed on adhesive paper. Each code routes a finder to the anonymous relay address linked to your case.
 
-**Pet Priority ($25)** is the same plan applied to a lost animal, with time-critical handling: outreach to local shelters, animal control and rescue services, and publication in local lost pet groups, private ones included.
+For a lost animal, the $25 team-assisted service includes outreach to relevant local shelters, animal control and rescue services, and publication in relevant lost-pet groups.
 
-**Automatic search ($12)** covers deliverables 4, 5 and 6 above and nothing else, with automated web monitoring running for **6 months** instead of 12. No filing with a lost-property service, no outreach to third parties and no visual notice are carried out under this plan.
+**Automatic search ($12)** includes the public-web monitoring, loss report certificate, and QR sticker sheet for **6 months**. It does not include filing with a lost-property service, outreach to third parties, or a local notice.
 
-There is no partial or free-choice contribution: the amounts above are fixed, and a report is either published free of charge or handled under one of the plans described here.
+Users may publish a free public listing or choose one of the two paid search services. Each paid service is a one-time fee, not a subscription.
 
 Where a police department or public office accepts lost property reports filed by a third party, we file the report on your behalf. Where local rules require the owner to file personally, we provide the appropriate contact details, links and instructions instead.
 
@@ -70,9 +70,9 @@ ReportLost.org reserves the right to remove or redact content that violates thes
 
 Submitting a report is **free**.
 
-Paid assistance plans are one-time fees, not subscriptions, and are processed securely by Stripe. When a plan is purchased, the fee covers work that begins shortly after purchase (review, preparation, outreach, keeping the report active in our matching search, and related actions) for the duration stated in the plan.
+Paid search services are processed securely by Stripe. The $12 automatic search includes six months of public-web monitoring, a loss report certificate, and a QR sticker sheet. The $25 team-assisted search includes 12 months of public-web monitoring, relevant outreach, and a local notice, along with the certificate and sticker sheet.
 
-For this reason, paid assistance fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
+For this reason, paid search-service fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
 
 ---
 

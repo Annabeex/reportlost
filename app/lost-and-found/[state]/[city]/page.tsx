@@ -106,7 +106,7 @@ function _fallbackMeta(stateSlug: string, citySlug: string): Metadata {
   const stateUp = (stateSlug || "").toUpperCase();
   const cityName = cityNameFromParam(citySlug) || citySlug || "this city";
   const title = cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
-  const description = `Report or find lost items in ${cityName || "this city"}. Quick, secure and local via ReportLost.org.`;
+  const description = `Report or find lost items in ${cityName || "this city"}. Create a free public listing or choose optional team-assisted search.`;
   const canonical = canonicalUrl(stateSlug, citySlug);
 
   return {
@@ -150,7 +150,7 @@ export async function generateMetadata({
     const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
-      : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
+      : `Report or find lost items in ${data.city_ascii}. Create a free public listing or choose optional team-assisted search.`;
 
     // ====== Indexation conditionnee a la substance reelle de la page ======
     // Une ville n'entre dans l'index que si elle a un guide publie, ou si elle

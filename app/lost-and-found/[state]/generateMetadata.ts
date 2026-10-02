@@ -20,7 +20,7 @@ export const dynamic = "force-static";
 
 function makeFallbackMetaForState(stateSlug: string): Metadata {
   const title = "Lost & Found in the USA - ReportLost.org";
-  const description = "Report and recover lost items across the United States with ReportLost.org.";
+  const description = "Information about reporting lost items and using ReportLost.org in the United States.";
   const canonical = `${CANONICAL_BASE}/lost-and-found`;
   return {
     title,

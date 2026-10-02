@@ -13,6 +13,7 @@ type Props = {
   amount: number;
   reportId?: string;
   onSuccess?: () => void;
+  onPaymentFailure?: () => void;
   onBack?: () => void;
   currency?: '€' | '$' | '£';
   showVatBreakdown?: boolean;
@@ -29,9 +30,9 @@ type StripePaymentRequest = ReturnType<NonNullable<Stripe['paymentRequest']>>;
 // rien. C'est l'écran qui fait foi en cas de litige : il doit décrire ce qui
 // est réellement acheté, et dire ce qui ne l'est pas.
 const SUMMARY_FULL = [
-  'Filed with the local lost-property service',
-  'Nearby places contacted, notice published',
-  '12 months of web monitoring, human-checked',
+  'Report sent where third-party filing is accepted; instructions provided otherwise',
+  'Relevant services and venues contacted; local notice published',
+  '12 months of public-web monitoring; potential matches reviewed',
   'Loss certificate + QR sticker sheet',
 ];
 
@@ -47,8 +48,9 @@ export default function CheckoutForm({
   amount,
   reportId,
   onSuccess,
+  onPaymentFailure,
   onBack,
-  tierLabel = 'Active search',
+  tierLabel = 'Team-assisted search',
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
@@ -78,7 +80,7 @@ export default function CheckoutForm({
       country: country.toUpperCase(),
       currency: 'usd',
       total: {
-        label: tierLabel || 'Activate my search',
+        label: tierLabel || 'ReportLost search service',
         amount: Math.round(total * 100),
       },
       requestPayerName: true,
@@ -110,6 +112,7 @@ export default function CheckoutForm({
         const { clientSecret, error } = await r.json();
         if (!clientSecret || error) {
           ev.complete('fail');
+          onPaymentFailure?.();
           setMessage(error || 'Payment initialization failed.');
           return;
         }
@@ -123,6 +126,7 @@ export default function CheckoutForm({
 
         if (confirmError) {
           ev.complete('fail');
+          onPaymentFailure?.();
           setMessage(confirmError.message || 'Payment failed.');
           return;
         }
@@ -132,21 +136,23 @@ export default function CheckoutForm({
         if (paymentIntent?.status === 'requires_action') {
           const { error } = await stripe.confirmCardPayment(clientSecret);
           if (error) {
+            onPaymentFailure?.();
             setMessage(error.message || 'Authentication failed.');
             return;
           }
         }
 
-        setMessage('✅ Payment confirmed. Your search is activated.');
+        setMessage('Payment confirmed. The selected search service is active.');
         onSuccess?.();
       } catch (e: any) {
         ev.complete('fail');
+        onPaymentFailure?.();
         setMessage(e?.message || 'Unexpected error.');
       } finally {
         setLoading(false);
       }
     });
-  }, [stripe, total, reportId, country, tierLabel]);
+  }, [stripe, total, reportId, country, tierLabel, onPaymentFailure]);
 
   // -------- Card payment --------
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,6 +176,7 @@ export default function CheckoutForm({
 
       const { clientSecret, error } = await res.json();
       if (!clientSecret || error) {
+        onPaymentFailure?.();
         setMessage(error || 'Unable to create payment.');
         return;
       }
@@ -188,12 +195,14 @@ export default function CheckoutForm({
       });
 
       if (result.error) {
+        onPaymentFailure?.();
         setMessage(result.error.message || 'Payment failed.');
       } else if (result.paymentIntent?.status === 'succeeded') {
-        setMessage('✅ Payment confirmed. Your search is activated.');
+        setMessage('Payment confirmed. The selected search service is active.');
         onSuccess?.();
       }
     } catch (err: any) {
+      onPaymentFailure?.();
       setMessage(err?.message || 'Unexpected error.');
     } finally {
       setLoading(false);
@@ -270,7 +279,7 @@ export default function CheckoutForm({
             disabled={loading || !stripe}
             className="w-full rounded bg-gradient-to-r from-[#26723e] to-[#2ea052] py-3 font-semibold text-white disabled:opacity-60"
           >
-            {loading ? 'Processing…' : `Pay $${total.toFixed(2)} and start my search`}
+            {loading ? 'Processing…' : `Pay $${total.toFixed(2)} for ${tierLabel}`}
           </button>
 
           {message && <p className="text-sm text-center">{message}</p>}
@@ -293,7 +302,7 @@ export default function CheckoutForm({
                 disabled={loading}
                 className="text-[13.5px] text-gray-500 underline underline-offset-2 hover:text-gray-700 disabled:opacity-50"
               >
-                ← Back to plans
+                ← Back to options
               </button>
             </div>
           )}

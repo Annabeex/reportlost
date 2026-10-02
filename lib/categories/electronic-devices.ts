@@ -6,7 +6,7 @@ export const electronicDevicesSpec: CategorySpec = {
 
   intro: [
     "See recent reports of lost and found electronic devices such as tablets, laptops, cameras, game consoles, and smartwatches.",
-    "If you lost an electronic device, filing a report helps capture identifying details and supports faster matching when a similar item is reported found.",
+    "If you lost an electronic device, a report records identifying details that can be compared if a similar item is reported found.",
   ],
 
   whyReport: [

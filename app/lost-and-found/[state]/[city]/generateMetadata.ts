@@ -21,7 +21,7 @@ function fallbackMeta(stateSlug: string, citySlugRaw: string): Metadata {
   const title =
     cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
 
-  const description = `Report or find lost items in ${cityName || "this city"}. Quick, secure and local via ReportLost.org.`;
+  const description = `Report or find lost items in ${cityName || "this city"}. Create a free public listing or choose optional team-assisted search.`;
 
   const canonical = `${CANONICAL_BASE}/lost-and-found/${(stateSlug || "").toLowerCase()}/${encodeURIComponent(
     citySlug
@@ -77,7 +77,7 @@ export async function generateMetadata({
         : rawTitle;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
-      : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
+      : `Report or find lost items in ${data.city_ascii}. Create a free public listing or choose optional team-assisted search.`;
 
     // ====== Indexation conditionnée à la substance réelle de la page ======
     // Une ville n'est poussée à l'index que si elle a un guide publié, ou si

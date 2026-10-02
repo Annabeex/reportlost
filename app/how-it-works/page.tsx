@@ -85,22 +85,16 @@ export default function HowItWorksPage() {
       </h2>
 
       <p className="mb-4">
-        Publishing a lost item report is free. Two paid plans are offered, each a
-        one-time payment and never a subscription:
-        <strong> Active search, at $25</strong>, active for 12 months, and
-        <strong> Automatic search, at $12</strong>, which covers the automated
-        part alone for 6 months.
+        Publishing a lost item report is free. Automatic search costs $12 once and includes six months of public-web monitoring. Team-assisted search costs $25 once and adds relevant local outreach, a notice for local groups, and 12 months of public-web monitoring.
       </p>
 
       <p className="mb-4">
-        It includes <strong>manual review and action</strong> by a member of our
-        team, and covers the following:
+        Team-assisted search includes review and follow-up by a member of our team. We contact relevant services and venues where appropriate. If an office requires the owner to file directly, we provide its contact details and instructions.
       </p>
 
       <ul className="list-disc list-inside mb-6 space-y-1">
         <li>
-          Declaring the loss to the city’s lost and found service (often managed
-          by the municipal police or a public office)
+          Sending the report to the relevant lost-property service when it accepts third-party filings
         </li>
         <li>Contacting the place where the item was likely lost:</li>
       </ul>
@@ -119,13 +113,11 @@ export default function HowItWorksPage() {
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        Continuous web search and alerts
+        Public-web monitoring
       </h2>
 
       <p className="mb-6">
-        An AI search engine scans the web for keywords associated with your lost
-        item, <strong>every day for the first week, then once a week, then once a
-        month, for 12 months</strong>.
+        Automatic search includes public-web monitoring for six months. Team-assisted search includes monitoring for 12 months. Checks run daily during the first week, then weekly and monthly.
       </p>
 
       <p className="mb-4">When a potential match is detected:</p>
@@ -137,27 +129,18 @@ export default function HowItWorksPage() {
       </ul>
 
       <p className="mb-10">
-        This process runs continuously during the active search period.
+        Potential matches are reviewed before notification. The service does not cover content that is inaccessible to public search tools.
       </p>
 
-      <h2 className="text-xl font-semibold mb-4">Social media diffusion</h2>
+      <h2 className="text-xl font-semibold mb-4">Local notice with team-assisted search</h2>
 
-      <p className="mb-4">As part of the search assistance:</p>
-
-      <ul className="list-disc list-inside mb-6 space-y-1">
-        <li>a visual “lost item notice” is created</li>
-        <li>
-          the notice is shared on social media channels to increase visibility
-        </li>
-      </ul>
-
-      <p className="mb-10">
-        This step helps reach people who may not be actively searching but could
-        recognize the item.
+      <p className="mb-4">
+        Team-assisted search includes a visual notice submitted to relevant local pages and groups where posting
+        is available. Some groups require the report owner to post directly, and availability varies by location.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        Loss report certificate (included with Active search)
+        Loss report certificate (included with paid search services)
       </h2>
 
       <p className="mb-6">
@@ -170,12 +153,11 @@ export default function HowItWorksPage() {
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        Stickers and QR code (included with Active search)
+        Stickers and QR code (included with paid search services)
       </h2>
 
       <p className="mb-6">
-        With the $25 Active search plan, a printable PDF sheet of stickers is
-        included.
+        A printable PDF sheet of stickers is included with Automatic and team-assisted search.
       </p>
 
       <p className="mb-6">
@@ -195,30 +177,24 @@ export default function HowItWorksPage() {
 
       <ul className="list-disc list-inside mb-10 space-y-1">
         <li>Sensitive personal information is never published publicly</li>
-        <li>Reports are reviewed with human oversight</li>
+        <li>Potential matches from paid search services are reviewed by a person</li>
         <li>
-          ReportLost does not guarantee recovery of an item, but provides
-          structured tools and assistance to improve the chances of a match
+          ReportLost does not guarantee recovery. The service provides a structured way to publish a report and access the selected search option.
         </li>
       </ul>
 
-      {/* Repond frontalement a la requete « is reportlost a scam ». Le vide
-          autour du site laissait les encadres IA combler avec la reputation de
-          la categorie ; cette section leur donne de la matiere verifiable. */}
-      <h2 className="text-xl font-semibold mb-4">Is ReportLost a scam?</h2>
+      <h2 className="text-xl font-semibold mb-4">About ReportLost</h2>
 
       <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
         <p className="mb-3 text-green-900">
-          <strong>No &mdash; and you shouldn&apos;t take our word for it.</strong>{" "}
-          Below is who we are, what your money buys, what we refuse to promise,
-          and how to do the whole thing yourself for free if you&apos;d rather.
-          Check the list, don&apos;t trust the claim.
+          ReportLost is an independent private service. The free public listing,
+          optional search services, and their prices are described above.
         </p>
         <p className="text-green-900">
-          ReportLost is a paid private service. We are not the police, not an
-          airport, not a transit agency, and not affiliated with any
-          lost-and-found office. Everything we do, you can do yourself &mdash;
-          and we publish the contact details you would need to do it.
+          ReportLost is not a police, airport, transit, or government service and
+          is not affiliated with public lost-property offices. Official offices
+          and venues set their own procedures. Contact details are provided on
+          relevant local pages.
         </p>
       </div>
 
@@ -252,70 +228,25 @@ export default function HowItWorksPage() {
       </div>
 
       <p className="mb-6 text-sm text-gray-600">
-        You can verify that SIREN yourself on the French government&apos;s public
-        business register at annuaire-entreprises.data.gouv.fr. Sites that are
-        actually scams do not hand you a number to check.
+        The SIREN can be checked in the French government&apos;s public business
+        register at annuaire-entreprises.data.gouv.fr.
       </p>
 
-      <h3 className="text-lg font-semibold mb-3">
-        You can do all of this yourself, for free
-      </h3>
+      <h3 className="text-lg font-semibold mb-3">Contacting official services</h3>
 
       <p className="mb-6">
-        Every one of our city pages lists the lost-and-found desks for that place
-        &mdash; the police department, the transit operator, the airport &mdash;
-        with their own contact details and their own procedure. No account, no
-        payment, no email address required to read them. If you have the time to
-        work through them, do: you will not get a worse result than ours.
+        Local pages list relevant lost-property offices and venues with their
+        published contact details. People can contact those organizations
+        directly and follow their procedures.
       </p>
 
-      <h3 className="text-lg font-semibold mb-3">What we refuse to promise</h3>
+      <h3 className="text-lg font-semibold mb-3">Service limitations</h3>
 
       <p className="mb-6 border-l-4 border-amber-500 bg-amber-50 py-3 pl-4 pr-3 text-amber-900">
-        <strong>That your item comes back.</strong> Most lost property is never
-        handed in to anyone, anywhere. No service, paid or free, changes that.
-        You are paying for the steps to be taken &mdash; and we say it here,
-        before you pay, rather than in an email afterwards. Any service in this
-        field promising you will recover your item is either careless or lying.
-      </p>
-
-      <h3 className="text-lg font-semibold mb-3">
-        How to tell a real service from a fake one
-      </h3>
-
-      <p className="mb-3">
-        Use this on us. Then use it on the next site you land on.
-      </p>
-
-      <div className="mb-6 overflow-hidden rounded-xl border border-gray-200">
-        {[
-          ["Is there a registered company, with a number you can look up?", "Yes", true],
-          ["Does the site tell you how to do it yourself, for free?", "Yes", true],
-          ["Is the price shown before you enter anything?", "Yes", true],
-          ["Does it promise you will get your item back?", "No", false],
-          ["Does it claim to be an official or police service?", "No", false],
-        ].map(([q, a, good], i) => (
-          <div
-            key={String(q)}
-            className={`flex gap-4 px-4 py-3 text-[15px] ${
-              i ? "border-t border-gray-100" : ""
-            }`}
-          >
-            <span className="flex-1 text-gray-700">{q as string}</span>
-            <span
-              className={`whitespace-nowrap font-bold ${
-                good ? "text-green-700" : "text-red-700"
-              }`}
-            >
-              {a as string}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <p className="mb-8 text-[15px] text-gray-600">
-        A site that fails two of these is worth closing. Several well-known
-        lost-and-found sites fail four.
+        ReportLost cannot guarantee that an item will be found or returned.
+        Paid services cover the specific review, monitoring, and outreach
+        described above. Public offices and venues decide whether to accept
+        reports filed by a third party.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">A complementary approach</h2>

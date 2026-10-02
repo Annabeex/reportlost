@@ -383,8 +383,8 @@ export default function FoundItemsForm({ defaultCity = "" }: { defaultCity?: str
               </p>
             )}
           </div>
-          <p className="text-green-600 font-medium">
-            You're awesome. Your contribution could help someone recover something precious.
+          <p className="text-green-700 font-medium">
+            Thank you for documenting this found item. The details can help its owner identify it.
           </p>
         </div>
       )}

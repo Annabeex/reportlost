@@ -82,7 +82,7 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: "Is ReportLost.org an official city service?",
-    a: "No — we're independent. We help you reach the correct official channels quickly and spread the word across local communities. The official lost-and-found offices are the ones that hold and release recovered items.",
+    a: "No, ReportLost is independent. We provide information about relevant official channels and offer optional team-assisted outreach. Official lost-and-found offices hold and release recovered items.",
   },
 ];
 
@@ -93,12 +93,11 @@ export function ChicagoTitleSection() {
         Chicago, IL · Lost &amp; Found
       </span>
       <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight">
-        Left something behind in Chicago? Report it and start the search.
+        Lost something in Chicago? Review your report options.
       </h1>
       <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-4">
-        File one report and we&apos;ll point you to the right <strong>Chicago Police district</strong>, the relevant{" "}
-        <strong>CTA, airport and rideshare lost &amp; found</strong>, and the local groups that actually get items
-        returned.
+        Create a free public listing, add automatic public-web monitoring for $12 (six months), or choose team-assisted
+        search for $25 (12 months of monitoring plus relevant local outreach).
       </p>
     </section>
   );
@@ -133,28 +132,28 @@ export function ChicagoExtraContent({
       {/* Étapes */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          How ReportLost helps you recover it in Chicago
+          How reporting works in Chicago
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mt-8">
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📝</div>
             <h3 className="font-bold mt-3 text-gray-900">1. Tell us what &amp; where</h3>
             <p className="text-sm text-gray-600 mt-2">
-              A quick description of the item and the spot you lost it is all we need to get started.
+              Record the item details, date and location before contacting the relevant office.
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
-            <h3 className="font-bold mt-3 text-gray-900">2. We match it to the right desk</h3>
+            <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              CTA, an airport office, the Chicago Police district for that block, and the busiest local groups.
+              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center text-2xl">🤝</div>
-            <h3 className="font-bold mt-3 text-gray-900">3. We alert you on a match</h3>
+            <h3 className="font-bold mt-3 text-gray-900">3. Search and review possible matches</h3>
             <p className="text-sm text-gray-600 mt-2">
-              When your item surfaces, you hear about it and can arrange to pick it up.
+              The paid option includes 12 months of public-web monitoring. Potential matches are reviewed before notification.
             </p>
           </div>
         </div>
@@ -173,15 +172,13 @@ export function ChicagoExtraContent({
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
             <p>
-              From the 'L' platforms downtown to the lakefront and the neighborhoods, Chicago is a big, busy city
-              where a phone, a wallet, a bag — or a pet — can slip away in a moment. The city runs several
-              lost-and-found systems, but they don&apos;t talk to each other, so the trick is starting with the right
-              one. Report it here and we&apos;ll send you to the correct channel and the police district that covers
-              where it happened.
+              Chicago has separate lost-property processes for the CTA, airports, venues and public agencies. Use
+              the official links below to identify the channel relevant to where the item was lost. ReportLost
+              offers a free public listing, six-month automatic monitoring for $12, and team-assisted search with 12-month monitoring and relevant local outreach for $25.
             </p>
             <p>
-              On the CTA, at O&apos;Hare or Midway, in a rideshare, or at a Loop restaurant — the sooner you report,
-              the better your odds. Several offices hold items for only a few weeks before moving them on.
+              Holding and collection policies vary by office. Contact the service responsible for the loss location
+              to confirm its current process.
             </p>
           </div>
           {cityImage && (
@@ -207,8 +204,8 @@ export function ChicagoExtraContent({
           Where to report — depending on where you lost it
         </h2>
         <p className="text-gray-600 mt-2 text-sm text-center max-w-3xl mx-auto">
-          Each part of Chicago&apos;s lost-and-found network handles different places. Start with the right one and you
-          save days.
+          Chicago&apos;s lost-and-found agencies handle different locations. Use the links below to identify the relevant
+          office.
         </p>
 
         <div className="grid md:grid-cols-2 gap-5 mt-8">
@@ -268,7 +265,7 @@ export function ChicagoExtraContent({
             <h3 className="font-bold text-lg text-gray-900">Street, park, shop or venue</h3>
             <p className="text-sm text-gray-600 mt-2 leading-relaxed">
               Ask the front desk or security first — stadiums, museums, hotels and Union Station keep their own lost
-              &amp; found. For anything lost outdoors, a public alert on Chicago groups is often what brings it back.
+              &amp; found. For items lost outdoors, a public listing can share details with local residents.
             </p>
             <p className="mt-3 text-sm">
               <a href={L.chi311} target="_blank" rel="noopener noreferrer" className={ext}>Chicago 311 →</a>
@@ -294,15 +291,15 @@ export function ChicagoExtraContent({
 
       {/* CTA milieu */}
       <section className="bg-blue-50 rounded-xl border border-blue-100 p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900">The clock is ticking — report it today</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Create a Chicago lost-item report</h2>
         <p className="mt-2 text-gray-600">
-          Chicago offices clear unclaimed items on tight timelines. Get your report in the system now.
+          Document the item and review the relevant local reporting channels.
         </p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
         >
-          Report my lost item →
+          Create a report
         </a>
       </section>
 
@@ -311,7 +308,7 @@ export function ChicagoExtraContent({
         <h2 className="text-2xl font-bold text-gray-900">Which Chicago neighborhood did you lose it in?</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">
           Chicago is a city of neighborhoods, each with its own transit stops, police district and hotspots.
-          Pinning down the area speeds everything up.
+          The area helps identify the relevant transit hub, police district or venue.
         </p>
         <div className="mt-6 space-y-4">
           {areas.map((a) => (
@@ -325,10 +322,10 @@ export function ChicagoExtraContent({
 
       {/* Réseaux sociaux */}
       <section className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-bold text-gray-900">Get more eyes on it across Chicago&apos;s communities</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Local community channels in Chicago</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">
-          A returned item usually comes from a helpful stranger, not an office. We help you write a clean, shareable
-          post and aim it at the most active Chicago communities:
+          These are separate community channels where you can share a report. Each group has its own posting
+          rules; ReportLost does not post to them on your behalf:
         </p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5 text-sm">
           {[
@@ -350,7 +347,7 @@ export function ChicagoExtraContent({
 
       {/* FAQ */}
       <section className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Chicago lost &amp; found — quick answers</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Chicago lost &amp; found — frequently asked questions</h2>
         <div className="space-y-3 text-sm">
           {faq.map((f) => (
             <details key={f.q} className="border-b border-gray-100 pb-3">
@@ -379,8 +376,8 @@ export function ChicagoExtraContent({
 
       {/* CTA final */}
       <section className="text-center py-6">
-        <h2 className="text-2xl font-bold text-gray-900">Ready to track it down?</h2>
-        <p className="text-gray-600 mt-2">One report reaches every channel that matters in Chicago.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Choose a report option</h2>
+        <p className="text-gray-600 mt-2">Free listing, $12 automatic search, or $25 team-assisted search.</p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"

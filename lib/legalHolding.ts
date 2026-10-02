@@ -57,7 +57,7 @@ const HOLDING: Record<string, HoldingRule> = {
   },
   TX: {
     kind: "local",
-    note: "there is no statewide holding period. Each police department, transit agency and venue sets its own retention policy, commonly around 90 days but different in every city, which is why reaching the right desk early is what actually protects you.",
+    note: "there is no statewide holding period. Each police department, transit agency and venue sets its own retention policy, commonly around 90 days but different in every city. Contact the relevant organization to confirm its procedure.",
   },
   PA: {
     kind: "local",

@@ -1,5 +1,5 @@
 // app/active-search/page.tsx
-// Marketing/landing page for the "Active search" plan ($25, the full plan).
+// Information page for the team-assisted search option.
 // - Tailwind CSS styling
 
 import Link from "next/link";
@@ -8,9 +8,9 @@ import type { Metadata } from "next";
 import { Check, Mail, Shield, Search, Bell, MapPin, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Active search — ReportLost",
+  title: "Team-assisted search — ReportLost",
   description:
-    "Hands-on outreach to local Lost & Found desks, broad database checks, targeted alerts — plus a prevention kit with secure ID stickers.",
+    "One-time $25 team-assisted search for lost items in the United States, including local outreach and 12-month public-web monitoring.",
 };
 
 function Bulleted({ children }: { children: React.ReactNode }) {
@@ -43,24 +43,24 @@ export default function Page({
             {/* Left copy */}
             <div className="max-w-3xl">
               <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight">
-                Active search
+                Team-assisted search
               </h1>
               <p className="mt-4 text-lg sm:text-xl/relaxed opacity-95">
-                We actively contact local authorities and Lost &amp; Found desks, search large
-                databases, and set up targeted alerts for you. Includes our prevention kit with
-                secure ID stickers.
+                A team member reviews your report, contacts relevant local lost-property services and venues, and
+                monitors public web sources for potential matches for 12 months.
               </p>
 
               {/* Small note + learn more */}
               <div className="mt-5">
                 <p className="text-sm sm:text-base">
-                  <span className="font-semibold">Included:</span> an anonymous sticker sheet so you never lose your items again.
+                  <span className="font-semibold">One-time fee: $25.</span> No subscription. A printable QR sticker
+                  sheet is included.
                 </p>
                 <Link
                   href="#whats-included"
                   className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 font-semibold text-white ring-1 ring-white/40 backdrop-blur hover:bg-white/25"
                 >
-                  Learn more about the Active search plan
+                  Read the service details
                 </Link>
               </div>
 
@@ -69,7 +69,7 @@ export default function Page({
                   href={contributeHref}
                   className="inline-flex items-center gap-2 rounded-2xl bg-black/90 px-5 py-3 font-semibold text-white shadow-lg shadow-black/20 ring-emerald-200 transition hover:bg-black"
                 >
-                  Activate my search <ArrowRight className="h-4 w-4" />
+                  Review this option — $25 <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="#whats-included"
@@ -130,43 +130,41 @@ export default function Page({
             </div>
             <h3 className="text-lg font-semibold">Targeted alerts</h3>
             <p className="mt-2 text-gray-700">
-              We set up monitoring and alerts so you’re quickly contacted if a credible match appears.
+              We monitor public web sources and email you when a team-reviewed potential match is identified.
             </p>
           </div>
         </div>
       </section>
 
-      {/* WHY NOW */}
+      {/* PROCESS AND LIMITS */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-2 gap-10 items-start">
           <div>
-            <h2 className="text-2xl font-bold">Why activate now?</h2>
+            <h2 className="text-2xl font-bold">How the service works</h2>
             <p className="mt-3 text-gray-700">
-              In the first 48 hours, items often move quickly between locations. Starting early increases the
-              chances that staff recognize and route your item back to you.
+              A team member reviews the report, identifies relevant offices and locations, and carries out the
+              follow-up included with team-assisted search. Potential matches are reviewed before they are sent to you.
             </p>
             <ul className="mt-6 space-y-3">
-              <Bulleted>We contact local desks and keep the follow-up going for you.</Bulleted>
-              <Bulleted>We check broad sources beyond a single agency or platform.</Bulleted>
-              <Bulleted>We configure alerts and outreach to capture new signals fast.</Bulleted>
+              <Bulleted>We contact relevant lost-property services and likely venues.</Bulleted>
+              <Bulleted>We publish a notice in relevant local groups using a protected relay address.</Bulleted>
+              <Bulleted>We monitor public web sources for 12 months.</Bulleted>
             </ul>
             <div className="mt-8">
               <Link
                 href={contributeHref}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow hover:bg-emerald-700"
               >
-                Activate my search <ArrowRight className="h-4 w-4" />
+                Review this option — $25 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
           <div className="rounded-2xl border p-6 shadow-sm">
-            <h3 className="text-lg font-semibold">What we’ll typically do</h3>
+            <h3 className="text-lg font-semibold">Service limits</h3>
             <ul className="mt-4 space-y-3 text-gray-700">
-              <Bulleted>Map likely places and contacts for your specific case.</Bulleted>
-              <Bulleted>Send clear notices with photos/details when available.</Bulleted>
-              <Bulleted>Log responses and perform timely follow-ups.</Bulleted>
-              <Bulleted>Search public listings and aggregation sources.</Bulleted>
-              <Bulleted>Set up alerts to be pinged on new potential matches.</Bulleted>
+              <Bulleted>Official offices and venues retain control over their own procedures and property.</Bulleted>
+              <Bulleted>Where an owner must file directly, we provide the relevant contact details and instructions.</Bulleted>
+              <Bulleted>Monitoring covers public web sources; it does not guarantee that an item will be found.</Bulleted>
             </ul>
           </div>
         </div>
@@ -174,15 +172,15 @@ export default function Page({
 
       {/* WHAT $25 COVERS */}
       <section id="what-you-get" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold">What $25 covers</h2>
+          <h2 className="text-2xl font-bold">What the $25 fee covers</h2>
         <p className="mt-3 max-w-3xl text-gray-700">
-          One payment, never a subscription. Six deliverables, active for 12 months.
+          One-time service fee. Public-web monitoring remains active for 12 months.
         </p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {[
             {
-              t: "Your report is filed with the lost-property service",
-              d: "Usually the local police department or the city lost-property office, chosen from where you lost the item, as soon as we hold the information that service requires. Where the rules oblige the owner to file in person, we send you the exact office, link and steps.",
+              t: "Your report is sent to the relevant lost-property service",
+              d: "We identify the local police department or city lost-property office based on where you lost the item. Where the service accepts third-party reports, we submit it. If the owner must file directly, we provide the office, link and steps.",
             },
             {
               t: "The places likely to hold it are contacted",
@@ -220,7 +218,7 @@ export default function Page({
       <section id="whats-included" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="rounded-3xl border p-6 sm:p-10 shadow-sm">
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
-            Included with Active search
+            Included with team-assisted search
           </span>
           <h2 className="mt-4 text-2xl font-bold">Prevention kit & secure stickers</h2>
           <p className="mt-3 max-w-3xl text-gray-700">
@@ -276,7 +274,7 @@ export default function Page({
               href={contributeHref}
               className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 font-semibold text-white shadow hover:bg-emerald-700"
             >
-              Activate my search <ArrowRight className="h-4 w-4" />
+              Review this option — $25 <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -290,14 +288,14 @@ export default function Page({
             <div>
               <h3 className="font-semibold">How long do you keep searching?</h3>
               <p className="mt-2 text-gray-700">
-                Your report stays active and keeps searching for a match for 12 months, starting the day
-                the Active search plan is activated.
+              Public-web monitoring stays active for 12 months, starting the day
+                the team-assisted search is activated.
               </p>
             </div>
             <div>
               <h3 className="font-semibold">Can I start without photos?</h3>
               <p className="mt-2 text-gray-700">
-                Yes. Photos help, but we can start immediately with your description and update the report later.
+                Yes. A photo is optional and can be added to your report later.
               </p>
             </div>
             <div>

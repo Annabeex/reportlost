@@ -265,7 +265,7 @@ export default async function NyuLostFoundPage() {
                 I found an item <span className="text-2xl">😇</span>
               </h3>
               <p className="text-green-50 mb-6 font-medium">
-                Did you find a phone, keys, or a jacket on campus? Help a fellow student get it back quickly.
+                Did you find a phone, keys, or a jacket on campus? Share the details with the student who may be looking for it.
               </p>
             </div>
             <Link
@@ -313,6 +313,7 @@ export default async function NyuLostFoundPage() {
                 universityName="New York University (NYU)"
                 initialCategory="clothing"
                 forceFreeMode={true}
+                enforceValidation={true}
               />
             </div>
           </div>

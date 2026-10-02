@@ -152,24 +152,35 @@ export default function HomePage() {
       {/* --- Hero section (pas d'animation sur l'above-the-fold) --- */}
       <section className="w-full bg-white px-4 py-8">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="w-full md:w-[48%]">
-            {/* ⬇️ Remplace <UsaMap/> par une image + montage paresseux */}
-            <LazyInteractiveMap />
-          </div>
           <div className="w-full md:w-[48%] text-center md:text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Lost and Found Services in the United States
+              Create a lost-item report
             </h1>
             <p className="text-gray-700 mb-4 text-sm md:text-base">
-              Report and recover lost items from various cities and states across the United States of America.
+              Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search for $25.
             </p>
-            <Link
-              href="/report"
-              prefetch={false}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-semibold"
-            >
-              Report a Lost Item
-            </Link>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
+              <Link
+                href="/report"
+                prefetch={false}
+                className="inline-block rounded-md bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+              >
+                Create a report
+              </Link>
+              <Link
+                href="/lost-item-recovery-assistance-usa#plans"
+                className="text-sm font-medium text-blue-700 underline underline-offset-2"
+              >
+                Compare report options
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Free public listing · $12 automatic search · $25 team-assisted search · One-time fees
+            </p>
+          </div>
+          <div className="w-full md:w-[48%]">
+            {/* Browse cities and locations */}
+            <LazyInteractiveMap />
           </div>
         </div>
         <div className="w-full h-px bg-gray-200 mt-12" />
@@ -223,13 +234,13 @@ export default function HomePage() {
                   <span className="text-blue-500">→</span> Submit a detailed report with as much information as possible.
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-blue-500">→</span> We analyze and match your report with databases and local groups.
+                  <span className="text-blue-500">→</span> Choose a free public listing, $12 automatic search, or $25 team-assisted search.
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-blue-500">→</span> Your report is shared with appropriate authorities and relevant services.
+                  <span className="text-blue-500">→</span> Automatic search includes six months of public-web monitoring. Team-assisted search includes 12 months of monitoring and relevant local outreach.
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-blue-500">→</span> Receive updates if there&rsquo;s a credible match.
+                  <span className="text-blue-500">→</span> Potential matches from the paid search are reviewed before notification.
                 </li>
               </ul>
             </div>
@@ -239,11 +250,10 @@ export default function HomePage() {
                 <ShieldCheck size={20} className="text-green-500" /> Why ReportLost.org?
               </h3>
               <ul className="list-none">
-                <li className="mb-2">✅ Available 24/7 online</li>
-                <li className="mb-2">✅ Covers all U.S. cities and states</li>
-                <li className="mb-2">✅ Combines AI-powered analysis with human follow-up</li>
-                <li className="mb-2">✅ Trusted by thousands of users</li>
-                <li className="mb-2">✅ Private, anonymous submissions available</li>
+                <li className="mb-2">Free public listing searchable on the open web</li>
+                <li className="mb-2">Optional $12 automatic search or $25 team-assisted search</li>
+                <li className="mb-2">Contact details kept off the public listing</li>
+                <li className="mb-2">ReportLost is independent of public agencies</li>
               </ul>
             </div>
 

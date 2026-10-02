@@ -317,6 +317,7 @@ export default function CasePage() {
         publicId: pid,
         lostId: String(item?.id || ""),
         city: item?.city || "",
+        contribution: Number(item?.contribution || 0),
         establishments: kept.map((e) => ({ name: e.name, notes: e.notes })),
       });
       const r = await fetch(`/api/case_followup/${encodeURIComponent(pid)}?t=${Date.now()}`, {

@@ -472,7 +472,7 @@ export async function generateMetadata({ params }: Props) {
   const description =
     spec?.intro?.length
       ? spec.intro.join(" ")
-      : `View recent lost and found reports for ${categorySlug}. Submit your own report and increase your chances of recovery.`;
+      : `View recent lost and found reports for ${categorySlug}. You can also create a free public listing or choose optional team-assisted search.`;
 
   return {
     title: displayTitle,

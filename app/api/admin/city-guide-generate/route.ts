@@ -193,46 +193,34 @@ export async function POST(req: NextRequest) {
     // 2) Rédaction stricte
     const raw = await callClaude(
       `Tu rédiges la page "lost & found" d'une ville américaine pour ReportLost.org, au format JSON CityGuide.
-Tu rédiges la fiche de référence des objets perdus de cette ville. Registre institutionnel et sobre, celui d'un service public bien tenu, jamais celui d'une page de vente : elle doit rester utile à quelqu'un qui ne fera jamais appel à ReportLost. Le service est présenté factuellement, comme une option parmi les démarches
-(un signalement, et l'équipe contacte les bons services locaux, publie une alerte sociale, et le signalement
-reste actif en recherche de correspondances pendant 12 mois). Chaque section doit ramener vers le formulaire de signalement.
+Tu rédiges une page d'information locale sur les objets perdus. Utilise un ton neutre, organisationnel et factuel. La page doit rester utile aux personnes qui publient un signalement gratuit ou contactent directement les services locaux. ReportLost est une option de recherche complémentaire, pas un service public.
 
-EXEMPLES D'OBJETS : quand tu cites des objets perdus en exemple (intro, FAQ, cartes, étapes), environ deux tiers doivent être des objets à forte valeur personnelle ou administrative : ring, bracelet, necklace, earrings, watch, passport, ID or travel documents. Le tiers restant couvre le quotidien : wallet, purse, phone, keys, glasses, backpack, plus un objet typique de CETTE ville quand elle en a un évident. Cite un animal perdu (cat ou dog) au moins une fois dans le corps du texte, sans en faire l'exemple principal.
+Les options actuelles doivent être décrites correctement :
+- Free public listing : publication publique et consultable, sans recherche web active ni démarches de l'équipe.
+- Automatic search, $12 once : recherche sur les sources web publiques pendant 6 mois, certificat de signalement et feuille de stickers QR. Pas de démarches locales ni de notice.
+- Team-assisted search, $25 once : recherche sur les sources web publiques pendant 12 mois, démarches locales pertinentes et notice pour les groupes locaux. Les signalements sont transmis aux services qui acceptent les démarches d'un tiers ; sinon, ReportLost fournit les coordonnées et instructions pour que la personne fasse la démarche.
+Les correspondances potentielles des options payantes sont examinées avant notification. La récupération n'est jamais garantie.
 
-⚠️ PRINCIPE DIRECTEUR : des pages "similaires mais différentes". Garde exactement ce plan de page (le modèle New York ci-dessous), mais REFORMULE chaque phrase : synonymes, constructions retournées, jamais une phrase réutilisable sur une autre ville en changeant juste le nom. Et ajuste le contenu à la réalité locale : ajoute, modifie ou retire des détails selon la ville (pas de carte ni de question FAQ sur le métro s'il n'y a pas de métro, pas d'aéroport s'il n'y en a pas ; à l'inverse, mets en avant ce que CETTE ville a : une plage, un campus, un stade, une gare routière).
+EXEMPLES D'OBJETS : varie les exemples selon les objets courants et ceux utiles administrativement, comme wallet, phone, keys, jewelry, passport ou ID. Cite un animal perdu si c'est pertinent pour la ville, sans en faire l'exemple principal.
 
-Angle de rédaction (calqué sur les pages New York / LA / Chicago de ReportLost) :
-- h1 : descriptif et aligné sur la recherche réelle, ex "Lost and found in <ville>, <État> : where to report and reclaim" (reformulé à chaque ville, sans point d'exclamation ni question rhétorique).
-- heroSubtitle : un constat factuel de la situation locale, du type "Lost property in <ville> is handled separately by <police locale>, <transports>, and the venues themselves.", avec les vrais noms locaux, suivi d'une seule phrase claire et affirmative sur ce que ReportLost prend en charge. ⛔ INTERDIT DANS LE SOUS-TITRE : toute restriction, reserve ou condition sur le perimetre du service. N'ecris JAMAIS ici "where it's accepted", "where accepted", "where the department accepts third-party reports", "where possible", "when available", ni aucune variante de ce genre. C'est le tout premier texte que lit quelqu'un qui vient de perdre un objet : il doit etre affirmatif. La nuance sur les depots acceptes par un tiers appartient au corps de la page, jamais au sous-titre.
-- steps : les 3 étapes DU SERVICE (1. You report the loss, 2. We route it to the right places, 3. Your report keeps searching for you), adaptées à la ville. L'étape 3 insiste sur la veille MAIS avec un cadrage rassurant, centré sur le signalement et non sur une "surveillance" : le signalement reste actif pendant toute la durée de la formule, la recherche automatisée continue de croiser les nouveaux posts "found", annonces et marketplaces avec la description, pour que la personne n'ait pas à vérifier elle-même chaque jour, avec alerte dès qu'un match crédible sort.
-- ARGUMENT CLÉ : le signalement qui reste actif. FORMULATION IMPOSÉE : parler de "your report stays active", "keeps searching for a match". ⛔ LA DURÉE NE FIGURE JAMAIS DANS LE h1 NI DANS LE heroSubtitle : ni "12 months", ni "for a year", ni aucune variante. Un titre annonce ce qui est fait, pas les conditions de l'offre. La durée (12 mois, jamais une autre, jamais "6 to 12 months" ni "6 or 12 months") s'écrit dans le CORPS de la page : intro, cartes ou FAQ. INTERDIT aussi : le mot "plan" (connotation abonnement) et tout vocabulaire d'abonnement ("subscription", "monthly") ; les formules payantes sont des paiements uniques. INTERDIT : "monitors the web for months", "we watch the web" et toute formulation qui évoque une surveillance diffuse et longue ; le mot "monitoring" seul est toléré mais jamais "for months" accolé. Le bénéfice à verbaliser : le client n'a pas à refaire le tour des sites et des groupes tous les jours, son signalement continue de chercher pour lui.
-- intro : 2 paragraphes qui posent le problème local (lieux où l'on perd, systèmes séparés) et présentent ReportLost comme le raccourci qui simplifie tout, sur un ton rassurant, en incluant la veille automatique continue comme différenciateur.
-- cards : les vrais canaux locaux AVEC leurs liens officiels (l'utilisateur peut faire seul), mais chaque carte glisse quand c'est pertinent une phrase sur ce que ReportLost fait à sa place ("We tell you which precinct covers your loss location", "We generate the exact info to include", "We point you to the right desk").
-- midCta / finalCta : ton calme et rassurant. Le lecteur vient de perdre quelque chose, il est déjà inquiet : le texte doit le soulager, pas ajouter de la pression.
+PRINCIPE DE RÉDACTION : conserve le schéma CityGuide et adapte les informations à la ville réelle. Reformule les phrases entre les villes. N'invente ni lieux, ni contacts, ni procédures. Pour une petite commune, préfère une page courte et exacte à des détails génériques.
 
-⛔ URGENCE ARTIFICIELLE, RÈGLE DE PRINCIPE : n'écris JAMAIS, nulle part dans la page, qu'il reste peu de temps, que chaque minute ou chaque heure compte, que les premières heures sont décisives, ou que le lecteur risque de perdre son objet en attendant. Cette règle s'applique à toute la page, pas seulement aux CTA, et à toute formulation équivalente même si elle n'est pas dans la liste ci-dessous.
-Exemples interdits : "every minute counts", "time is critical", "time is of the essence", "time is running out", "the clock is ticking", "don't wait", "before it's too late", "act now", "act fast", "hurry", "the first 24/48 hours are critical/decisive/crucial".
-Ce qui est AUTORISÉ, une seule fois par page, sans point d'exclamation : constater qu'un signalement déposé tôt est traité plus tôt. Puis rassurer : une fois le signalement fait, l'équipe prend le relais et la personne n'a plus à courir après.
-- ctaLabel / finalCtaLabel : "Report my lost item →" / "Start my report →".
-- FAQ : questions locales concrètes tirées des systèmes trouvés (délais, où réclamer), formulées différemment d'une ville à l'autre. La dernière question (ReportLost est-il officiel ?) est commune, avec une réponse reformulée.
+Angle de rédaction :
+- h1 : titre descriptif sur les démarches d'objets perdus dans la ville. N'annonce aucun résultat ni récupération.
+- heroSubtitle : résume les principaux canaux locaux et, si utile, distingue la publication gratuite des options de recherche payantes. N'affirme pas que ReportLost est un organisme officiel.
+- steps : décris les démarches de la personne, la publication gratuite et les services payants. Précise ce qui est inclus dans chaque option sans laisser entendre que l'option gratuite comprend la recherche de l'équipe ou la recherche web.
+- intro : présente les services locaux utiles et explique clairement comment ReportLost complète les démarches directes.
+- cards : cite les contacts locaux vérifiés et les procédures officielles. Indique où la personne peut faire la démarche elle-même et ce que l'équipe peut prendre en charge.
+- midCta / finalCta : ton informatif et organisationnel. Aucun levier de peur, d'urgence ou de délai. Les délais de conservation peuvent être mentionnés seulement comme une information locale vérifiée et utile.
+- ctaLabel / finalCtaLabel : libellés descriptifs comme "Create a report →" et "Compare search options →".
+- FAQ : questions locales concrètes, avec des réponses prudentes fondées sur les sources. Termine par le statut indépendant de ReportLost et l'absence de garantie de récupération.
 
-Règles STRICTES d'ALIGNEMENT AVEC LES CONDITIONS GÉNÉRALES (ce que le service fait réellement) :
-- Le dépôt auprès du service d'objets trouvés compétent se fait LÀ OÙ CE SERVICE ACCEPTE un signalement par un tiers. Écris donc "we file the report where the department accepts third-party reports, and give you the exact office, link and steps where it does not", UNIQUEMENT dans le corps de la page (intro, cartes ou FAQ) et JAMAIS dans le h1 ni dans le heroSubtitle. N'écris JAMAIS que ReportLost dépose systématiquement une plainte ou un rapport de police.
-- La veille dure 12 mois. Jamais d'autre durée.
-- INTERDIT : toute promesse de résultat. Le service est une obligation de moyens, jamais de résultat.
-  Formulations bannies PARTOUT (h1, heroSubtitle, intro, cartes, titres de section, CTA, FAQ),
-  y compris toute variante proche : "get it back", "get your item back", "we'll get it back",
-  "get it back faster", "bring it back", "recover your item/belongings/wallet", "we will find it",
-  "guaranteed", "we guarantee", "reunite you with", "be reunited with", "found within X days",
-  "100%". ⛔ En particulier, n'écris JAMAIS un titre du type "Lost something in <ville>? Report it
-  and get it back." ni un CTA "Ready to get your item back?". Écris ce que le service FAIT La formulation retenue, pour le titre comme pour
-  le bloc d'appel à l'action, est "Here is where to report it." (ou une phrase qui dit où signaler).
-  ("where to report it", "file a report", "we take the steps for you"), jamais ce qu'il obtiendrait.
-  SEULE EXCEPTION : la question de FAQ "Can ReportLost guarantee I'll get my item back?", dont la
-  réponse doit être un non clair et sans ambiguïté.
-- INTERDIT : les absolus sur la portée ("every shelter", "all local groups", "all police departments", "everywhere", "any lost item"). Écris "the relevant shelters", "the local groups that matter", "the right department".
-- INTERDIT : toute statistique, pourcentage ou chiffre de performance ("84% of lost items are found", "most items are recovered within X days"). Nous n'en publions aucun.
-- INTERDIT : présenter une activité qui n'existe pas dans cette ville (nombre de signalements, objets récemment retrouvés sur place). Aucune donnée d'activité locale inventée.
+Règles strictes sur le périmètre du service :
+- N'écris jamais qu'un rapport est systématiquement déposé auprès de la police. Explique que les services décident s'ils acceptent un dépôt par un tiers ; indique les coordonnées et étapes à suivre si la personne doit faire le dépôt elle-même.
+- Les durées sont celles de l'option choisie : 6 mois pour Automatic search, 12 mois pour Team-assisted search. Ne présente pas la recherche web comme incluse dans le signalement gratuit.
+- Ne crée aucune urgence, peur de perdre l'objet, compte à rebours ou conseil d'agir avant une échéance.
+- Ne promets aucun résultat. N'utilise pas "get it back", "we will find it", "guaranteed", "recover your item" ou des formulations équivalentes.
+- N'utilise pas de statistiques de performance non publiées ni d'affirmations absolues telles que "every shelter" ou "all local groups".
 
 Règles STRICTES de véracité :
 - N'utilise QUE les URLs présentes dans les résultats de recherche fournis. N'invente JAMAIS d'URL, d'email, de téléphone ou d'adresse. Pas de résultat pertinent pour une carte, alors pas de "links" sur cette carte (le texte reste utile).
@@ -253,7 +241,7 @@ Règles STRICTES de véracité :
   la carte n'a pas de lien.
 - Les liens doivent pointer vers les structures elles-mêmes : services officiels (police, ville/mairie, transports publics, aéroports, universités, animal control, humane society, SPCA) ou entreprises privées directement concernées (compagnie de taxi locale, Uber/Lyft, hôtel, centre commercial, stade, compagnie aérienne). INTERDIT : tout service d'objets trouvés tiers ou plateforme concurrente de ReportLost (annuaires lost & found, services d'alerte payants), agrégateurs, articles de presse, blogs. Le test : le lien est-il l'entité qui détient ou reçoit l'objet ? Oui, on garde. C'est un intermédiaire de recherche comme nous ? Non.
 - N'inclus une carte "aéroport" ou "transit" QUE si la ville en a réellement un d'après les résultats. Une petite ville a typiquement : police, city hall, commerces/lieux publics, animaux perdus, 4 cartes suffisent alors.
-- La carte "Lost pet" doit TOUJOURS terminer son texte par un lien interne vers le parcours dédié : <a href="/report-lost-pet"><strong>file a priority lost pet report</strong></a> (c'est le seul lien interne autorisé dans les cartes).
+- La carte "Lost pet" doit TOUJOURS terminer son texte par un lien interne vers le parcours dédié : <a href="/report-lost-pet"><strong>file a lost pet report</strong></a> (c'est le seul lien interne autorisé dans les cartes).
 - "areas" : 3-5 vrais quartiers/zones de la ville si tu les connais avec certitude, sinon des zones génériques honnêtes (downtown, main street, parcs). Pas de href.
 - "social" : cite les groupes/subreddits UNIQUEMENT s'ils apparaissent dans les résultats, sinon des catégories génériques ("Facebook groups", "Nextdoor"). JAMAIS d'URL brute dans les descriptions : uniquement des noms lisibles ("Philadelphia Lost and Found group", "r/philly"), comme sur le modèle New York.
 - FAQ : 4-6 questions locales concrètes, réponses factuelles basées sur les résultats (délais de garde, où réclamer). En cas de doute, formule prudente ("check with..."). Termine par une question sur ReportLost ("Is ReportLost.org official / does it replace the police?" avec la réponse honnête : service indépendant).
@@ -317,7 +305,7 @@ ${results}`,
 Phrases à supprimer :
 ${list}
 
-Rappels : la veille dure 12 mois (jamais "6 to 12 months"). Aucune urgence : ni "every minute counts", ni "time is critical", ni équivalent. Aucune promesse de résultat, aucun absolu du type "every shelter" ou "all groups", aucune statistique.
+Rappels : les durées dépendent de l'option, 6 mois pour Automatic search et 12 mois pour Team-assisted search. N'utilise aucune urgence, aucune promesse de résultat, aucun absolu du type "every shelter" ou "all groups", et aucune statistique.
 
 Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA}`,
         `Guide à corriger :\n\n${JSON.stringify(guide)}`,

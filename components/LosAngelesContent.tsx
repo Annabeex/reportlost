@@ -43,7 +43,7 @@ const areas: { name: string; blurb: string }[] = [
   {
     name: "Venice & the coast",
     blurb:
-      "The Venice Boardwalk, Abbot Kinney and the beaches. Items lost on the sand are rarely recovered — post a public alert fast.",
+      "The Venice Boardwalk, Abbot Kinney and the beaches. Check with nearby venues and local lost-property channels for items left along the coast.",
   },
   {
     name: "The San Fernando Valley",
@@ -92,7 +92,7 @@ const faq: { q: string; a: string }[] = [
   },
   {
     q: "Is ReportLost.org official or does it replace the police?",
-    a: "No. ReportLost.org is an independent service that helps you report to the right official channels faster and amplify your search across local social communities. The official offices retain and release the items.",
+    a: "No. ReportLost.org is an independent service. We provide information about relevant official channels and offer optional team-assisted outreach. Official offices retain and release found property.",
   },
 ];
 
@@ -103,12 +103,11 @@ export function LaTitleSection() {
         Los Angeles, CA · Lost &amp; Found
       </span>
       <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight">
-        Lost something in Los Angeles? Report it and get it back.
+        Lost something in Los Angeles? Review your report options.
       </h1>
       <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-4">
-        One report and we route it to the right <strong>LAPD area</strong>, the relevant{" "}
-        <strong>Metro, LAX and rideshare lost &amp; found</strong>, and active{" "}
-        <strong>local social channels</strong>.
+        Create a free public listing, add automatic public-web monitoring for $12 (six months), or choose team-assisted
+        search for $25 (12 months of monitoring plus relevant local outreach).
       </p>
     </section>
   );
@@ -143,7 +142,7 @@ export function LaExtraContent({
       {/* Comment ça marche — 3 étapes */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          How we help you recover it in Los Angeles
+          How reporting works in Los Angeles
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mt-8">
           <div className="text-center">
@@ -155,16 +154,16 @@ export function LaExtraContent({
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
-            <h3 className="font-bold mt-3 text-gray-900">2. We route it to the right places</h3>
+            <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              The LAPD area covering that spot, plus Metro / LAX / rideshare lost &amp; found and the right social groups.
+              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
             </p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center text-2xl">🤝</div>
-            <h3 className="font-bold mt-3 text-gray-900">3. You get matched &amp; notified</h3>
+            <h3 className="font-bold mt-3 text-gray-900">3. Search and review possible matches</h3>
             <p className="text-sm text-gray-600 mt-2">
-              If someone finds or turns in your item, you&apos;re alerted to arrange pickup.
+              The paid option includes 12 months of public-web monitoring. Potential matches are reviewed before notification.
             </p>
           </div>
         </div>
@@ -183,15 +182,14 @@ export function LaExtraContent({
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="lg:w-3/5 w-full text-gray-800 leading-relaxed space-y-4">
             <p>
-              Spread across roughly 500 square miles, Los Angeles is a city where losing a phone, a wallet, a set
-              of keys — or a pet — can happen anywhere from a Metro train to a beach in Venice. The good news is
-              that LA has several dedicated lost-and-found systems. The hard part is knowing which one handles your
-              case. Report it here and we point you to the right channel and the LAPD area that covers exactly
-              where you lost it.
+              Los Angeles has separate lost-property systems for transit, airports, venues and public agencies.
+              Use the official links below to identify the channel relevant to where the item was lost. ReportLost
+              is independent and offers three report options: a free listing, six-month automatic monitoring for $12,
+              and team-assisted search with 12-month monitoring and relevant local outreach for $25.
             </p>
             <p>
-              Whether it happened on the Metro, at LAX, in a rideshare, at a Hollywood venue or on the Westside,
-              acting fast matters — most lost-and-found offices hold items on strict deadlines.
+              The right contact depends on where the item was lost. The links and guidance below identify the
+              relevant transit, airport, rideshare, venue and city reporting channels.
             </p>
           </div>
           {cityImage && (
@@ -214,11 +212,11 @@ export function LaExtraContent({
       {/* Guide : selon où tu as perdu — avec liens réels */}
       <section className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-2xl font-bold text-gray-900 text-center">
-          Exactly what to do, based on where you lost it
+          Lost-and-found contacts by location type
         </h2>
         <p className="text-gray-600 mt-2 text-sm text-center max-w-3xl mx-auto">
-          Los Angeles has many separate lost-and-found systems. Reporting to the wrong one wastes days — here is
-          the right channel for each.
+          Los Angeles has separate lost-and-found systems for transit, airports, agencies and venues. The links below list
+          contact details for common situations.
         </p>
 
         <div className="grid md:grid-cols-2 gap-5 mt-8">
@@ -306,15 +304,15 @@ export function LaExtraContent({
 
       {/* CTA milieu de page vers le formulaire */}
       <section className="bg-blue-50 rounded-xl border border-blue-100 p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Don&apos;t wait — the first 48 hours matter most</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Create a Los Angeles lost-item report</h2>
         <p className="mt-2 text-gray-600">
-          Lost &amp; found offices clear items on strict deadlines. Get in the system now.
+          Document the item and review the relevant local reporting channels.
         </p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"
         >
-          Report my lost item →
+          Create a report
         </a>
       </section>
 
@@ -337,10 +335,10 @@ export function LaExtraContent({
 
       {/* Réseaux sociaux */}
       <section className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-2xl font-bold text-gray-900">Amplify your report on LA&apos;s social channels</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Local community channels in Los Angeles</h2>
         <p className="text-gray-600 mt-2 text-sm max-w-3xl">
-          Most items come back through a person, not an office. We help you create a clean, shareable post and
-          point you to the most active LA communities:
+          These are separate community channels where you can share a report. Each group has its own posting
+          rules; ReportLost does not post to them on your behalf:
         </p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mt-5 text-sm">
           {[
@@ -393,8 +391,8 @@ export function LaExtraContent({
 
       {/* CTA final vers le formulaire */}
       <section className="text-center py-6">
-        <h2 className="text-2xl font-bold text-gray-900">Ready to get your item back?</h2>
-        <p className="text-gray-600 mt-2">One report. Every relevant channel in Los Angeles.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Choose a report option</h2>
+        <p className="text-gray-600 mt-2">Free listing, $12 automatic search, or $25 team-assisted search.</p>
         <a
           href="#report-form"
           className="mt-5 inline-block bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg shadow-md transition"

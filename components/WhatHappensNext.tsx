@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import { formatCityWithState } from "@/lib/locationUtils";
 import { useEffect } from "react";
 
 interface Props {
@@ -12,20 +10,10 @@ interface Props {
 }
 
 export default function WhatHappensNext({
-  formData,
   onNext,
   onBack,
   fullScreen,
 }: Props) {
-  const cityDisplay = formatCityWithState(formData.city, formData.state_id);
-
-  const placeLabel =
-    (formData?.transport_type_other || "").trim() ||
-    (formData?.transport_type || "").trim() ||
-    (formData?.place_type_other || "").trim() ||
-    (formData?.place_type || "").trim() ||
-    "unspecified place";
-
   const btnGreen =
     "bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449] text-white font-semibold px-6 py-2 rounded shadow inline-flex items-center justify-center";
 
@@ -42,8 +30,6 @@ export default function WhatHappensNext({
     }
     onNext();
   };
-
-  const LIGHT_GREEN_BG = "#f3fdf5"; // même vert doux que sur les autres pages
 
   return (
     <section
@@ -74,8 +60,7 @@ export default function WhatHappensNext({
           role="status"
           aria-live="polite"
         >
-          <strong>Step saved.</strong> Your report is not finalized yet — please review this page and
-          continue to confirm.
+          Your details are saved. The next screen compares the free listing and optional paid search services.
         </div>
 
         {/*
@@ -148,43 +133,28 @@ export default function WhatHappensNext({
         </div>
         */}
 
-        {/* Process explanation */}
+        {/* Available options */}
         <div className="space-y-3 sm:space-y-4 text-sm text-gray-700">
           {[
             {
-              svg: "🗂️",
-              title: "Manual verification",
-              desc: "Our team reviews your report to ensure all necessary details are included.",
+              svg: "📄",
+              title: "Free public listing",
+              desc: "If selected, your report is published as a searchable page with a protected relay address. It does not include active monitoring or team outreach.",
             },
             {
-              svg: "🔍",
-              title: "Search efforts begin",
-              desc: "We compare your report to public and private lost & found databases.",
+              svg: "🔎",
+              title: "Automatic search — $12",
+              desc: "Includes six months of public-web monitoring, a loss report certificate and a printable QR sticker sheet. It does not include local outreach or a notice.",
             },
             {
-              svg: "📤",
-              title: "Targeted transmission",
-              desc: "If relevant, we forward your report to institutions like transit, hotels, or authorities.",
+              svg: "🧑‍💼",
+              title: "Team-assisted search — $25",
+              desc: "Includes 12 months of public-web monitoring, relevant local outreach, a notice for local groups where posting is available, a loss report certificate and a printable QR sticker sheet.",
             },
             {
-              svg: "📧",
-              title: "Anonymous publication",
-              desc: "Your report is posted without personal data. A special email address is created for replies.",
-            },
-            {
-              svg: "📣",
-              title: "Optimized visibility",
-              desc: "We ensure your report can be indexed on Google and shared on relevant networks.",
-            },
-            {
-              svg: "🧑‍💻",
-              title: "Follow-up",
-              desc: "You’ll receive automatic notifications if a potential match is detected.",
-            },
-            {
-              svg: "🔒",
-              title: "Data protection",
-              desc: "Your data is encrypted and processed according to strict privacy standards.",
+              svg: "🏢",
+              title: "Official lost-property services",
+              desc: "Offices and venues control their own filing and collection procedures. We submit reports where third-party filing is accepted; otherwise, we provide contact details and instructions.",
             },
           ].map(({ svg, title, desc }, i) => (
             <div
@@ -212,7 +182,7 @@ export default function WhatHappensNext({
           </button>
           {/* ✅ libellé ajusté */}
           <button onClick={handleContinue} className={btnGreen}>
-            Confirm & continue →
+            Compare options →
           </button>
         </div>
       </div>

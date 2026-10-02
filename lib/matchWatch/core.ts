@@ -358,7 +358,7 @@ Reply JSON: {"verdict":"yes|maybe|no","confidence":0-100,"reason":"one short sen
 
 // ---------------------------------------------------------------------------
 // 6) Cadence dégressive : quotidien (7j) -> hebdo (30j) -> mensuel -> stop
-//    Durée totale : 12 mois pour Active search (>= 25 $).
+//    Durée totale : 12 mois pour team-assisted search (>= 25 $).
 //    Le palier 180 j reste en place pour les anciens dossiers payés 12 $, qui
 //    doivent continuer d'être veillés jusqu'au terme promis à l'époque.
 // ---------------------------------------------------------------------------

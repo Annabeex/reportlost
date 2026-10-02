@@ -234,7 +234,7 @@ export default async function Page({
   // Le bloc de veille s'affiche sur TOUS les dossiers payants, mais seulement
   // quand elle est réellement armée : sans passage effectué ni passage prévu,
   // écrire « the search is running » serait faux. Les dossiers automatiques
-  // sont armés au paiement, les Active search le sont depuis l'admin.
+  // sont armés au paiement, comme les recherches automatiques.
   const watchArmed =
     contributionNum > 0 &&
     (!!(data as any).last_searched_at || !!(data as any).next_search_at);
@@ -342,7 +342,7 @@ export default async function Page({
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 <strong>
                   {Number(data.contribution) >= 25
-                    ? "Active search"
+                    ? "Team-assisted search"
                     : Number(data.contribution) > 0
                     ? "Automatic search"
                     : "Free listing"}
@@ -406,7 +406,7 @@ export default async function Page({
           <section className="rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-indigo-900">
-                <div className="font-semibold">🎁 Your QR sticker sheet is included with your plan</div>
+                <div className="font-semibold">Your QR sticker sheet is included with this search service</div>
                 <p className="mt-1">
                   Print it and tag your valuables: anyone who finds a tagged item can scan the code and
                   reach you instantly through our protected relay, your personal details stay private.
@@ -436,7 +436,7 @@ export default async function Page({
               <div className="text-sm text-amber-900">
                 <div className="font-semibold">🐕 Print a lost pet poster (free)</div>
                 <p className="mt-1">
-                  Posters around the neighborhood remain one of the fastest ways to find a pet, make one in
+                  A neighborhood poster is one way to share information about a missing pet. Make one in
                   2 minutes with your pet&rsquo;s photo and a scannable QR code.
                 </p>
               </div>

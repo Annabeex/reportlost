@@ -106,7 +106,7 @@ export function CityGuideExtra({
             )}`}
             className="hover:text-gray-600 hover:underline"
           >
-            ⚠️ Spotted incorrect or outdated info on this page? Let us know, we fix it fast.
+            ⚠️ Spotted incorrect or outdated information? Let us know so we can review it.
           </a>
         </p>
       </section>

@@ -36,47 +36,35 @@ function toSafeHTML(text: string): string {
 function baseDefaults(publicId?: string, lostId?: string): Block[] {
   const anon = publicId ? `item${publicId}@reportlost.org` : "your case inbox";
   return [
-    { id: uid(), title: "Local notifications & Authority outreach", paragraphs: [
-      "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.",
-      "✅ NYPD units covering East River Park — the 7th Precinct (Lower East Side) and the 9th Precinct (East Village). For best results, please contact the lost and found office or visit it in person with proof of ownership if you have.",
-    ]},
-    { id: uid(), title: "Database & Partners searches", paragraphs: [
-      "We search the full spectrum of public and partner lost-&-found sources that are most likely to list found items in your area: national & regional aggregators, municipal pages, transit & airport listings, university systems, police logs, classifieds, and active local groups and create alerts for the report keywords.",
-      "Current result: No exact match found at time of publication. We repeat these checks automatically and manually",
-    ]},
-    { id: uid(), title: "Anonymous Contact Address - Safety & Anti-Scam Measures", paragraphs: [
-      `✅ We created a case-specific anonymous inbox: **${anon}**. Finders can message this address; our moderators screen messages and forward verified leads to you. Your personal email is never published publicly in the social media.`,
-      "Our team ensures the veracity of the content of the messages received and filters unsolicited emails (advertising, spam, scam attempts, etc.).",
-    ]},
-    { id: uid(), title: "Online publication & Accessibility", paragraphs: [
-      "Your public report is live in our database and partners such as lost-found.org. Optimized for desktop, tablet and mobile. We publish structured metadata to help search engines find and index the listing.",
-    ]},
-    { id: uid(), title: "Search Engines & Feed Distribution", paragraphs: [
-      "We submit the report to major search engines and our syndicated feeds. This helps crawlers discover the listing faster, indexing timing is controlled by the search engines themselves.",
-      ["✅ Google", "✅ Bing", "✅ Yahoo!", "✅ DuckDuckGo, Yandex Search, Ecosia, Aol, Ask"].join("\n"),
-    ]},
-    { id: uid(), title: "Social Media & Community Posting", paragraphs: [
-      "We post the report to our public Facebook page and local groups, prepare a Nextdoor template, and publish short alerts on X and Instagram. Facebook and Nextdoor are typically the most effective for recoveries; Instagram and TikTok are supplementary.",
-      ...(lostId
-        ? [
-            "We created a dedicated search visual for your report, published alongside the alert so your item is instantly recognizable:",
-            `IMAGE:/api/poster/${lostId}`,
-          ]
-        : []),
-      "Facebook wallets group, Facebook NY and lost and found groups",
-    ]},
-    { id: uid(), title: "Specialist Channels & Partners", paragraphs: [
-      "When appropriate we push the listing to specialized networks (pet recovery platforms, resale marketplaces, institutional pages) and local classified boards.",
-    ]},
-    { id: uid(), title: "Automated Monitoring & Human Verification", paragraphs: [
-      "We combine automated scans, image-similarity checking, and match scoring. Active monitoring runs with multiple daily checks.",
-    ]},
-    { id: uid(), title: "What Happens If We Find a Match", paragraphs: [
-      "We verify photos and identifying marks.",
-      "We request verification photos from the finder via the anonymous inbox.",
-      "We notify you immediately with instructions; we never publish your private data.",
-      "We advise a safe, public handoff and coordinate with police if needed.",
-    ]},
+    {
+      id: uid(),
+      title: "Public report",
+      paragraphs: [
+        `Your report is published on ReportLost as a public listing. Replies can use the case relay address **${anon}** rather than your personal email.`,
+      ],
+    },
+    {
+      id: uid(),
+      title: "Selected search service",
+      paragraphs: [
+        "Add the search option selected for this report and its scope. The free listing does not include monitoring or team outreach. Automatic and team-assisted search have different monitoring periods and included tasks; refer to the confirmation email for the selected option.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Local contacts and follow-up",
+      paragraphs: [
+        "List the offices, venues or businesses contacted for this report, along with any response received. Each organization sets its own filing, holding and collection procedures.",
+      ],
+    },
+    {
+      id: uid(),
+      title: "Potential match",
+      paragraphs: [
+        "Add the source and review status for any potential match. Keep a private identifying detail off the public listing so it can help confirm ownership when contacting a finder or an office.",
+        ...(lostId ? [`IMAGE:/api/poster/${lostId}`] : []),
+      ],
+    },
   ];
 }
 
@@ -195,7 +183,7 @@ export default function CaseFollowupEditor({
               .join("\n\n");
             const TITLE = "Local notifications & Authority outreach";
             const INTRO =
-              "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.";
+              "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched to your case.";
             const idx = input.findIndex((b: any) => b.title === TITLE);
             if (idx === -1) {
               return { blocks: [...input, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }], changed: true };
@@ -408,7 +396,7 @@ export default function CaseFollowupEditor({
         .join("\n\n");
       const TITLE = "Local notifications & Authority outreach";
       const INTRO =
-        "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched quickly.";
+        "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched to your case.";
       setBlocks((prev) => {
         const idx = prev.findIndex((b) => b.title === TITLE);
         if (idx === -1) return [...prev, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }];

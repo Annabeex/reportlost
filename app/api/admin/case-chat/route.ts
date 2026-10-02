@@ -153,14 +153,14 @@ My name is Anna, and I'm assisting you with the manual investigation regarding y
 
 I'm really sorry this happened. I'll do everything I can to help increase the chances of getting it back.
 
-An initial scan across major online sources, community groups, and public lost-and-found platforms for the <ville> area has been completed. No matching report has surfaced yet, but this is completely normal at this early stage, new posts can appear at any moment.
+An initial scan across major online sources, community groups, and public lost-and-found platforms for the <ville> area has been completed. No matching report was found in the sources checked. New public posts may be added later.
 
 Based on the information you provided (<résumé des circonstances : lieu, créneau, date>), we have reached out to the main local entities most likely to receive found items:
 
 <liste de 2-3 entités locales pertinentes : nom, rôle en une ligne. Adapte au contexte : police locale et city hall par défaut ; ajoute le parc, le restaurant, l'hôtel, le réseau de transport ou l'aéroport si le lieu de perte s'y prête>
 
 - Our automated monitoring keeps scanning the entire web and social networks (community groups, marketplaces, neighborhood pages) and re-checks regularly to catch any new "found <type d'objet>" post in or around <ville>.
-- I will keep following your case and notify you immediately if anything new is reported.
+- I will notify you if a new relevant lead is identified.
 
 You can follow your case here: <lien privé de suivi, recopié depuis le contexte>
 

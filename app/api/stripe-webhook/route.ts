@@ -127,13 +127,9 @@ export async function POST(req: NextRequest) {
         const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
         // La veille démarre au paiement pour TOUTE formule payante. Elle était
-        // réservée à la formule automatique, l'Active search devant être armée à
-        // la main depuis l'admin : conséquence, le client à 25 $ ne voyait aucun
-        // bloc de veille sur son compte rendu tant qu'on n'y avait pas pensé,
-        // là où celui à 12 $ le voyait tout de suite. La formule la plus chère
-        // démarrait après la moins chère. Le bouton de l'admin reste disponible
-        // pour les exceptions.
-        const isAutoPlan = paidAmount > 0;
+        // Start monitoring for any paid search service. The admin override remains
+        // available for exceptions.
+        const hasPaidSearch = paidAmount > 0;
 
         // Update payment fields if needed
         try {
@@ -149,7 +145,7 @@ export async function POST(req: NextRequest) {
           // next_search_at <= now() : tant qu'elle est NULL, le dossier n'est
           // jamais sélectionné. On l'amorce ici pour les dossiers automatiques.
           if (
-            isAutoPlan &&
+            hasPaidSearch &&
             !(row as any).next_search_at &&
             (row as any).search_status !== "excluded"
           ) {
@@ -181,17 +177,18 @@ export async function POST(req: NextRequest) {
                   )}`
                 : "";
 
-            const subject = isAutoPlan
-              ? "✅ Payment received — your search is running"
-              : "✅ Payment received — your report has been published";
+            const hasTeamAssistedSearch = paidAmount >= 25;
+            const paidServiceLabel = hasTeamAssistedSearch ? "Team-assisted search" : "Automatic search";
+            const monitoringMonths = hasTeamAssistedSearch ? 12 : 6;
+            const subject = `Payment received — ${paidServiceLabel} is active`;
             const text = `Hello ${row.first_name || ""},
 
-Thank you for your payment. Your lost item report has been published on reportlost.org.
+Your lost-item report has been published on ReportLost.org, and ${paidServiceLabel} is active.
 
-What's next:
-• Automatic search (AI) is starting now.
-• A team member will contact you shortly to begin the manual investigation.
-• If you have no news within 24 hours, please check your spam/junk folder.
+Service details:
+- Public-web monitoring runs for ${monitoringMonths} months. Potential matches are reviewed before notification.
+${hasTeamAssistedSearch ? "- The team carries out relevant local outreach and can publish a notice for local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.\n" : "- Local outreach and a notice are not included with automatic search.\n"}
+- The service includes a loss report confirmation and a printable QR sticker sheet.
 
 Your report details:
 - Item: ${row.title || ""}
@@ -216,11 +213,11 @@ Thank you for using ReportLost.`;
       <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
     </p>
 
-    <p style="margin:0 0 10px"><b>What's next</b></p>
+    <p style="margin:0 0 10px"><b>Service details</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
-      <li>Automatic search (AI) is <b>starting now</b>.</li>
-      <li>A team member will contact you shortly to begin the manual investigation.</li>
-      <li>If you have no news within <b>24 hours</b>, please check your <b>spam/junk folder</b>.</li>
+      <li>Public-web monitoring runs for ${monitoringMonths} months. Potential matches are reviewed before notification.</li>
+      ${hasTeamAssistedSearch ? "<li>The team carries out relevant local outreach and can publish a notice for local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.</li>" : "<li>Local outreach and a notice are not included with automatic search.</li>"}
+      <li>A loss report confirmation and a printable QR sticker sheet are included.</li>
     </ul>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -240,15 +237,15 @@ Thank you for using ReportLost.`;
             // verrouillée par le case_token. ---
             const autoText = `Hello ${row.first_name || ""},
 
-Thank you. Your Automatic search is active, and the first scan runs tonight.
+Your ${paidServiceLabel} is active.
 
-What this covers, for the next 6 months:
-- The web is scanned on your item's keywords: every day this first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.
+Service details, for ${monitoringMonths} months:
+- Public-web checks run daily during the first week, then weekly and monthly. Potential matches are reviewed before notification.
 - Your loss report confirmation, downloadable at any time. It is not an official document and does not replace a police report.
 - Your QR sticker sheet, a PDF to print yourself on adhesive paper.
+${hasTeamAssistedSearch ? "- Relevant local outreach and a notice for relevant local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.\n" : "- Local outreach and a notice are not included with automatic search.\n"}
 
-${caseUrl ? `Open my case page: ${caseUrl}\n\nThis link is private and belongs to your case. Keep this email: it is the only way back to the page.\n` : ""}
-Not covered by this plan: nobody contacts a police desk, hotel or transit office on your behalf, and no notice is published on social media.
+${caseUrl ? `Open your private case page: ${caseUrl}\n` : ""}
 
 Your report details:
 - Item: ${row.title || ""}
@@ -266,13 +263,14 @@ Thank you for using ReportLost.`;
   </div>
   <div style="padding:20px;color:#111827;line-height:1.65">
     <p style="margin:0 0 12px">Hello <b>${row.first_name || ""}</b>,</p>
-    <p style="margin:0 0 12px">Thank you. Your <b>Automatic search</b> is active, and the first scan runs tonight.</p>
+    <p style="margin:0 0 12px">Your <b>${paidServiceLabel}</b> is active.</p>
 
-    <p style="margin:0 0 8px"><b>What this covers, for the next 6 months</b></p>
+    <p style="margin:0 0 8px"><b>Service details, for ${monitoringMonths} months</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
-      <li>The web is scanned on your item&rsquo;s keywords: every day this first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.</li>
+      <li>Public-web checks run daily during the first week, then weekly and monthly. Potential matches are reviewed before notification.</li>
       <li>Your <b>loss report confirmation</b>, downloadable at any time. It is not an official document and does not replace a police report.</li>
       <li>Your <b>QR sticker sheet</b>, a PDF to print yourself on adhesive paper.</li>
+      ${hasTeamAssistedSearch ? "<li>Relevant local outreach and a notice for relevant local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.</li>" : "<li>Local outreach and a notice are not included with automatic search.</li>"}
     </ul>
 
     ${
@@ -280,11 +278,11 @@ Thank you for using ReportLost.`;
         ? `<div style="margin:0 0 8px;text-align:center">
              <a href="${caseUrl}" style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700">Open my case page</a>
            </div>
-           <p style="margin:0 0 16px;font-size:12.5px;color:#6b7280;text-align:center">This link is private and belongs to your case. Keep this email: it is the only way back to the page.</p>`
+           <p style="margin:0 0 16px;font-size:12.5px;color:#6b7280;text-align:center">This is a private link to your case page.</p>`
         : ""
     }
 
-    <p style="margin:0 0 14px;font-size:13px;color:#6b7280"><b>Not covered by this plan:</b> nobody contacts a police desk, hotel or transit office on your behalf, and no notice is published on social media.</p>
+    <p style="margin:0 0 14px;font-size:13px;color:#6b7280">ReportLost is independent of public agencies. Recovery cannot be guaranteed.</p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
     <ul style="margin:0 16px 18px;padding-left:18px">

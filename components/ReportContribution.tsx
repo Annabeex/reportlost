@@ -2,29 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-/**
- * ReportContribution.tsx — Standard (Free) + Automatic search + Active search
- *
- * Deux écrans, dans le même composant :
- *
- *   "plans" — les trois formules. La formule à 12 $ n'est plus réservée au
- *             rattrapage : elle est visible d'emblée, avec une frontière nette
- *             (le 12 $ est la machine seule, le 25 $ est ce qu'une personne
- *             fait). L'ancienne crainte de cannibalisation n'est pas confirmée
- *             par les chiffres : sur la période où les trois formules étaient
- *             affichées, la recette par dépôt était PLUS élevée qu'avec deux.
- *
- *   "gauge" — montré uniquement à qui choisit le gratuit. Il accuse réception
- *             sans rien célébrer, et propose une dernière fois de monter d'un
- *             cran. Le mégaphone grossit et gagne une onde à chaque palier :
- *             ce qu'on achète, c'est de la portée. (L'ancienne jauge en forme
- *             de cœur collectait un pourboire libre : 22 $ en huit mois, tous
- *             sous 15 $, tous posés sur des annonces gratuites. Ce n'était pas
- *             un don, c'était une négociation. Les crans sont donc fixes.)
- *
- * La version à deux formules est conservée dans
- * components/ReportContribution.avant-3-formules.tsx.bak.
- */
+/** Plan selector for the free listing, automatic search, and team-assisted search. */
 
 type Props = {
   amount?: number;
@@ -33,13 +11,10 @@ type Props = {
   onBack: () => void;
   onNext: () => void;
   referenceCode?: string;
-  /** ✅ Mode animaux perdus : Pet Priority (25 $) + option gratuite */
+  onPlanSelected?: (event: string) => void;
+  /** Lost-pet mode: free listing or $25 team-assisted search. */
   petMode?: boolean;
-  /**
-   * Lien de rattrapage `?offer=auto` envoyé après un dépôt gratuit. La carte à
-   * 12 $ étant désormais toujours visible, ce drapeau ne sert plus qu'à la
-   * PRÉSÉLECTIONNER.
-   */
+  /** Preselect automatic search for visitors who followed the optional offer link. */
   showAutoPlan?: boolean;
 };
 
@@ -77,6 +52,7 @@ export default function ReportContribution({
   setFormData,
   onBack,
   onNext,
+  onPlanSelected,
   petMode = false,
   showAutoPlan = false,
 }: Props) {
@@ -88,15 +64,13 @@ export default function ReportContribution({
 
   const PRICE = { 1: 0, 2: 12, 3: 25, 4: 25 } as const;
 
-  // Présélection : la formule complète, sauf arrivée par le lien de rattrapage.
-  const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(
-    petMode ? 4 : showAutoPlan ? 2 : 3
-  );
+  // Start with the free listing unless a visitor followed an automatic-search offer link.
+  const [selectedPlan, setSelectedPlan] = useState<1 | 2 | 3 | 4>(showAutoPlan && !petMode ? 2 : 1);
 
   useEffect(() => {
     // Retour en arrière depuis le paiement : on réaffiche ce qui avait été choisi.
     if (petMode) {
-      setSelectedPlan(4);
+      setSelectedPlan(effectiveAmount > 0 ? 4 : 1);
       return;
     }
     if (effectiveAmount === 12) {
@@ -116,6 +90,19 @@ export default function ReportContribution({
     }
   }, []);
 
+  const choosePlan = (plan: 1 | 2 | 3 | 4) => {
+    setSelectedPlan(plan);
+    const event =
+      plan === 1
+        ? "form_plan_selected_free"
+        : plan === 2
+        ? "form_plan_selected_auto"
+        : petMode && plan === 4
+        ? "form_plan_selected_pet_assisted"
+        : "form_plan_selected_assisted";
+    onPlanSelected?.(event);
+  };
+
   const commit = (value: number) => {
     setFormData((prev: any) => ({
       ...prev,
@@ -126,9 +113,6 @@ export default function ReportContribution({
   };
 
   const proceed = () => {
-    // « Free » mene directement a l'ecran final (etape 5 de ReportForm), qui
-    // confirme la publication, envoie le mail et presente la jauge de relance.
-    // L'ancien ecran intermediaire faisait perdre le mail a qui s'y arretait.
     commit(PRICE[selectedPlan]);
   };
 
@@ -145,7 +129,7 @@ export default function ReportContribution({
       name="report-plan"
       value={plan}
       checked={selectedPlan === plan}
-      onChange={() => setSelectedPlan(plan)}
+      onChange={() => choosePlan(plan)}
       aria-label={label}
       className="h-[18px] w-[18px] flex-none accent-[#1f6b3a]"
     />
@@ -162,31 +146,59 @@ export default function ReportContribution({
   return (
     <section className="px-3 sm:px-4 md:px-6">
       <div className="mx-auto max-w-3xl">
-        <h2 className="mb-4 text-center text-2xl font-bold text-gray-700">Choose your plan</h2>
+        <h2 className="mb-4 text-center text-2xl font-bold text-gray-700">Choose a report option</h2>
 
         <div className="mb-4 rounded-2xl border border-green-200 bg-white px-5 py-4 text-center text-[15px] leading-relaxed text-gray-700">
-          With <b className="text-gray-900">Active search</b>, a team member files your report with
-          the lost-property service and contacts the places that may hold your item.
+          Compare what is included with each option. All paid prices are one-time fees.
         </div>
 
         <div className="grid gap-4">
-          {/* --- Pet Priority (25 $), mode animaux --- */}
+          {/* --- Standard (Free) --- */}
+          <div className={cardClass(selectedPlan === 1)} onClick={() => choosePlan(1)}>
+            <div
+              className="flex items-center gap-3 px-5 py-3"
+              style={{ backgroundColor: LIGHT_GREEN_BG }}
+            >
+              <Radio plan={1} label="Standard, free" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/images/icons/search.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
+              <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
+                Free public listing
+              </h3>
+            </div>
+            <div className="px-5 py-4">
+              <ul className="space-y-3.5">
+                <li className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                  <span className="text-[14.5px] text-gray-800">
+                    Your report is published as a searchable public listing with a protected relay address.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex-none text-gray-500">—</span>
+                  <span className="text-[14.5px] text-gray-600">
+                    Search monitoring, team outreach, the certificate and QR sticker sheet are part of the paid options.
+                  </span>
+                </li>
+              </ul>
+              <Fee value={0} />
+            </div>
+          </div>
+
+          {/* --- Team-assisted pet search (25 $), pet reports --- */}
           {petMode && (
-            <div className={cardClass(selectedPlan === 4)} onClick={() => setSelectedPlan(4)}>
+            <div className={cardClass(selectedPlan === 4)} onClick={() => choosePlan(4)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
-                <Radio plan={4} label="Pet Priority search, $25" />
+                  <Radio plan={4} label="Team-assisted pet search, $25" />
                 <span className="text-xl">🐾</span>
                 <h3
                   className="flex flex-wrap items-center gap-2 text-xl font-semibold"
                   style={{ color: DARK_GREEN }}
                 >
-                  Pet Priority search
-                  <span className="rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-[#1f6b3a]">
-                    ⚡ Priority handling
-                  </span>
+                  Team-assisted pet search
                 </h3>
               </div>
               <div className="px-5 py-4">
@@ -194,68 +206,15 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      Our team contacts the local animal shelters, animal control and rescue
-                      services, and the police where appropriate.
+                      A team member contacts relevant local shelters, animal control and rescue
+                      services where appropriate.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      A dedicated visual is published on local social channels,{" "}
-                      <strong>including private lost pet groups our team belongs to</strong>. Your
-                      report stays active for <strong>12 months</strong>, with a protected relay
-                      email address.
-                    </span>
-                  </li>
-                </ul>
-                <Fee value={25} />
-              </div>
-            </div>
-          )}
-
-          {/* --- Active search (25 $) --- */}
-          {!petMode && (
-            <div className={cardClass(selectedPlan === 3)} onClick={() => setSelectedPlan(3)}>
-              <div
-                className="flex items-center gap-3 px-5 py-3"
-                style={{ backgroundColor: LIGHT_GREEN_BG }}
-              >
-                <Radio plan={3} label="Active search, $25" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/images/icons/max.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
-                <h3
-                  className="flex flex-wrap items-center gap-2 text-xl font-semibold"
-                  style={{ color: DARK_GREEN }}
-                >
-                  Active search
-                  <span className="rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-[#1f6b3a]">
-                    🏅 Most popular
-                  </span>
-                </h3>
-              </div>
-              <div className="px-5 py-4">
-                <ul className="space-y-3.5">
-                  <li className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
-                    <span className="text-[14.5px] leading-relaxed text-gray-800">
-                      {/* <span> et non <p> : ce bloc est déjà dans un <span>,
-                          et un paragraphe n'a pas le droit d'y vivre. */}
-                      <span className="mb-2.5 block">
-                        Our team manually distributes your report through the appropriate channels,
-                        including relevant authorities and official services, and ensures continued
-                        monitoring and follow-up actions when applicable.
-                      </span>
-                      <span className="block">
-                        Our AI continuously scans large databases for potential matches for 12
-                        months. Includes your dated loss report certificate, downloadable at any
-                        time, and a printable PDF sheet of secure ID stickers.
-                      </span>
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
-                    <span className="text-[14.5px] text-gray-800">
-                      Recommended for valuable or sentimental items, and whenever time matters.
+                      A notice can be shared with relevant local groups using a protected relay
+                      address. Public-web monitoring is included for <strong>12 months</strong>.
                     </span>
                   </li>
                 </ul>
@@ -266,7 +225,7 @@ export default function ReportContribution({
 
           {/* --- Automatic search (12 $) --- */}
           {!petMode && (
-            <div className={cardClass(selectedPlan === 2)} onClick={() => setSelectedPlan(2)}>
+            <div className={cardClass(selectedPlan === 2)} onClick={() => choosePlan(2)}>
               <div
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
@@ -281,15 +240,14 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] leading-relaxed text-gray-800">
-                      The automated half of the work. Our system scans large databases and online
-                      sources for potential matches during six months, and every credible match is
-                      read by a team member before it reaches you.
+                      Public-web monitoring runs for six months. Potential matches are reviewed
+                      before notification.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      Recommended for all types of lost items.
+                      Includes a loss report certificate and printable QR sticker sheet.
                     </span>
                   </li>
                 </ul>
@@ -298,39 +256,53 @@ export default function ReportContribution({
             </div>
           )}
 
-          {/* --- Standard (Free) --- */}
-          <div className={cardClass(selectedPlan === 1)} onClick={() => setSelectedPlan(1)}>
-            <div
-              className="flex items-center gap-3 px-5 py-3"
-              style={{ backgroundColor: LIGHT_GREEN_BG }}
-            >
-              <Radio plan={1} label="Standard, free" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/images/icons/search.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
-              <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
-                Standard (Free)
-              </h3>
+          {/* --- Team-assisted search (25 $) --- */}
+          {!petMode && (
+            <div className={cardClass(selectedPlan === 3)} onClick={() => choosePlan(3)}>
+              <div
+                className="flex items-center gap-3 px-5 py-3"
+                style={{ backgroundColor: LIGHT_GREEN_BG }}
+              >
+                <Radio plan={3} label="Team-assisted search, $25" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/images/icons/max.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
+                <h3
+                  className="flex flex-wrap items-center gap-2 text-xl font-semibold"
+                  style={{ color: DARK_GREEN }}
+                >
+                  Team-assisted search
+                </h3>
+              </div>
+              <div className="px-5 py-4">
+                <ul className="space-y-3.5">
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] leading-relaxed text-gray-800">
+                      {/* <span> et non <p> : ce bloc est déjà dans un <span>,
+                          et un paragraphe n'a pas le droit d'y vivre. */}
+                      <span className="mb-2.5 block">
+                        A team member reviews your report and contacts relevant local services and
+                        venues where appropriate. If an office requires the owner to file directly,
+                        we provide its contact details and instructions.
+                      </span>
+                      <span className="block">
+                        Public-web monitoring runs for 12 months. Potential matches are reviewed
+                        before notification. The service also includes a dated loss report
+                        certificate and a printable QR sticker sheet.
+                      </span>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
+                    <span className="text-[14.5px] text-gray-800">
+                      Includes relevant local outreach in addition to public-web monitoring.
+                    </span>
+                  </li>
+                </ul>
+                <Fee value={25} />
+              </div>
             </div>
-            <div className="px-5 py-4">
-              <ul className="space-y-3.5">
-                <li className="flex items-start gap-3">
-                  <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
-                  <span className="text-[14.5px] text-gray-800">
-                    Public publication in our open database, because every report counts.
-                  </span>
-                </li>
-                {/* La seule ligne négative de l'écran, et elle est à sa place :
-                    c'est ici que le malentendu coûte le plus cher. */}
-                <li className="flex items-start gap-3">
-                  <span className="mt-0.5 flex-none font-bold text-amber-700">—</span>
-                  <span className="text-[14.5px] text-amber-700">
-                    Nothing else happens: no filing, no outreach, no monitoring, no documents.
-                  </span>
-                </li>
-              </ul>
-              <Fee value={0} />
-            </div>
-          </div>
+          )}
 
           <div className="mt-2 flex items-center justify-between gap-3">
             <button

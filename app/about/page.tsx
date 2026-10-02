@@ -14,10 +14,8 @@ export default function AboutPage() {
         About ReportLost.org
       </h1>
 
-      <p className="text-lg italic text-center mb-10">
-        Behind every lost item, there’s a story.
-        <br />
-        Behind every return, there’s relief.
+      <p className="text-lg text-center mb-10">
+        Information about ReportLost, its reporting options, and how the service operates.
       </p>
 
       <p className="mb-8">
@@ -63,36 +61,34 @@ export default function AboutPage() {
       </p>
 
       <p className="mb-10">
-        At the same time, reports are reviewed with human oversight. When a
-        case requires follow-up, a member of the team takes manual action to
-        verify information, contact relevant services, and assist with
-        outreach.
+        Potential matches from paid search services are reviewed before
+        notification. Team-assisted search also includes follow-up with
+        relevant services and venues where appropriate.
       </p>
 
       <p className="mb-10">
-        We believe technology can accelerate discovery — but human judgment,
-        persistence, and care remain essential.
+        The system supports public-web monitoring and structured case handling.
+        Public offices and venues retain control over their own procedures.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
-        A Flexible and Fair Assistance Model
+        Report and assistance options
       </h2>
 
       <p className="mb-4">
-        Submitting a report on ReportLost is always possible.
+        Publishing a public lost-item listing is free.
       </p>
 
       <p className="mb-4">
-        The platform operates on a flexible contribution model, allowing users
-        to choose the level of assistance that fits their situation. Some
-        people simply want their item documented and searchable. Others prefer
-        additional help with outreach, follow-up, and visibility.
+        Users may also choose automatic public-web monitoring for six months at a one-time $12 fee, or team-assisted
+        search for $25, which includes 12 months of monitoring, relevant local outreach and a notice for local
+        groups. The free public listing remains available on its own.
       </p>
 
       <p className="mb-10">
-        Access to help should not depend solely on financial constraints. At
-        the same time, contributions allow the service to remain sustainable
-        and to dedicate time to manual follow-up when it matters most.
+        ReportLost is independent of public agencies. Official offices and
+        venues retain control over their own procedures, and item recovery
+        cannot be guaranteed.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
@@ -102,13 +98,11 @@ export default function AboutPage() {
       <ul className="list-disc list-inside mb-10 space-y-1">
         <li>Sensitive personal information is never published publicly</li>
         <li>Contact details are protected</li>
-        <li>Reports are handled with care and human oversight</li>
+        <li>Team-assisted searches include human review</li>
       </ul>
 
       <p className="mb-10">
-        ReportLost does not guarantee the recovery of an item. What it provides
-        is structure, visibility, and assistance — to improve the chances of a
-        meaningful match.
+        ReportLost does not guarantee recovery. It provides a structured way to publish a report and, with the optional team-assisted search, to carry out relevant follow-up.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">Looking Ahead</h2>

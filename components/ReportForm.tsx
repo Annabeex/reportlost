@@ -1,7 +1,7 @@
 // components/ReportForm.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 // import { supabase } from "@/lib/supabaseClient"; // <= intentionally not used from client
@@ -29,7 +29,7 @@ type ReportFormProps = {
   /** ✅ NEW: version "intégrée" (page ville) — enlève min-h-screen et allège les marges.
    *  Par défaut false → aucun impact sur /report, universités, home. */
   embedded?: boolean;
-  /** ✅ NEW: mode animaux perdus — Pet Priority (25$) à l'étape contribution */
+  /** Lost-pet mode: free listing or $25 team-assisted search. */
   petMode?: boolean;
 };
 
@@ -50,23 +50,6 @@ async function sha1Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-/** Ref à 5 chiffres à partir d’un id (même logique modulo que côté serveur) */
-async function refCode5FromId(input: string): Promise<string> {
-  const hex = await sha1Hex(input);
-  // prendre les 8 premiers hex (32 bits) -> modulo pour rester aligné
-  const n = parseInt(hex.slice(0, 8), 16);
-  return String((n % 90000) + 10000).padStart(5, "0");
-}
-
-/** Priorité au public_id si 5 chiffres, sinon fallback depuis id */
-async function getReferenceCode(
-  public_id: string | null | undefined,
-  id: string,
-): Promise<string> {
-  if (public_id && /^\d{5}$/.test(public_id)) return public_id;
-  return await refCode5FromId(id);
 }
 
 /**
@@ -97,6 +80,7 @@ export default function ReportForm({
   petMode = false, // ✅ NEW
 }: ReportFormProps) {
   const [step, setStep] = useState(1);
+  const [progressStep, setProgressStep] = useState(1);
   const [isClient, setIsClient] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // ✅ anti double-submit (état)
   const submitLockRef = useRef(false); // ✅ anti double-submit (verrou mémoire)
@@ -179,8 +163,7 @@ export default function ReportForm({
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("go") === "contribute") setStep(4);
-      // Lien de rattrapage envoyé à ceux qui ont choisi l'annonce gratuite :
-      // il débloque l'affichage de la formule automatique à 12 $.
+      // This link preselects automatic search on the plan selection screen.
       if (params.get("offer") === "auto") setShowAutoPlan(true);
 
       // ✅ rid : l'URL (?rid=, lien du mail) prime toujours. Le rid mémorisé en
@@ -332,6 +315,11 @@ export default function ReportForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  useEffect(() => {
+    if (step === 3 || step === 4) setProgressStep(5);
+    if (step === 5) setProgressStep(6);
+  }, [step]);
+
   const handleBack = () => {
     setStep((s) => Math.max(1, s - 1));
   };
@@ -339,7 +327,7 @@ export default function ReportForm({
   // 📊 Entonnoir : compteur anonyme par étape (une fois par session et par étape).
   // Permet de voir OÙ les visiteurs s'arrêtent (vue → étape 1 → étape 2 → offre → fin).
   const funnelSent = useRef<Set<string>>(new Set());
-  const funnelTrack = (event: string) => {
+  const funnelTrack = useCallback((event: string) => {
     try {
       if (funnelSent.current.has(event)) return;
       funnelSent.current.add(event);
@@ -355,16 +343,18 @@ export default function ReportForm({
     } catch {
       /* jamais bloquant */
     }
-  };
+  }, []);
+  const trackPaymentFailure = useCallback(() => {
+    funnelTrack("form_payment_failed");
+  }, [funnelTrack]);
   useEffect(() => {
     funnelTrack("form_view");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (step === 4) funnelTrack("form_contribution_view");
+    if (step === 4) funnelTrack("form_plan_choice_view");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
-
   const buildPhoneDescription = () => {
     if (!formData.isCellphone) return null;
     const parts = [
@@ -753,6 +743,12 @@ export default function ReportForm({
   const [itemFromUrl, setItemFromUrl] = useState(false);
   const [showAutoPlan, setShowAutoPlan] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
+  useEffect(() => {
+    if (step === 5 && Number(formData.contribution) > 0 && !paymentDone) {
+      funnelTrack("form_checkout_view");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, formData.contribution, paymentDone]);
   // Ecran final gratuit : cran de la jauge, et paiement ouvert depuis la jauge.
   const [gaugeLevel, setGaugeLevel] = useState<GaugeLevel>(0);
   const [upsellFromFree, setUpsellFromFree] = useState(false);
@@ -799,6 +795,7 @@ export default function ReportForm({
   };
 
   const handleSuccessfulPayment = async () => {
+    funnelTrack("form_payment_succeeded");
     setPaymentDone(true);
     // Dossier finalisé et payé : idem, on ne doit plus réécrire cette ligne.
     clearStoredRid();
@@ -824,130 +821,6 @@ export default function ReportForm({
 
     (async () => {
       try {
-        const base =
-          process.env.NEXT_PUBLIC_SITE_URL ||
-          (typeof window !== "undefined"
-            ? window.location.origin
-            : "https://reportlost.org");
-
-        const ref5 = await getReferenceCode(
-          String(formData.report_public_id || formData.public_id || ""),
-          String(formData.report_id || ""),
-        );
-
-        // 🔄 Nouveau modèle
-        const subject =
-          "Your report is live — start the active search today";
-
-        const ridForUrl = encodeURIComponent(
-          String(formData.report_id || ""),
-        );
-
-        const contributeUrl = `${base}/report?go=contribute&rid=${ridForUrl}`;
-
-        // 🔗 URL de la page "Active search" (avec rid)
-        const activeUrl = `${base}/active-search?rid=${ridForUrl}`;
-
-        // Preheader (affiché par certains clients)
-        const preheader =
-          "We’ll contact local lost-and-found desks and search large databases for you when you activate your search.";
-
-        const text = `Hello ${
-          formData.first_name || ""
-        },
-
-We’ve published your lost item report on reportlost.org.
-
-Item: ${formData.title || ""}
-Date: ${formData.date || ""}
-City: ${formData.city || ""}
-Reference code: ${ref5}
-
-What $25 covers (one payment, never a subscription, active for 12 months):
-• Your report is filed with the competent lost-property service, usually the local police department, as soon as we hold the information it requires.
-• The places likely to hold your item are contacted: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost & found desks.
-• A visual notice is created and published on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.
-• An AI search engine scans the web on your item's keywords for 12 months: daily the first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.
-• A loss report certificate, downloadable from your case page. It is not an official document and does not replace a police report.
-• A printable sheet of QR stickers routing finders to your relay address.
-
-Activate my search: ${contributeUrl}
-
-Included with “Active search”: prevention kit & secure stickers
-You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
-Each sticker routes finders to a private, dedicated address we host for you — so people can contact you
-without your personal email or phone appearing on the object.
-
-See what’s included: ${activeUrl}
-
-You can manage or update your report any time using the link in this email.
-
-Thank you for using ReportLost — we’re here to help.
-— The ReportLost Team`;
-
-        const html = `
-<div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
-  <div style="display:none;font-size:1px;color:#fff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
-    ${preheader}
-  </div>
-
-  <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
-    <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">Your report is live — start the active search today</p>
-  </div>
-
-  <div style="padding:20px;color:#111827;line-height:1.6">
-    <p style="margin:0 0 12px">Hello <b>${formData.first_name || ""}</b>,</p>
-
-    <p style="margin:0 0 12px">
-      We’ve published your lost item report on
-      <a href="${base}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
-    </p>
-
-    <ul style="margin:0 0 16px;padding-left:18px">
-      <li><b>Item:</b> ${formData.title || ""}</li>
-      <li><b>Date:</b> ${formData.date || ""}</li>
-      <li><b>City:</b> ${formData.city || ""}</li>
-      <li><b>Reference code:</b> ${ref5}</li>
-    </ul>
-
-    <p style="margin:14px 0 6px"><b>What $25 covers</b></p>
-    <p style="margin:0 0 10px">
-      One payment, never a subscription. Six deliverables, active for 12 months:
-    </p>
-    <ul style="margin:0 0 18px;padding-left:18px">
-      <li>Your report is <b>filed with the competent lost-property service</b>, usually the local police department, as soon as we hold the information it requires.</li>
-      <li><b>The places likely to hold your item are contacted</b>: transit, hotel, venue, airport, taxi company, nearby shops and surrounding lost &amp; found desks.</li>
-      <li><b>A visual notice is created and published</b> on social media and in the relevant local groups, carrying an anonymous relay address tied to your case.</li>
-      <li><b>An AI search engine scans the web for 12 months</b> on your item&rsquo;s keywords: daily the first week, then weekly, then monthly. Every result is scored by our matching system, and only the credible ones reach you.</li>
-      <li><b>A loss report certificate</b>, downloadable from your case page. It is not an official document and does not replace a police report.</li>
-      <li><b>A printable sheet of QR stickers</b> routing finders to your relay address.</li>
-    </ul>
-
-    <div style="margin:18px 0 22px;text-align:center">
-      <a href="${contributeUrl}"
-         style="display:inline-block;background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">
-        Activate my search
-      </a>
-    </div>
-
-    <p style="margin:18px 0 6px"><b>Included with “Active search”: prevention kit &amp; secure stickers</b></p>
-    <p style="margin:0 0 10px">
-      You’ll receive a printable (PDF) with secure ID stickers for your everyday items (luggage, keys, phone, bottle,…).
-      Each sticker routes finders to a <b>private, dedicated address we host for you</b> — so people can contact you
-      <b>without your personal email or phone appearing on the object</b>. It’s safer, and it makes returns easier next time.
-    </p>
-
-    <p style="margin:0 0 18px;text-align:center">
-      <a href="${activeUrl}" style="color:#2C7A4A;text-decoration:underline;font-weight:600">See what’s included</a>
-    </p>
-
-    <p style="margin:0 0 10px">You can manage or update your report any time using the link in this email.</p>
-
-    <p style="margin:18px 0 0;color:#6b7280">Thank you for using ReportLost — we’re here to help.<br/>— The ReportLost Team</p>
-  </div>
-</div>`;
-
        const controller = new AbortController();
 const t = setTimeout(() => controller.abort(), 15000);
 
@@ -977,29 +850,17 @@ clearStoredRid();
     step,
     formData.contribution,
     formData.email,
-    formData.first_name,
-    formData.title,
-    formData.date,
-    formData.city,
     formData.report_id,
-    formData.report_public_id,
     freeEmailSent,
   ]);
 
-  // ✅ Montant pour Stripe Elements (en cents, min $1)
   const contributionUsd = Number(formData.contribution || 0);
-  const amountCents = Math.max(100, Math.round(contributionUsd * 100));
+  const paidServiceLabel = petMode
+    ? "Team-assisted pet search"
+    : contributionUsd >= 25
+    ? "Team-assisted search"
+    : "Automatic search";
 
-  // Helper pour lien "Activate my search" dans l'UI Step 5 (free)
-  const base =
-    (typeof window !== "undefined" && window.location.origin) ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://reportlost.org";
-  const contributeUrl = `${base}/report?go=contribute&rid=${encodeURIComponent(
-    String(formData.report_id || ""),
-  )}`;
-  // Rattrapage : même parcours, mais la formule automatique à 12 $ devient visible.
-  const autoOfferUrl = `${contributeUrl}&offer=auto`;
 
   return (
     <main
@@ -1011,11 +872,18 @@ clearStoredRid();
       }
     >
       {/* Barre de progression fine (visuelle, sans numérotation) */}
-      {step <= 4 && (
-        <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden" aria-hidden>
+      {step <= 5 && (
+        <div
+          className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200"
+          role="progressbar"
+          aria-label="Report completion progress"
+          aria-valuemin={1}
+          aria-valuemax={6}
+          aria-valuenow={progressStep}
+        >
           <div
             className="h-full rounded-full bg-gradient-to-r from-[#26723e] to-[#2ea052] transition-all duration-500"
-            style={{ width: `${Math.min(100, (step / 5) * 100)}%` }}
+            style={{ width: `${Math.min(100, (progressStep / 6) * 100)}%` }}
           />
         </div>
       )}
@@ -1036,6 +904,7 @@ clearStoredRid();
           formData={formData}
           onChange={handleChange}
           onNext={handleNext}
+          onProgressStepChange={setProgressStep}
           universityName={universityName} // ✅ NEW: Prop passée pour affichage conditionnel
           petMode={petMode} // ✅ NEW: libellés animaux
           itemFromUrl={itemFromUrl}
@@ -1049,6 +918,7 @@ clearStoredRid();
           onChange={handleChange}
           onNext={handleNext}
           onBack={handleBack}
+          onProgressStepChange={setProgressStep}
           isSubmitting={isSubmitting} // ✅ passe l’état à Step2
         />
       )}
@@ -1070,6 +940,7 @@ clearStoredRid();
           onNext={handleNext}
           petMode={petMode}
           showAutoPlan={showAutoPlan}
+          onPlanSelected={funnelTrack}
         />
       )}
 
@@ -1083,7 +954,7 @@ clearStoredRid();
           // relance, et ses boutons ouvrent le paiement sans recharger la page.
           <section className="w-full min-h-screen bg-white px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-gray-200">
-              <div className="border-b border-amber-200 bg-amber-50 px-5 py-4">
+              <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
                 <p className="flex items-start gap-2.5 text-[14.5px] leading-snug text-gray-600">
                   <span
                     aria-hidden
@@ -1100,14 +971,14 @@ clearStoredRid();
                 <p className="mt-2.5 flex items-start gap-2.5 text-[14.5px] leading-snug">
                   <span
                     aria-hidden
-                    className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full border-[1.5px] border-amber-500 bg-white text-[11px] font-bold text-amber-700"
+                    className="mt-0.5 grid h-5 w-5 flex-none place-items-center rounded-full border border-gray-300 bg-white text-[11px] text-gray-600"
                   >
                     ○
                   </span>
-                  <span className="font-bold text-amber-900">
-                    The search has not started
-                    <span className="mt-0.5 block text-[13px] font-normal text-amber-800">
-                      Nothing is being done on your case at this stage.
+                  <span className="font-medium text-gray-800">
+                    No paid search service selected
+                    <span className="mt-0.5 block text-[13px] font-normal text-gray-600">
+                      The free option publishes a public listing without team outreach or active web monitoring.
                     </span>
                   </span>
                 </p>
@@ -1131,9 +1002,9 @@ clearStoredRid();
               </div>
 
               <div className="px-5 py-6">
-                <h2 className="text-[21px] font-bold text-gray-900">Want us to search for it?</h2>
+                <h2 className="text-[21px] font-bold text-gray-900">Optional search services</h2>
                 <p className="mb-5 mt-1.5 text-[14.5px] text-gray-600">
-                  Move the megaphone to see what each level adds.
+                  Compare the scope and duration of each option.
                 </p>
 
                 <SearchGauge level={gaugeLevel} onChange={setGaugeLevel} />
@@ -1143,7 +1014,7 @@ clearStoredRid();
                   onClick={() => startUpsell(gaugeLevel === 1 ? 12 : 25)}
                   className="mt-5 block w-full rounded-xl bg-[#1f6b3a] px-5 py-3.5 text-center text-[16px] font-bold text-white hover:brightness-110"
                 >
-                  {gaugeLevel === 1 ? "Activate the automatic search — $12" : "Activate my search — $25"}
+                  {gaugeLevel === 1 ? "Choose automatic search — $12" : "Choose team-assisted search — $25"}
                 </button>
                 {gaugeLevel === 0 ? (
                   <button
@@ -1154,7 +1025,7 @@ clearStoredRid();
                     }}
                     className="mt-2.5 block w-full text-center text-[13.5px] text-[#1f6b3a] underline underline-offset-2"
                   >
-                    or only the automatic search — $12
+                    Choose automatic search — $12
                   </button>
                 ) : null}
 
@@ -1169,7 +1040,7 @@ clearStoredRid();
                     onClick={handleBack}
                     className="text-gray-500 underline underline-offset-2 hover:text-gray-700"
                   >
-                    ← Back to plans
+                    ← Back to options
                   </button>
                   <span className="text-gray-400">
                     {/^\d{5}$/.test(String(formData.public_id || ""))
@@ -1186,51 +1057,39 @@ clearStoredRid();
           <section className="w-full bg-white px-4 sm:px-6 lg:px-8 py-8 space-y-6">
             <div className="rounded-2xl border border-green-200 bg-[#f2fbf5] px-5 py-5">
               <h2 className="text-xl font-bold text-[#1f6b3a]">
-                ✅ Payment confirmed — your search is active
+                Payment confirmed — {paidServiceLabel} is active
               </h2>
               <p className="mt-1.5 text-[#0f2b1c]">
-                Your report is published and the web monitoring has already started. A confirmation
-                email is on its way
+                Your report is published and the selected service is active. A confirmation email
+                is on its way
                 {formData.email ? (
                   <> to <span className="font-semibold">{formData.email}</span></>
                 ) : null}
                 .
               </p>
 
-              {/* Après un paiement, la question du client n'est pas « qu'ai-je acheté »
-                  mais « que se passe-t-il maintenant ». Y répondre ici évite les
-                  relances quotidiennes des jours suivants. Aucun délai chiffré n'est
-                  promis : on annonce l'ordre des étapes, pas des dates. */}
               <dl className="mt-4 space-y-2.5 border-t border-green-200/70 pt-4 text-sm">
                 <div className="flex gap-3">
-                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Now</dt>
+                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Monitoring</dt>
                   <dd className="text-[#123524]">
-                    Your report is live and the AI search engine is scanning the web on your
-                    item&rsquo;s keywords, every day during this first week.
+                    Public-web checks run daily during the first week, then weekly and monthly for {contributionUsd >= 25 ? "12" : "6"} months. Potential matches are reviewed before notification.
                   </dd>
                 </div>
-                <div className="flex gap-3">
-                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Next</dt>
-                  <dd className="text-[#123524]">
-                    We contact the places likely to be holding your item, publish your visual notice
-                    with an anonymous relay address, and file your report with the lost-property
-                    service concerned wherever it accepts a report filed by a third party.
-                  </dd>
-                </div>
-                <div className="flex gap-3">
-                  <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">12 months</dt>
-                  <dd className="text-[#123524]">
-                    The search continues, weekly then monthly. Every credible match is reviewed by a
-                    person before it reaches you, so you only hear from us when there is something
-                    to look at.
-                  </dd>
-                </div>
+                {contributionUsd >= 25 && (
+                  <div className="flex gap-3">
+                    <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Outreach</dt>
+                    <dd className="text-[#123524]">
+                      The team contacts relevant services and venues and can publish a local notice. Reports are sent to public services where third-party filing is accepted; otherwise, contact details and instructions are provided.
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
 
+            {contributionUsd >= 25 && (
             <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
               <h3 className="font-semibold text-gray-900">
-                Details that unlock steps we cannot take without them{" "}
+                Additional contact details{" "}
                 <span className="font-normal text-green-700">(optional)</span>
               </h3>
               {/* Chaque explication ne s'affiche que tant que le champ concerné est
@@ -1262,7 +1121,7 @@ clearStoredRid();
               </p>
               {detailsSaved ? (
                 <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-                  Saved, thank you. Our team has everything needed to get started.
+                  Details saved.
                 </p>
               ) : (
                 <>
@@ -1316,12 +1175,13 @@ clearStoredRid();
                 </>
               )}
             </div>
+            )}
           </section>
         ) : (
           // ✅ Paiement si contribution > 0 (Flow classique)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-2xl font-bold mb-4">
-              Activate your search
+              Complete payment — {paidServiceLabel} (${contributionUsd.toFixed(2)})
             </h2>
             <Elements stripe={stripePromise}>
               <CheckoutForm
@@ -1329,7 +1189,8 @@ clearStoredRid();
                 reportId={String(formData.report_id || "")}
                 onSuccess={handleSuccessfulPayment}
                 onBack={backFromCheckout}
-                tierLabel={Number(formData.contribution) === 12 ? "Automatic search" : "Active search"}
+                onPaymentFailure={trackPaymentFailure}
+                tierLabel={paidServiceLabel}
                 key={`co-${formData.report_id}-${formData.contribution}`}
               />
             </Elements>

@@ -20,7 +20,14 @@ const ALLOWED = new Set([
   "form_view",
   "form_step1_done",
   "form_step2_done",
-  "form_contribution_view",
+  "form_plan_choice_view",
+  "form_plan_selected_free",
+  "form_plan_selected_auto",
+  "form_plan_selected_assisted",
+  "form_plan_selected_pet_assisted",
+  "form_checkout_view",
+  "form_payment_succeeded",
+  "form_payment_failed",
   "form_completed_free",
 ]);
 

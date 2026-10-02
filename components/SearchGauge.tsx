@@ -33,24 +33,24 @@ export const GAUGE_STOPS = [
   {
     price: 0,
     label: "Free",
-    title: "Published, not searched",
+    title: "Free public listing",
     icons: [] as string[],
     text: (
       <>
-        <b className="font-bold text-green-800">Free listing:</b> your report waits in the public
-        database. Nothing is filed, nobody is contacted.
+        <b className="font-bold text-green-800">Free listing:</b> your report is published in the
+        public database. This option does not include team outreach or active web monitoring.
       </>
     ),
   },
   {
     price: 12,
     label: "$12",
-    title: "Searched automatically",
+    title: "Automatic search",
     icons: ICONS_AUTO,
     text: (
       <>
-        <b className="font-bold text-green-800">Automatic search:</b> for 6 months, our AI checks the
-        found items reported on the web and alerts you as soon as one could be yours.
+        <b className="font-bold text-green-800">Automatic search:</b> public-web monitoring runs for
+        6 months. Potential matches are reviewed before notification.
         <span className="mt-1.5 block text-[13px] text-gray-500">
           Also includes a loss report certificate and stickers to print.
         </span>
@@ -60,13 +60,14 @@ export const GAUGE_STOPS = [
   {
     price: 25,
     label: "$25",
-    title: "Searched and announced",
+    title: "Team-assisted search",
     icons: ICONS_ACTIVE,
     text: (
       <>
-        <b className="font-bold text-green-800">Active search:</b> everything above. Plus the human
-        part: filing with the lost-property service, outreach where you lost it, and your report
-        distributed through the appropriate channels.
+        <b className="font-bold text-green-800">Team-assisted search:</b> includes 12 months of
+        public-web monitoring, relevant local outreach, and a notice for relevant local groups.
+        Reports are filed where a service accepts third-party submissions; otherwise, we provide
+        its contact details and instructions.
       </>
     ),
   },
@@ -114,11 +115,11 @@ export default function SearchGauge({
       </div>
 
       <div className="px-5 pb-5 pt-4">
-        {/* Ce que le cran met en mouvement. Au gratuit, rien n'est diffusé. */}
+        {/* Ce que comprend chaque niveau de service. */}
         <div className="flex min-h-[22px] flex-wrap items-center gap-1.5 pb-1">
           {stop.icons.length === 0 ? (
             <span className="text-[12.5px] italic text-gray-400">
-              Nothing is sent out at this level.
+              No additional search service is included at this level.
             </span>
           ) : (
             stop.icons.map((src) => (

@@ -73,139 +73,52 @@ export async function sendPublicationMail(
   const autoOfferUrl = `${contributeUrl}&offer=auto`;
   const ref5 = String(row.public_id || "").trim();
 
-  // ⚠️ L'objet est lu en notification, sur l'écran verrouillé. « Your report is
-  // published » y jouait comme un accusé de réception : affaire classée, rien à
-  // faire. Il ne doit contenir aucun mot de clôture, et nommer l'objet perdu
-  // plutôt que le dossier — c'est ce que la personne reconnaît d'un coup d'œil.
   const itemLabel = String(row.title || "").replace(/\s+/g, " ").trim().slice(0, 30);
   const subject = itemLabel
-    ? `Your ${itemLabel}: the search has not started`
-    : "The search on your report has not started";
-
-  // Texte d'aperçu, affiché juste après l'objet par Gmail, Apple Mail et
-  // Outlook. Sans lui, ils vont chercher la première ligne du corps — donc
-  // « Published in the public database ». On le fixe explicitement.
-  const preheader = "Nothing has been sent to anyone yet. Filing and outreach are a separate step.";
+    ? `Your ${itemLabel} report is published`
+    : "Your lost-item report is published";
+  const preheader = "Your free public listing is available. Optional search services are described below.";
   const detailLine = [row.title || "", row.date ? `lost ${row.date}` : "", row.city || ""]
     .filter(Boolean)
     .join(" · ");
 
   const text = `Hello ${row.first_name || ""},
 
-[ ] The search has not started — nothing is being done on your case at this stage.
-[x] Published in the public database
+Your report has been published as a public listing on ReportLost.org. The free listing is available without a paid search service.
 
-Your report is online, and anyone looking for your item can find it. That is what a free listing does, and it is all it does.
+Search options, each with a one-time fee and no renewal:
+- Automatic search ($12): six months of public-web monitoring, a loss report certificate, and a printable QR sticker sheet. It does not include local outreach or a notice.
+- Team-assisted search ($25): 12 months of public-web monitoring, relevant local outreach, a notice for relevant local groups, a loss report certificate, and a printable QR sticker sheet. We submit reports where a service accepts third-party filings; otherwise, we provide its contact details and instructions.
 
-No one is contacting the local lost & found desks, no report is filed with the police, and no one is comparing new "found" posts with your description.
+Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. Recovery cannot be guaranteed, and ReportLost is not a public agency.
 
-WHAT ACTIVE SEARCH ADDS
-- Filing with the competent lost-property service, usually the local police department.
-- Outreach to the places likely to hold your item, based on where you lost it.
-- A visual notice published locally, with an anonymous relay address.
-- Web monitoring for 12 months, every credible match reviewed by a person.
-- A loss report certificate - not an official document.
-- A printable sheet of QR stickers.
-
-$25 - one payment, 12 months, no renewal.
-Activate my search: ${contributeUrl}
-
-Only want the automated part? $12 covers the web monitoring for six months, the certificate and the sticker sheet. No outreach, no filing.
-Add the automatic search: ${autoOfferUrl}
+Review the search options: ${contributeUrl}
+Review automatic search: ${autoOfferUrl}
 
 ${detailLine}${ref5 ? `\nReference ${ref5}` : ""}
 
-Your free listing stays online either way.`;
-
-  // Gabarit e-mail : tableaux et styles en ligne uniquement (pas de flexbox,
-  // que Gmail et Outlook rendent mal).
-  const adds: [string, string][] = [
-    ["Filing", "with the competent lost-property service, usually the local police department."],
-    ["Outreach", "to the places likely to hold your item, based on where you lost it."],
-    ["A visual notice", "published locally, with an anonymous relay address."],
-    ["Web monitoring", "for 12 months, every credible match reviewed by a person."],
-    ["A loss report certificate", "&mdash; not an official document."],
-    ["A printable sheet", "of QR stickers."],
-  ];
-  const addsRows = adds
-    .map(
-      ([lead, rest], i) => `
-      <tr>
-        <td style="padding:9px 0;${i ? "border-top:1px solid #f3f4f6;" : ""}font-size:13.5px;line-height:1.5;color:#374151">
-          <span style="color:#1f6b3a">&bull;</span>&nbsp;
-          <b style="color:#111827">${lead}</b> ${rest}
-        </td>
-      </tr>`
-    )
-    .join("");
+Your free listing remains available either way.`;
 
   const html = `
-<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff">${preheader}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff">${preheader}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;</div>
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">
-
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid #e5e7eb">
-    <tr>
-      <td style="padding:14px 18px;font-size:17px;font-weight:bold;color:#111827">Report<span style="color:#3b82f6">Lost</span><span style="color:#9ca3af;font-size:10px">.org</span></td>
-      <td align="right" style="padding:14px 18px;font-size:11px;color:#6b7280">${
-        ref5 ? `Reference <b style="color:#1f2937">${ref5}</b>` : ""
-      }</td>
-    </tr>
+    <tr><td style="padding:14px 18px;font-size:17px;font-weight:bold;color:#111827">Report<span style="color:#3b82f6">Lost</span><span style="color:#9ca3af;font-size:10px">.org</span></td><td align="right" style="padding:14px 18px;font-size:11px;color:#6b7280">${ref5 ? `Reference <b style="color:#1f2937">${ref5}</b>` : ""}</td></tr>
   </table>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fffbeb;border-bottom:1px solid #fde68a">
-    <tr>
-      <td style="padding:14px 18px 4px;font-size:14px;line-height:1.45;color:#78350f">
-        <b>&#9675;&nbsp; The search has not started</b>
-        <div style="margin:3px 0 0 20px;font-size:12.5px;color:#92400e">Nothing is being done on your case at this stage.</div>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:5px 18px 14px;font-size:14px;line-height:1.45;color:#4b5563">
-        <span style="color:#166534;font-weight:bold">&#10003;</span>&nbsp; Published in the public database
-      </td>
-    </tr>
-  </table>
-
-  <div style="padding:17px 18px 19px;color:#1f2937;line-height:1.6;font-size:14.5px">
-    <p style="margin:0 0 13px">Hello <b>${row.first_name || ""}</b>,</p>
-    <p style="margin:0 0 13px">
-      Your report is online, and anyone looking for your item can find it. That is what a free
-      listing does &mdash; and it is all it does.
-    </p>
-    <p style="margin:0 0 13px">
-      No one is contacting the local lost &amp; found desks, no report is filed with the police,
-      and no one is comparing new &ldquo;found&rdquo; posts with your description.
-    </p>
-
-    <p style="margin:18px 0 6px;font-size:13.5px;font-weight:bold;color:#111827">What Active search adds</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6">
-      ${addsRows}
+  <div style="padding:16px 18px;background:#f0fdf4;border-bottom:1px solid #dcfce7;color:#166534;font-size:14px"><b>Report published</b><div style="margin-top:3px;color:#4b5563">A free public listing is available. Search services are optional.</div></div>
+  <div style="padding:18px;color:#1f2937;line-height:1.6;font-size:14px">
+    <p style="margin:0 0 12px">Hello <b>${row.first_name || ""}</b>,</p>
+    <p style="margin:0 0 14px">Your report has been published on <a href="${base}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.</p>
+    <p style="margin:0 0 8px"><b>Search options</b></p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #e5e7eb">
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Automatic search, $12 once</b><br/>Six months of public-web monitoring, a loss report certificate, and a printable QR sticker sheet. Local outreach and a notice are not included.</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Team-assisted search, $25 once</b><br/>Twelve months of public-web monitoring, relevant local outreach, a notice for relevant local groups, a loss report certificate, and a printable QR sticker sheet. Reports are submitted where third-party filing is accepted; otherwise, contact details and instructions are provided.</td></tr>
     </table>
-
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:14px 0 0;border:1px solid #e5e7eb;border-radius:9px;background:#f9fafb">
-      <tr>
-        <td style="padding:11px 13px;font-size:15px;font-weight:bold;color:#111827">$25</td>
-        <td align="right" style="padding:11px 13px;font-size:12.5px;color:#6b7280">one payment &middot; 12 months &middot; no renewal</td>
-      </tr>
-    </table>
-
-    <div style="margin:13px 0 0">
-      <a href="${contributeUrl}"
-         style="display:block;text-align:center;background:linear-gradient(90deg,#26723e,#2ea052);background-color:#26723e;color:#fff;padding:13px 18px;border-radius:9px;text-decoration:none;font-weight:bold;font-size:15px">
-        Activate my search
-      </a>
-    </div>
-
-    <p style="margin:13px 0 0;font-size:12.5px;line-height:1.6;color:#4b5563">
-      Only want the automated part? <b>$12</b> covers the web monitoring for six months with every
-      credible match reviewed by a person, the certificate and the sticker sheet. No outreach, no filing.
-      <a href="${autoOfferUrl}" style="color:#166534;font-weight:bold;text-decoration:underline">Add the automatic search &rarr;</a>
-    </p>
-
-    <p style="margin:15px 0 0;padding-top:12px;border-top:1px solid #f3f4f6;font-size:12px;color:#6b7280">
-      ${detailLine}
-    </p>
-    <p style="margin:8px 0 0;font-size:11.5px;color:#9ca3af">Your free listing stays online either way.</p>
+    <p style="margin:12px 0;color:#4b5563;font-size:12.5px">Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. ReportLost is independent of public agencies and cannot guarantee recovery.</p>
+    <div style="margin:16px 0 10px;text-align:center"><a href="${contributeUrl}" style="display:inline-block;background:#26723e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">Review search options</a></div>
+    <p style="margin:0 0 12px;text-align:center;font-size:12.5px"><a href="${autoOfferUrl}" style="color:#166534;text-decoration:underline">Review automatic search, $12</a></p>
+    <p style="margin:14px 0 0;padding-top:10px;border-top:1px solid #f3f4f6;font-size:12px;color:#6b7280">${detailLine}</p>
+    <p style="margin:8px 0 0;font-size:12px;color:#6b7280">Your free public listing remains available either way.</p>
   </div>
 </div>`;
 

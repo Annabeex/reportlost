@@ -6,13 +6,13 @@ export const petsSpec: CategorySpec = {
 
   intro: [
     "View recent reports of lost and found pets, including dogs, cats, and other domestic animals.",
-    "If your pet is missing, sharing accurate details quickly can help others recognize and report sightings.",
+    "If your pet is missing, sharing accurate details can help others recognize and report sightings.",
   ],
 
   whyReport: [
     "Centralize key identifying information in one place",
     "Make reports visible to people who may encounter your pet",
-    "Create a time-based reference during an active search",
+    "Create a dated reference for your records",
   ],
 
   howToDescribe: [
@@ -26,7 +26,7 @@ export const petsSpec: CategorySpec = {
   faq: [
     {
       q: "Should I report a lost pet immediately?",
-      a: "Yes. Early reports can increase visibility during the critical first days.",
+      a: "A report creates a searchable listing. You can also contact local shelters, animal control and veterinary clinics directly.",
     },
     {
       q: "Can I update my pet report later?",

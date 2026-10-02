@@ -10,6 +10,7 @@ interface Props {
   formData: any;
   onChange: (e: React.ChangeEvent<any>) => void;
   onNext: () => void;
+  onProgressStepChange?: (step: number) => void;
   universityName?: string; // ✅ NEW: Ajouté pour accepter la prop du parent
   petMode?: boolean; // ✅ NEW: libellés adaptés aux animaux perdus
   /** L'objet a déjà été choisi sur une page ville : on ne repose pas la question. */
@@ -189,7 +190,7 @@ function LocalSuggest({
 
 /* ========================================================================= */
 
-export default function ReportFormStep1({ formData, onChange, onNext, universityName, petMode = false, itemFromUrl = false }: Props) { // ✅ NEW: Ajout de la prop ici
+export default function ReportFormStep1({ formData, onChange, onNext, onProgressStepChange, universityName, petMode = false, itemFromUrl = false }: Props) { // ✅ NEW: Ajout de la prop ici
   // Phases
   const [phase, setPhase] = useState<"basic" | "context">("basic");
 
@@ -211,6 +212,10 @@ export default function ReportFormStep1({ formData, onChange, onNext, university
       clearTimeout(t);
     };
   }, [phase]);
+
+  useEffect(() => {
+    onProgressStepChange?.(phase === "basic" ? 1 : 2);
+  }, [phase, onProgressStepChange]);
 
   // États (ordre constant)
   const [showTime, setShowTime] = useState<boolean | null>(null);

@@ -54,7 +54,7 @@ const intros = [
   "If you have lost or found an item in {city}, this page will guide you through the appropriate steps.",
   "Whether you have misplaced a personal item or found someone else’s belongings in {city}, you can report it here.",
   "This page provides helpful information for those who have lost or discovered an item in {city}.",
-  "Losing or finding an item in {city} can happen quickly — here's how to handle the situation.",
+  "This guide summarizes lost-and-found contacts and reporting steps for {city}.",
   "If you recently lost something in {city}, or came across an item that may belong to someone else, you’re in the right place.",
   "Every day in {city}, personal belongings are lost or found. Here's how to act responsibly.",
   "This guide explains how to report a lost item or declare a found object within {city}.",

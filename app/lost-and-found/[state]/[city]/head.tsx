@@ -25,7 +25,7 @@ export default async function Head({
 
   const fallbackDescription = `Report or find lost items in ${
     cityName || "this city"
-  }. Quick, secure and local via ReportLost.org.`;
+  }. Create a free public listing or choose optional team-assisted search.`;
 
   // ✅ Canonical = URL demandée (pas de reconstruction via DB)
   const canonical = `${CANONICAL_BASE}/lost-and-found/${state}/${encodeURIComponent(
@@ -72,7 +72,7 @@ export default async function Head({
     const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
     const description = data.static_content
       ? String(data.static_content).slice(0, 160)
-      : `Report or find lost items in ${data.city_ascii}. Quick, secure and local via ReportLost.org.`;
+      : `Report or find lost items in ${data.city_ascii}. Create a free public listing or choose optional team-assisted search.`;
 
     return (
       <>

@@ -80,7 +80,7 @@ export default function ReportDetailsPanel({
             We notify local lost & found desks and common drop-off points when relevant: police
             non-emergency lines, transit agencies, airport lost & found, and nearby
             institutions (hotels, hospitals, universities). We include your report reference
-            so physical returns can be matched quickly.
+            so a physical return can be matched to this report.
           </p>
         </div>
       ),
@@ -124,7 +124,7 @@ export default function ReportDetailsPanel({
         <div className="prose max-w-none text-sm leading-relaxed">
           <p>
             We submit the report to major search engines and our syndicated feeds. This helps
-            crawlers discover the listing faster — indexing timing is controlled by the
+            search engines may index the listing. Indexing timing is controlled by the
             search engines themselves.
           </p>
         </div>
@@ -186,7 +186,7 @@ export default function ReportDetailsPanel({
           <ol>
             <li>We verify photos and identifying marks.</li>
             <li>We request verification photos from the finder via the anonymous inbox.</li>
-            <li>We notify you immediately with instructions; we never publish your private data.</li>
+            <li>We share instructions when a match is confirmed; we never publish your private data.</li>
             <li>We advise a safe, public handoff and coordinate with police if needed.</li>
           </ol>
         </div>
@@ -303,7 +303,7 @@ export default function ReportDetailsPanel({
 
     {
       key: "checklist",
-      title: "Immediate Checklist — What You Should Do Now",
+      title: "Practical follow-up checklist",
       icon: <Clock className="w-5 h-5 text-green-700" />,
       children: (
         <div className="prose max-w-none text-sm leading-relaxed">
@@ -326,7 +326,7 @@ export default function ReportDetailsPanel({
           <p>
             Support email: <code>support@reportlost.org</code>
           </p>
-          <p>Phone (premium): {report.supportPhone || "(optional)"}</p>
+          <p>Phone contact: {report.supportPhone || "(optional)"}</p>
         </div>
       ),
     },

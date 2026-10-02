@@ -93,7 +93,7 @@ export async function generateMetadata({ params }: Props) {
   if (!stateName) {
     return {
       title: "Lost & Found in the USA",
-      description: "Report and recover lost items in the United States.",
+      description: "Information about reporting lost items in the United States.",
       alternates: { canonical: "https://reportlost.org/lost-and-found" },
     };
   }
@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: Props) {
       : `Lost & Found in ${stateName} - ReportLost.org`,
     description: g
       ? `How lost & found works in ${stateName}: finder duties, police holding periods, where items end up, and how to report a lost item city by city.`
-      : `Submit or find lost items in ${stateName}. One report and we route it to the right local services, with an active match search for the full duration of your plan.`,
+      : `Submit or find lost items in ${stateName}. A free report creates a public listing; $12 adds six months of automatic public-web monitoring; $25 adds team-assisted local outreach and 12 months of monitoring.`,
     alternates: { canonical: `https://reportlost.org/lost-and-found/${stateSlug}` },
   };
 }
@@ -243,8 +243,7 @@ export default async function StatePage({ params }: Props) {
                 Lost something in {guide.stateName}?
               </p>
               <p className="mt-1 text-sm text-emerald-50">
-                One report, and we route it to the right local services. Your report stays active,
-                searching for a match, for your entire search period.
+                A free report creates a public listing. Automatic search for $12 includes six months of public-web monitoring. Team-assisted search for $25 includes 12 months of monitoring and relevant local outreach.
               </p>
               <Link
                 href="/report"
