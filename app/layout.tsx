@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import SiteChrome from "@/components/SiteChrome";
 import Analytics from "@/components/Analytics";
 import VisitTracker from "@/components/VisitTracker";
+import CwvReporter from "@/components/CwvReporter";
 import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -50,6 +51,7 @@ export default function RootLayout({
           <Analytics />
         </Suspense>
         <VisitTracker />
+        <CwvReporter />
 
         {/* Masqués sur /org/* et /campus/*, qui ont leur propre en-tête. */}
         <SiteChrome>
