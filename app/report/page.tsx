@@ -31,13 +31,10 @@ export default function ReportPage({
 
   return (
     <main className="w-full">
-      <section className="mx-auto max-w-4xl px-4 pt-8 sm:pt-10">
+      <section className="mx-auto max-w-4xl px-4 pt-8 pb-10 sm:pt-10 sm:pb-12">
         <h1 className="text-2xl font-bold text-gray-900">Create a lost-item report</h1>
-        <p className="mt-2 text-gray-700">
-          A public listing is free. The $12 option adds six months of automatic monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers. The $25 option adds manual research, direct service contact, local social sharing, and 12 months of monitoring.
-        </p>
-        <p className="mt-2 text-sm text-gray-600">
-          ReportLost is independent of public agencies. Recovery cannot be guaranteed, and each office controls its own process.
+        <p className="mt-3 max-w-2xl leading-relaxed text-gray-600">
+          Add details about the item and where it was last seen. You can review the available search options after submitting your report.
         </p>
       </section>
       <ClientReportForm
