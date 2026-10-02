@@ -178,6 +178,7 @@ export async function POST(req: NextRequest) {
                 : "";
 
             const hasTeamAssistedSearch = paidAmount >= 25;
+            const isAutoPlan = !hasTeamAssistedSearch;
             const paidServiceLabel = hasTeamAssistedSearch ? "Team-assisted search" : "Automatic search";
             const monitoringMonths = hasTeamAssistedSearch ? 12 : 6;
             const subject = `Payment received — ${paidServiceLabel} is active`;
