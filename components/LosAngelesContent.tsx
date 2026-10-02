@@ -106,8 +106,7 @@ export function LaTitleSection() {
         Lost something in Los Angeles? Review your report options.
       </h1>
       <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed mt-4">
-        Create a free public listing, add automatic public-web monitoring for $12 (six months), or choose team-assisted
-        search for $25 (12 months of monitoring plus relevant local outreach).
+        Create a free public listing, add six months of automatic monitoring for $12, or choose $25 team-assisted search with manual research, direct service contact, and local social sharing.
       </p>
     </section>
   );
@@ -156,7 +155,7 @@ export function LaExtraContent({
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
             <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
+              The free listing publishes your report. The $12 option adds six months of automatic monitoring, a ReportLost certificate, an anonymous case address, and printable QR stickers. The $25 option adds manual research, direct contact with relevant services, report submission, local social sharing, and 12 months of monitoring.
             </p>
           </div>
           <div className="text-center">
@@ -185,7 +184,7 @@ export function LaExtraContent({
               Los Angeles has separate lost-property systems for transit, airports, venues and public agencies.
               Use the official links below to identify the channel relevant to where the item was lost. ReportLost
               is independent and offers three report options: a free listing, six-month automatic monitoring for $12,
-              and team-assisted search with 12-month monitoring and relevant local outreach for $25.
+              and $25 team-assisted search with manual research, direct contact with relevant services, local social sharing, and 12-month monitoring.
             </p>
             <p>
               The right contact depends on where the item was lost. The links and guidance below identify the

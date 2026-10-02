@@ -12,12 +12,12 @@ const CANONICAL = `${BASE}/lost-item-recovery-assistance-usa`;
 export const metadata: Metadata = {
   title: "Lost Item Recovery Assistance in the USA | ReportLost",
   description:
-    "Lost-item reporting options in the United States: a free public listing, six months of automatic public-web monitoring for $12, or team-assisted search with local outreach and 12 months of monitoring for $25.",
+    "Create a free lost-item listing, add six months of automatic monitoring for $12, or choose $25 team-assisted search with manual research and local outreach.",
   alternates: { canonical: CANONICAL },
   openGraph: {
     title: "Lost Item Recovery Assistance in the USA | ReportLost",
     description:
-      "Create a free public listing, add six months of automatic web monitoring for $12, or choose team-assisted search with relevant local outreach and 12 months of monitoring for $25.",
+      "Create a free listing, add six months of automatic monitoring for $12, or choose team-assisted search for $25 with manual research, direct service contact, and 12 months of monitoring.",
     url: CANONICAL,
     siteName: "ReportLost.org",
     type: "website",
@@ -27,11 +27,11 @@ export const metadata: Metadata = {
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Is there a service that can help me recover an item lost in the United States?",
-    a: "Yes. ReportLost.org is an independent service for items lost anywhere in the United States. A free option publishes a public listing. Automatic search costs $12 and includes six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring, relevant local outreach and a notice for relevant local groups.",
+    a: "Yes. ReportLost.org is an independent service for items lost anywhere in the United States. A free option publishes a public listing. The $12 automatic search includes six months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to the report, and printable QR stickers linked to that address. The $25 team-assisted search adds manual research, direct contact with relevant services, report submission, local social sharing, and 12 months of monitoring.",
   },
   {
     q: "Can someone contact the police and local businesses about my lost item?",
-    a: "With the team-assisted search, we identify relevant lost-property offices, businesses and venues and contact them where appropriate. Where local rules require the owner to file personally, we provide the relevant contact details, links and instructions.",
+    a: "With team-assisted search, a team member researches the report, contacts relevant lost-property offices and venues, and submits the report to appropriate services. Each organization controls its own process.",
   },
   {
     q: "Can someone contact a hotel, restaurant or venue where I lost something?",
@@ -39,7 +39,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Is there a service that posts lost items on local social media groups?",
-    a: "The team-assisted search includes a visual notice submitted to relevant local pages and community groups where appropriate. It uses a protected contact address, and the specific groups available vary by location.",
+    a: "The team-assisted search includes sharing a visual notice with relevant local pages and community groups, using the anonymous address linked to the report. The groups available vary by location and their posting rules.",
   },
   {
     q: "Can I have the internet monitored for several months after losing an item?",
@@ -47,15 +47,15 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How can a foreign tourist report a lost item in the United States?",
-    a: "You can submit a report without a U.S. address or phone number. The free listing uses a protected relay email address. Automatic search adds six months of public-web monitoring. Team-assisted search adds relevant local outreach, a notice for local groups and 12 months of monitoring.",
+    a: "You can submit a report without a U.S. address or phone number. The $12 option adds six months of automatic monitoring, a ReportLost certificate, an anonymous case address, and QR stickers. The $25 option adds manual research, direct service contact, local social sharing, and 12 months of monitoring.",
   },
   {
     q: "What should I do if I have already left the United States?",
-    a: "You can still submit a report from outside the United States. Automatic search includes six months of public-web monitoring. Team-assisted search includes 12 months of monitoring and relevant local outreach. Offices and venues set their own rules for collection, shipping and representatives.",
+    a: "You can still submit a report from outside the United States. Automatic search includes six months of public-web monitoring. Team-assisted search includes 12 months of monitoring, manual research, direct contact with relevant offices and venues, and local social sharing. Offices and venues set their own rules for collection, shipping and representatives.",
   },
   {
     q: "Can ReportLost file a police report on my behalf?",
-    a: "Where a department accepts third-party lost-property reports, we file it for you. When the law requires the owner to file personally, we provide the appropriate official contact details, reporting link and step-by-step instructions instead. ReportLost is an independent service and is not affiliated with any law enforcement agency.",
+    a: "The $25 team-assisted service includes direct contact with relevant lost-property offices and submission of your report to appropriate services. ReportLost is independent and does not file or replace an official police report.",
   },
   {
     q: "How long does ReportLost monitor potential matches?",
@@ -96,7 +96,7 @@ export default function RecoveryAssistancePage() {
         provider: { "@id": `${BASE}/#organization` },
         url: CANONICAL,
         description:
-          "Lost-item reporting and search services in the United States, including a free public listing, six-month automatic web monitoring, and optional team-assisted local outreach with twelve-month monitoring.",
+          "Lost-item reporting in the United States, with a free listing, six-month automatic search for $12, and $25 team-assisted search with manual research and 12-month monitoring.",
         offers: [
           {
             "@type": "Offer",
@@ -111,7 +111,7 @@ export default function RecoveryAssistancePage() {
             price: "12",
             priceCurrency: "USD",
             description:
-              "Six months of public-web monitoring, a loss report certificate and a printable QR sticker sheet. Does not include local outreach or a notice for local groups.",
+              "Six months of public-web monitoring; reviewed potential matches; a dated ReportLost certificate; a case-specific anonymous email address; and printable QR stickers linked to that address.",
           },
           {
             "@type": "Offer",
@@ -119,7 +119,7 @@ export default function RecoveryAssistancePage() {
             price: "25",
             priceCurrency: "USD",
             description:
-              "Twelve months of public-web monitoring, relevant local outreach, and a visual notice for local groups. Reports are submitted where third-party filing is accepted; otherwise, official contact details and instructions are provided. Includes a loss report certificate and printable QR sticker sheet. Potential matches are reviewed before notification.",
+              "Everything in the $12 option, with 12 months of public-web monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and a visual notice shared with relevant local groups under their posting rules.",
           },
         ],
       },
@@ -173,17 +173,9 @@ export default function RecoveryAssistancePage() {
           </p>
         </section>
 
-        {/* Independence disclaimer */}
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          When a police report must legally be filed by the owner, we provide the appropriate official contact
-          details, reporting link and instructions. <strong>ReportLost is an independent assistance service and is
-          not affiliated with law enforcement agencies, airports or transit authorities.</strong> Official
-          lost-and-found offices retain and release found property.
-        </section>
-
         {/* What's included */}
         <section id="included" className="rounded-xl bg-white p-8 shadow">
-          <h2 className="text-2xl font-bold text-gray-900">What team-assisted search includes</h2>
+          <h2 className="text-2xl font-bold text-gray-900">How team-assisted search works</h2>
           <ol className="mt-6 space-y-5 text-gray-700">
             <li>
               <strong>1. Initial case review.</strong> A team member reviews your item description, photos,
@@ -196,9 +188,8 @@ export default function RecoveryAssistancePage() {
               location.
             </li>
             <li>
-              <strong>3. Local notice.</strong> We prepare a dedicated lost-item visual and submit it to relevant
-              local pages and community groups where posting is available. Some groups require a member or the
-              report owner to post directly, and availability varies by location.
+              <strong>3. Local social sharing.</strong> We prepare a visual notice and share it with relevant
+              local pages and community groups under their posting rules. Availability varies by location.
             </li>
             <li>
               <strong>4. Web monitoring — 12 months.</strong> Monitoring begins after payment
@@ -234,7 +225,6 @@ export default function RecoveryAssistancePage() {
               <ul className="mt-3 space-y-2 text-sm text-gray-600">
                 <li>✔️ Your lost item report published online</li>
                 <li>✔️ Public, shareable listing page</li>
-                <li>✔️ Protected relay email address</li>
                 <li>
                   ➖ Does not include team outreach or public-web monitoring
                 </li>
@@ -246,31 +236,27 @@ export default function RecoveryAssistancePage() {
               <ul className="mt-3 space-y-2 text-sm text-gray-600">
                 <li>✔️ Six months of public-web monitoring</li>
                 <li>✔️ Potential matches reviewed before notification</li>
-                <li>✔️ Loss report certificate and printable QR sticker sheet</li>
-                <li>Local outreach and notices for local groups are not included</li>
+                <li>✔️ ReportLost certificate (not an official document or police report)</li>
+                <li>✔️ Anonymous email address linked to your report and printable QR stickers linked to that address</li>
               </ul>
             </div>
             <div className="rounded-xl border border-gray-200 p-5">
               <h3 className="text-lg font-bold text-gray-900">Team-assisted search</h3>
               <p className="mt-1 text-2xl font-bold text-gray-900">$25</p>
               <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                <li>✔️ Everything in the free listing</li>
-                <li>✔️ Report sent to the relevant lost-property service where third-party filing is accepted</li>
-                <li>✔️ The places likely to hold your item contacted</li>
-                <li>✔️ Visual notice published on social media and local groups</li>
+                <li>✔️ Everything in Automatic search, with 12 months of monitoring</li>
+                <li>✔️ Manual research, direct contact with relevant services and venues, and report submission to appropriate services</li>
+                <li>✔️ Visual notice shared with relevant local social groups under their posting rules</li>
                 <li>
-                  ✔️ <strong>12 months</strong> of AI web monitoring: daily the first week, then weekly, then
-                  monthly
+                  ✔️ Potential matches reviewed before notification
                 </li>
-                <li>✔️ Potential matches reviewed before notification</li>
-                <li>✔️ Loss report certificate, downloadable from your case page</li>
-                <li>✔️ Printable sheet of QR stickers linked to your relay address</li>
+                <li>✔️ Dated ReportLost certificate and printable QR stickers linked to the anonymous address</li>
               </ul>
             </div>
           </div>
           <p className="mt-5 text-sm text-gray-600">
-            Fees are one-time, with no subscription. If an office requires the owner to file directly, we provide
-            its contact details and instructions.
+            Search options are one-time fees. The ReportLost certificate is not an official document and does not
+            replace a police report.
           </p>
         </section>
 
@@ -278,12 +264,10 @@ export default function RecoveryAssistancePage() {
         <section className="rounded-xl bg-white p-8 shadow">
           <h2 className="text-2xl font-bold text-gray-900">How your case is actually worked</h2>
           <p className="mt-4 text-gray-700">
-            The team-assisted search combines several concrete actions. Your report is sent to the relevant
-            lost-property service when third-party filing is accepted, and to establishments where the item may
-            have been lost (hotel, venue, transit, businesses
-            nearby). A dedicated notice is submitted to relevant local social channels and community groups.
-            Public-web monitoring runs for 12 months with the team-assisted option and checks for listings matching
-            the report details. Potential matches are reviewed before notification.
+            Team-assisted search adds manual research, direct contact with relevant services and venues, submission
+            of your report to appropriate lost-property services, and sharing a visual notice with relevant local
+            social groups under their posting rules. Public-web monitoring runs for 12 months. Potential matches
+            are reviewed before notification.
           </p>
           <p className="mt-3 text-gray-700">
             Recovery is not guaranteed. Monitoring is limited to public-web sources, and ReportLost does not act as a public agency.

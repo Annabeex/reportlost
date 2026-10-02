@@ -30,15 +30,15 @@ type StripePaymentRequest = ReturnType<NonNullable<Stripe['paymentRequest']>>;
 // rien. C'est l'écran qui fait foi en cas de litige : il doit décrire ce qui
 // est réellement acheté, et dire ce qui ne l'est pas.
 const SUMMARY_FULL = [
-  'Report sent where third-party filing is accepted; instructions provided otherwise',
-  'Relevant services and venues contacted; local notice published',
+  'Report submitted to appropriate lost-property services after direct team research and contact',
+  'Relevant services and venues contacted; notice shared with local groups under their rules',
   '12 months of public-web monitoring; potential matches reviewed',
-  'Loss certificate + QR sticker sheet',
+  'ReportLost certificate + anonymous case address + QR sticker sheet',
 ];
 
 const SUMMARY_AUTO = [
   '6 months of web monitoring',
-  'Loss certificate + QR sticker sheet',
+  'ReportLost certificate + anonymous case address + QR sticker sheet',
 ];
 
 /** Seuil de la formule complète. En dessous, on est sur l'automatique seule. */

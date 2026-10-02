@@ -188,8 +188,9 @@ Your lost-item report has been published on ReportLost.org, and ${paidServiceLab
 
 Service details:
 - Public-web monitoring runs for ${monitoringMonths} months. Potential matches are reviewed before notification.
-${hasTeamAssistedSearch ? "- The team carries out relevant local outreach and can publish a notice for local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.\n" : "- Local outreach and a notice are not included with automatic search.\n"}
-- The service includes a loss report confirmation and a printable QR sticker sheet.
+- Your case includes a dedicated anonymous ReportLost email address and printable QR stickers linked to it.
+- Your dated ReportLost certificate is downloadable from your case page. It is not an official document and does not replace a police report.
+${hasTeamAssistedSearch ? "- A team member manually researches the case, contacts relevant services and venues, and submits the report to appropriate services.\n- We share a visual notice with relevant local groups under their posting rules.\n" : ""}
 
 Your report details:
 - Item: ${row.title || ""}
@@ -217,8 +218,9 @@ Thank you for using ReportLost.`;
     <p style="margin:0 0 10px"><b>Service details</b></p>
     <ul style="margin:0 0 16px;padding-left:18px">
       <li>Public-web monitoring runs for ${monitoringMonths} months. Potential matches are reviewed before notification.</li>
-      ${hasTeamAssistedSearch ? "<li>The team carries out relevant local outreach and can publish a notice for local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.</li>" : "<li>Local outreach and a notice are not included with automatic search.</li>"}
-      <li>A loss report confirmation and a printable QR sticker sheet are included.</li>
+      <li>Your case includes a dedicated anonymous ReportLost email address and printable QR stickers linked to it.</li>
+      <li>Your dated ReportLost certificate is downloadable from your case page. It is not an official document and does not replace a police report.</li>
+      ${hasTeamAssistedSearch ? "<li>A team member manually researches the case, contacts relevant services and venues, submits the report to appropriate services, and shares a notice with relevant local groups under their posting rules.</li>" : ""}
     </ul>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -243,8 +245,9 @@ Your ${paidServiceLabel} is active.
 Service details, for ${monitoringMonths} months:
 - Public-web checks run daily during the first week, then weekly and monthly. Potential matches are reviewed before notification.
 - Your loss report confirmation, downloadable at any time. It is not an official document and does not replace a police report.
-- Your QR sticker sheet, a PDF to print yourself on adhesive paper.
-${hasTeamAssistedSearch ? "- Relevant local outreach and a notice for relevant local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.\n" : "- Local outreach and a notice are not included with automatic search.\n"}
+- Your dedicated anonymous ReportLost email address is linked to this report.
+- Your printable QR sticker sheet directs finders to that address.
+
 
 ${caseUrl ? `Open your private case page: ${caseUrl}\n` : ""}
 
@@ -270,8 +273,9 @@ Thank you for using ReportLost.`;
     <ul style="margin:0 0 16px;padding-left:18px">
       <li>Public-web checks run daily during the first week, then weekly and monthly. Potential matches are reviewed before notification.</li>
       <li>Your <b>loss report confirmation</b>, downloadable at any time. It is not an official document and does not replace a police report.</li>
-      <li>Your <b>QR sticker sheet</b>, a PDF to print yourself on adhesive paper.</li>
-      ${hasTeamAssistedSearch ? "<li>Relevant local outreach and a notice for relevant local groups. Reports are sent where third-party filing is accepted; otherwise, contact details and instructions are provided.</li>" : "<li>Local outreach and a notice are not included with automatic search.</li>"}
+      <li>Your <b>anonymous ReportLost email address</b>, linked to your report.</li>
+      <li>Your printable <b>QR sticker sheet</b>, linked to that address.</li>
+
     </ul>
 
     ${

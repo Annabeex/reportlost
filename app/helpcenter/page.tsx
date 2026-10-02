@@ -53,7 +53,7 @@ export default function HelpCenterPage() {
             <span className="font-medium">Automatic search, $12:</span> public-web monitoring runs for six months. Potential matches are reviewed before notification.
           </li>
           <li>
-            <span className="font-medium">Team-assisted search, $25:</span> includes 12 months of public-web monitoring and relevant local outreach. We submit reports where the service accepts third-party filings; otherwise, we provide its contact details and instructions.
+            <span className="font-medium">Team-assisted search, $25:</span> includes 12 months of public-web monitoring, manual research, direct contact with relevant services, report submission, and local social sharing under group rules.
           </li>
           <li>
             <span className="font-medium">Local notice:</span> the team-assisted search can include a visual notice for relevant local groups using a protected relay address.
@@ -73,7 +73,7 @@ export default function HelpCenterPage() {
             <p className="text-sm text-gray-500">$0</p>
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
               <li>• Your report is published in our public database</li>
-              <li>• A searchable public listing with a protected relay address</li>
+              <li>• A searchable public listing</li>
               <li>• Does not include team outreach or active web monitoring</li>
             </ul>
           </div>
@@ -91,7 +91,7 @@ export default function HelpCenterPage() {
             <h3 className="text-lg font-semibold">Team-assisted search</h3>
             <p className="text-sm text-gray-500">$25 — one-time, never a subscription</p>
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
-              <li>• Report sent to the relevant service where third-party filing is accepted</li>
+              <li>• Report submitted to appropriate lost-property services</li>
               <li>• Relevant services and likely venues contacted based on the loss location</li>
               <li>• Visual notice submitted to relevant local pages and groups where posting is available</li>
               <li>• Anonymous relay email address linked to your case</li>
@@ -166,7 +166,7 @@ export default function HelpCenterPage() {
             <summary className="cursor-pointer text-lg font-medium">What exactly does ReportLost.org do?</summary>
             <div className="mt-3 text-gray-700">
               <p>
-                A free report is published as a searchable public listing. Automatic search adds six months of public-web monitoring. Team-assisted search adds relevant local outreach, a notice for local groups, and 12 months of monitoring. Potential matches are reviewed before notification.
+                A free report is published as a searchable public listing. The $12 option includes six months of monitoring, a ReportLost certificate, an anonymous address, and QR stickers linked to it. The $25 option adds manual research, direct service contact and report submission, local social sharing, and 12 months of monitoring.
               </p>
             </div>
           </details>
@@ -202,7 +202,7 @@ export default function HelpCenterPage() {
             <summary className="cursor-pointer text-lg font-medium">Which report option should I choose?</summary>
             <div className="mt-3 text-gray-700">
               <p>
-                Choose the free listing to publish a searchable report. Automatic search ($12) adds six months of public-web monitoring, a loss report certificate, and a QR sticker sheet. Team-assisted search ($25) adds relevant local outreach, a local notice, and 12 months of public-web monitoring. Recovery is not guaranteed.
+                Choose the free listing to publish a searchable report. Automatic search ($12) adds six months of public-web monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers linked to it. Team-assisted search ($25) adds manual research, direct service contact and report submission, local social sharing, and 12 months of monitoring. Recovery is not guaranteed.
               </p>
             </div>
           </details>

@@ -85,16 +85,16 @@ export default function HowItWorksPage() {
       </h2>
 
       <p className="mb-4">
-        Publishing a lost item report is free. Automatic search costs $12 once and includes six months of public-web monitoring. Team-assisted search costs $25 once and adds relevant local outreach, a notice for local groups, and 12 months of public-web monitoring.
+        Publishing a report is free. Automatic search costs $12 once and includes six months of public-web monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers. Team-assisted search costs $25 and adds manual research, direct contact with relevant services, report submission, local social sharing, and 12 months of monitoring.
       </p>
 
       <p className="mb-4">
-        Team-assisted search includes review and follow-up by a member of our team. We contact relevant services and venues where appropriate. If an office requires the owner to file directly, we provide its contact details and instructions.
+        Team-assisted search includes manual research and follow-up by a team member. We contact relevant services and venues and submit the report to appropriate lost-property services.
       </p>
 
       <ul className="list-disc list-inside mb-6 space-y-1">
         <li>
-          Sending the report to the relevant lost-property service when it accepts third-party filings
+          Submitting the report to the appropriate lost-property services
         </li>
         <li>Contacting the place where the item was likely lost:</li>
       </ul>
@@ -107,9 +107,8 @@ export default function HowItWorksPage() {
       </ul>
 
       <p className="mb-6">
-        These contacts are made via online contact forms, email, and when
-        available, phone numbers are provided so the owner may also follow up
-        directly if they wish.
+        A team member contacts relevant services directly by email, phone, or the channel each organization uses.
+        Each organization controls its own filing and collection procedures.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">
@@ -132,11 +131,11 @@ export default function HowItWorksPage() {
         Potential matches are reviewed before notification. The service does not cover content that is inaccessible to public search tools.
       </p>
 
-      <h2 className="text-xl font-semibold mb-4">Local notice with team-assisted search</h2>
+      <h2 className="text-xl font-semibold mb-4">Local sharing with team-assisted search</h2>
 
       <p className="mb-4">
-        Team-assisted search includes a visual notice submitted to relevant local pages and groups where posting
-        is available. Some groups require the report owner to post directly, and availability varies by location.
+        Team-assisted search includes sharing a visual notice with relevant local pages and community groups under
+        their posting rules. Availability varies by location.
       </p>
 
       <h2 className="text-xl font-semibold mb-4">

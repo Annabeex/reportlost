@@ -139,22 +139,22 @@ export default function WhatHappensNext({
             {
               svg: "📄",
               title: "Free public listing",
-              desc: "If selected, your report is published as a searchable page with a protected relay address. It does not include active monitoring or team outreach.",
+              desc: "Your report is published as a searchable page. The free option does not include active monitoring or team-assisted search.",
             },
             {
               svg: "🔎",
               title: "Automatic search — $12",
-              desc: "Includes six months of public-web monitoring, a loss report certificate and a printable QR sticker sheet. It does not include local outreach or a notice.",
+              desc: "Six months of public-web monitoring, reviewed potential matches, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to it.",
             },
             {
               svg: "🧑‍💼",
               title: "Team-assisted search — $25",
-              desc: "Includes 12 months of public-web monitoring, relevant local outreach, a notice for local groups where posting is available, a loss report certificate and a printable QR sticker sheet.",
+              desc: "Everything in the $12 option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and local social sharing under group rules.",
             },
             {
-              svg: "🏢",
-              title: "Official lost-property services",
-              desc: "Offices and venues control their own filing and collection procedures. We submit reports where third-party filing is accepted; otherwise, we provide contact details and instructions.",
+              svg: "📧",
+              title: "Anonymous contact and local sharing",
+              desc: "Paid search options include a dedicated ReportLost email address linked to the report; QR stickers route finders to it. The $25 option also shares a visual notice with relevant local groups.",
             },
           ].map(({ svg, title, desc }, i) => (
             <div

@@ -171,7 +171,7 @@ export default function ReportContribution({
                 <li className="flex items-start gap-3">
                   <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                   <span className="text-[14.5px] text-gray-800">
-                    Your report is published as a searchable public listing with a protected relay address.
+                    Your lost-item report is published as a searchable public listing.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -206,15 +206,13 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      A team member contacts relevant local shelters, animal control and rescue
-                      services where appropriate.
+                      A team member researches the report and contacts relevant shelters, animal control and rescue services.
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      A notice can be shared with relevant local groups using a protected relay
-                      address. Public-web monitoring is included for <strong>12 months</strong>.
+                      The report can be shared with relevant local lost-pet groups under their posting rules. The option also includes 12 months of monitoring, a case-specific anonymous email address, the ReportLost certificate, and QR stickers linked to that address.
                     </span>
                   </li>
                 </ul>
@@ -247,7 +245,7 @@ export default function ReportContribution({
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      Includes a loss report certificate and printable QR sticker sheet.
+                      Includes a dated ReportLost certificate (not an official document and not a substitute for a police report), an anonymous email address linked to your report, and printable QR stickers linked to that address.
                     </span>
                   </li>
                 </ul>
@@ -281,21 +279,21 @@ export default function ReportContribution({
                       {/* <span> et non <p> : ce bloc est déjà dans un <span>,
                           et un paragraphe n'a pas le droit d'y vivre. */}
                       <span className="mb-2.5 block">
-                        A team member reviews your report and contacts relevant local services and
-                        venues where appropriate. If an office requires the owner to file directly,
-                        we provide its contact details and instructions.
+                        The $25 option includes manual research by a team member, direct contact with
+                        relevant services and venues, and submission of your report to appropriate
+                        lost-property services.
                       </span>
                       <span className="block">
-                        Public-web monitoring runs for 12 months. Potential matches are reviewed
-                        before notification. The service also includes a dated loss report
-                        certificate and a printable QR sticker sheet.
+                        Public-web monitoring runs for 12 months. The option also includes a dated
+                        ReportLost certificate, an anonymous email address linked to your report,
+                        and printable QR stickers linked to that address.
                       </span>
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="mt-0.5 h-[19px] w-[19px] flex-none text-green-500" />
                     <span className="text-[14.5px] text-gray-800">
-                      Includes relevant local outreach in addition to public-web monitoring.
+                      We also share a visual notice with relevant local social groups where their posting rules allow.
                     </span>
                   </li>
                 </ul>

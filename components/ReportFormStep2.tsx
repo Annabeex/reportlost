@@ -404,9 +404,7 @@ export default function ReportFormStep2({
           <div className="mt-6">
             <InfoSection icon={<MagnifierOutline />} title="Searches">
               <p className="text-[15px] text-[#0f2b1c]">
-                A free report is published as a searchable public listing. Automatic search adds six months of
-                public-web monitoring for $12. Team-assisted search adds relevant local outreach and 12 months of
-                monitoring for $25.
+                A free report is published as a searchable public listing. The $12 option adds six months of automatic public-web monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers. The $25 option adds manual research, direct contact with relevant services, local social sharing, and 12 months of monitoring.
               </p>
             </InfoSection>
           </div>

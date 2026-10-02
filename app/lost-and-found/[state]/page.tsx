@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: Props) {
       : `Lost & Found in ${stateName} - ReportLost.org`,
     description: g
       ? `How lost & found works in ${stateName}: finder duties, police holding periods, where items end up, and how to report a lost item city by city.`
-      : `Submit or find lost items in ${stateName}. A free report creates a public listing; $12 adds six months of automatic public-web monitoring; $25 adds team-assisted local outreach and 12 months of monitoring.`,
+      : `Submit or find lost items in ${stateName}. a free public listing; $12 adds six months of automatic monitoring, a ReportLost certificate, an anonymous case address, and QR stickers; $25 adds manual research, direct service contact, report submission, local social sharing, and 12 months of monitoring.`,
     alternates: { canonical: `https://reportlost.org/lost-and-found/${stateSlug}` },
   };
 }
@@ -243,7 +243,7 @@ export default async function StatePage({ params }: Props) {
                 Lost something in {guide.stateName}?
               </p>
               <p className="mt-1 text-sm text-emerald-50">
-                A free report creates a public listing. Automatic search for $12 includes six months of public-web monitoring. Team-assisted search for $25 includes 12 months of monitoring and relevant local outreach.
+                A free report creates a public listing. The $12 option adds six months of automatic monitoring, a ReportLost certificate, an anonymous case address, and QR stickers. The $25 option adds manual research, direct service contact, report submission, local social sharing, and 12 months of monitoring.
               </p>
               <Link
                 href="/report"

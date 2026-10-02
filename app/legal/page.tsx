@@ -22,7 +22,7 @@ ReportLost.org provides two types of services:
 **B) Optional paid team-assisted search:**
 - Human oversight and manual follow-up actions related to a report,
 - Outreach to relevant lost-and-found services and locations when appropriate,
-- Additional visibility actions such as creating a shareable visual and distributing it on selected channels.
+- Additional visibility actions, including sharing a case-specific visual notice with relevant local social groups.
 
 ### 3. Reporting Is Free / Optional Paid Assistance
 Submitting a report is **free**.
@@ -32,7 +32,7 @@ ReportLost.org also offers an **optional team-assisted search** that includes ma
 Payments are due regardless of whether an item is ultimately found.
 
 ### 4. Refund Policy
-The team-assisted search fee covers review, preparation, outreach, monitoring, and related actions. The fee is generally **non-refundable** once work has started.
+The team-assisted search fee covers manual research, direct outreach and report submission, local social sharing, and 12-month monitoring. The fee is generally **non-refundable** once work has started.
 
 Refunds may be granted in limited cases, such as:
 - a technical billing error (e.g., duplicate charge),

@@ -197,8 +197,8 @@ Tu rédiges une page d'information locale sur les objets perdus. Utilise un ton 
 
 Les options actuelles doivent être décrites correctement :
 - Free public listing : publication publique et consultable, sans recherche web active ni démarches de l'équipe.
-- Automatic search, $12 once : recherche sur les sources web publiques pendant 6 mois, certificat de signalement et feuille de stickers QR. Pas de démarches locales ni de notice.
-- Team-assisted search, $25 once : recherche sur les sources web publiques pendant 12 mois, démarches locales pertinentes et notice pour les groupes locaux. Les signalements sont transmis aux services qui acceptent les démarches d'un tiers ; sinon, ReportLost fournit les coordonnées et instructions pour que la personne fasse la démarche.
+- Automatic search, $12 once : recherche automatique sur le web public pendant 6 mois, certificat ReportLost, adresse email anonyme liée au dossier et stickers QR reliés à cette adresse. Pas de recherche manuelle ni de démarches locales.
+- Team-assisted search, $25 once : tout le contenu de l'option à $12, avec 12 mois de veille, recherche manuelle, contact direct avec les services et lieux pertinents, dépôt du signalement auprès des services adaptés, et diffusion dans des groupes locaux selon leurs règles.
 Les correspondances potentielles des options payantes sont examinées avant notification. La récupération n'est jamais garantie.
 
 EXEMPLES D'OBJETS : varie les exemples selon les objets courants et ceux utiles administrativement, comme wallet, phone, keys, jewelry, passport ou ID. Cite un animal perdu si c'est pertinent pour la ville, sans en faire l'exemple principal.

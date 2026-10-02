@@ -1079,7 +1079,7 @@ clearStoredRid();
                   <div className="flex gap-3">
                     <dt className="w-24 flex-none font-semibold text-[#1f6b3a]">Outreach</dt>
                     <dd className="text-[#123524]">
-                      The team contacts relevant services and venues and can publish a local notice. Reports are sent to public services where third-party filing is accepted; otherwise, contact details and instructions are provided.
+                      A team member manually researches your case, contacts relevant services and venues, submits your report to appropriate services, and shares a notice with relevant local groups where posting is allowed.
                     </dd>
                   </div>
                 )}

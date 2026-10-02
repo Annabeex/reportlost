@@ -163,7 +163,7 @@ export default function Page({
             <h3 className="text-lg font-semibold">Service limits</h3>
             <ul className="mt-4 space-y-3 text-gray-700">
               <Bulleted>Official offices and venues retain control over their own procedures and property.</Bulleted>
-              <Bulleted>Where an owner must file directly, we provide the relevant contact details and instructions.</Bulleted>
+              <Bulleted>A team member contacts relevant offices and submits the report to appropriate services; each organization controls its own filing process.</Bulleted>
               <Bulleted>Monitoring covers public web sources; it does not guarantee that an item will be found.</Bulleted>
             </ul>
           </div>

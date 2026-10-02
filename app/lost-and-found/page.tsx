@@ -244,10 +244,10 @@ export default async function LostAndFoundHub() {
       <div className="mx-auto mt-14 max-w-3xl rounded-2xl bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-6 text-center">
         <p className="text-lg font-semibold text-white">Lost something in the United States?</p>
         <p className="mt-1 text-sm text-emerald-50 leading-relaxed">
-          A free listing publishes your report on ReportLost. Automatic search adds six months of public-web
-          monitoring for $12. Team-assisted search for $25 includes 12 months of monitoring and relevant local
-          outreach. Reports are submitted where third-party filing is accepted; otherwise, we provide contact
-          details and instructions.
+          A free listing publishes your report on ReportLost. The $12 option adds six months of automatic monitoring,
+          a ReportLost certificate, an anonymous address, and printable QR stickers. The $25 option adds manual
+          research, direct contact with relevant services, report submission, local social sharing, and 12 months
+          of monitoring.
         </p>
         <Link
           href="/report"

@@ -82,7 +82,7 @@ export function buildFollowupBlocks(opts: {
       id: uid("social"),
       title: "Local notice",
       paragraphs: [
-        "A visual notice can be submitted to relevant local pages and community groups where posting is available. Group rules vary by location; some groups require the report owner to post directly.",
+        "A visual notice is shared with relevant local pages and community groups under their posting rules. Availability varies by location.",
         ...(lostId ? [`IMAGE:/api/poster/${lostId}`] : []),
       ],
     });

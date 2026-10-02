@@ -387,9 +387,9 @@ const updatePayload = { ...other, fingerprint, state_id };
 
             const text = `Hello ${other.first_name || ""},
 
-Your lost item report is saved on reportlost.org, one step away from going live.
+Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
+The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -398,7 +398,7 @@ Your report details:
 ${stationLine}${referenceLine}
 ${contributeUrl}
 
-Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
 
 Thank you for using ReportLost.`;
 
@@ -407,20 +407,16 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">Report saved — available search options</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      Your lost item report is saved, one step away from going live, on
-      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
+      Your lost-item report has been saved on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search. For <b>$25</b>, one single payment and never a
-      subscription: we file your report with the competent lost-property service, contact the places
-      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
-      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
-      QR stickers.
+      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -440,7 +436,7 @@ Thank you for using ReportLost.`;
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+      The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
     </p>
   </div>
 </div>`;
@@ -560,9 +556,9 @@ Contribution : ${other.contribution ?? 0}`;
 
               const text = `Hello ${other.first_name || ""},
 
-Your lost item report is saved on reportlost.org, one step away from going live.
+Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
+The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -571,7 +567,7 @@ Your report details:
 ${referenceLine}
 ${contributeUrl}
 
-Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
 
 Thank you for using ReportLost.`;
 
@@ -580,20 +576,16 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">Report saved — available search options</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      Your lost item report is saved, one step away from going live, on
-      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
+      Your lost-item report has been saved on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search. For <b>$25</b>, one single payment and never a
-      subscription: we file your report with the competent lost-property service, contact the places
-      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
-      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
-      QR stickers.
+      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -612,7 +604,7 @@ Thank you for using ReportLost.`;
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+      The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
     </p>
   </div>
 </div>`;
@@ -760,9 +752,9 @@ const { data: foundRows, error: findErr } = await supabase
 
           const text = `Hello ${other.first_name || ""},
 
-Your lost item report is saved on reportlost.org, one step away from going live.
+Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-One last step to activate your search. For $25, one single payment and never a subscription: we file your report with the competent lost-property service, contact the places likely to hold your item, publish a visual notice with an anonymous relay address, scan the web on your keywords for 12 months, and send you a loss report certificate and a printable sheet of QR stickers.
+The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -771,7 +763,7 @@ Your report details:
 ${referenceLine}
 ${contributeUrl}
 
-Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
 
 Thank you for using ReportLost.`;
 
@@ -780,20 +772,16 @@ Thank you for using ReportLost.`;
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <div style="background:linear-gradient(90deg,#2C7A4A,#3FAE68);color:#fff;padding:18px 16px;text-align:center;">
     <h2 style="margin:0;font-size:22px;letter-spacing:.3px">ReportLost</h2>
-    <p style="margin:8px 0 0;font-size:14px;opacity:.95">✅ One last step to activate your search</p>
+    <p style="margin:8px 0 0;font-size:14px;opacity:.95">Report saved — available search options</p>
   </div>
   <div style="padding:20px;color:#111827;line-height:1.55;background:#fff">
     <p style="margin:0 0 12px">Hello <b>${other.first_name || ""}</b>,</p>
     <p style="margin:0 0 14px">
-      Your lost item report is saved, one step away from going live, on
-      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">reportlost.org</a>.
+      Your lost-item report has been saved on
+      <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      One last step to activate your search. For <b>$25</b>, one single payment and never a
-      subscription: we file your report with the competent lost-property service, contact the places
-      likely to hold your item, publish a visual notice with an anonymous relay address, scan the web
-      on your keywords for 12 months, and send you a loss report certificate and a printable sheet of
-      QR stickers.
+      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -812,7 +800,7 @@ Thank you for using ReportLost.`;
     </p>
 
     <p style="margin:0 0 8px;font-size:13px;color:#374151">
-      Activation is a one-time payment, never a subscription, processed securely by Stripe (PCI DSS v4.0). Your search starts right away.
+      The fee is a one-time payment processed securely by Stripe (PCI DSS v4.0); there is no subscription. The selected service starts after payment.
     </p>
   </div>
 </div>`;

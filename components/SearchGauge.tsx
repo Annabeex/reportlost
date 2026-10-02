@@ -52,7 +52,7 @@ export const GAUGE_STOPS = [
         <b className="font-bold text-green-800">Automatic search:</b> public-web monitoring runs for
         6 months. Potential matches are reviewed before notification.
         <span className="mt-1.5 block text-[13px] text-gray-500">
-          Also includes a loss report certificate and stickers to print.
+          Also includes a dated ReportLost certificate, an anonymous address linked to your report, and QR stickers linked to that address.
         </span>
       </>
     ),
@@ -66,8 +66,7 @@ export const GAUGE_STOPS = [
       <>
         <b className="font-bold text-green-800">Team-assisted search:</b> includes 12 months of
         public-web monitoring, relevant local outreach, and a notice for relevant local groups.
-        Reports are filed where a service accepts third-party submissions; otherwise, we provide
-        its contact details and instructions.
+        A team member manually researches your case, contacts relevant services and venues, submits the report to appropriate services, and shares a notice with relevant local groups where posting is allowed.
       </>
     ),
   },

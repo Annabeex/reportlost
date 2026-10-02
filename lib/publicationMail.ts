@@ -87,8 +87,8 @@ export async function sendPublicationMail(
 Your report has been published as a public listing on ReportLost.org. The free listing is available without a paid search service.
 
 Search options, each with a one-time fee and no renewal:
-- Automatic search ($12): six months of public-web monitoring, a loss report certificate, and a printable QR sticker sheet. It does not include local outreach or a notice.
-- Team-assisted search ($25): 12 months of public-web monitoring, relevant local outreach, a notice for relevant local groups, a loss report certificate, and a printable QR sticker sheet. We submit reports where a service accepts third-party filings; otherwise, we provide its contact details and instructions.
+- Automatic search ($12): six months of public-web monitoring, reviewed potential matches, a dated ReportLost certificate, an anonymous email address linked to the report, and printable QR stickers linked to it.
+- Team-assisted search ($25): everything in the $12 option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and a notice shared with relevant local groups under their posting rules.
 
 Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. Recovery cannot be guaranteed, and ReportLost is not a public agency.
 
@@ -111,8 +111,8 @@ Your free listing remains available either way.`;
     <p style="margin:0 0 14px">Your report has been published on <a href="${base}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.</p>
     <p style="margin:0 0 8px"><b>Search options</b></p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #e5e7eb">
-      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Automatic search, $12 once</b><br/>Six months of public-web monitoring, a loss report certificate, and a printable QR sticker sheet. Local outreach and a notice are not included.</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Team-assisted search, $25 once</b><br/>Twelve months of public-web monitoring, relevant local outreach, a notice for relevant local groups, a loss report certificate, and a printable QR sticker sheet. Reports are submitted where third-party filing is accepted; otherwise, contact details and instructions are provided.</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Automatic search, $12 once</b><br/>Six months of public-web monitoring, reviewed matches, a dated ReportLost certificate, an anonymous case email address, and printable QR stickers linked to it.</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Team-assisted search, $25 once</b><br/>Everything in the $12 option, with 12 months of monitoring, manual research, direct service contact and report submission, and a notice shared with relevant local groups under their posting rules.</td></tr>
     </table>
     <p style="margin:12px 0;color:#4b5563;font-size:12.5px">Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. ReportLost is independent of public agencies and cannot guarantee recovery.</p>
     <div style="margin:16px 0 10px;text-align:center"><a href="${contributeUrl}" style="display:inline-block;background:#26723e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">Review search options</a></div>

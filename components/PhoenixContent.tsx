@@ -143,7 +143,7 @@ export function PhoenixExtraContent({
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl">📡</div>
             <h3 className="font-bold mt-3 text-gray-900">2. Choose a report option</h3>
             <p className="text-sm text-gray-600 mt-2">
-              The free listing publishes your report. Automatic search costs $12 for six months of public-web monitoring. Team-assisted search costs $25 and includes 12 months of monitoring and relevant local outreach. Some offices require the owner to file directly.
+              The free listing publishes your report. The $12 option adds six months of automatic monitoring, a ReportLost certificate, an anonymous case address, and printable QR stickers. The $25 option adds manual research, direct contact with relevant services, report submission, local social sharing, and 12 months of monitoring.
             </p>
           </div>
           <div className="text-center">
@@ -172,7 +172,7 @@ export function PhoenixExtraContent({
               Phoenix has separate lost-property processes for Valley Metro, Sky Harbor, venues and public agencies.
               Use the official links below to identify the channel relevant to where the item was lost. ReportLost
               is independent and offers three report options: a free listing, six-month automatic monitoring for $12,
-              and team-assisted search with 12-month monitoring and relevant local outreach for $25.
+              and $25 team-assisted search with manual research, direct contact with relevant services, local social sharing, and 12-month monitoring.
             </p>
             <p>
               Holding and collection policies vary by office. Contact the service responsible for the loss location

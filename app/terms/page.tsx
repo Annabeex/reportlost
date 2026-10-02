@@ -34,7 +34,7 @@ Automatic search is available for a one-time $12 fee. Team-assisted search is av
 
 **Team-assisted search ($25)** covers the following services, with public-web monitoring active for 12 months from activation:
 
-1. **Filing with the competent lost-property service.** We transmit your report to the service responsible for the loss location, in most cases the local police department or the municipal lost-property office. This is done provided we hold the information that service requires; where local rules oblige the owner to file personally, we provide the relevant office, reporting link and step-by-step instructions instead.
+1. **Contact and report submission.** A team member researches the case, contacts relevant lost-property services and venues, and submits the report to appropriate services. Each organization controls its own process. A ReportLost submission is not an official police report and does not replace any declaration the owner is legally required to make.
 2. **Outreach to the places likely to hold the item.** Selected from your loss location: transport operator, hotel, restaurant, venue, airport, taxi company, nearby businesses and surrounding lost-property desks.
 3. **Creation and distribution of a visual notice.** Published on social media and in the relevant local groups, including private groups we are members of. The notice displays an anonymous relay email address linked to your case, so finders can contact you without your personal address or phone number being disclosed.
 4. **Automated web monitoring for 12 months.** An AI search engine scans public web sources using your item's keywords, every day for the first week, then once a week, then once a month. Potential matches are reviewed by a team member before being forwarded to you. Monitoring does not cover content inaccessible to public search tools.
@@ -47,7 +47,7 @@ For a lost animal, the $25 team-assisted service includes outreach to relevant l
 
 Users may publish a free public listing or choose one of the two paid search services. Each paid service is a one-time fee, not a subscription.
 
-Where a police department or public office accepts lost property reports filed by a third party, we file the report on your behalf. Where local rules require the owner to file personally, we provide the appropriate contact details, links and instructions instead.
+We contact relevant lost-property offices, services, and venues on your behalf and submit the report to appropriate services. Each organization controls its own process. This service does not file or replace an official police report.
 
 Details and pricing for paid assistance are clearly displayed before purchase.
 
@@ -70,7 +70,7 @@ ReportLost.org reserves the right to remove or redact content that violates thes
 
 Submitting a report is **free**.
 
-Paid search services are processed securely by Stripe. The $12 automatic search includes six months of public-web monitoring, a loss report certificate, and a QR sticker sheet. The $25 team-assisted search includes 12 months of public-web monitoring, relevant outreach, and a local notice, along with the certificate and sticker sheet.
+Paid search services are processed securely by Stripe. The $12 automatic search includes six months of public-web monitoring, a dated ReportLost certificate, an anonymous address linked to the report, and printable QR stickers linked to that address. The $25 team-assisted search adds 12 months of monitoring, manual research, direct contact with relevant services, report submission, and local social sharing.
 
 For this reason, paid search-service fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
 
