@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
-type CityOption = { city_ascii: string; state_id: string }
+type CityOption = { city_ascii: string; state_id: string; population?: number | null }
 
 type Props = {
   /** Valeur affichée dans l'input (ex: "Chicago (IL)" ou "Chicago") */
@@ -92,12 +92,19 @@ export default function AutoCompleteCitySelect({
       setLoading(true)
 
       // Requête : on filtre par prefix de ville, et si statePart est fourni on restreint
+      // Tri par population décroissante, PAS par ordre alphabétique.
+      // Avec `ilike 'Lincoln%'` + order('city_ascii') + limit(10), les dix
+      // premières lignes rendues étaient dix homonymes d'autres États et
+      // Lincoln (NE) tombait hors liste : vu du client, « le Nebraska n'est
+      // pas proposé ». La grande ville doit sortir en tête, et 25 lignes
+      // laissent la place aux homonymes.
       let query = supabase
         .from('us_cities')
-        .select('city_ascii, state_id')
+        .select('city_ascii, state_id, population')
         .ilike('city_ascii', `${q}%`)
+        .order('population', { ascending: false, nullsFirst: false })
         .order('city_ascii')
-        .limit(10)
+        .limit(25)
 
       if (statePart) {
         query = query.eq('state_id', statePart)

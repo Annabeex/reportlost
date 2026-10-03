@@ -2,6 +2,13 @@
 
 import * as React from "react";
 import type { FollowupBlock } from "./CaseFollowup";
+import {
+  TITRE_OUTREACH,
+  TITRE_VEILLE,
+  ALIAS_OUTREACH,
+  ALIAS_VEILLE,
+  indexParTitre,
+} from "@/lib/followupTemplate";
 
 type Block = FollowupBlock & { id: string };
 
@@ -181,10 +188,10 @@ export default function CaseFollowupEditor({
                 return parts.join("\n");
               })
               .join("\n\n");
-            const TITLE = "Local notifications & Authority outreach";
+            const TITLE = TITRE_OUTREACH;
             const INTRO =
               "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched to your case.";
-            const idx = input.findIndex((b: any) => b.title === TITLE);
+            const idx = indexParTitre(input, ALIAS_OUTREACH);
             if (idx === -1) {
               return { blocks: [...input, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }], changed: true };
             }
@@ -214,16 +221,20 @@ export default function CaseFollowupEditor({
             const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
               last ? ` Latest scan: ${last}.` : ""
             }${total ? ` Leads reviewed so far: ${total}.` : ""}`;
-            const TITLE = "AI Match Watch — Leads Reviewed";
+            const TITLE = TITRE_VEILLE;
             const paragraphs = lines
               ? [summary, lines]
               : [summary, "No credible lead has surfaced yet. This is normal at this stage: new posts appear every day and your report keeps matching against them."];
-            const idx = input.findIndex((b: any) => b.title === TITLE);
+            const idx = indexParTitre(input, ALIAS_VEILLE);
             if (idx === -1) return { blocks: [...input, { id: uid(), title: TITLE, paragraphs }], changed: true };
+            // La section existe déjà (modèle publié depuis l'admin) : on garde
+            // son premier paragraphe, qui porte la durée annoncée au client, et
+            // on ne réécrit que la partie « pistes étudiées ».
+            const voulu = [input[idx].paragraphs?.[0] || summary, ...paragraphs.slice(1)];
             const cur = JSON.stringify(input[idx].paragraphs || []);
-            if (cur === JSON.stringify(paragraphs)) return { blocks: input, changed: false };
+            if (cur === JSON.stringify(voulu)) return { blocks: input, changed: false };
             const next = input.slice();
-            next[idx] = { ...next[idx], paragraphs };
+            next[idx] = { ...next[idx], paragraphs: voulu };
             return { blocks: next, changed: true };
           } catch {
             return { blocks: input, changed: false };
@@ -394,11 +405,11 @@ export default function CaseFollowupEditor({
           return parts.join("\n");
         })
         .join("\n\n");
-      const TITLE = "Local notifications & Authority outreach";
+      const TITLE = TITRE_OUTREACH;
       const INTRO =
         "We notify local lost & found desks and common drop-off points when relevant: police non-emergency lines, transit agencies, airport lost & found, and nearby institutions (hotels, hospitals, universities). We include your report reference so physical returns can be matched to your case.";
       setBlocks((prev) => {
-        const idx = prev.findIndex((b) => b.title === TITLE);
+        const idx = indexParTitre(prev, ALIAS_OUTREACH);
         if (idx === -1) return [...prev, { id: uid(), title: TITLE, paragraphs: [INTRO, lines] }];
         const next = prev.slice();
         const intro = next[idx].paragraphs?.[0] || INTRO;
@@ -428,13 +439,16 @@ export default function CaseFollowupEditor({
       const summary = `Our automated watch keeps scanning new "found" posts, marketplaces and community pages, and every potential match is reviewed by a team member.${
         last ? ` Latest scan: ${last}.` : ""
       }${total ? ` Leads reviewed so far: ${total}.` : ""}`;
-      const TITLE = "AI Match Watch — Leads Reviewed";
+      const TITLE = TITRE_VEILLE;
       const paragraphs = lines ? [summary, lines] : [summary, "No credible lead has surfaced yet. This is normal at this stage: new posts appear every day and your report keeps matching against them."];
       setBlocks((prev) => {
-        const idx = prev.findIndex((b) => b.title === TITLE);
+        const idx = indexParTitre(prev, ALIAS_VEILLE);
         if (idx === -1) return [...prev, { id: uid(), title: TITLE, paragraphs }];
         const next = prev.slice();
-        next[idx] = { ...next[idx], paragraphs };
+        next[idx] = {
+          ...next[idx],
+          paragraphs: [next[idx].paragraphs?.[0] || summary, ...paragraphs.slice(1)],
+        };
         return next;
       });
       setDirty(true);

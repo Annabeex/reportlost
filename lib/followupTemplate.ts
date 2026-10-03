@@ -101,3 +101,34 @@ export function buildFollowupBlocks(opts: {
 
   return blocks;
 }
+
+// ---------------------------------------------------------------------------
+// Titres canoniques des sections du compte rendu client.
+//
+// L'éditeur (components/CaseFollowupEditor.tsx) synchronise les deux mêmes
+// sections mais les cherchait sous SES titres. Quand le compte rendu avait été
+// publié depuis l'admin (titres ci-dessous), il ne les trouvait pas et ajoutait
+// un SECOND encart au contenu identique. D'où les doublons vus par le client.
+// Les alias ci-dessous sont la liste partagée des titres à reconnaître.
+// ---------------------------------------------------------------------------
+
+export const TITRE_OUTREACH = "Local outreach";
+export const TITRE_VEILLE = "Public-web monitoring";
+
+export const ALIAS_OUTREACH = [
+  TITRE_OUTREACH,
+  "Local notifications & Authority outreach",
+];
+
+export const ALIAS_VEILLE = [
+  TITRE_VEILLE,
+  "AI Match Watch — Leads Reviewed",
+];
+
+/** Index du premier bloc portant l'un des titres donnés, -1 sinon. */
+export function indexParTitre(blocks: any[], alias: string[]): number {
+  const voulus = alias.map((t) => t.trim().toLowerCase());
+  return (Array.isArray(blocks) ? blocks : []).findIndex((b) =>
+    voulus.includes(String(b?.title || "").trim().toLowerCase())
+  );
+}
