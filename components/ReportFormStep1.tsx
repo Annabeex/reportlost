@@ -326,6 +326,13 @@ export default function ReportFormStep1({ formData, onChange, onNext, onProgress
     }
 
     if (!formData.city?.trim()) return fail("Please enter the city.");
+    // L'État doit être connu DÈS CETTE ÉTAPE : c'est ici que la ville se
+    // choisit, donc c'est ici que le manque se signale, pas à l'envoi.
+    if (!normalizeCityInput(formData.city).stateId && !(formData.state_id || "").trim()) {
+      return fail(
+        'Please pick your city from the suggestions so the state is recorded (for example "Henderson (NV)").',
+      );
+    }
     if (!formData.place_type?.trim() && !formData.place_type_other?.trim()) {
       return fail("Please specify the place where you lost it.");
     }
@@ -606,7 +613,14 @@ export default function ReportFormStep1({ formData, onChange, onNext, onProgress
                     onChange({ target: { name: "city", value } } as React.ChangeEvent<HTMLInputElement>)
                   }
                   onSelect={(city) => {
-                    onChange({ target: { name: "city", value: `${city.city_ascii}` } } as any);
+                    // On réécrit la ville AVEC l'État : « Henderson (NV) ».
+                    // En n'écrivant que « Henderson », normalizeCityInput ne
+                    // trouvait plus d'État et remettait state_id à null — la
+                    // personne ne voyait rien, et le formulaire ne bloquait
+                    // qu'à la toute fin, à l'enregistrement.
+                    onChange({
+                      target: { name: "city", value: `${city.city_ascii} (${city.state_id})` },
+                    } as any);
                     onChange({ target: { name: "state_id", value: city.state_id } } as any);
                   }}
                 />

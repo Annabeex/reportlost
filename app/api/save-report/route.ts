@@ -699,12 +699,34 @@ const { data: foundRows, error: findErr } = await supabase
     }
 
     // 3) Insert new row
+    //
+    // public_id est un code à 5 chiffres tiré côté base. Sur un espace de
+    // 90 000 valeurs et quelques milliers de dossiers, deux tirages finissent
+    // par tomber sur le même code : l'insertion échoue alors sur
+    // lost_items_public_id_key. La reprise en aval ne sait pas traiter ce cas
+    // (elle cherche une ligne de MÊME fingerprint, or la collision vient d'un
+    // dossier sans rapport) et la personne reçoit une erreur 500 en pleine
+    // saisie. On rejoue donc simplement l'insertion : le tirage suivant est
+    // indépendant, deux collisions d'affilée sont négligeables.
     const insertPayload = { ...updatePayload, mail_sent: false };
-    const { data: insData, error: insErr } = await supabase
-      .from("lost_items")
-      .insert([insertPayload])
-      .select("id, public_id, created_at")
-      .single();
+    let insData: any = null;
+    let insErr: any = null;
+    for (let essai = 0; essai < 4; essai++) {
+      const tentative = await supabase
+        .from("lost_items")
+        .insert([insertPayload])
+        .select("id, public_id, created_at")
+        .single();
+      insData = tentative.data;
+      insErr = tentative.error;
+      if (!insErr) break;
+      const msg = String(insErr.message || insErr.code || "");
+      const collisionPublicId =
+        (msg.includes("duplicate key") || msg.includes("23505")) &&
+        msg.includes("public_id");
+      if (!collisionPublicId) break;
+      console.warn(`[save-report] collision public_id, nouvelle tentative (${essai + 1}/4)`);
+    }
 
     if (insErr || !insData?.id) {
       const errMsg = (insErr && (insErr.message || insErr.code || JSON.stringify(insErr))) || "";
