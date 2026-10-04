@@ -15,6 +15,7 @@
 
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { matchOneToMany, matchManyToOne, matchLevel, type LostRow, type FoundRow, type MatchResult } from "@/lib/orgMatch";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 const LOST_FIELDS = "id, title, description, date, city, state_id, created_at";
 const FOUND_FIELDS = "id, org_id, org_ref, title, description, date, city, dropoff_location, status";
@@ -78,7 +79,7 @@ async function aiReview(lost: LostRow, founds: FoundRow[]): Promise<AiVerdict[]>
       return [];
     }
     const json: any = await res.json();
-    const text: string = json?.content?.[0]?.text || "";
+    const text: string = texteAnthropic(json);
     const m = text.match(/\[[\s\S]*\]/);
     if (!m) return [];
     const arr = JSON.parse(m[0]);

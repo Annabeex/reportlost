@@ -19,6 +19,7 @@ const MODEL = process.env.CASE_CHAT_MODEL || process.env.ANTHROPIC_MODEL || "cla
 // qui nomment un autre État avant que le modèle ne les voie.
 import { okEtat } from "@/lib/okEtat";
 import { stateNameFromAbbr } from "@/lib/utils";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 async function callClaude(system: string, user: string, maxTokens = 2000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -30,7 +31,7 @@ async function callClaude(system: string, user: string, maxTokens = 2000): Promi
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
   const data = await res.json();
-  return String(data?.content?.[0]?.text ?? "");
+  return texteAnthropic(data);
 }
 
 async function serper(query: string, num = 6): Promise<{ title: string; link: string; snippet: string }[]> {
@@ -127,13 +128,16 @@ Règles STRICTES :
 - Le téléphone n'est jamais un canal de contact, mais s'il apparaît dans les résultats, mentionne-le à titre informatif ("📞 info : ..."). Idem adresse postale ("📍 ...").
 - Section obligatoire à la fin de la liste : "📍 Adresse de référence près du lieu de perte" : un bâtiment public (bibliothèque, mairie, poste...) trouvé dans les résultats, avec son adresse complète — Anna l'utilise pour les formulaires de police qui exigent une adresse de client ou de lieu quand elle ne l'a pas. Uniquement une adresse présente dans les résultats.
 - Réponds en français à Anna. Structure : liste priorisée (3-6 entités) avec pour chacune : nom, canal (email trouvé / formulaire URL), source (le lien d'où vient l'info).
-- Termine par DEUX brouillons de mail en anglais : (A) pour les organismes PUBLICS (police, mairie, sheriff...) : ton factuel et administratif ; ⚠️ GÉNÉRIQUE et réutilisable TEL QUEL pour tous les organismes de la liste, car Anna envoie le même mail à plusieurs : salutation neutre "Dear Sir or Madam", ne JAMAIS nommer l'organisme dans le sujet ni le corps, et TOUJOURS inclure la phrase "Could you kindly forward this message to the appropriate department or lost and found service?" ; l'email personnel du client peut y figurer si utile ; (B) pour les LIEUX FRÉQUENTÉS par le client (restaurant, bar, hôtel, commerce) : ton chaleureux et humain, mentionner la grande valeur SENTIMENTALE de l'objet pour son propriétaire (adapter : souvenir de famille, cadeau...) SANS JAMAIS parler de valeur monétaire ni de récompense, une touche d'émotion sobre (une phrase), demander gentiment de vérifier auprès de l'équipe si l'objet a été retrouvé ou mis de côté, et UNIQUEMENT l'adresse relais item${item.public_id || ""}@reportlost.org comme contact. RÈGLES COMMUNES : réponse à Anna et intitulés en FRANÇAIS, brouillons en ANGLAIS uniquement ; sujet contenant #${item.public_id || ""} ; texte brut SANS aucun symbole markdown (pas de **, pas de #, pas de tirets de ponctuation) ; JAMAIS de placeholder [Client Name] ou [Client Phone/Email] ; signature exacte :
+- Termine par DEUX brouillons de mail en anglais : (A) pour les organismes PUBLICS (police, mairie, sheriff...) : ton factuel et administratif ; ⚠️ GÉNÉRIQUE et réutilisable TEL QUEL pour tous les organismes de la liste, car Anna envoie le même mail à plusieurs : salutation neutre "Dear Sir or Madam", ne JAMAIS nommer l'organisme dans le sujet ni le corps, et TOUJOURS inclure la phrase "Could you kindly forward this message to the appropriate department or lost and found service?" ; l'email personnel du client peut y figurer si utile ; (B) pour les LIEUX FRÉQUENTÉS par le client (restaurant, bar, hôtel, commerce) : ton chaleureux et humain, mentionner la grande valeur SENTIMENTALE de l'objet pour son propriétaire (adapter : souvenir de famille, cadeau...) SANS JAMAIS parler de valeur monétaire ni de récompense, une touche d'émotion sobre (une phrase), demander gentiment de vérifier auprès de l'équipe si l'objet a été retrouvé ou mis de côté, et UNIQUEMENT l'adresse relais item${item.public_id || ""}@reportlost.org comme contact. RÈGLES COMMUNES : les deux brouillons sont écrits par un TIERS qui agit pour le compte du propriétaire, jamais par le propriétaire lui-même : toujours à la troisième personne (the owner, he/she, his/her jacket), JAMAIS "I lost", "my keys", "valuable to me" — un mail signé ReportLost.org qui dit "j'ai perdu" est incohérent pour le destinataire ; la valeur sentimentale se dit donc "the owner would be deeply relieved", pas "it means a lot to me" ; réponse à Anna et intitulés en FRANÇAIS, brouillons en ANGLAIS uniquement ; sujet contenant #${item.public_id || ""} ; texte brut SANS aucun symbole markdown (pas de **, pas de #, pas de tirets de ponctuation) ; JAMAIS de placeholder [Client Name] ou [Client Phone/Email] ; signature exacte :
 Anna
 ReportLost.org
 Encadre chacun avec SUBJECT: puis <<<EMAIL ... EMAIL>>>.
 - TOUT À LA FIN de ta réponse, ajoute une ligne machine (elle sera retirée avant affichage) : ENTITIES_JSON: suivie d'un tableau JSON compact des entités listées, format [{"name":"...","email":"" ou email trouvé,"url":"" ou url,"phone":"" ou téléphone,"address":"" ou adresse,"role":"one line IN ENGLISH describing its role for this case (this text is shown to the client), e.g. They handle lost property reports for incidents within the city"}]. Uniquement des infos présentes dans les résultats de recherche.`,
       `Signalement :\n${report}\n\nRésultats de recherche Google :\n\n${results}`,
-      2500
+      // Marge volontaire : les modèles récents consomment une partie du budget
+      // en raisonnement avant d'écrire, et une réponse tronquée perdrait la ligne
+      // ENTITIES_JSON placée tout à la fin.
+      4000
     );
 
     // 4) Extraction des entités → fiches "Établissements contactés" du dossier

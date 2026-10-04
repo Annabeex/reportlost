@@ -3,6 +3,7 @@
 // Protégé par le middleware Basic Auth (/api/admin/*).
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -232,7 +233,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Anthropic ${res.status}: ${t.slice(0, 200)}` }, { status: 502 });
     }
     const data = await res.json();
-    const reply = String(data?.content?.[0]?.text ?? "");
+    const reply = texteAnthropic(data);
     return NextResponse.json({ reply });
   } catch (e: any) {
     console.error("[case-chat] fatal:", e);

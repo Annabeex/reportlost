@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serperSearch } from "@/lib/matchWatch/core";
 import { extractJson } from "@/lib/extractJson";
 import { countyPath, countyToSlug, getEligibleCountySlugs } from "@/lib/county";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ async function claudeJSON(system: string, user: string, maxTokens = 1400): Promi
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
   const data = await res.json();
-  const txt = String(data?.content?.[0]?.text ?? "");
+  const txt = texteAnthropic(data);
   // Extraction équilibrée : l'ancienne capture gloutonne allait du premier
   // « { » au DERNIER « } », donc deux blocs JSON dans la réponse donnaient
   // « Unexpected non-whitespace character after JSON ».

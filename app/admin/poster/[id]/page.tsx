@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 
 export default function PosterPage({ params }: { params: { id: string } }) {
   const id = params.id;
-  const posterUrl = `/api/poster/${encodeURIComponent(id)}`;
 
   const [en, setEn] = useState('');
   const [fr, setFr] = useState('');
@@ -13,6 +12,23 @@ export default function PosterPage({ params }: { params: { id: string } }) {
   const [captionErr, setCaptionErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+
+  // Titre du poster : modifiable à la main. Le modèle résume en 1-2 mots et
+  // coupe parfois le mot qui porte le sens (« Car and Motorcycle Keys »).
+  const [titre, setTitre] = useState('');
+  const [titreEnregistre, setTitreEnregistre] = useState('');
+  const [reperes, setReperes] = useState<{ reportTitle: string; category: string }>({ reportTitle: '', category: '' });
+  const [maxTitre, setMaxTitre] = useState(32);
+  const [titreBusy, setTitreBusy] = useState(false);
+  const [titreMsg, setTitreMsg] = useState<string | null>(null);
+  // Change à chaque enregistrement pour forcer le navigateur à recharger l'image.
+  const [version, setVersion] = useState(0);
+
+  // L'aperçu porte le titre en cours de saisie ; l'image enregistrée en base
+  // reste celle que verront le client et les réseaux.
+  const posterUrl =
+    `/api/poster/${encodeURIComponent(id)}` +
+    (titre.trim() ? `?title=${encodeURIComponent(titre.trim())}&v=${version}` : `?v=${version}`);
 
   useEffect(() => {
     (async () => {
@@ -34,6 +50,44 @@ export default function PosterPage({ params }: { params: { id: string } }) {
       }
     })();
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/poster-title/${encodeURIComponent(id)}`, { cache: 'no-store' });
+        const j = await res.json().catch(() => null);
+        if (!res.ok || !j?.ok) return;
+        setTitre(j.posterTitle || '');
+        setTitreEnregistre(j.posterTitle || '');
+        setReperes({ reportTitle: j.reportTitle || '', category: j.category || '' });
+        if (Number(j.max)) setMaxTitre(Number(j.max));
+      } catch {
+        /* le titre reste celui déduit par le modèle */
+      }
+    })();
+  }, [id]);
+
+  const enregistrerTitre = async () => {
+    setTitreBusy(true);
+    setTitreMsg(null);
+    try {
+      const res = await fetch(`/api/admin/poster-title/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ posterTitle: titre }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j?.ok) throw new Error(j?.error || `Erreur ${res.status}`);
+      setTitreEnregistre(j.posterTitle || '');
+      setTitre(j.posterTitle || '');
+      setVersion((v) => v + 1);
+      setTitreMsg('✅ Titre enregistré — le poster du client est à jour.');
+    } catch (e: any) {
+      setTitreMsg(`⚠️ ${String(e?.message || e)}`);
+    } finally {
+      setTitreBusy(false);
+    }
+  };
 
   const caption = lang === 'en' ? en : fr;
 
@@ -77,6 +131,55 @@ export default function PosterPage({ params }: { params: { id: string } }) {
         alt={`Poster ${id}`}
         className="w-full max-w-md mx-auto rounded-xl border border-gray-200 shadow"
       />
+
+      {/* Titre du poster */}
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <label htmlFor="poster-titre" className="block text-sm font-semibold text-gray-800">
+          Titre affiché sur le poster
+        </label>
+        <p className="mt-1 text-xs text-gray-500">
+          Laisse vide pour garder le titre proposé automatiquement. {maxTitre} caractères maximum : au-delà, il
+          serait coupé sur l’image.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            id="poster-titre"
+            type="text"
+            value={titre}
+            maxLength={maxTitre}
+            onChange={(e) => {
+              setTitre(e.target.value);
+              setTitreMsg(null);
+            }}
+            placeholder="ex. Car and Motorcycle Keys"
+            className="flex-1 min-w-[220px] rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <span className="text-xs tabular-nums text-gray-400">
+            {titre.trim().length}/{maxTitre}
+          </span>
+          <button
+            type="button"
+            onClick={enregistrerTitre}
+            disabled={titreBusy || titre.trim() === titreEnregistre.trim()}
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-40"
+          >
+            {titreBusy ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+        {(reperes.reportTitle || reperes.category) && (
+          <p className="mt-2 text-xs text-gray-500">
+            Dossier : <span className="text-gray-700">{reperes.reportTitle || '—'}</span>
+            {reperes.category ? ` · catégorie : ${reperes.category}` : ''}
+          </p>
+        )}
+        {titre.trim() !== titreEnregistre.trim() && (
+          <p className="mt-2 text-xs text-amber-700">
+            L’aperçu ci-dessus montre ce titre, mais il n’est pas encore enregistré : le client et les réseaux
+            voient toujours l’ancien.
+          </p>
+        )}
+        {titreMsg && <p className="mt-2 text-xs text-gray-700">{titreMsg}</p>}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 justify-center mt-4">
         <button

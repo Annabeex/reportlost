@@ -5,6 +5,7 @@
 // URL : /api/poster/{public_id}
 
 import { ImageResponse } from "next/og";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export const runtime = "edge";
 
@@ -30,6 +31,12 @@ function fallbackColorKey(text: string): string {
   if (/phone|iphone|laptop|tablet|airpod|electronic|camera|headphone|charger/.test(c)) return "electronics";
   return "other";
 }
+
+// Longueur maximale d'un titre de poster. L'ancien plafond de 18 caracteres
+// coupait des intitules legitimes ; 32 tient encore sur une ligne grace au
+// palier de police ajoute plus bas.
+// (non exporte : Next.js n'autorise que GET/POST/runtime/dynamic... dans un route.tsx)
+const MAX_TITRE = 32;
 
 function clean(v: unknown, max = 60): string {
   const s = String(v ?? "").replace(/\s+/g, " ").trim();
@@ -95,11 +102,11 @@ Return JSON:
     });
     if (!res.ok) return fallback;
     const data = await res.json();
-    const m = String(data?.content?.[0]?.text ?? "").match(/\{[\s\S]*\}/);
+    const m = texteAnthropic(data).match(/\{[\s\S]*\}/);
     if (!m) return fallback;
     const j = JSON.parse(m[0]);
     return {
-      title: clean(j.title || fallback.title, 18),
+      title: clean(j.title || fallback.title, MAX_TITRE),
       colorKey: COLORS[j.colorKey] ? j.colorKey : fallback.colorKey,
       place: typeof j.place === "string" && !looksLikeObject(j.place) ? clean(j.place, 32) : "",
     };
@@ -179,7 +186,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // aiguillage, la requete sur public_id ne trouvait rien et le poster
     // retombait sur "WANTED ITEM" avec un faux alias construit sur l'UUID.
     const SELECT =
-      "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo";
+      "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo,poster_title";
     const isPublicId = /^\d{5}$/.test(id);
     const column = isPublicId ? "public_id" : "id";
 
@@ -200,12 +207,24 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
     if (!row) row = { title: "Item", public_id: isPublicId ? id : "" };
 
-    const [{ title, colorKey, place }, f500, f600, f800] = await Promise.all([
+    const [auto, f500, f600, f800] = await Promise.all([
       aiClean(row),
       loadFont(500),
       loadFont(600),
       loadFont(800),
     ]);
+    const { colorKey, place } = auto;
+
+    // Le titre du poster, par ordre de priorite :
+    //   1. ?title=... — l'apercu de l'admin, avant enregistrement
+    //   2. lost_items.poster_title — le titre choisi par Anna, qui fait foi
+    //   3. le titre deduit par le modele
+    // Le modele resume en 1-2 mots et coupait des intitules qui ont besoin du
+    // dernier mot pour vouloir dire quelque chose : « Car and Motorcycle Keys »
+    // devenait « Car & Motorcycle … », sans l'objet.
+    const titreQuery = clean(new URL(req.url).searchParams.get("title") || "", MAX_TITRE);
+    const titreBase = clean(row.poster_title || "", MAX_TITRE);
+    const title = titreQuery || titreBase || auto.title;
     const accent = COLORS[colorKey] || COLORS.other;
 
     // Ville : retire un éventuel "(XX)" déjà présent pour ne pas doubler l'État
@@ -239,7 +258,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       });
     }
 
-    const titleSize = title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
+    const titleSize =
+      title.length > 26 ? 48 : title.length > 20 ? 58 : title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
     const photoH = title.length > 9 ? 260 : 320;
 
     const fonts: any[] = [];

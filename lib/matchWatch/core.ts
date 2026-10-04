@@ -3,6 +3,7 @@
 // Aucune dépendance Supabase ici (la route s'occupe de la base).
 
 import { extractJsonOr } from "@/lib/extractJson";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export type LostReport = {
   id: string;
@@ -58,7 +59,7 @@ async function callHaiku(system: string, user: string, maxTokens = 400): Promise
     throw new Error(`Anthropic ${res.status}: ${t.slice(0, 200)}`);
   }
   const data = await res.json();
-  return String(data?.content?.[0]?.text ?? "");
+  return texteAnthropic(data);
 }
 
 // Décrit la photo du signalement (une seule lecture d'image par dossier)
@@ -93,7 +94,7 @@ export async function describePhoto(url: string): Promise<string> {
     });
     if (!res.ok) return "";
     const data = await res.json();
-    return String(data?.content?.[0]?.text ?? "");
+    return texteAnthropic(data);
   } catch {
     return "";
   }

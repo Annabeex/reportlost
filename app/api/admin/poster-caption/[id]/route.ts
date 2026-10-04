@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { extractJson } from "@/lib/extractJson";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,7 +74,7 @@ Return JSON (all line breaks escaped as \\n, no raw newlines inside the strings)
     });
     if (!res.ok) return NextResponse.json({ ok: false, error: `Anthropic ${res.status}` }, { status: 500 });
     const data = await res.json();
-    const parsed = extractJson<any>(String(data?.content?.[0]?.text ?? ""));
+    const parsed = extractJson<any>(texteAnthropic(data));
     const j = parsed.ok ? parsed.value : {};
     return NextResponse.json({ ok: true, en: j.en || "", fr: j.fr || "" });
   } catch (e) {

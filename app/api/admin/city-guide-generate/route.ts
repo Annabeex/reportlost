@@ -11,6 +11,7 @@ import { getNearbyCities } from "@/lib/getNearbyCities";
 import { buildCityPath } from "@/lib/slugify";
 import { generateCityPhoto } from "@/lib/cityImage";
 import { extractJson } from "@/lib/extractJson";
+import { texteAnthropic } from "@/lib/anthropicText";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ async function callClaude(system: string, user: string, maxTokens = 6000): Promi
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
   const data = await res.json();
-  return String(data?.content?.[0]?.text ?? "");
+  return texteAnthropic(data);
 }
 
 const GUIDE_SCHEMA = `type CityGuide = {
