@@ -17,3 +17,4 @@ _travail/
 # Copies de travail (anciennes versions gardées en local, jamais déployées)
 *.bak
 *.previous.*
+tsconfig.tsbuildinfo

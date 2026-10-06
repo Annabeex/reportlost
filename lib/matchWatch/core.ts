@@ -4,6 +4,7 @@
 
 import { extractJsonOr } from "@/lib/extractJson";
 import { texteAnthropic } from "@/lib/anthropicText";
+import { contreditEtat } from "@/lib/geoUS";
 
 export type LostReport = {
   id: string;
@@ -305,6 +306,26 @@ export function filtreDur(report: LostReport, r: SerperResult, now = Date.now())
   const faibles = texte.match(new RegExp(MARQUEURS_FAIBLES.source, "gi")) || [];
   if (new Set(faibles.map((x) => x.toLowerCase())).size >= 2) {
     return { rejete: true, raison: `orthographes non américaines (${[...new Set(faibles)].join(", ")})` };
+  }
+
+  // 4) la géographie INTERNE aux États-Unis
+  //
+  // Le nom de ville ne suffit pas : des centaines sont partagés entre États, et
+  // certains sont aussi des noms de rue. Le dossier #51717 (Chula Vista, CA)
+  // s'est vu proposer une annonce d'un groupe de la Willamette Valley, en
+  // Oregon, citant une rue Chula Vista et un Food Lion — enseigne absente de
+  // Californie comme d'Oregon. Un nom de région ou une enseigne régionale situe
+  // le texte là où le nom de ville ne le fait pas.
+  if (report.state_id) {
+    const contre = contreditEtat(`${texte} ${r.link || ""}`, report.state_id);
+    if (contre) {
+      return {
+        rejete: true,
+        raison: `« ${contre.nom} » situe l'annonce en ${contre.etats.join("/")}, pas en ${String(
+          report.state_id
+        ).toUpperCase()}`,
+      };
+    }
   }
 
   return { rejete: false };
