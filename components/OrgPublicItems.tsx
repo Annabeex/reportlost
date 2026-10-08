@@ -68,14 +68,17 @@ export default function OrgPublicItems({
   const shownReports = useMemo(() => (q ? reports.filter((i) => matches(i, q, showDate, showPlace)) : reports), [reports, q, showDate, showPlace]);
   const total = items.length + reports.length;
 
+  // Une ligne par objet, dans un seul bloc à filets : à pleine largeur c'est
+  // plus lisible qu'une grille de cartes, et le formulaire de réclamation
+  // s'ouvre dessous (w-full) sans écraser les champs.
   const row = (it: PublicItem) => (
-    <div key={`${it.kind}-${it.id}`} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-gray-900">{it.label}</span>
+    <div key={`${it.kind}-${it.id}`} className="border-b border-gray-100 px-4 py-3.5 last:border-b-0 sm:px-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-[15px] font-semibold text-gray-900">{it.label}</span>
         {(showDate || (showPlace && it.place)) && (
-          <span className="text-sm text-gray-500">
+          <span className="text-[13.5px] text-gray-500">
             {showDate ? `found ${fmtDate(it.date)}` : "found"}
-            {showPlace && it.place ? ` at ${it.place}` : ""}
+            {showPlace && it.place ? ` · ${it.place}` : ""}
           </span>
         )}
         <span className="ml-auto" />
@@ -84,46 +87,59 @@ export default function OrgPublicItems({
     </div>
   );
 
+  const compte = shownItems.length + shownReports.length;
+
   return (
     <>
-      {total > 0 && (
-        <div className="mt-6">
-          <label htmlFor="pub-search" className="sr-only">Search the items</label>
-          <input
-            id="pub-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search: keys, backpack, library, September 14…"
-            autoComplete="off"
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[16px] text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-          />
-          {q && (
-            <p className="mt-1.5 text-[13px] text-gray-500">
-              {shownItems.length + shownReports.length === 0
-                ? "Nothing matches. Items are listed by category only, so try a broader word, or report your loss below."
-                : `${shownItems.length + shownReports.length} of ${total} items`}
-            </p>
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[17px] font-bold text-gray-900">Items held at the office</h2>
+            <span className="text-[13px] text-gray-500">
+              {q ? `${compte} of ${total} shown` : `${items.length} listed`}
+            </span>
+          </div>
+          {total > 0 && (
+            <>
+              <label htmlFor="pub-search" className="sr-only">Search the items</label>
+              <input
+                id="pub-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search: keys, backpack, library, September 14…"
+                autoComplete="off"
+                className="mt-3 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[15px] text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+              {q && compte === 0 && (
+                <p className="mt-2 text-[13px] text-gray-500">
+                  Nothing matches. Items are listed by category only, so try a broader word — or report
+                  your loss below.
+                </p>
+              )}
+            </>
           )}
         </div>
-      )}
 
-      {items.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center text-gray-500">
-          No items listed at the moment. Check back soon, new finds are added regularly.
-        </div>
-      ) : (
-        <div className="mt-4 space-y-2">{shownItems.map(row)}</div>
-      )}
+        {items.length === 0 ? (
+          <div className="px-5 py-12 text-center text-[14.5px] text-gray-500">
+            No items listed at the moment. Check back soon — new finds are added as they come in.
+          </div>
+        ) : (
+          <div>{shownItems.map(row)}</div>
+        )}
+      </section>
 
       {reports.length > 0 && (q ? shownReports.length > 0 : true) && (
-        <section className="mt-8">
-          <h2 className="text-[17px] font-bold text-gray-900">Not at the desk yet</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            These items are still with the person who found them, who left a contact with the {orgName}{" "}
-            office. Describe the item precisely: if your description matches, the office puts you in touch.
-          </p>
-          <div className="mt-3 space-y-2">{shownReports.map(row)}</div>
+        <section className="mt-6 overflow-hidden rounded-2xl border border-amber-200 bg-white">
+          <div className="border-b border-amber-100 bg-amber-50/60 px-4 py-4 sm:px-5">
+            <h2 className="text-[17px] font-bold text-gray-900">Not at the desk yet</h2>
+            <p className="mt-1 text-[13.5px] leading-relaxed text-gray-600">
+              These items are still with the person who found them, who left a contact with the {orgName}{" "}
+              office. Describe the item precisely: if your description matches, the office puts you in touch.
+            </p>
+          </div>
+          <div>{shownReports.map(row)}</div>
         </section>
       )}
     </>

@@ -1,5 +1,7 @@
 // components/orgPublic/ListPage.tsx — page publique d'un établissement,
-// servie sous /campus/<slug> et /at/<slug> (voir publicPath dans lib/orgScope).
+// servie sous /campus/<slug> et /lost-property/<slug> (voir publicPath dans
+// lib/orgScope).
+//
 // Affichage STRICT MINIMUM par objet : libellé générique + date + lieu général.
 // Jamais de description détaillée ni de photo (elles servent de preuve de
 // propriété lors des réclamations).
@@ -8,6 +10,16 @@
 // puis, si l'objet n'y est pas, une déclaration de perte adressée à CET
 // établissement. Elle existe dès que l'établissement est vérifié ; s'il a coupé
 // sa liste publique, la page reste, sans la liste, avec la déclaration.
+//
+// MISE EN PAGE. La page ne porte ni la navbar ni le pied de page de
+// reportlost.org (voir components/SiteChrome.tsx) : pour le visiteur, c'est la
+// page de SON commissariat ou de SON université, et un service municipal doit
+// pouvoir la mettre en lien depuis son propre site sans avoir l'impression
+// d'envoyer ses administrés chez un tiers. D'où un en-tête propre à
+// l'établissement, des bandeaux pleine largeur, et sur grand écran deux
+// colonnes : l'inventaire à gauche, les informations pratiques à droite. Les
+// objets restent en lignes pleine largeur et non en grille, parce que le
+// formulaire de réclamation s'ouvre sous l'objet et a besoin de la place.
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +27,6 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import OrgPublicItems from "@/components/OrgPublicItems";
 import OrgLostReportForm from "@/components/OrgLostReportForm";
 import { portalBase, scopeOfType, publicPath, type OrgScope } from "@/lib/orgScope";
-
 
 // Page de démonstration (slug « demo-… ») : elle doit s'ouvrir sans compte pour
 // qui reçoit le lien, et ne JAMAIS apparaître dans Google — personne ne doit
@@ -88,87 +99,183 @@ export async function listMetadata(slug: string): Promise<Metadata> {
   };
 }
 
-
 export default async function ListPage({ slug, scope }: { slug: string; scope: OrgScope }) {
   const data = await getData(slug);
   if (!data) notFound();
-  // Une université ouverte sous /org/… (ou l'inverse) est renvoyée à sa vraie adresse.
+  // Une université ouverte sous /lost-property/… (ou l'inverse) est renvoyée à
+  // sa vraie adresse.
   if (scopeOfType(data.org.type) !== scope) permanentRedirect(publicPath(data.org));
   const { org, items, reports, listed } = data;
 
+  const lieu = [org.city, org.state_id].filter(Boolean).join(", ");
+  const foundHref = publicPath(org, "/found");
+  const held = items.length;
+  const withFinder = reports.length;
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="rounded-2xl bg-gradient-to-r from-[#26723e] to-[#2ea052] px-6 py-6 text-white">
-        <p className="text-sm text-emerald-100">{TYPE_LABEL[org.type] || "Organization"}{org.city ? ` · ${org.city}${org.state_id ? `, ${org.state_id}` : ""}` : ""}</p>
-        <h1 className="text-2xl font-bold">Lost &amp; Found — {org.name}</h1>
-        <p className="mt-1 text-sm text-emerald-50">
-          {org.public_intro
-            ? org.public_intro
-            : listed
-            ? "Items currently held by this organization. Recognize yours? Claim it by describing it precisely: details are checked before any handover."
-            : "This organization does not publish the list of items it holds. Report what you lost below: the office compares your report with its inventory."}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {listed && (
-            <a href="#report" className="inline-block rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/25">
-              Not in the list? Report it to {org.name}
+    <div className="min-h-screen bg-[#f6f7f9]">
+      {/* ── En-tête de l'établissement ──────────────────────────────────────
+          Pleine largeur et collante : le nom reste visible pendant qu'on fait
+          défiler la liste, et c'est lui qui donne la légitimité à la page. */}
+      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-2.5 w-2.5 flex-none rounded-full bg-[#2ea052]" aria-hidden="true" />
+              <p className="truncate text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">
+                {TYPE_LABEL[org.type] || "Organization"}{lieu ? ` · ${lieu}` : ""}
+              </p>
+            </div>
+            <h1 className="mt-0.5 truncate text-[20px] font-bold leading-tight text-gray-900 sm:text-[23px]">
+              {org.name} — Lost &amp; Found
+            </h1>
+          </div>
+          <nav className="flex flex-none flex-wrap items-center gap-2">
+            <a
+              href="#report"
+              className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 text-[14px] font-semibold text-white shadow-sm hover:brightness-105"
+            >
+              I lost something
             </a>
+            <Link
+              href={foundHref}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              I found something
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* ── Bandeau d'explication, pleine largeur ─────────────────────────── */}
+      <div className="border-b border-[#1d5c33] bg-gradient-to-r from-[#1f5f34] to-[#2ea052]">
+        <div className="mx-auto max-w-6xl px-5 py-7">
+          <p className="max-w-3xl text-[15.5px] leading-relaxed text-emerald-50">
+            {org.public_intro
+              ? org.public_intro
+              : listed
+              ? "Below is what this office currently holds, listed by category only. Recognize something? Claim it by describing it precisely — the details you give are checked against the office's own record before anything is handed over."
+              : "This office does not publish the list of items it holds. Describe what you lost below: staff compare your report with the inventory, including items handed in later."}
+          </p>
+          {listed && (
+            <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+              <div>
+                <div className="text-[26px] font-bold leading-none text-white">{held}</div>
+                <div className="mt-1 text-[12.5px] font-medium text-emerald-100">
+                  item{held === 1 ? "" : "s"} held at the office
+                </div>
+              </div>
+              {withFinder > 0 && (
+                <div>
+                  <div className="text-[26px] font-bold leading-none text-white">{withFinder}</div>
+                  <div className="mt-1 text-[12.5px] font-medium text-emerald-100">
+                    still with the person who found {withFinder === 1 ? "it" : "them"}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-          <a href={publicPath(org, "/found")} className="inline-block rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-[#1e3a8a] hover:bg-blue-50">
-            Found something? Hand it in
-          </a>
         </div>
       </div>
 
-      {(org.public_hours || org.public_location) && (
-        <div className="mt-4 grid gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 text-sm sm:grid-cols-2">
-          {org.public_location && (
-            <div>
-              <div className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Where to go</div>
-              <div className="mt-0.5 whitespace-pre-line text-gray-900">{org.public_location}</div>
+      {/* ── Corps : inventaire à gauche, informations pratiques à droite ──── */}
+      <div className="mx-auto max-w-6xl px-5 py-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <main className="min-w-0">
+            {listed && (
+              <OrgPublicItems
+                orgSlug={org.slug}
+                orgName={org.name}
+                showDate={org.public_show_date !== false}
+                showPlace={org.public_show_place !== false}
+                items={items.map((it) => ({
+                  id: String(it.id), kind: "item" as const,
+                  label: it.public_label || it.title || "Item", date: it.date, place: it.dropoff_location,
+                }))}
+                reports={reports.map((r) => ({
+                  id: String(r.id), kind: "report" as const,
+                  label: r.public_label || "Item", date: r.found_at, place: r.found_location,
+                }))}
+              />
+            )}
+
+            {/* Le formulaire apporte son propre encadré blanc : le titre et
+                l'explication restent dehors, sinon on obtient deux bordures
+                imbriquées. */}
+            <section id="report" className={`scroll-mt-24 ${listed ? "mt-10" : ""}`}>
+              <h2 className="text-[19px] font-bold text-gray-900">
+                {listed ? `Not in the list? Report it to ${org.name}` : `Report your lost item to ${org.name}`}
+              </h2>
+              <p className="mb-4 mt-1.5 text-[14px] leading-relaxed text-gray-600">
+                Your report goes to the {org.name} lost and found office. It is compared with the items
+                held there, including items handed in later. Nothing you write here is published.
+              </p>
+              <OrgLostReportForm orgSlug={org.slug} orgName={org.name} />
+            </section>
+          </main>
+
+          {/* Colonne de droite : ce qu'on vient chercher quand on a reconnu son
+              objet — où aller, quand, et comment déposer ce qu'on a trouvé. */}
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            {(org.public_location || org.public_hours) && (
+              <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4">
+                {org.public_location && (
+                  <div>
+                    <div className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">Where to go</div>
+                    <div className="mt-1 whitespace-pre-line text-[14.5px] leading-relaxed text-gray-900">{org.public_location}</div>
+                  </div>
+                )}
+                {org.public_location && org.public_hours && <hr className="my-4 border-gray-100" />}
+                {org.public_hours && (
+                  <div>
+                    <div className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">Opening hours</div>
+                    <div className="mt-1 whitespace-pre-line text-[14.5px] leading-relaxed text-gray-900">{org.public_hours}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Link
+              href={foundHref}
+              className="block rounded-2xl border border-[#2ea052] bg-[#f2fbf5] px-5 py-4 hover:bg-[#e9f8ef]"
+            >
+              <div className="text-[15px] font-bold text-[#1f5f34]">You found something?</div>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-[#2a6b41]">
+                Describe it in two minutes. You can hand it in at the desk, or keep it and leave a contact
+                so the office can put the owner in touch with you.
+              </p>
+              <span className="mt-2 inline-block text-[13.5px] font-semibold text-[#1f5f34] underline">
+                Report a found item →
+              </span>
+            </Link>
+
+            <div className="rounded-2xl border border-gray-200 bg-white px-5 py-4 text-[13px] leading-relaxed text-gray-600">
+              <div className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">How claims are checked</div>
+              <p className="mt-1.5">
+                Items are listed by category only. Descriptions, serial numbers and photos are never
+                published — they are what the office uses to tell the real owner from someone guessing.
+              </p>
             </div>
-          )}
-          {org.public_hours && (
-            <div>
-              <div className="text-[12px] font-bold uppercase tracking-wide text-gray-500">Opening hours</div>
-              <div className="mt-0.5 whitespace-pre-line text-gray-900">{org.public_hours}</div>
-            </div>
-          )}
+          </aside>
         </div>
-      )}
+      </div>
 
-      {listed && (
-        <OrgPublicItems
-          orgSlug={org.slug}
-          orgName={org.name}
-          showDate={org.public_show_date !== false}
-          showPlace={org.public_show_place !== false}
-          items={items.map((it) => ({
-            id: String(it.id), kind: "item" as const,
-            label: it.public_label || it.title || "Item", date: it.date, place: it.dropoff_location,
-          }))}
-          reports={reports.map((r) => ({
-            id: String(r.id), kind: "report" as const,
-            label: r.public_label || "Item", date: r.found_at, place: r.found_location,
-          }))}
-        />
-      )}
-
-      <section id="report" className="mt-10 scroll-mt-6">
-        <h2 className="text-[19px] font-bold text-gray-900">
-          {listed ? `Not in the list? Report your lost item to ${org.name}` : `Report your lost item to ${org.name}`}
-        </h2>
-        <p className="mb-4 mt-1 text-sm text-gray-600">
-          Your report goes to the {org.name} lost and found office. It is compared with the items held
-          there, including items handed in later. Nothing you write here is published.
-        </p>
-        <OrgLostReportForm orgSlug={org.slug} orgName={org.name} />
-      </section>
-
-      <p className="mt-6 text-center text-xs text-gray-400">
-        <Link href="/privacy/institutions" className="underline">Privacy notice</Link> · Powered by ReportLost.org ·{" "}
-        <Link href={`${portalBase(scopeOfType(org.type))}/login`} className="underline">Create your page</Link>
-      </p>
-    </main>
+      {/* ── Pied de page propre à la page ──────────────────────────────────── */}
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 text-[12.5px] text-gray-500">
+          <p>
+            Lost and found service of {org.name}
+            {lieu ? `, ${lieu}` : ""}.{" "}
+            <Link href="/privacy/institutions" className="underline hover:text-gray-700">Privacy notice</Link>
+          </p>
+          <p>
+            Powered by ReportLost.org ·{" "}
+            <Link href={`${portalBase(scopeOfType(org.type))}/login`} className="underline hover:text-gray-700">
+              Create a page for your office
+            </Link>
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }

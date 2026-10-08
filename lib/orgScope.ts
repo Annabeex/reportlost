@@ -35,11 +35,16 @@ export function portalBase(scope: OrgScope): string {
 
 /** Page publique d'un établissement :
  *    reportlost.org/campus/<slug>  université, collège, école
- *    reportlost.org/at/<slug>      police, mairie, transport, hôtel, autre
- *  (« ReportLost at Tucson Police » : l'adresse se lit comme une phrase.)
- *  Les anciennes formes /o/<slug> et /org/<slug> redirigent ici. */
+ *    reportlost.org/lost-property/<slug>  police, mairie, transport, hôtel, autre
+ *
+ *  « Lost property » est le terme institutionnel américain (Property Clerk au
+ *  NYPD, Lost Property Unit dans les transports) : un responsable de property
+ *  room lit son propre vocabulaire, et un webmaster municipal accepte plus
+ *  facilement de mettre en lien une rubrique qu'un identifiant de produit.
+ *  L'ancien /at/<slug> se prononçait « arobase » au téléphone.
+ *  Les anciennes formes /at/<slug>, /o/<slug> et /org/<slug> redirigent ici. */
 export function publicBase(scope: OrgScope): string {
-  return scope === "campus" ? "/campus" : "/at";
+  return scope === "campus" ? "/campus" : "/lost-property";
 }
 export function publicPath(org: { slug: string; type?: string | null }, sub = ""): string {
   return `${publicBase(scopeOfType(org.type))}/${org.slug}${sub}`;

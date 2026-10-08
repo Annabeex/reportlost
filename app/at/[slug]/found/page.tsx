@@ -1,10 +1,16 @@
-// Formulaire « Found something? » : reportlost.org/at/<slug>/found.
-import FoundPage, { foundMetadata } from "@/components/orgPublic/FoundPage";
+// Ancienne adresse du formulaire « Found something? » (/at/<slug>/found),
+// remplacée par /lost-property/<slug>/found.
+import { notFound, permanentRedirect } from "next/navigation";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { publicPath } from "@/lib/orgScope";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
-export const generateMetadata = ({ params }: { params: { slug: string } }) => foundMetadata(params.slug);
-
-export default function Page({ params }: { params: { slug: string } }) {
-  return <FoundPage slug={params.slug} scope="agency" />;
+export default async function LegacyRedirect({ params }: { params: { slug: string } }) {
+  const sb = getSupabaseAdmin();
+  const { data: org } = sb
+    ? await sb.from("organizations").select("slug, type").eq("slug", String(params.slug).toLowerCase()).maybeSingle()
+    : { data: null };
+  if (!org) notFound();
+  permanentRedirect(publicPath(org, "/found"));
 }
