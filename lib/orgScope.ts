@@ -50,6 +50,9 @@ export function publicPath(org: { slug: string; type?: string | null }, sub = ""
 export const RESERVED_SLUGS = new Set([
   "login", "dashboard", "items", "review", "team", "import", "onboarding",
   "settings", "new", "admin", "api", "found", "embed", "help",
+  // « demo » et « demo-… » : réservés au tableau de bord de démonstration
+  // (/org/demo) et à l'établissement fictif qu'il affiche.
+  "demo",
 ]);
 
 /** Types proposés à l'inscription, restreints au portail d'entrée : on ne crée

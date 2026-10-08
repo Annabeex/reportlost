@@ -10,6 +10,7 @@ import RetentionSetting from "@/components/portal/RetentionSetting";
 import OrgProfile from "@/components/portal/OrgProfile";
 import { DISPOSITIONS, LEAVING_STATUSES, type Disposition } from "@/lib/orgDisposition";
 import { usePortal, portalFetch } from "@/lib/portal";
+import { demoFetch } from "@/lib/portalDemo";
 import { scopeOfType, portalBase, publicPath } from "@/lib/orgScope";
 import { deadlineTracking } from "@/lib/orgRetention";
 
@@ -105,7 +106,10 @@ function catImage(title?: string | null) {
   return "/images/categories/others.jpg";
 }
 
-export default function PortalDashboard() {
+/** demo : écran de démonstration ouvert sans compte (/org/demo).
+ *  Les lectures passent par la route publique, les écritures ne sortent pas
+ *  du navigateur. Voir lib/portalDemo.ts. */
+export default function PortalDashboard({ demo = false }: { demo?: boolean }) {
   const router = useRouter();
   const { scope, base, words } = usePortal();
   const [org, setOrg] = useState<any>(null);
@@ -137,8 +141,8 @@ export default function PortalDashboard() {
   >(null);
 
   const api = useCallback(
-    (url: string, init?: RequestInit) => portalFetch(scope, url, init),
-    [scope]
+    (url: string, init?: RequestInit) => (demo ? demoFetch(url, init) : portalFetch(scope, url, init)),
+    [scope, demo]
   );
 
   const load = useCallback(async () => {
@@ -188,9 +192,10 @@ export default function PortalDashboard() {
         .then((lj) => setLostReports(Array.isArray(lj.reports) ? lj.reports : []))
         .catch(() => {});
     } catch {
-      router.push(`${base}/login`);
+      if (!demo) router.push(`${base}/login`);
+      else setLoading(false);
     }
-  }, [api, base, router, scope]);
+  }, [api, base, router, scope, demo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -405,6 +410,7 @@ export default function PortalDashboard() {
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       <PortalNav
+        demo={demo}
         current="inventory"
         pending={pending}
         orgs={orgs}
@@ -412,6 +418,15 @@ export default function PortalDashboard() {
         crossPortal={cross}
         onChangeOrg={(id) => { setActiveOrgId(scope, id); setLoading(true); load(); }}
       />
+      {demo && (
+        <div className="border-b border-amber-200 bg-amber-50">
+          <div className="mx-auto max-w-5xl px-4 py-3 text-[13.5px] text-amber-900">
+            <strong className="font-bold">Demonstration.</strong> Every item below is made up. You can
+            click anything — nothing is saved, and reloading the page brings the demo back as it was.
+            Logging new items, the review queue and the team screens need an account, which is free.
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-0">
@@ -433,10 +448,18 @@ export default function PortalDashboard() {
               View public page ↗
             </a>
           )}
-          <Link href={`${base}/items/new`}
-            className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
-            + Log a found item
-          </Link>
+          {demo ? (
+            <span
+              title="Available with an account. The demo is read-only."
+              className="cursor-not-allowed rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white opacity-60 shadow">
+              + Log a found item
+            </span>
+          ) : (
+            <Link href={`${base}/items/new`}
+              className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 font-semibold text-white shadow">
+              + Log a found item
+            </Link>
+          )}
           {/* Tout ce qui ne sert pas dix fois par jour est rangé ici. */}
           <details className="relative">
             <summary className="cursor-pointer list-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
@@ -467,16 +490,18 @@ export default function PortalDashboard() {
                 className="block w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 disabled:opacity-60">
                 {exporting ? "Preparing the file…" : !STATUS_LABEL[filter] ? "Export all items (CSV)" : `Export “${STATUS_LABEL[filter]}” (CSV)`}
               </button>
-              {isAdmin && (
+              {isAdmin && !demo && (
                 <Link href={`${base}/import`} className="block px-4 py-2.5 text-gray-700 hover:bg-gray-50">
                   Import items from another system
                 </Link>
               )}
-              <button type="button"
-                className="block w-full border-t border-gray-100 px-4 py-2.5 text-left text-gray-500 hover:bg-gray-50"
-                onClick={async () => { await supabaseBrowser.auth.signOut(); router.push(`${base}/login`); }}>
-                Sign out
-              </button>
+              {!demo && (
+                <button type="button"
+                  className="block w-full border-t border-gray-100 px-4 py-2.5 text-left text-gray-500 hover:bg-gray-50"
+                  onClick={async () => { await supabaseBrowser.auth.signOut(); router.push(`${base}/login`); }}>
+                  Sign out
+                </button>
+              )}
             </div>
           </details>
         </div>

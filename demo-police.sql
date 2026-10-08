@@ -45,6 +45,10 @@ delete from found_items
  where org_id = (select id from organizations where slug = 'demo-police');
 delete from org_intakes
  where org_id = (select id from organizations where slug = 'demo-police');
+delete from org_lost_reports
+ where org_id = (select id from organizations where slug = 'demo-police');
+delete from org_item_events
+ where org_id = (select id from organizations where slug = 'demo-police');
 update organizations set ref_seq = 0 where slug = 'demo-police';
 
 do $$
@@ -120,9 +124,48 @@ select o.id, v.code, v.title, v.descr, v.place, (current_date - v.days_ago)::dat
        ) as v(code, title, descr, place, days_ago, finder, femail, label)
  where o.slug = 'demo-police';
 
+-- ── 3b. Déclarations de perte reçues par la page publique ───────────────────
+-- C'est la colonne qui remplace les appels téléphoniques : la personne décrit
+-- ce qu'elle a perdu, l'agent la lit quand il veut.
+insert into org_lost_reports (org_id, code, title, description, lost_location, lost_at,
+                              name, email, phone, status)
+select o.id, v.code, v.title, v.descr, v.place, (current_date - v.days_ago)::date,
+       v.name, v.email, v.phone, 'open'
+  from organizations o,
+       (values
+         ('LR-3301', 'Black iPhone with a blue case',      'Blue silicone case, cracked screen protector, lock screen is a photo of a dog.', 'Somewhere between Main St and the bus stop', 3, 'M. Carter',  'demo-owner1@example.com', '(555) 010-2244'),
+         ('LR-3307', 'Brown leather wallet',               'Driver''s licence and two bank cards inside, no cash. Small tear on the fold.',   'Riverside Park',                            5, 'J. Whitfield','demo-owner2@example.com', '(555) 010-8871'),
+         ('LR-3312', 'Silver bracelet, engraved',          'Engraved with a date on the inside — I can give it if you need to check.',        'Not sure, possibly the library',            15, 'A. Reyes',   'demo-owner3@example.com', null)
+       ) as v(code, title, descr, place, days_ago, name, email, phone)
+ where o.slug = 'demo-police';
+
+-- ── 3c. Journal légal de deux objets ───────────────────────────────────────
+-- Le registre s'écrit tout seul. C'est cette ligne-là qu'on relit à quelqu'un
+-- qui se manifeste six mois plus tard, et c'est l'argument décisif.
+insert into org_item_events (org_id, item_id, type, note, actor_email, created_at)
+select f.org_id, f.id::text, v.type, v.note, 'desk@demo-police.example', now() - (v.hours_ago || ' hours')::interval
+  from found_items f
+  join organizations o on o.id = f.org_id
+       cross join (values
+         ('created',        'Logged at the front desk', 1800),
+         ('claim_received', 'Caller described a cracked screen and a dog lock screen — matches. Asked for proof of purchase.', 36),
+         ('note',           'Proof received, handover scheduled.', 4)
+       ) as v(type, note, hours_ago)
+ where o.slug = 'demo-police'
+   and f.title = 'Samsung Galaxy, cracked screen';
+
+insert into org_item_events (org_id, item_id, type, note, actor_email, created_at)
+select f.org_id, f.id::text, 'created', 'Handed in by a passer-by', 'desk@demo-police.example', now() - interval '72 hours'
+  from found_items f
+  join organizations o on o.id = f.org_id
+ where o.slug = 'demo-police'
+   and f.title = 'iPhone 13, black, blue silicone case';
+
 -- ── 4. Vérification ────────────────────────────────────────────────────────
 select o.slug, o.name, o.verified, o.public_listing, o.short_code, o.ref_seq,
        (select count(*) from found_items f where f.org_id = o.id)  as objets,
-       (select count(*) from org_intakes i where i.org_id = o.id)  as signalements
+       (select count(*) from org_intakes i where i.org_id = o.id)  as signalements,
+       (select count(*) from org_lost_reports l where l.org_id = o.id) as pertes_declarees,
+       (select count(*) from org_item_events e where e.org_id = o.id)  as evenements
   from organizations o
  where o.slug = 'demo-police';

@@ -13,6 +13,7 @@ import { usePortal } from "@/lib/portal";
 
 export default function PortalNav({
   current,
+  demo = false,
   pending = 0,
   orgs,
   activeId,
@@ -20,6 +21,9 @@ export default function PortalNav({
   crossPortal = 0,
 }: {
   current: "review" | "inventory" | "new" | "team" | "import";
+  /** Écran de démonstration : les autres écrans exigent un compte, leurs
+   *  liens renverraient le visiteur sur la page de connexion. */
+  demo?: boolean;
   pending?: number;
   orgs: { id: string; name: string; type: string; city?: string | null }[];
   activeId: string;
@@ -32,6 +36,10 @@ export default function PortalNav({
   const link = (key: typeof current, href: string, label: ReactNode) =>
     current === key ? (
       <span key={key} className="font-bold text-gray-900">{label}</span>
+    ) : demo ? (
+      <span key={key} title="Available with an account. The demo is read-only." className="cursor-not-allowed text-gray-400">
+        {label}
+      </span>
     ) : (
       <Link key={key} href={href} className="hover:text-gray-900">{label}</Link>
     );
@@ -58,7 +66,8 @@ export default function PortalNav({
           {link("team", `${base}/team`, "Team")}
         </nav>
         <div className="flex items-center gap-3">
-          <SupportDialog />
+          {/* Le formulaire de support s'authentifie comme l'établissement : rien à envoyer en démo. */}
+          {!demo && <SupportDialog />}
           <OrgSwitcher orgs={orgs} activeId={activeId} onChange={onChangeOrg} />
           {crossPortal > 0 && (
             <Link href={`${otherBase}/dashboard`} className="text-[13px] text-gray-400 underline hover:text-gray-700">
