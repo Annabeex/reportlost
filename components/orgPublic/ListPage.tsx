@@ -17,6 +17,11 @@ import OrgLostReportForm from "@/components/OrgLostReportForm";
 import { portalBase, scopeOfType, publicPath, type OrgScope } from "@/lib/orgScope";
 
 
+// Page de démonstration (slug « demo-… ») : elle doit s'ouvrir sans compte pour
+// qui reçoit le lien, et ne JAMAIS apparaître dans Google — personne ne doit
+// tomber sur un bureau d'objets trouvés fictif en cherchant le vrai.
+const estDemo = (slug?: string | null) => /^demo(-|$)/.test(String(slug || "").toLowerCase());
+
 const TYPE_LABEL: Record<string, string> = {
   police: "Police department",
   city: "City services",
@@ -79,7 +84,7 @@ export async function listMetadata(slug: string): Promise<Metadata> {
     description: `Found items currently held by ${org.name}${org.city ? ` in ${org.city}` : ""}. Recognize yours? Submit a claim with proof of ownership.`,
     alternates: { canonical: `https://reportlost.org${publicPath(org)}` },
     // Sans liste publiée, la page n'a rien à proposer à un moteur de recherche.
-    ...(data.listed ? {} : { robots: { index: false, follow: false } }),
+    ...(data.listed && !estDemo(org.slug) ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
