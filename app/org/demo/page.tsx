@@ -1,15 +1,8 @@
-// app/org/demo/page.tsx — tableau de bord de démonstration, sans compte.
-// Même écran que /org/dashboard : les lectures viennent de /api/org/demo,
-// les écritures ne sortent pas du navigateur (voir lib/portalDemo.ts).
-import type { Metadata } from "next";
-import PortalDashboard from "@/components/portal/PortalDashboard";
-
-export const metadata: Metadata = {
-  title: "Demo — ReportLost for organizations",
-  // Jamais dans Google : la démo est faite pour un lien qu'on envoie.
-  robots: { index: false, follow: false },
-};
+// Ancienne adresse de la démonstration. L'adresse courante est
+// /lost-property/demo : elle se lit comme le service qu'on présente.
+// Conservée pour les liens déjà partis dans des mails.
+import { permanentRedirect } from "next/navigation";
 
 export default function Page() {
-  return <PortalDashboard demo />;
+  permanentRedirect("/lost-property/demo");
 }

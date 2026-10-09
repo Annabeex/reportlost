@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { portalBase, scopeOfType, publicPath, type OrgScope } from "@/lib/orgScope";
+import { themeOf } from "@/lib/orgTheme";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import OrgFoundForm from "@/components/OrgFoundForm";
 
@@ -38,6 +39,7 @@ export default async function FoundPage({ slug, scope }: { slug: string; scope: 
   if (!org) notFound();
   if (scopeOfType(org.type) !== scope) permanentRedirect(publicPath(org, "/found"));
 
+  const t = themeOf(scope);
   const lieu = [org.city, org.state_id].filter(Boolean).join(", ");
 
   // Le formulaire reste en colonne étroite : on arrive ici par le QR code du
@@ -51,7 +53,7 @@ export default async function FoundPage({ slug, scope }: { slug: string; scope: 
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="inline-block h-2.5 w-2.5 flex-none rounded-full bg-[#2ea052]" aria-hidden="true" />
+              <span className={`inline-block h-2.5 w-2.5 flex-none rounded-full ${t.dot}`} aria-hidden="true" />
               <p className="truncate text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">
                 {org.name}{lieu ? ` · ${lieu}` : ""}
               </p>
@@ -71,9 +73,9 @@ export default async function FoundPage({ slug, scope }: { slug: string; scope: 
         </div>
       </header>
 
-      <div className="border-b border-[#1d5c33] bg-gradient-to-r from-[#1f5f34] to-[#2ea052]">
+      <div className={`border-b ${t.band}`}>
         <div className="mx-auto max-w-6xl px-5 py-6">
-          <p className="max-w-2xl text-[15.5px] leading-relaxed text-emerald-50">
+          <p className={`max-w-2xl text-[15.5px] leading-relaxed ${t.bandText}`}>
             Describe the item below. You then bring it to the front desk with the code shown on the next
             screen, and the desk confirms it has the item{org.finder_held_enabled !== false ? " — or you can keep it and leave a contact instead" : ""}.
           </p>
@@ -84,6 +86,7 @@ export default async function FoundPage({ slug, scope }: { slug: string; scope: 
           sinon deux bordures imbriquées. */}
       <main className="mx-auto max-w-xl px-5 pb-10 pt-3">
         <OrgFoundForm
+          scope={scope}
           orgSlug={org.slug}
           orgName={org.name}
           listHref={publicPath(org)}

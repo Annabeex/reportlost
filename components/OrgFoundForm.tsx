@@ -4,19 +4,23 @@
 // l'appareil photo s'ouvre directement, la photo est compressée avant l'envoi.
 import { useRef, useState } from "react";
 import { compressImage } from "@/lib/imageCompress";
+import { themeOf } from "@/lib/orgTheme";
+import type { OrgScope } from "@/lib/orgScope";
 
-const FIELD =
-  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[16px] text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100";
+const FIELD_BASE =
+  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[16px] text-gray-900 focus:outline-none focus:ring-2";
 const LABEL = "mb-1.5 block text-[15px] font-semibold text-gray-900";
 
 export default function OrgFoundForm({
+  scope,
   orgSlug,
   orgName,
   publicListing,
   allowKeep,
   listHref,
 }: {
-  /** Adresse de la page publique de l'établissement (/campus/<slug> ou /at/<slug>). */
+  scope: OrgScope;
+  /** Adresse de la page publique (/campus/<slug> ou /lost-property/<slug>). */
   listHref: string;
   orgSlug: string;
   orgName: string;
@@ -24,6 +28,8 @@ export default function OrgFoundForm({
   /** L'établissement accepte-t-il les signalements d'objets gardés par leur trouveur ? */
   allowKeep: boolean;
 }) {
+  const t = themeOf(scope);
+  const FIELD = `${FIELD_BASE} ${t.field}`;
   // desk = je le dépose à l'accueil ; finder = je le garde, on me contacte.
   const [heldBy, setHeldBy] = useState<"desk" | "finder">("desk");
   const today = new Date().toISOString().slice(0, 10);
@@ -92,7 +98,7 @@ export default function OrgFoundForm({
   if (code && heldBy === "finder") {
     return (
       <section className="mt-5 rounded-2xl border border-gray-200 bg-white px-5 py-8 text-center">
-        <p className="text-[19px] font-bold text-[#14532d]">Your report is recorded</p>
+        <p className={`text-[19px] font-bold ${t.codeText}`}>Your report is recorded</p>
         <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-gray-700">
           The {orgName} lost and found office now knows you have this item. When someone describes it
           correctly, the office gives them your email address ({form.finder_email}) so you can arrange
@@ -103,7 +109,7 @@ export default function OrgFoundForm({
           time: give the reference below and the desk finds your report, nothing to fill in again.
         </p>
         <p className="mt-4 text-[14px] font-semibold text-gray-600">Reference</p>
-        <p className="font-mono text-[34px] font-bold leading-tight tracking-[0.12em] text-[#14532d]">{code}</p>
+        <p className={`font-mono text-[34px] font-bold leading-tight tracking-[0.12em] ${t.codeText}`}>{code}</p>
       </section>
     );
   }
@@ -112,7 +118,7 @@ export default function OrgFoundForm({
     return (
       <section className="mt-5 rounded-2xl border border-gray-200 bg-white px-5 py-8 text-center">
         <p className="text-[15px] font-semibold text-gray-600">Your drop-off code</p>
-        <p className="mt-2 font-mono text-[56px] font-bold leading-none tracking-[0.12em] text-[#14532d]">{code}</p>
+        <p className={`mt-2 font-mono text-[56px] font-bold leading-none tracking-[0.12em] ${t.codeText}`}>{code}</p>
         <p className="mx-auto mt-5 max-w-sm text-[15px] leading-relaxed text-gray-700">
           Bring the item to the {orgName} front desk and show this code. The desk finds your
           description with it and confirms it has the item.
@@ -148,9 +154,9 @@ export default function OrgFoundForm({
               ["finder", "I keep it for now", "You leave your email so the owner can get it back from you."],
             ] as const).map(([v, title, sub]) => (
               <label key={v}
-                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3.5 ${heldBy === v ? "border-emerald-500 bg-emerald-50/60" : "border-gray-300 bg-white"}`}>
+                className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3.5 ${heldBy === v ? t.choiceOn : "border-gray-300 bg-white"}`}>
                 <input type="radio" name="held_by" value={v} checked={heldBy === v} onChange={() => setHeldBy(v)}
-                  className="mt-1 h-4 w-4 flex-none accent-emerald-600" />
+                  className={`mt-1 h-4 w-4 flex-none ${t.accentControl}`} />
                 <span>
                   <span className="block text-[15px] font-semibold text-gray-900">{title}</span>
                   <span className="block text-[13px] leading-snug text-gray-500">{sub}</span>
@@ -169,7 +175,7 @@ export default function OrgFoundForm({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="" className="h-56 w-full object-contain" />
             <div className="flex items-center justify-between bg-white px-4 py-2.5 text-[14px]">
-              <label htmlFor="found-photo" className="cursor-pointer font-semibold text-emerald-700">Retake</label>
+              <label htmlFor="found-photo" className={`cursor-pointer font-semibold ${t.accentLink}`}>Retake</label>
               <button type="button" onClick={clearPhoto} className="text-gray-400 hover:text-red-600">Remove</button>
             </div>
           </div>
@@ -228,7 +234,7 @@ export default function OrgFoundForm({
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">{err}</div>}
 
       <button type="submit" disabled={busy || preparing}
-        className="w-full rounded-xl bg-[#16a34a] px-6 py-4 text-[17px] font-bold text-white shadow-sm hover:bg-[#15913f] disabled:opacity-60">
+        className={`w-full rounded-xl ${t.submit} px-6 py-4 text-[17px] font-bold text-white shadow-sm disabled:opacity-60`}>
         {busy ? "Sending…" : heldBy === "finder" ? "Send my report" : "Get my drop-off code"}
       </button>
 

@@ -3,19 +3,24 @@
 // La preuve demandée (description précise) n'est jamais publiée : elle part à
 // l'établissement qui compare avec ses notes internes et sa photo.
 import { useState } from "react";
+import { themeOf } from "@/lib/orgTheme";
+import type { OrgScope } from "@/lib/orgScope";
 
 export default function OrgClaimForm({
+  scope,
   orgSlug,
   itemId,
   label,
   kind = "item",
 }: {
+  scope: OrgScope;
   orgSlug: string;
   itemId: string;
   label: string;
   /** "report" = signalement gardé par la personne qui a trouvé l'objet. */
   kind?: "item" | "report";
 }) {
+  const t = themeOf(scope);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", proof: "", website: "" });
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
@@ -42,26 +47,26 @@ export default function OrgClaimForm({
 
   if (state === "done") {
     return (
-      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
+      <span className={`rounded-full px-3 py-1 text-xs font-medium ${t.doneBadge}`}>
         ✓ Claim sent, the organization will contact you
       </span>
     );
   }
 
   const set = (k: string) => (e: any) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const cls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400";
+  const cls = `w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 ${t.field}`;
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="rounded-lg border border-[#2ea052] bg-white px-3 py-1.5 text-sm font-medium text-[#226638] hover:bg-[#f2fbf5]"
+        className={`rounded-lg border bg-white px-3 py-1.5 text-sm font-medium ${t.claimButton}`}
       >
         This might be mine
       </button>
       {open && (
-        <form onSubmit={submit} className="mt-3 w-full space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+        <form onSubmit={submit} className={`mt-3 w-full space-y-3 rounded-xl border p-4 ${t.claimPanel}`}>
           <p className="text-xs text-gray-600">
             Describe your {label.toLowerCase()} precisely (color, brand, contents, marks, where you
             think you lost it). The organization compares your description with what they hold before
@@ -77,7 +82,7 @@ export default function OrgClaimForm({
           <input value={form.website} onChange={set("website")} className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           {err && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
           <button type="submit" disabled={state === "busy"}
-            className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2 text-sm font-semibold text-white shadow disabled:opacity-60">
+            className={`rounded-lg ${t.claimSubmit} px-4 py-2 text-sm font-semibold text-white shadow disabled:opacity-60`}>
             {state === "busy" ? "Sending…" : "Send my claim"}
           </button>
         </form>

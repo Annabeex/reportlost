@@ -5,6 +5,9 @@
 // déjà public (catégorie, date, lieu). Rien de privé ne transite.
 import { useMemo, useState } from "react";
 import OrgClaimForm from "@/components/OrgClaimForm";
+import CategoryIcon from "@/components/orgPublic/CategoryIcon";
+import { themeOf } from "@/lib/orgTheme";
+import type { OrgScope } from "@/lib/orgScope";
 
 export type PublicItem = {
   id: string;
@@ -47,6 +50,7 @@ function matches(it: PublicItem, q: string, showDate: boolean, showPlace: boolea
 }
 
 export default function OrgPublicItems({
+  scope,
   orgSlug,
   orgName,
   items,
@@ -54,6 +58,7 @@ export default function OrgPublicItems({
   showDate = true,
   showPlace = true,
 }: {
+  scope: OrgScope;
   orgSlug: string;
   orgName: string;
   /** Réglages de l'établissement : la date et le lieu peuvent être masqués. */
@@ -62,6 +67,7 @@ export default function OrgPublicItems({
   items: PublicItem[];
   reports: PublicItem[];
 }) {
+  const t = themeOf(scope);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const shownItems = useMemo(() => (q ? items.filter((i) => matches(i, q, showDate, showPlace)) : items), [items, q, showDate, showPlace]);
@@ -74,6 +80,10 @@ export default function OrgPublicItems({
   const row = (it: PublicItem) => (
     <div key={`${it.kind}-${it.id}`} className="border-b border-gray-100 px-4 py-3.5 last:border-b-0 sm:px-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Repère de catégorie : trait seul, gris, jamais porteur d'un statut. */}
+        <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500">
+          <CategoryIcon label={it.label} size={19} />
+        </span>
         <span className="text-[15px] font-semibold text-gray-900">{it.label}</span>
         {(showDate || (showPlace && it.place)) && (
           <span className="text-[13.5px] text-gray-500">
@@ -82,7 +92,7 @@ export default function OrgPublicItems({
           </span>
         )}
         <span className="ml-auto" />
-        <OrgClaimForm orgSlug={orgSlug} itemId={it.id} label={it.label} kind={it.kind} />
+        <OrgClaimForm scope={scope} orgSlug={orgSlug} itemId={it.id} label={it.label} kind={it.kind} />
       </div>
     </div>
   );
@@ -109,7 +119,7 @@ export default function OrgPublicItems({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search: keys, backpack, library, September 14…"
                 autoComplete="off"
-                className="mt-3 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[15px] text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className={`mt-3 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[15px] text-gray-900 focus:outline-none focus:ring-2 ${t.field}`}
               />
               {q && compte === 0 && (
                 <p className="mt-2 text-[13px] text-gray-500">

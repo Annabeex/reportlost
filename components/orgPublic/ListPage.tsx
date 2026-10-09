@@ -27,6 +27,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import OrgPublicItems from "@/components/OrgPublicItems";
 import OrgLostReportForm from "@/components/OrgLostReportForm";
 import { portalBase, scopeOfType, publicPath, type OrgScope } from "@/lib/orgScope";
+import { themeOf } from "@/lib/orgTheme";
 
 // Page de démonstration (slug « demo-… ») : elle doit s'ouvrir sans compte pour
 // qui reçoit le lien, et ne JAMAIS apparaître dans Google — personne ne doit
@@ -107,6 +108,8 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
   if (scopeOfType(data.org.type) !== scope) permanentRedirect(publicPath(data.org));
   const { org, items, reports, listed } = data;
 
+  // Vert pour les campus, bleu pour les commissariats et les mairies.
+  const t = themeOf(scope);
   const lieu = [org.city, org.state_id].filter(Boolean).join(", ");
   const foundHref = publicPath(org, "/found");
   const held = items.length;
@@ -121,7 +124,7 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="inline-block h-2.5 w-2.5 flex-none rounded-full bg-[#2ea052]" aria-hidden="true" />
+              <span className={`inline-block h-2.5 w-2.5 flex-none rounded-full ${t.dot}`} aria-hidden="true" />
               <p className="truncate text-[11.5px] font-bold uppercase tracking-[0.08em] text-gray-500">
                 {TYPE_LABEL[org.type] || "Organization"}{lieu ? ` · ${lieu}` : ""}
               </p>
@@ -133,7 +136,7 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
           <nav className="flex flex-none flex-wrap items-center gap-2">
             <a
               href="#report"
-              className="rounded-lg bg-gradient-to-r from-[#26723e] to-[#2ea052] px-4 py-2.5 text-[14px] font-semibold text-white shadow-sm hover:brightness-105"
+              className={`rounded-lg ${t.cta} px-4 py-2.5 text-[14px] font-semibold text-white shadow-sm hover:brightness-105`}
             >
               I lost something
             </a>
@@ -148,9 +151,9 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
       </header>
 
       {/* ── Bandeau d'explication, pleine largeur ─────────────────────────── */}
-      <div className="border-b border-[#1d5c33] bg-gradient-to-r from-[#1f5f34] to-[#2ea052]">
+      <div className={`border-b ${t.band}`}>
         <div className="mx-auto max-w-6xl px-5 py-7">
-          <p className="max-w-3xl text-[15.5px] leading-relaxed text-emerald-50">
+          <p className={`max-w-3xl text-[15.5px] leading-relaxed ${t.bandText}`}>
             {org.public_intro
               ? org.public_intro
               : listed
@@ -160,15 +163,15 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
           {listed && (
             <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
               <div>
-                <div className="text-[26px] font-bold leading-none text-white">{held}</div>
-                <div className="mt-1 text-[12.5px] font-medium text-emerald-100">
+                <div className={`text-[26px] font-bold leading-none ${t.bandStrong}`}>{held}</div>
+                <div className={`mt-1 text-[12.5px] font-medium ${t.bandMuted}`}>
                   item{held === 1 ? "" : "s"} held at the office
                 </div>
               </div>
               {withFinder > 0 && (
                 <div>
-                  <div className="text-[26px] font-bold leading-none text-white">{withFinder}</div>
-                  <div className="mt-1 text-[12.5px] font-medium text-emerald-100">
+                  <div className={`text-[26px] font-bold leading-none ${t.bandStrong}`}>{withFinder}</div>
+                  <div className={`mt-1 text-[12.5px] font-medium ${t.bandMuted}`}>
                     still with the person who found {withFinder === 1 ? "it" : "them"}
                   </div>
                 </div>
@@ -184,6 +187,7 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
           <main className="min-w-0">
             {listed && (
               <OrgPublicItems
+                scope={scope}
                 orgSlug={org.slug}
                 orgName={org.name}
                 showDate={org.public_show_date !== false}
@@ -210,7 +214,7 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
                 Your report goes to the {org.name} lost and found office. It is compared with the items
                 held there, including items handed in later. Nothing you write here is published.
               </p>
-              <OrgLostReportForm orgSlug={org.slug} orgName={org.name} />
+              <OrgLostReportForm scope={scope} orgSlug={org.slug} orgName={org.name} />
             </section>
           </main>
 
@@ -237,14 +241,14 @@ export default async function ListPage({ slug, scope }: { slug: string; scope: O
 
             <Link
               href={foundHref}
-              className="block rounded-2xl border border-[#2ea052] bg-[#f2fbf5] px-5 py-4 hover:bg-[#e9f8ef]"
+              className={`block rounded-2xl border ${t.sideCard} px-5 py-4`}
             >
-              <div className="text-[15px] font-bold text-[#1f5f34]">You found something?</div>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-[#2a6b41]">
+              <div className={`text-[15px] font-bold ${t.sideTitle}`}>You found something?</div>
+              <p className={`mt-1 text-[13.5px] leading-relaxed ${t.sideBody}`}>
                 Describe it in two minutes. You can hand it in at the desk, or keep it and leave a contact
                 so the office can put the owner in touch with you.
               </p>
-              <span className="mt-2 inline-block text-[13.5px] font-semibold text-[#1f5f34] underline">
+              <span className={`mt-2 inline-block text-[13.5px] font-semibold ${t.sideTitle} underline`}>
                 Report a found item →
               </span>
             </Link>
