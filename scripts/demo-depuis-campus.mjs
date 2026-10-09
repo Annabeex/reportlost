@@ -47,6 +47,7 @@ const arg = (n, d) => (process.argv.find((a) => a.startsWith(`--${n}=`)) || "").
 const GO = process.argv.includes("--go");
 const LIST = process.argv.includes("--list");
 const ATTACH = process.argv.includes("--attach");
+const AJOUTER = process.argv.includes("--ajouter");
 const SRC = arg("from", "");
 const DST = arg("to", "demo-police");
 
@@ -172,6 +173,60 @@ const copierPhoto = async (ref) => {
   if (e2) { console.warn(`   ⚠ copie refusée : ${e2.message}`); return null; }
   return `${PREFIX}${cible}`;
 };
+
+// ── Mode --ajouter : on complète l'inventaire avec les objets photographiés ─
+if (AJOUTER) {
+  const avecPhoto = (items || []).filter(
+    (i) => estRef(i.image_url) || String(i.image_url || "").startsWith("http")
+  );
+  const { data: cibles } = await sb.from("found_items")
+    .select("id").eq("org_id", dst.id);
+  const dejaLa = (cibles || []).length;
+
+  console.log(`Objets photographiés dans la source : ${avecPhoto.length}`);
+  console.log(`Déjà présents dans la destination   : ${dejaLa}`);
+  console.log(`Après ajout                         : ${dejaLa + avecPhoto.length}\n`);
+  for (const i of avecPhoto) {
+    console.log(`  📷 ${String(i.public_label || "?").padEnd(20)} ${i.title}`);
+  }
+
+  if (!GO) { console.log("\n(simulation — relancer avec --ajouter --go pour écrire)\n"); process.exit(0); }
+
+  // Le compteur de références repart du plus grand numéro déjà émis.
+  const { data: org } = await sb.from("organizations").select("ref_seq").eq("id", dst.id).maybeSingle();
+  let seq = Number(org?.ref_seq || dejaLa);
+
+  let k = 0, lieu = 0;
+  for (const it of avecPhoto.slice().reverse()) {
+    const ref = await copierPhoto(it.image_url);
+    seq += 1;
+    const { error } = await sb.from("found_items").insert({
+      org_id: dst.id,
+      org_ref: `F-${String(seq).padStart(4, "0")}`,
+      title: it.title,
+      description: it.description,
+      image_url: ref,
+      date: it.date,
+      city: dst.city,
+      // Décor réécrit : le titre, la description et la photo restent ceux de
+      // la source, c'est leur cohérence qui fait la crédibilité de la démo.
+      dropoff_location: LIEUX[(lieu) % LIEUX.length],
+      storage_location: RANGEMENTS[(lieu++) % RANGEMENTS.length],
+      status: "stored",
+      legal_deadline: plusJours(it.date || new Date().toISOString(), GARDE_JOURS),
+      public_visible: it.public_visible !== false,
+      public_label: it.public_label,
+      labels: it.labels, logos: it.logos, objects: it.objects, ocr_text: it.ocr_text,
+    });
+    if (error) console.warn(`   ⚠ ${it.title} : ${error.message}`);
+    else k++;
+  }
+  await sb.from("organizations").update({ ref_seq: seq }).eq("id", dst.id);
+
+  console.log(`\n✅ ${k} objets photographiés ajoutés à ${dst.name}.`);
+  console.log(`   https://reportlost.org/lost-property/demo\n`);
+  process.exit(0);
+}
 
 // ── Mode --attach : on ne pose que les photos ─────────────────────────────
 // La destination garde ses objets, ses libellés et ses lieux. On apparie
