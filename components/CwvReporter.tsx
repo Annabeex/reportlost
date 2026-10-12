@@ -15,7 +15,8 @@
 //
 // Ce qui est envoyé : la valeur, le chemin de la page, le sélecteur CSS de
 // l'élément le plus déplacé, la largeur d'écran. Aucune donnée personnelle.
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 type Source = { node?: Node };
 type ShiftEntry = PerformanceEntry & {
@@ -42,6 +43,22 @@ function selecteur(node?: Node | null): string {
 }
 
 export default function CwvReporter() {
+  // ⚠️ Le chemin doit être celui de la page QUI A BOUGÉ, pas celui de la page
+  // affichée au moment de l'envoi.
+  //
+  // Avant : l'observateur était posé une fois pour toute la visite (useEffect
+  // avec [] — le layout racine ne se remonte pas lors d'une navigation
+  // interne), le maximum s'accumulait d'une page à l'autre, et `location.
+  // pathname` était lu à l'envoi, c'est-à-dire sur la DERNIÈRE page visitée.
+  // Un visiteur qui arrivait sur une page ville puis cliquait vers /report
+  // faisait donc enregistrer le décalage de la page ville au compte de
+  // /report. D'où un /report à 0,464 et des pages villes artificiellement
+  // propres, alors que Search Console, qui attribue correctement, accusait
+  // les pages villes.
+  const chemin = usePathname();
+  const cheminRef = useRef(chemin);
+  cheminRef.current = chemin;
+
   useEffect(() => {
     if (typeof PerformanceObserver === "undefined") return;
     if (!PerformanceObserver.supportedEntryTypes?.includes("layout-shift")) return;
@@ -55,6 +72,7 @@ export default function CwvReporter() {
     let max = 0;
     let pireValeur = 0;
     let pireSelecteur = "";
+    let pireChemin = cheminRef.current;
     let envoye = false;
 
     const obs = new PerformanceObserver((list) => {
@@ -68,7 +86,12 @@ export default function CwvReporter() {
           debut = t;
         }
         dernier = t;
-        if (fenetre > max) max = fenetre;
+        if (fenetre > max) {
+          max = fenetre;
+          // Le chemin est figé au moment du décalage : une navigation
+          // ultérieure ne doit pas réécrire l'adresse fautive.
+          pireChemin = cheminRef.current;
+        }
         if (e.value > pireValeur) {
           pireValeur = e.value;
           pireSelecteur = selecteur(e.sources?.[0]?.node);
@@ -90,7 +113,7 @@ export default function CwvReporter() {
       const corps = JSON.stringify({
         metric: "CLS",
         value: Number(max.toFixed(4)),
-        path: location.pathname.slice(0, 160),
+        path: String(pireChemin || location.pathname).slice(0, 160),
         selector: pireSelecteur,
         viewport_w: window.innerWidth,
         nav_type: (performance.getEntriesByType("navigation")[0] as any)?.type || null,
@@ -110,11 +133,16 @@ export default function CwvReporter() {
     window.addEventListener("pagehide", envoyer);
 
     return () => {
+      // Changement de page interne : on clôt la mesure de la page qu'on quitte
+      // avant d'en ouvrir une nouvelle. Sans ça, une visite de six pages ne
+      // produisait qu'une seule mesure, attribuée à la dernière.
+      envoyer();
       document.removeEventListener("visibilitychange", surVisibilite);
       window.removeEventListener("pagehide", envoyer);
       try { obs.disconnect(); } catch {}
     };
-  }, []);
+    // Dépend du chemin : une mesure par page visitée, et non une par visite.
+  }, [chemin]);
 
   return null;
 }
