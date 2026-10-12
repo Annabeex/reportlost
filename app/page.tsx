@@ -9,7 +9,15 @@ import categoryList from '@/lib/popularCategories';
 import { buildCityPath } from '@/lib/slugify';
 
 // --- IMPORTANT: carte interactive chargée à la demande, pas au-dessus du fold
-const UsaMap = dynamic(() => import('@/components/UsaMap'), { ssr: false });
+// Même défaut que le formulaire : sans `loading`, la carte occupe 0 px dans le
+// HTML envoyé, puis plusieurs centaines au montage, et le pied de page descend.
+// react-simple-maps dessine en 800×600, d'où le ratio 4/3 réservé ici.
+const UsaMap = dynamic(() => import('@/components/UsaMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full max-w-5xl mx-auto aspect-[4/3] animate-pulse rounded-xl bg-gray-100" aria-hidden="true" />
+  ),
+});
 
 
 

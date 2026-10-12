@@ -4,8 +4,41 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-const ReportForm = dynamic(() => import("./ReportForm").then(m => m.default), { ssr: false });
-const FoundItemsForm = dynamic(() => import("./FoundItemsForm").then(m => m.default), { ssr: false });
+// ⚠️ Le formulaire reste en ssr:false — il lit l'URL et le stockage local au
+// premier rendu, un rendu serveur produirait un HTML qui ne correspond pas.
+// MAIS il doit réserver sa place : sans `loading`, le serveur envoie une carte
+// blanche vide, le formulaire arrive ~400 px plus tard, et tout ce qui suit
+// descend d'un coup. C'est exactement le défaut corrigé sur les pages villes
+// (voir l'en-tête de CityLostFormBlock.tsx) ; il était resté sur /report, où
+// le formulaire vit réellement. Mesuré chez les visiteurs : CLS p75 0,464.
+//
+// La hauteur ci-dessous couvre l'étape 1 sur un téléphone. Si l'écran sautait
+// encore un peu, c'est le seul nombre à ajuster.
+const HAUTEUR_FORMULAIRE = "min-h-[620px] sm:min-h-[560px]";
+
+function Squelette() {
+  return (
+    <div className={`${HAUTEUR_FORMULAIRE} animate-pulse space-y-5`} aria-hidden="true">
+      <div className="h-5 w-2/5 rounded bg-gray-200" />
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-3.5 w-1/3 rounded bg-gray-200" />
+          <div className="h-12 rounded-xl bg-gray-100" />
+        </div>
+      ))}
+      <div className="h-12 rounded-xl bg-gray-200" />
+    </div>
+  );
+}
+
+const ReportForm = dynamic(() => import("./ReportForm").then(m => m.default), {
+  ssr: false,
+  loading: () => <Squelette />,
+});
+const FoundItemsForm = dynamic(() => import("./FoundItemsForm").then(m => m.default), {
+  ssr: false,
+  loading: () => <Squelette />,
+});
 
 type Props = {
   defaultCity?: string;
