@@ -15,7 +15,7 @@ import { buildCityPath } from '@/lib/slugify';
 const UsaMap = dynamic(() => import('@/components/UsaMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full max-w-5xl mx-auto aspect-[4/3] animate-pulse rounded-xl bg-gray-100" aria-hidden="true" />
+    <div className="w-full max-w-5xl mx-auto aspect-[4/3]" aria-hidden="true" />
   ),
 });
 
