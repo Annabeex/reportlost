@@ -20,13 +20,17 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const { data: row } = await sb
     .from("lost_items")
-    .select("title, description, primary_category, city, state_id, place_type, place_type_other, date, public_id")
+    .select("title, description, primary_category, city, state_id, place_type, place_type_other, date, public_id, slug")
     .eq("public_id", params.id)
     .maybeSingle();
 
   if (!row) return NextResponse.json({ ok: false, error: "dossier introuvable" }, { status: 404 });
 
   const email = `item${row.public_id || params.id}@reportlost.org`;
+  // Page publique du signalement : on la pousse dans la legende pour que le
+  // partage social ramene du monde dessus. L'URL est construite ici, jamais
+  // par le modele, qui la deformerait.
+  const lienPublic = row.slug ? `https://reportlost.org/lost/${row.slug}` : "";
   const info = [
     `Item: ${row.title || row.primary_category || "lost item"}`,
     `Description: ${row.description || ""}`,
@@ -60,6 +64,7 @@ Strict rules:
 - WITHHOLD THE IDENTIFYING DETAILS. The owner uses them to check that a person who claims to have found the item really has it. Describe the item only by its type, color, material and brand if known, plus at most ONE general feature. Never list engravings, initials, names, inscriptions, specific charms or pendants, stickers, scratches, missing stones, serial numbers, the contents of a bag or wallet, a phone case design or a lock screen. Write instead that the owner can describe further details to confirm ownership.
 - Do NOT include any dangerous or private detail: no home address, no exact GPS / Find My location, no travel route home. Only the general area (city / neighborhood).
 - Keep the first two blocks under 80 words in total.
+- Do NOT write any URL or web address. The link is added separately.
 
 REQUIRED LAYOUT: 5 blocks separated by BLANK LINES (write them as \\n\\n inside the JSON strings):
 1. Hook: "🔎 LOST in <City>, <State>: <short item name>"
@@ -81,7 +86,32 @@ Return JSON (all line breaks escaped as \\n, no raw newlines inside the strings)
     const j = parsed.ok ? parsed.value : {};
     // Filet de sécurité : le modèle glisse parfois un tiret malgré la consigne.
     const sansTirets = (t: string) => t.replace(/\s*[—–]\s*/g, ", ").replace(/ - /g, ", ");
-    return NextResponse.json({ ok: true, en: sansTirets(j.en || ""), fr: sansTirets(j.fr || "") });
+
+    // Le lien va AVANT la ligne de hashtags, qui est toujours la derniere ligne
+    // non vide commencant par #. Si on ne la trouve pas, on ajoute a la fin.
+    const avecLien = (texte: string, intitule: string) => {
+      if (!lienPublic || !texte) return texte;
+      if (texte.includes(lienPublic)) return texte;
+      const ligne = `🔗 ${intitule}: ${lienPublic}`;
+      const lignes = texte.split("\n");
+      let i = -1;
+      for (let k = lignes.length - 1; k >= 0; k--) {
+        const l = lignes[k].trim();
+        if (!l) continue;
+        if (l.startsWith("#")) i = k;
+        break;
+      }
+      if (i === -1) return `${texte}\n\n${ligne}`;
+      lignes.splice(i, 0, ligne, "");
+      return lignes.join("\n");
+    };
+
+    return NextResponse.json({
+      ok: true,
+      en: avecLien(sansTirets(j.en || ""), "Full report"),
+      fr: avecLien(sansTirets(j.fr || ""), "Signalement complet"),
+      lien: lienPublic,
+    });
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
