@@ -102,11 +102,134 @@ function canonicalUrl(stateSlug: string, citySlug: string) {
   )}`;
 }
 
+// ====== Description affichee dans les resultats de recherche ======
+// Jamais une tranche brute du guide : static_content est de la prose avec des
+// sauts de ligne, et le decouper a 160 donnait « ... In Chicago, the most vis »
+// dans Google, sauts de ligne compris. On normalise les blancs, on coupe sur
+// une fin de phrase, a defaut sur un mot, et si le reste est trop court pour
+// etre utile on retombe sur une formule ecrite.
+const DESC_MAX = 155;
+const DESC_MIN = 90;
+
+function metaDescription(
+  raw: string | null | undefined,
+  cityName: string,
+  stateAbbr: string
+): string {
+  const lieu = stateAbbr ? `${cityName}, ${stateAbbr}` : cityName;
+  const formule = `Lost something in ${lieu}? File one report, reach the local services most likely to hold it, and keep a searchable listing while you look.`;
+  const texte = String(raw || "").replace(/\s+/g, " ").trim();
+  if (!texte) return formule;
+  if (texte.length <= DESC_MAX) return texte;
+  const fenetre = texte.slice(0, DESC_MAX + 1);
+  const phrase = Math.max(
+    fenetre.lastIndexOf(". "),
+    fenetre.lastIndexOf("! "),
+    fenetre.lastIndexOf("? ")
+  );
+  if (phrase >= DESC_MIN) return fenetre.slice(0, phrase + 1).trim();
+  const mot = fenetre.lastIndexOf(" ");
+  if (mot >= DESC_MIN) return `${fenetre.slice(0, mot).trim()}…`;
+  return formule;
+}
+
+// ====== Villes historiques : descriptions ecrites a la main ======
+// New York, Los Angeles, Chicago, Houston et Phoenix n'ont pas de guide : leur
+// contenu est code en dur (NycContent.tsx et consorts), donc pas de cartes a
+// exploiter. Ce sont pourtant ~13 % du trafic organique, et l'essentiel des
+// impressions. Chaque organisme cite ci-dessous figure sur la page concernee ;
+// aucun n'est deduit. Cle : "ETAT/ville en minuscules".
+const META_MANUELLE: Record<string, string> = {
+  "NY/new york":
+    "Lost an item in New York? Start with MTA lost and found, the NYPD Property Clerk, or JFK and LaGuardia. File one report and keep a searchable listing.",
+  "CA/los angeles":
+    "One report gets routed to LA Metro lost and found, the LAPD and LAX. Your listing stays searchable in Los Angeles, CA.",
+  "IL/chicago":
+    "Lost an item in Chicago? Start with CTA and Metra lost and found, the CPD district covering where you lost it, or O'Hare and Midway. File one report.",
+  "TX/houston":
+    "Where found property turns up in Houston, TX: METRO lost and found, the Houston Police Department, IAH and Hobby. One report, and it keeps searching.",
+  "AZ/phoenix":
+    "One report gets routed to Valley Metro lost and found, Phoenix PD and Sky Harbor. Your listing stays searchable in Phoenix, AZ.",
+};
+
+// ====== Descriptions figees : on ne touche pas a ce qui marche ======
+// Une page dont le CTR est deja excellent n'a rien a gagner a une description
+// regeneree, et tout a perdre. Les villes listees ici gardent EXACTEMENT la
+// description servie aujourd'hui, troncature comprise. Cle : "ETAT/ville en
+// minuscules". A completer au fil des mesures Search Console.
+const META_FIGEE = new Set<string>([
+  "NC/boone", // 10,6 % de CTR en position 5,2 (28 j, oct. 2026)
+]);
+
+// ====== Description batie sur les contacts locaux du guide ======
+// Les pages qui cliquent le mieux sont celles dont la description nomme les
+// organismes reels : Boone fait 10,6 % de CTR avec « Boone Police Department,
+// Watauga Humane Society... », Chicago fait 0,9 % avec une phrase generique.
+// Les titres des cartes du guide sont exactement ces noms, verifies sur
+// sources au moment de la generation.
+//
+// Trois formulations, choisies de maniere STABLE par ville (un hachage du
+// couple etat/ville) : 8 656 pages avec la phrase au mot pres seraient un
+// signal de duplication, et une description qui change a chaque rendu serait
+// pire encore.
+const MODELES: ((liste: string, lieu: string) => string)[] = [
+  (liste, lieu) =>
+    `One report gets routed to ${liste}. Your listing stays searchable in ${lieu}.`,
+  (liste, lieu) =>
+    `Lost an item in ${lieu}? Start with ${liste}. File one report and keep a searchable listing.`,
+  (liste, lieu) =>
+    `Where found property turns up in ${lieu}: ${liste}. One report, and your listing keeps searching.`,
+];
+
+function indexModele(cle: string): number {
+  let h = 0;
+  for (let i = 0; i < cle.length; i++) h = (h * 31 + cle.charCodeAt(i)) >>> 0;
+  return h % MODELES.length;
+}
+
+// Limite dure : au-dela, Google coupe dans les resultats.
+const DESC_PLAFOND = 158;
+
+function descriptionDepuisCartes(
+  guide: any,
+  cityName: string,
+  stateAbbr: string
+): string | null {
+  const noms: string[] = Array.isArray(guide?.cards)
+    ? guide.cards
+        .map((c: any) => String(c?.title || "").replace(/\s+/g, " ").trim())
+        .filter((t: string) => t.length >= 4 && t.length <= 60)
+    : [];
+  if (noms.length < 2 || !cityName) return null;
+
+  const lieu = stateAbbr ? `${cityName}, ${stateAbbr}` : cityName;
+  const prefere = indexModele(`${stateAbbr}/${cityName.toLowerCase()}`);
+  const joindre = (xs: string[]) =>
+    xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+
+  // On part du modele attribue a la ville et on n'en change QUE s'il ne fait
+  // pas tenir deux noms. Retenir systematiquement le modele le plus court
+  // maximiserait le nombre de noms, mais donnerait 8 656 pages a la phrase
+  // identique : un signal de duplication qui couterait plus cher que le nom
+  // d'organisme gagne.
+  for (let k = 0; k < MODELES.length; k++) {
+    const modele = MODELES[(prefere + k) % MODELES.length];
+    let retenus: string[] = [];
+    for (const nom of noms) {
+      const essai = [...retenus, nom];
+      if (modele(joindre(essai), lieu).length > DESC_PLAFOND) break;
+      retenus = essai;
+    }
+    if (retenus.length >= 2) return modele(joindre(retenus), lieu);
+  }
+  return null;
+}
+
 function _fallbackMeta(stateSlug: string, citySlug: string): Metadata {
   const stateUp = (stateSlug || "").toUpperCase();
   const cityName = cityNameFromParam(citySlug) || citySlug || "this city";
   const title = cityName && stateUp ? `Lost & Found in ${cityName}, ${stateUp}` : `Lost & Found – ReportLost.org`;
-  const description = `Report or find lost items in ${cityName || "this city"}. Create a free public listing or choose optional team-assisted search.`;
+  const description = metaDescription(null, cityName || "this city", stateUp);
   const canonical = canonicalUrl(stateSlug, citySlug);
 
   return {
@@ -148,36 +271,49 @@ export async function generateMetadata({
 
     const canonical = canonicalUrl(data.state_id ?? state, citySlug);
     const title = data.static_title || `Lost & Found in ${data.city_ascii}, ${data.state_name}`;
-    const description = data.static_content
-      ? String(data.static_content).slice(0, 160)
-      : `Report or find lost items in ${data.city_ascii}. Create a free public listing or choose optional team-assisted search.`;
 
-    // ====== Indexation conditionnee a la substance reelle de la page ======
-    // Une ville n'entre dans l'index que si elle a un guide publie, ou si elle
-    // est assez grande pour meriter une page sans guide. Cette regle existait
-    // dans generateMetadata.ts, un fichier que Next.js n'a jamais charge : la
-    // seule fonction prise en compte est celle-ci, dans page.tsx.
-    // SECURITE : toute erreur laisse la page indexable, pour qu'un incident de
-    // base ne puisse pas desindexer le site en masse.
-    let indexable = true;
+    // Une seule lecture du guide publie : elle sert la description ET
+    // l'indexation. SECURITE : toute erreur laisse la page indexable et
+    // retombe sur static_content, pour qu'un incident de base ne puisse ni
+    // desindexer le site en masse ni vider ses descriptions.
+    let guidePublie: any = null;
+    let guideLu = false;
     try {
-      const population = Number((data as any).population || 0);
-      if (population < 100000) {
-        const admin = getSupabaseAdmin({ fresh: false });
-        if (admin) {
-          const { data: g, error: gErr } = await admin
-            .from("city_guides")
-            .select("id")
-            .eq("state_id", stateAbbr)
-            .eq("city_slug", String(data.city_ascii || "").trim().toLowerCase())
-            .eq("status", "published")
-            .maybeSingle();
-          if (!gErr) indexable = !!g;
+      const admin = getSupabaseAdmin({ fresh: false });
+      if (admin) {
+        const { data: g, error: gErr } = await admin
+          .from("city_guides")
+          .select("id, guide")
+          .eq("state_id", stateAbbr)
+          .eq("city_slug", String(data.city_ascii || "").trim().toLowerCase())
+          .eq("status", "published")
+          .maybeSingle();
+        if (!gErr) {
+          guideLu = true;
+          guidePublie = g || null;
         }
       }
     } catch {
-      indexable = true;
+      guideLu = false;
     }
+
+    const villeNom = String(data.city_ascii || "");
+    const etatAbbr = String(data.state_id || "").toUpperCase();
+    const cleVille = `${etatAbbr}/${villeNom.trim().toLowerCase()}`;
+    const description =
+      META_MANUELLE[cleVille] ||
+      (META_FIGEE.has(cleVille)
+        ? String(data.static_content || "").slice(0, 160) ||
+          metaDescription(null, villeNom, etatAbbr)
+        : descriptionDepuisCartes(guidePublie?.guide, villeNom, etatAbbr) ||
+          metaDescription(data.static_content, villeNom, etatAbbr));
+
+    // ====== Indexation conditionnee a la substance reelle de la page ======
+    // Une ville n'entre dans l'index que si elle a un guide publie, ou si elle
+    // est assez grande pour meriter une page sans guide.
+    // SECURITE : lecture impossible => la page reste indexable.
+    const population = Number((data as any).population || 0);
+    const indexable = population >= 100000 || !guideLu || !!guidePublie;
 
     return {
       title,

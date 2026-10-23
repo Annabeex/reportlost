@@ -252,7 +252,7 @@ Règles de STYLE :
 - JAMAIS de tiret cadratin ni de tiret de ponctuation ("—" ou " - "), utilise des virgules à la place.
 - N'utilise JAMAIS le mot "guide" dans les textes visibles, préfère "what to do", "where to report", "the right channel".
 - Icônes emoji + iconBg parmi : bg-blue-100, bg-yellow-100, bg-indigo-100, bg-sky-100, bg-green-100, bg-rose-100.
-- state="${stateAbbr}", citySlug="${cityName.toLowerCase()}", nearby=[].
+- state="${stateAbbr}", citySlug="${cityName.trim().toLowerCase()}", nearby=[].
 - disclaimer : indépendance de ReportLost vis-à-vis des entités citées.
 Réponds UNIQUEMENT avec le JSON (pas de markdown).${smallTownRule}
 
@@ -345,7 +345,7 @@ Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA
       guide.nearby = guide.nearby || [];
     }
     guide.state = stateAbbr;
-    guide.citySlug = cityName.toLowerCase();
+    guide.citySlug = cityName.trim().toLowerCase();
     // Filets de sécurité : tableaux toujours présents (le rendu ne doit jamais casser)
     for (const k of ["steps", "intro", "cards", "areas", "social", "faq", "nearby"]) {
       if (!Array.isArray(guide[k])) guide[k] = [];
@@ -356,7 +356,10 @@ Réponds UNIQUEMENT avec le JSON complet et valide.\n\nSchéma :\n${GUIDE_SCHEMA
     const { error: upErr } = await sb.from("city_guides").upsert(
       {
         state_id: stateAbbr,
-        city_slug: cityName.toLowerCase(),
+        // trim() obligatoire : un espace en queue a deja mis « milford city »
+        // hors index (la page cherche la valeur trimmee) et produit une URL
+        // malformee dans sitemap-cities.xml.
+        city_slug: cityName.trim().toLowerCase(),
         tone_version: 2,
         guide,
         status,

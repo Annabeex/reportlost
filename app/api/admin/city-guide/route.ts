@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       .from("city_guides")
       .select("state_id, city_slug, guide, status, verified, updated_at")
       .eq("state_id", state.toUpperCase())
-      .eq("city_slug", city.toLowerCase())
+      .eq("city_slug", city.trim().toLowerCase())
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, row: data });
@@ -141,7 +141,7 @@ export async function PUT(req: NextRequest) {
     else if (guide || status === "published") patch.verified = true;
 
     const stateUp = String(state).toUpperCase();
-    const cityLow = String(city).toLowerCase();
+    const cityLow = String(city).trim().toLowerCase();
 
     const { error } = await sb
       .from("city_guides")
