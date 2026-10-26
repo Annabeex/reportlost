@@ -4,7 +4,6 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { sendMailDirect } from "@/lib/mailer";
-import { tierFromPaid } from "@/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as any,
@@ -104,6 +103,18 @@ export async function POST(req: NextRequest) {
       return null;
     }
 
+    // 🇨🇦 Paiements canadiens (devise CAD ou métadonnée market=ca) : ils sont
+    // traités par le webhook canadien (/api/ca/stripe-webhook). Celui-ci les ignore.
+    {
+      const obj = (event.data?.object ?? {}) as { currency?: string; metadata?: Record<string, string> };
+      if (
+        String(obj.currency || "").toLowerCase() === "cad" ||
+        String(obj.metadata?.market || "").toLowerCase() === "ca"
+      ) {
+        return json({ received: true, skipped: "ca" });
+      }
+    }
+
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
@@ -125,12 +136,7 @@ export async function POST(req: NextRequest) {
         }
 
         const reportId = String(row.id);
-        // Montant réellement payé, dans la devise du paiement (USD ou CAD).
-        const paidRaw = (pi.amount_received ?? pi.amount ?? 0) / 100;
-        const paidCurrency = String(pi.currency || "usd").toLowerCase();
-        // Palier interne (référence US : 12 / 25), lu par tout le reste du site.
-        // USD : identique au montant payé, comme avant. CAD : 17 → 12, 35 → 25.
-        const paidAmount = tierFromPaid(paidRaw, paidCurrency);
+        const paidAmount = (pi.amount_received ?? pi.amount ?? 0) / 100;
 
         // La veille démarre au paiement pour TOUTE formule payante. Elle était
         // Start monitoring for any paid search service. The admin override remains
@@ -145,8 +151,6 @@ export async function POST(req: NextRequest) {
             patch.paid = true;
             patch.paid_at = new Date().toISOString();
             patch.contribution = paidAmount;
-            patch.paid_amount = paidRaw;
-            patch.paid_currency = paidCurrency;
           }
 
           // next_search_at n'a pas de valeur par défaut, et le worker filtre sur
@@ -162,20 +166,10 @@ export async function POST(req: NextRequest) {
           }
 
           if (Object.keys(patch).length) {
-            let { error: upErr } = await supabaseAdmin
+            const { error: upErr } = await supabaseAdmin
               .from("lost_items")
               .update(patch)
               .eq("id", reportId);
-            // Filet de sécurité : si les colonnes paid_amount / paid_currency
-            // n'existent pas encore (migration non lancée), on enregistre le
-            // paiement sans elles plutôt que de le perdre.
-            if (upErr && /paid_amount|paid_currency/.test(String(upErr.message || ""))) {
-              const { paid_amount, paid_currency, ...rest } = patch as Record<string, any>;
-              ({ error: upErr } = await supabaseAdmin
-                .from("lost_items")
-                .update(rest)
-                .eq("id", reportId));
-            }
             if (upErr) console.error("❌ Supabase update error:", upErr);
           }
         } catch (e) {

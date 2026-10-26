@@ -9,7 +9,6 @@ import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { redactPublic } from "@/lib/redactPublic";
 import { stateNameFromAbbr } from "@/lib/utils";
-import { isCaProvince, provinceName } from "@/lib/canada/canadaData";
 
 export const revalidate = 3600; // ISR 1h : la fraîcheur est tout l'intérêt
 
@@ -72,7 +71,7 @@ export default async function LostIndexPage() {
   const groups = Array.from(byState.entries())
     .map(([code, list]) => ({
       code,
-      name: stateNameFromAbbr(code) || (isCaProvince(code) ? provinceName(code) : code),
+      name: stateNameFromAbbr(code) || code,
       list: list.slice(0, 6),
       total: list.length,
     }))
@@ -116,15 +115,13 @@ export default async function LostIndexPage() {
             <section key={g.code}>
               <div className="mb-3 flex items-baseline justify-between gap-4 border-b border-gray-200 pb-2">
                 <h2 className="text-lg font-semibold text-gray-900">{g.name}</h2>
-                {!isCaProvince(g.code) && (
-                  <Link
-                    prefetch={false}
-                    href={`/lost-and-found/${g.code.toLowerCase()}`}
-                    className="flex-none text-[13px] text-blue-700 hover:underline"
-                  >
-                    Lost &amp; found guide for {g.name} →
-                  </Link>
-                )}
+                <Link
+                  prefetch={false}
+                  href={`/lost-and-found/${g.code.toLowerCase()}`}
+                  className="flex-none text-[13px] text-blue-700 hover:underline"
+                >
+                  Lost &amp; found guide for {g.name} →
+                </Link>
               </div>
               <ul>
                 {g.list.map((r) => {
