@@ -123,7 +123,7 @@ export default async function Page({
     const r1 = await supabase
       .from("lost_items")
       .select(
-        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at"
+        "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at, country"
       )
       .eq("public_id", incoming)
       .limit(1)
@@ -143,7 +143,7 @@ export default async function Page({
         const rNum = await supabase
           .from("lost_items")
           .select(
-            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at"
+            "id, public_id, created_at, title, description, city, state_id, date, first_name, email, contribution, paid, primary_category, case_token, case_followup, case_followup_updated_at, search_status, last_searched_at, next_search_at, country"
           )
           .eq("public_id", num)
           .limit(1)
@@ -187,6 +187,11 @@ export default async function Page({
       ["1", "true", "yes"].includes(
         String(searchParams.edit[0] || "").toLowerCase()
       ));
+
+  // 🇨🇦 Un dossier canadien s'affiche sous /ca/case (sauf en mode édition équipe).
+  if (!isEdit && (data as any).country === "CA") {
+    redirect(`/ca/case/${String(data.public_id ?? incoming)}${qs}`);
+  }
 
   // 🔒 Vue publique : exige le jeton secret (?t=...) du dossier.
   // Sans lui, aucune donnée n'est affichée (les IDs à 5 chiffres sont énumérables).

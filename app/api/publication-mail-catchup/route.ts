@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await sb
     .from("lost_items")
     .select("id, public_id, created_at, email, contribution")
+    .eq("country", "US") // 🇨🇦 les dossiers canadiens ont leur propre rattrapage (/api/ca/…)
     .or("publication_mail_sent.is.null,publication_mail_sent.eq.false")
     .lte("created_at", avant)
     .gte("created_at", apres)

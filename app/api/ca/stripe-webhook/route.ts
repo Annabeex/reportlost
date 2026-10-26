@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
 
             const caseUrl =
               (row as any).case_token && row.public_id
-                ? `${base}/case/${encodeURIComponent(String(row.public_id))}?t=${encodeURIComponent(
+                ? `${base}/ca/case/${encodeURIComponent(String(row.public_id))}?t=${encodeURIComponent(
                     String((row as any).case_token)
                   )}`
                 : "";

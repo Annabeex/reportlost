@@ -15,6 +15,10 @@
     {
       "path": "/api/publication-mail-catchup",
       "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/ca/publication-mail-catchup",
+      "schedule": "25 * * * *"
     }
   ]
 }

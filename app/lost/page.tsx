@@ -47,6 +47,7 @@ async function getRecent(): Promise<Row[]> {
     const { data, error } = await sb
       .from("lost_items")
       .select("slug, title, city, state_id, created_at")
+      .eq("country", "US") // 🇨🇦 les signalements canadiens vivent sous /ca/lost
       .not("slug", "is", null)
       .order("created_at", { ascending: false })
       .limit(120);

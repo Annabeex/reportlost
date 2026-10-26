@@ -269,7 +269,7 @@ export default async function LostReportPage({ params }: PageProps) {
       transport_type, transport_type_other,
       place_type, place_type_other,
       loss_neighborhood, loss_street,
-      object_photo, email, created_at
+      object_photo, email, created_at, country
     `
     )
     .eq("slug", wantedSlug)
@@ -295,6 +295,8 @@ export default async function LostReportPage({ params }: PageProps) {
   if (!data) notFound();
 
   // 3) Canonical redirect if slug differs
+  // 🇨🇦 Un signalement canadien s'affiche sous /ca/lost.
+  if ((data as any).country === "CA") redirect(`/ca/lost/${data.slug}`);
   if (data.slug !== wantedSlug) redirect(`/lost/${data.slug}`);
 
   // 4) ZIP lookup from us_cities.main_zip (robust matching) — conservé même si non affiché

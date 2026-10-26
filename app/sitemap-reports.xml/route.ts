@@ -25,6 +25,7 @@ export async function GET() {
     const { data, error } = await sb
       .from("lost_items")
       .select("slug, created_at, description")
+      .eq("country", "US") // 🇨🇦 les signalements canadiens vivent sous /ca/lost
       .not("slug", "is", null)
       .gte("created_at", cutoff)
       .order("created_at", { ascending: false })
