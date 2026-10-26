@@ -1,162 +1,100 @@
-# Canada launch — structure d'URL (prêt « à froid »)
+# Canada — architecture retenue
 
-But : préparer le lancement Canada **sans casser le SEO US existant** et sans acheter de ccTLD
-(reportlost.ca est interdit sans présence canadienne). Un seul domaine, `reportlost.org`,
-avec le Canada en sous-répertoires de locale. Australie plus tard, même patron.
-
----
-
-## 1. Principe : 2 axes, pas 1
-
-- **Langue** = axe du haut → préfixe de locale : `/en-ca/`, `/fr-ca/` (plus tard `/en-au/`, `/en-gb/`).
-- **Géo** = en dessous → province sur 2 lettres (ON, QC, BC…), puis ville.
-
-⚠️ On n'utilise **pas** `/qc` comme un frère de `/ca`. Le Québec est une province, pas une langue.
-Le français est une locale (`fr-ca`) qui couvre QC **et** les francophones hors-Québec.
-
-Les codes de locale sont en BCP-47 (`en-ca`, `fr-ca`) → ils se mappent 1:1 sur les balises `hreflang`.
+Décision du 26 octobre 2026. Remplace le plan de juillet 2026 (`/en-ca/`, `/fr-ca/`),
+abandonné. Brief complet : projet Claude « Reportlost.org canada + Australie »,
+`brief-international-canada.md`.
 
 ---
 
-## 2. Schéma d'URL retenu
+## 1. Un seul domaine, un sous-dossier par pays
 
-| Marché | Motif d'URL | Exemple |
-|---|---|---|
-| **US (existant — NE PAS TOUCHER)** | `/lost-and-found/{state}/{city}` | `/lost-and-found/ny/new-york` |
-| **Canada — anglais** | `/en-ca/lost-and-found/{province}/{city}` | `/en-ca/lost-and-found/on/toronto` |
-| **Canada — français** | `/fr-ca/lost-and-found/{province}/{ville}` | `/fr-ca/lost-and-found/qc/montreal` |
-| Catégories CA (EN) | `/en-ca/lost-and-found/category/{category}` | `/en-ca/lost-and-found/category/wallet` |
-| Catégories CA (FR) | `/fr-ca/lost-and-found/category/{categorie}` | `/fr-ca/lost-and-found/category/portefeuille` |
+- `reportlost.org/ca/` : hérite directement de l'autorité du domaine.
+- Pas de sous-domaine, pas de `.ca`. Le registre `.ca` (CIRA) exige une présence
+  au Canada, donc cette option est écartée de toute façon.
+- **Les États-Unis restent à la racine, sans migration.** Le schéma est
+  volontairement asymétrique : US à la racine, `/ca/` pour le Canada, `/au/` plus tard.
+- Un seul préfixe `/ca/` pour les deux langues permet d'avoir **une seule
+  propriété Search Console « Canada »**, celle qui sert à mesurer la porte de la phase 4.
 
-Redirections 301 de confort :
-- `/ca`  → `/en-ca`
-- `/ca/*` → `/en-ca/*`
-- (défensif) `reportlost.com/*` → `reportlost.org/*`
-
-Le **US reste à la racine, sans préfixe** = c'est le `x-default` / `en-us`. On ne rétro-préfixe
-jamais des URLs déjà indexées : on perdrait le référencement acquis pour rien.
-
----
-
-## 3. Arborescence Next.js à créer
-
-On garde des **dossiers statiques** `en-ca/` et `fr-ca/` (surtout PAS un `[locale]` dynamique à la
-racine de `app/`, qui capterait `/lost`, `/case`, etc. — piège classique du app-router).
+## 2. Plan d'URL (pas de slash final, comme le reste du site)
 
 ```
-app/
-  lost-and-found/                      # US — inchangé
-    [state]/[city]/page.tsx
-
-  en-ca/
-    lost-and-found/
-      [province]/
-        [city]/page.tsx
-        generateStaticParams.ts
-        generateMetadata.ts
-      [province]/page.tsx
-      category/[category]/page.tsx
-  fr-ca/
-    lost-and-found/
-      [province]/
-        [city]/page.tsx
-        generateStaticParams.ts
-        generateMetadata.ts
-      [province]/page.tsx
-      category/[category]/page.tsx
+/ca                              hub Canada, anglais
+/ca/fr                           hub Canada, français
+/ca/<province>                   ex. /ca/on
+/ca/<province>/<city>            ex. /ca/on/toronto
+/ca/fr/<province>                ex. /ca/fr/qc
+/ca/fr/<province>/<ville>        ex. /ca/fr/qc/montreal
+/ca/category/<category>          catégories, anglais
+/ca/fr/categorie/<categorie>     catégories, français
+/ca/found/<province>             « I found something », par PROVINCE (voir §4)
+/ca/fr/trouve/<province>         « J'ai trouvé un objet », par PROVINCE
+/lost/<slug>                     signalements : restent globaux
 ```
 
-Anti-duplication de code : factorise la vraie page dans un composant partagé
-`components/LostAndFoundCityPage.tsx` qui prend une prop `locale: 'en-ca' | 'fr-ca'` et
-`country: 'CA'`. Les deux `page.tsx` (en-ca / fr-ca) ne font que l'importer avec la bonne locale.
-Idem pour la logique de données US → paramétrer par pays plutôt que copier.
+- Le slug de ville est identique en EN et en FR (`montreal`). Les accents vont
+  dans le contenu, pas dans l'URL. Le slug passe par `toCaSlug()` (lib/canada/canadaData.ts).
+- `/en-ca` et `/en-ca/*` sont redirigés en 301 vers `/ca` (ancien brouillon jamais indexé).
+- Croisement ville × catégorie : pas avant la phase 5.
 
----
+## 3. hreflang et canonique
 
-## 4. Provinces (ISO 3166-2:CA) — à ajouter
+- Toujours via `caBilingualAlternates()` (lib/canada/canadaData.ts) : canonique
+  auto-référente, paires `en-CA` / `fr-CA` réciproques, `x-default` = version anglaise.
+- Une page sans jumelle n'a **pas** de hreflang.
+- Le groupe canadien ne déclare pas de hreflang vers les pages US, et la page
+  d'accueil US n'est pas modifiée.
+- Limite connue : `<html lang="en">` est fixé dans app/layout.tsx. Les pages
+  françaises posent `lang="fr-CA"` sur leur conteneur. Google détecte la langue
+  à partir du contenu et du hreflang, pas de l'attribut `lang`.
+- **À traiter avant la phase 3** : la Navbar et le Footer sont en anglais sur
+  les pages `/ca/fr`.
 
-```ts
-// app/en-ca/lost-and-found/[province]/generateStaticParams.ts
-export const caProvinces = [
-  'AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT',
-];
-export function generateStaticParams() {
-  return caProvinces.map(p => ({ province: p.toLowerCase() }));
-}
-```
+## 4. Branche « trouvé » : par province, pas par ville (proposé, à confirmer)
 
-Libellés pour l'affichage / le contenu :
+En Ontario, une page « trouvé » par ville reprendrait les contacts du guide de
+la ville (police, transport), ce qui donnerait des quasi-doublons. Le cadre légal,
+lui, dépend de la province. Donc :
 
-| Code | Anglais | Français |
-|---|---|---|
-| AB | Alberta | Alberta |
-| BC | British Columbia | Colombie-Britannique |
-| MB | Manitoba | Manitoba |
-| NB | New Brunswick | Nouveau-Brunswick |
-| NL | Newfoundland and Labrador | Terre-Neuve-et-Labrador |
-| NS | Nova Scotia | Nouvelle-Écosse |
-| NT | Northwest Territories | Territoires du Nord-Ouest |
-| NU | Nunavut | Nunavut |
-| ON | Ontario | Ontario |
-| PE | Prince Edward Island | Île-du-Prince-Édouard |
-| QC | Quebec | Québec |
-| SK | Saskatchewan | Saskatchewan |
-| YT | Yukon | Yukon |
+- chaque guide de ville contient une section « Found something? » ;
+- une page « trouvé » par province porte le cadre légal (`/ca/found/on`,
+  `/ca/fr/trouve/qc`, cette dernière autour de l'art. 942 C.c.Q.) ;
+- des pages par ville seulement si la Search Console montre des requêtes
+  « found… » sur les guides.
 
-**Ordre de priorité SEO** (ne pas tout attaquer d'un coup) : ON, QC, BC, AB couvrent ~86 % de
-la population. Seed les 13 dans la base « à froid », mais concentre le contenu/veille sur ces 4.
+## 5. Données : le Canada est isolé du corpus US
 
-Villes de tête à seeder en premier :
-- **ON** : Toronto, Ottawa, Mississauga, Hamilton, London, Brampton
-- **QC** : Montréal, Québec, Laval, Gatineau, Longueuil
-- **BC** : Vancouver, Victoria, Surrey, Burnaby
-- **AB** : Calgary, Edmonton
+| Table | Rôle |
+|---|---|
+| `ca_cities` | villes CA (+ `city_fr`, `region`) |
+| `ca_city_pois` | organismes par ville (police, transport, aéroport…) |
+| `ca_city_guides` | guides CA, **un par ville et par langue**, clé `(province_id, city_ascii, lang)` |
+| `lost_items.country` | `US` par défaut, `CA` pour un signalement canadien |
 
----
+**Ne jamais insérer un guide canadien dans `city_guides`.** `sitemap-cities.xml`
+déclarerait alors `/lost-and-found/on/toronto` (404) dans le sitemap US. Les
+lecteurs US de `city_guides` (sitemap, pages ville/État, comtés, admin, scripts
+d'audit) ne filtrent pas par pays.
 
-## 5. hreflang + canonical (obligatoire pour le bilingue)
+`ca_city_guides` interdit par contrainte les espaces parasites et les majuscules
+dans `province_id` / `city_ascii`.
 
-Sur **chaque** page canadienne, déclarer le cluster de langue. Exemple pour Montréal :
+Migration : `canada-phase1.sql` (à lancer avant le déploiement).
 
-```html
-<link rel="alternate" hreflang="en-ca" href="https://reportlost.org/en-ca/lost-and-found/qc/montreal" />
-<link rel="alternate" hreflang="fr-ca" href="https://reportlost.org/fr-ca/lost-and-found/qc/montreal" />
-<link rel="alternate" hreflang="x-default" href="https://reportlost.org/en-ca/lost-and-found/qc/montreal" />
-<link rel="canonical" href="https://reportlost.org/fr-ca/lost-and-found/qc/montreal" />
-```
+## 6. Sitemap
 
-Règles :
-- `canonical` = l'URL de la page elle-même (self-canonical), jamais l'autre langue.
-- Toute page anglaise pointe sa jumelle française et vice-versa. Pas de jumelle = pas de hreflang.
-- `x-default` du cluster canadien = la version **en-ca**.
-- Le slug de ville reste identique EN/FR (`montreal`) pour simplifier l'appariement ; les
-  accents restent dans le **contenu**, pas dans l'URL.
+- `sitemap-ca.xml` : vide en phase 1. Ensuite, il ne contient QUE les guides
+  publiés de `ca_city_guides`, avec leurs `xhtml:link` hreflang.
+- Déclaré dans `public/sitemap.xml`.
 
-À gérer dans `generateMetadata.ts` (Next.js `alternates.languages`).
+## 7. Règle d'indexation (proposée)
 
----
+Pas de seuil de population au Canada : **une ville n'est indexable que si son
+guide est publié.**
 
-## 6. Sitemap & robots
+## 8. État des phases
 
-- Sitemaps séparés par locale : `/sitemap-en-ca.xml`, `/sitemap-fr-ca.xml` (garder `/sitemap.xml` US).
-- Index de sitemaps qui les référence tous les trois.
-- Chaque entrée de sitemap peut aussi porter ses `xhtml:link` hreflang (recommandé Google).
-- `robots.txt` : autoriser `/en-ca/` et `/fr-ca/`, garder l'admin bloqué.
-
----
-
-## 7. Checklist « prêt à froid » (à faire maintenant, lancer plus tard)
-
-- [ ] Acheter **reportlost.com** en redirection 301 défensive vers `.org` (ne PAS acheter .ca / .com.au).
-- [ ] Sourcer la base villes CA au **même format** que la base US actuelle (province, ville, slug, pop.).
-- [ ] Ajouter `caProvinces` + libellés EN/FR (tableau §4).
-- [ ] Créer les dossiers `app/en-ca/` et `app/fr-ca/` (routes fantômes, `noindex` tant que le contenu n'est pas prêt).
-- [ ] Factoriser la page ville en composant partagé paramétré par `locale` / `country`.
-- [ ] Générer les guides EN pour ON/BC/AB (réutilise les prompts US mot pour mot).
-- [ ] Générer les guides FR pour QC (atout : savoir-faire francophone du partenaire).
-- [ ] Câbler hreflang + canonical + sitemaps par locale.
-- [ ] Garder tout en `noindex` jusqu'au signal de lancement.
-
-**Signal de déclenchement** (rappel stratégie) : n'ouvre l'indexation Canada que quand le US a
-validé la mécanique — ex. « 3 mois consécutifs de croissance des payants ». D'ici là, le Canada
-dort, prêt, sans diviser ton attention.
+- [x] Phase 1 : architecture, migration, routage `/ca` + `/ca/fr` (2 pages de test noindex), sitemap vide
+- [ ] Phase 1 : charger `ca_cities` depuis Statistique Canada
+- [ ] Porte : pages US vérifiées intactes après le déploiement
+- [ ] Phase 2 : Ontario, 10 villes

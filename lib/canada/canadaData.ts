@@ -1,9 +1,15 @@
 // lib/canada/canadaData.ts
-// Données de base Canada (provinces + villes majeures) pour /en-ca.
-// Volontairement minimal : la richesse (POIs, guides) vit en base (ca_cities + city_guides),
-// comme côté US. Ici on ne garde que ce qu'il faut pour la home draft.
+// Données et chemins du marché canadien.
+//
+// Schéma d'URL retenu (voir CANADA-LAUNCH-URL-STRUCTURE.md) :
+//   /ca                          hub Canada, anglais
+//   /ca/fr                       hub Canada, français
+//   /ca/<province>/<city>        page ville, anglais      ex. /ca/on/toronto
+//   /ca/fr/<province>/<ville>    page ville, français     ex. /ca/fr/qc/montreal
+// Les États-Unis restent à la racine (/lost-and-found/...), on n'y touche pas.
+// Pas de slash final, comme le reste du site.
 
-import { toCitySlug } from "@/lib/slugify";
+import type { Metadata } from "next";
 
 export type CaProvince = { code: string; en: string; fr: string };
 
@@ -24,23 +30,52 @@ export const caProvinces: CaProvince[] = [
   { code: "YT", en: "Yukon", fr: "Yukon" },
 ];
 
-export const provinceName = (code: string): string =>
-  caProvinces.find((p) => p.code === code.toUpperCase())?.en ?? code;
+export const CA_PROVINCE_CODES = caProvinces.map((p) => p.code);
 
-export type CaCity = { name: string; province: string };
+export const provinceName = (code: string, lang: "en" | "fr" = "en"): string => {
+  const p = caProvinces.find((x) => x.code === code.trim().toUpperCase());
+  return p ? p[lang] : code;
+};
 
-// Villes prioritaires (ON/QC/BC/AB ≈ 86 % de la population) pour la vitrine home.
-export const caMajorCities: CaCity[] = [
-  { name: "Toronto", province: "ON" },
-  { name: "Montréal", province: "QC" },
-  { name: "Vancouver", province: "BC" },
-  { name: "Calgary", province: "AB" },
-  { name: "Ottawa", province: "ON" },
-  { name: "Edmonton", province: "AB" },
-  { name: "Winnipeg", province: "MB" },
-  { name: "Québec City", province: "QC" },
-];
+export type CaLang = "en" | "fr";
 
-// Base path Canada anglophone — miroir de buildCityPath() (US) mais sous /en-ca.
-export const buildCaCityPath = (province: string, city: string) =>
-  `/en-ca/lost-and-found/${province.toLowerCase()}/${toCitySlug(city)}`;
+export const CA_SITE = "https://reportlost.org";
+
+// Préfixe de langue : /ca pour l'anglais, /ca/fr pour le français.
+export const caBase = (lang: CaLang) => (lang === "fr" ? "/ca/fr" : "/ca");
+
+// Slug d'URL canadien : minuscules, sans accents, tirets. Toujours trim().
+export const toCaSlug = (s: string) =>
+  String(s)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+export const buildCaCityPath = (lang: CaLang, province: string, city: string) =>
+  `${caBase(lang)}/${province.trim().toLowerCase()}/${toCaSlug(city)}`;
+
+/**
+ * Métadonnées hreflang d'une page qui existe en anglais ET en français.
+ * - canonique auto-référente (jamais vers l'autre langue) ;
+ * - paires en-CA / fr-CA réciproques par construction (même fonction des deux côtés) ;
+ * - x-default du groupe canadien = la version anglaise.
+ * Une page sans jumelle ne doit PAS appeler cette fonction.
+ */
+export function caBilingualAlternates(
+  self: CaLang,
+  enPath: string,
+  frPath: string
+): Metadata["alternates"] {
+  const en = `${CA_SITE}${enPath}`;
+  const fr = `${CA_SITE}${frPath}`;
+  return {
+    canonical: self === "fr" ? fr : en,
+    languages: { "en-CA": en, "fr-CA": fr, "x-default": en },
+  };
+}

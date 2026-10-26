@@ -56,6 +56,10 @@ const nextConfig = {
         permanent: true,
       },
 
+      // ✅ Ancien brouillon Canada (/en-ca, jamais indexé) → schéma retenu /ca
+      { source: "/en-ca", destination: "/ca", permanent: true },
+      { source: "/en-ca/:path*", destination: "/ca", permanent: true },
+
       // ✅ Tes redirects existants
       {
         source: "/category/:slug",
