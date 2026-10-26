@@ -32,6 +32,7 @@ import { looksLikeObjectNotPlace, buildCityPath } from "@/lib/slugify";
 import { redactPublic } from "@/lib/redactPublic";
 import { holdingRule } from "@/lib/legalHolding";
 import { stateNameFromAbbr } from "@/lib/utils";
+import { isCaProvince, provinceName } from "@/lib/canada/canadaData";
 import { MapPin } from "lucide-react";
 import { headers as nextHeaders } from "next/headers";
 
@@ -383,9 +384,13 @@ export default async function LostReportPage({ params }: PageProps) {
   // Ces trois liens sont la raison d'être du bloc : les pages /lost/ portent
   // l'essentiel de l'index du site et ne transmettaient rien aux guides.
   const legal = holdingRule(stateId);
-  const stateName = stateNameFromAbbr(stateId);
-  const cityPath = city && stateId ? buildCityPath(stateId, city) : null;
-  const statePath = stateName && stateId ? `/lost-and-found/${stateId.toLowerCase()}` : null;
+  // Canada : state_id porte le code de province (ON, QC…). Aucun lien vers
+  // /lost-and-found/<province> (404) ; les pages /ca/ seront reliées quand
+  // leurs guides seront publiés.
+  const isCa = isCaProvince(stateId);
+  const stateName = isCa ? provinceName(stateId) : stateNameFromAbbr(stateId);
+  const cityPath = city && stateId && !isCa ? buildCityPath(stateId, city) : null;
+  const statePath = stateName && stateId && !isCa ? `/lost-and-found/${stateId.toLowerCase()}` : null;
 
   // ---- Signalements voisins : même ville d'abord, complétés par l'État -----
   type NearbyRow = {

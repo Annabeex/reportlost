@@ -32,6 +32,10 @@ export const caProvinces: CaProvince[] = [
 
 export const CA_PROVINCE_CODES = caProvinces.map((p) => p.code);
 
+/** Vrai si le code (state_id) est une province ou un territoire canadien. */
+export const isCaProvince = (code?: string | null): boolean =>
+  CA_PROVINCE_CODES.includes(String(code || "").trim().toUpperCase());
+
 export const provinceName = (code: string, lang: "en" | "fr" = "en"): string => {
   const p = caProvinces.find((x) => x.code === code.trim().toUpperCase());
   return p ? p[lang] : code;
