@@ -4,7 +4,6 @@
 import { useState, useRef, useEffect } from "react";
 import AutoCompleteCitySelect from "@/components/AutoCompleteCitySelect";
 import { normalizeCityInput } from "@/lib/locationUtils";
-import { isCaProvince } from "@/lib/canada/canadaData";
 import ObjectSuggest from "@/components/ObjectSuggest";
 
 interface Props {
@@ -51,9 +50,6 @@ const TRAIN_COMPANIES_US = [
 ];
 
 const RIDESHARE_PLATFORMS_US = ["Uber","Lyft","Via","Other (not listed)"];
-
-// Canada : opérateurs ferroviaires proposés quand la ville choisie est canadienne.
-const TRAIN_COMPANIES_CA = ["VIA Rail","GO Transit","UP Express","exo","Other (not listed)"];
 
 // Lieu → type de transport : la question "Was it during a transport?" n'est plus
 // posée, elle est déduite du lieu sélectionné (moins de friction).
@@ -812,11 +808,7 @@ export default function ReportFormStep1({ formData, onChange, onNext, onProgress
                         <LocalSuggest
                           value={formData.train_company || ""}
                           onChange={(val) => onChange({ target: { name: "train_company", value: val } } as any)}
-                          options={
-                            isCaProvince(formData.state_id || normalizeCityInput(formData.city).stateId)
-                              ? TRAIN_COMPANIES_CA
-                              : TRAIN_COMPANIES_US
-                          }
+                          options={TRAIN_COMPANIES_US}
                           placeholder="Start typing..."
                         />
                       </div>

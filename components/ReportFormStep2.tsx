@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toPosterSafeImage } from "@/lib/imageToPosterSafe";
-import { marketFromRegion, priceLabel } from "@/lib/pricing";
 
 interface Props {
   formData: any;
@@ -91,7 +90,6 @@ export default function ReportFormStep2({
   setFormData,
   isSubmitting = false, // ✅ NEW
 }: Props) {
-  const market = marketFromRegion(formData?.state_id);
   const [stage, setStage] = useState<"contact" | "prefs">("contact");
   const [confirmAll, setConfirmAll] = useState(
     !!formData.consent_contact && !!formData.consent_terms && !!formData.consent_authorized
@@ -216,7 +214,7 @@ export default function ReportFormStep2({
                 <h3 className="text-[18px] font-semibold text-[#1f6b3a]">Declaration</h3>
                 <p className="mt-1 text-[16px] leading-6 text-[#0f2b1c]">
                   We use these details for report and case updates. They are not shown on your public listing. Next,
-                  you can compare the free listing, {priceLabel(12, market)} automatic search, and {priceLabel(25, market)} team-assisted search.
+                  you can compare the free listing, $12 automatic search, and $25 team-assisted search.
                 </p>
               </div>
             </div>
@@ -406,7 +404,7 @@ export default function ReportFormStep2({
           <div className="mt-6">
             <InfoSection icon={<MagnifierOutline />} title="Searches">
               <p className="text-[15px] text-[#0f2b1c]">
-                A free report is published as a searchable public listing. The {priceLabel(12, market)} option adds six months of automatic public-web monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers. The {priceLabel(25, market)} option adds manual research, direct contact with relevant services, local social sharing, and 12 months of monitoring.
+                A free report is published as a searchable public listing. The $12 option adds six months of automatic public-web monitoring, a ReportLost certificate, an anonymous address linked to the report, and printable QR stickers. The $25 option adds manual research, direct contact with relevant services, local social sharing, and 12 months of monitoring.
               </p>
             </InfoSection>
           </div>

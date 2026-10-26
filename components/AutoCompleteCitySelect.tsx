@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { isCaProvince, toCaSlug } from '@/lib/canada/canadaData'
 
 type CityOption = { city_ascii: string; state_id: string; population?: number | null }
 
@@ -34,7 +33,7 @@ export default function AutoCompleteCitySelect({
   onChange,
   minQueryLength = 1,
   onSelect,
-  placeholder = 'City (e.g., Chicago (IL) or Toronto (ON))',
+  placeholder = 'City (e.g., Chicago or Chicago (IL))',
 }: Props) {
   const [options, setOptions] = useState<CityOption[]>([])
   const [search, setSearch] = useState(value || '')
@@ -99,60 +98,25 @@ export default function AutoCompleteCitySelect({
       // Lincoln (NE) tombait hors liste : vu du client, « le Nebraska n'est
       // pas proposé ». La grande ville doit sortir en tête, et 25 lignes
       // laissent la place aux homonymes.
-      // États-Unis et Canada interrogés en parallèle, puis fusionnés par
-      // population. Un suffixe (XX) restreint au seul pays concerné : aucun
-      // code de province ne collisionne avec un code d'État.
-      const wantUs = !statePart || !isCaProvince(statePart)
-      const wantCa = !statePart || isCaProvince(statePart)
+      let query = supabase
+        .from('us_cities')
+        .select('city_ascii, state_id, population')
+        .ilike('city_ascii', `${q}%`)
+        .order('population', { ascending: false, nullsFirst: false })
+        .order('city_ascii')
+        .limit(25)
 
-      const usReq = async (): Promise<{ rows: CityOption[]; error: any }> => {
-        if (!wantUs) return { rows: [], error: null }
-        let query = supabase
-          .from('us_cities')
-          .select('city_ascii, state_id, population')
-          .ilike('city_ascii', `${q}%`)
-          .order('population', { ascending: false, nullsFirst: false })
-          .order('city_ascii')
-          .limit(25)
-        if (statePart) query = query.eq('state_id', statePart)
-        const { data, error } = await query
-        return { rows: (data || []) as CityOption[], error }
+      if (statePart) {
+        query = query.eq('state_id', statePart)
       }
 
-      // Canada : on cherche sur le nom affiché (« Montréal ») ET sur le slug
-      // sans accents (« montreal »), pour que « Montreal » et « Trois Rivieres »
-      // trouvent leur ville. Caractères réservés de PostgREST retirés.
-      const caReq = async (): Promise<{ rows: CityOption[]; error: any }> => {
-        if (!wantCa) return { rows: [], error: null }
-        const safe = q.replace(/[,()*%"\\]/g, ' ').trim()
-        const slug = toCaSlug(safe)
-        if (!safe) return { rows: [], error: null }
-        let query = supabase
-          .from('ca_cities')
-          .select('city, province_id, population')
-          .or(`city.ilike."${safe}%",city_ascii.ilike."${slug || safe}%"`)
-          .order('population', { ascending: false, nullsFirst: false })
-          .limit(25)
-        if (statePart) query = query.eq('province_id', statePart)
-        const { data, error } = await query
-        const rows = ((data || []) as { city: string; province_id: string; population: number | null }[]).map(
-          (r) => ({ city_ascii: r.city, state_id: r.province_id, population: r.population }),
-        )
-        return { rows, error }
-      }
+      const { data, error } = await query
 
-      const [us, ca] = await Promise.all([usReq(), caReq()])
-      // Une erreur côté Canada ne doit jamais casser la recherche américaine.
-      if (ca.error) console.error('Error fetching Canadian cities:', ca.error)
-
-      if (us.error && !ca.rows.length) {
-        console.error('Error fetching cities:', us.error)
+      if (error) {
+        console.error('Error fetching cities:', error)
         setOptions([])
       } else {
-        const merged = [...us.rows, ...ca.rows]
-          .sort((a, b) => (b.population ?? -1) - (a.population ?? -1))
-          .slice(0, 25)
-        setOptions(merged)
+        setOptions((data || []) as CityOption[])
         setShowSuggestions(true)
       }
       setLoading(false)

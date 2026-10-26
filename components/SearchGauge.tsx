@@ -1,7 +1,5 @@
 "use client";
 
-import { priceLabel, type Market } from "@/lib/pricing";
-
 // components/SearchGauge.tsx
 //
 // La jauge « mégaphone » : trois crans (Free, $12, $25) qu'on fait glisser pour
@@ -97,12 +95,9 @@ function Megaphone({ level, color }: { level: GaugeLevel; color: string }) {
 export default function SearchGauge({
   level,
   onChange,
-  market = "US",
 }: {
   level: GaugeLevel;
   onChange: (level: GaugeLevel) => void;
-  /** Marché : prix affichés en $ ou en CA$. */
-  market?: Market;
 }) {
   const stop = GAUGE_STOPS[level];
   const pct = level * 50;
@@ -189,7 +184,7 @@ export default function SearchGauge({
                   j === level ? "text-[#1f6b3a]" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {s.price === 0 ? s.label : priceLabel(s.price, market)}
+                {s.label}
               </button>
             ))}
           </div>

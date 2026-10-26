@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { marketFromRegion, priceLabel } from "@/lib/pricing";
 
 interface Props {
   formData: any;
@@ -11,12 +10,10 @@ interface Props {
 }
 
 export default function WhatHappensNext({
-  formData,
   onNext,
   onBack,
   fullScreen,
 }: Props) {
-  const market = marketFromRegion(formData?.state_id);
   const btnGreen =
     "bg-gradient-to-r from-[#26723e] to-[#2ea052] hover:from-[#226638] hover:to-[#279449] text-white font-semibold px-6 py-2 rounded shadow inline-flex items-center justify-center";
 
@@ -146,18 +143,18 @@ export default function WhatHappensNext({
             },
             {
               svg: "🔎",
-              title: `Automatic search — ${priceLabel(12, market)}`,
+              title: "Automatic search — $12",
               desc: "Six months of public-web monitoring, reviewed potential matches, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to it.",
             },
             {
               svg: "🧑‍💼",
-              title: `Team-assisted search — ${priceLabel(25, market)}`,
-              desc: `Everything in the ${priceLabel(12, market)} option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and local social sharing under group rules.`,
+              title: "Team-assisted search — $25",
+              desc: "Everything in the $12 option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and local social sharing under group rules.",
             },
             {
               svg: "📧",
               title: "Anonymous contact and local sharing",
-              desc: `Paid search options include a dedicated ReportLost email address linked to the report; QR stickers route finders to it. The ${priceLabel(25, market)} option also shares a visual notice with relevant local groups.`,
+              desc: "Paid search options include a dedicated ReportLost email address linked to the report; QR stickers route finders to it. The $25 option also shares a visual notice with relevant local groups.",
             },
           ].map(({ svg, title, desc }, i) => (
             <div
