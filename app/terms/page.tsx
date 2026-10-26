@@ -30,7 +30,7 @@ ReportLost.org offers:
 
 **B) Optional paid search services**
 
-Automatic search is available for a one-time $12 fee. Team-assisted search is available for a one-time $25 fee. Lost-pet reports use the team-assisted service with outreach adapted to relevant animal services:
+Automatic search is available for a one-time $12 fee. Team-assisted search is available for a one-time $25 fee. For reports of items lost in Canada, these services are billed in Canadian dollars: Automatic search for a one-time CA$17 fee, Team-assisted search for a one-time CA$35 fee. The scope and duration of each service are identical in both currencies. Lost-pet reports use the team-assisted service with outreach adapted to relevant animal services:
 
 **Team-assisted search ($25)** covers the following services, with public-web monitoring active for 12 months from activation:
 
@@ -70,7 +70,7 @@ ReportLost.org reserves the right to remove or redact content that violates thes
 
 Submitting a report is **free**.
 
-Paid search services are processed securely by Stripe. The $12 automatic search includes six months of public-web monitoring, a dated ReportLost certificate, an anonymous address linked to the report, and printable QR stickers linked to that address. The $25 team-assisted search adds 12 months of monitoring, manual research, direct contact with relevant services, report submission, and local social sharing.
+Paid search services are processed securely by Stripe, in US dollars, or in Canadian dollars for reports of items lost in Canada (CA$17 and CA$35). The $12 automatic search includes six months of public-web monitoring, a dated ReportLost certificate, an anonymous address linked to the report, and printable QR stickers linked to that address. The $25 team-assisted search adds 12 months of monitoring, manual research, direct contact with relevant services, report submission, and local social sharing.
 
 For this reason, paid search-service fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
 

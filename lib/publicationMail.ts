@@ -11,6 +11,7 @@
 // sans dépendre de la présence du visiteur.
 import { createClient } from "@supabase/supabase-js";
 import { sendMailDirect } from "@/lib/mailer";
+import { marketFromRegion, priceLabel } from "@/lib/pricing";
 
 export type PublicationMailResult =
   | { ok: true; skipped?: true; warning?: string }
@@ -45,7 +46,7 @@ export async function sendPublicationMail(
 
   const { data: row, error } = await supabaseAdmin
     .from("lost_items")
-    .select("id, publication_mail_sent, email, first_name, title, date, city, public_id")
+    .select("id, publication_mail_sent, email, first_name, title, date, city, public_id, state_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -71,6 +72,10 @@ export async function sendPublicationMail(
   // Rattrapage : réservé à ceux qui n'ont pas pris la formule active, donc
   // sans effet de cannibalisation sur la formule à 25 $.
   const autoOfferUrl = `${contributeUrl}&offer=auto`;
+  // Prix dans la devise du signalement ($ US ou CA$).
+  const market = marketFromRegion((row as any).state_id);
+  const P12 = priceLabel(12, market);
+  const P25 = priceLabel(25, market);
   const ref5 = String(row.public_id || "").trim();
 
   const itemLabel = String(row.title || "").replace(/\s+/g, " ").trim().slice(0, 30);
@@ -87,8 +92,8 @@ export async function sendPublicationMail(
 Your report has been published as a public listing on ReportLost.org. The free listing is available without a paid search service.
 
 Search options, each with a one-time fee and no renewal:
-- Automatic search ($12): six months of public-web monitoring, reviewed potential matches, a dated ReportLost certificate, an anonymous email address linked to the report, and printable QR stickers linked to it.
-- Team-assisted search ($25): everything in the $12 option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and a notice shared with relevant local groups under their posting rules.
+- Automatic search (${P12}): six months of public-web monitoring, reviewed potential matches, a dated ReportLost certificate, an anonymous email address linked to the report, and printable QR stickers linked to it.
+- Team-assisted search (${P25}): everything in the ${P12} option, with 12 months of monitoring, manual research, direct contact with relevant services and venues, report submission to appropriate services, and a notice shared with relevant local groups under their posting rules.
 
 Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. Recovery cannot be guaranteed, and ReportLost is not a public agency.
 
@@ -111,12 +116,12 @@ Your free listing remains available either way.`;
     <p style="margin:0 0 14px">Your report has been published on <a href="${base}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.</p>
     <p style="margin:0 0 8px"><b>Search options</b></p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-top:1px solid #e5e7eb">
-      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Automatic search, $12 once</b><br/>Six months of public-web monitoring, reviewed matches, a dated ReportLost certificate, an anonymous case email address, and printable QR stickers linked to it.</td></tr>
-      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Team-assisted search, $25 once</b><br/>Everything in the $12 option, with 12 months of monitoring, manual research, direct service contact and report submission, and a notice shared with relevant local groups under their posting rules.</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Automatic search, ${P12} once</b><br/>Six months of public-web monitoring, reviewed matches, a dated ReportLost certificate, an anonymous case email address, and printable QR stickers linked to it.</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #e5e7eb"><b>Team-assisted search, ${P25} once</b><br/>Everything in the ${P12} option, with 12 months of monitoring, manual research, direct service contact and report submission, and a notice shared with relevant local groups under their posting rules.</td></tr>
     </table>
     <p style="margin:12px 0;color:#4b5563;font-size:12.5px">Potential matches from paid search services are reviewed before notification. Monitoring does not cover content inaccessible to public search tools. ReportLost is independent of public agencies and cannot guarantee recovery.</p>
     <div style="margin:16px 0 10px;text-align:center"><a href="${contributeUrl}" style="display:inline-block;background:#26723e;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">Review search options</a></div>
-    <p style="margin:0 0 12px;text-align:center;font-size:12.5px"><a href="${autoOfferUrl}" style="color:#166534;text-decoration:underline">Review automatic search, $12</a></p>
+    <p style="margin:0 0 12px;text-align:center;font-size:12.5px"><a href="${autoOfferUrl}" style="color:#166534;text-decoration:underline">Review automatic search, ${P12}</a></p>
     <p style="margin:14px 0 0;padding-top:10px;border-top:1px solid #f3f4f6;font-size:12px;color:#6b7280">${detailLine}</p>
     <p style="margin:8px 0 0;font-size:12px;color:#6b7280">Your free public listing remains available either way.</p>
   </div>

@@ -6,6 +6,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 // import { supabase } from "@/lib/supabaseClient"; // <= intentionally not used from client
 import { formatCityWithState, normalizeCityInput } from "@/lib/locationUtils";
+import { marketFromRegion, priceLabel, chargeFor, money } from "@/lib/pricing";
 import { useRouter } from "next/navigation";
 
 import ReportFormStep1 from "./ReportFormStep1";
@@ -855,6 +856,8 @@ clearStoredRid();
   ]);
 
   const contributionUsd = Number(formData.contribution || 0);
+  // Marché du signalement : fixe la devise et les prix affichés (US $ / CA$).
+  const market = marketFromRegion(formData.state_id);
   const paidServiceLabel = petMode
     ? "Team-assisted pet search"
     : contributionUsd >= 25
@@ -941,6 +944,7 @@ clearStoredRid();
           petMode={petMode}
           showAutoPlan={showAutoPlan}
           onPlanSelected={funnelTrack}
+          market={market}
         />
       )}
 
@@ -1007,14 +1011,16 @@ clearStoredRid();
                   Compare the scope and duration of each option.
                 </p>
 
-                <SearchGauge level={gaugeLevel} onChange={setGaugeLevel} />
+                <SearchGauge level={gaugeLevel} onChange={setGaugeLevel} market={market} />
 
                 <button
                   type="button"
                   onClick={() => startUpsell(gaugeLevel === 1 ? 12 : 25)}
                   className="mt-5 block w-full rounded-xl bg-[#1f6b3a] px-5 py-3.5 text-center text-[16px] font-bold text-white hover:brightness-110"
                 >
-                  {gaugeLevel === 1 ? "Choose automatic search — $12" : "Choose team-assisted search — $25"}
+                  {gaugeLevel === 1
+                    ? `Choose automatic search — ${priceLabel(12, market)}`
+                    : `Choose team-assisted search — ${priceLabel(25, market)}`}
                 </button>
                 {gaugeLevel === 0 ? (
                   <button
@@ -1025,7 +1031,7 @@ clearStoredRid();
                     }}
                     className="mt-2.5 block w-full text-center text-[13.5px] text-[#1f6b3a] underline underline-offset-2"
                   >
-                    Choose automatic search — $12
+                    Choose automatic search — {priceLabel(12, market)}
                   </button>
                 ) : null}
 
@@ -1181,11 +1187,12 @@ clearStoredRid();
           // ✅ Paiement si contribution > 0 (Flow classique)
           <section className="w-full min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
             <h2 className="text-2xl font-bold mb-4">
-              Complete payment — {paidServiceLabel} (${contributionUsd.toFixed(2)})
+              Complete payment — {paidServiceLabel} ({money(chargeFor(contributionUsd, market), market, true)})
             </h2>
             <Elements stripe={stripePromise}>
               <CheckoutForm
-                amount={Number(formData.contribution || 0)}
+                amount={chargeFor(Number(formData.contribution || 0), market)}
+                market={market}
                 reportId={String(formData.report_id || "")}
                 onSuccess={handleSuccessfulPayment}
                 onBack={backFromCheckout}

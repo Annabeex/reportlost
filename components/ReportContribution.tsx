@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { priceLabel, type Market } from "@/lib/pricing";
 
 /** Plan selector for the free listing, automatic search, and team-assisted search. */
 
@@ -16,6 +17,8 @@ type Props = {
   petMode?: boolean;
   /** Preselect automatic search for visitors who followed the optional offer link. */
   showAutoPlan?: boolean;
+  /** Marché : prix affichés en $ ou en CA$. */
+  market?: Market;
 };
 
 const DARK_GREEN = "#1f6b3a";
@@ -55,6 +58,7 @@ export default function ReportContribution({
   onPlanSelected,
   petMode = false,
   showAutoPlan = false,
+  market = "US",
 }: Props) {
   const effectiveAmount = useMemo(
     () =>
@@ -192,7 +196,7 @@ export default function ReportContribution({
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
-                  <Radio plan={4} label="Team-assisted pet search, $25" />
+                  <Radio plan={4} label={`Team-assisted pet search, ${priceLabel(25, market)}`} />
                 <span className="text-xl">🐾</span>
                 <h3
                   className="flex flex-wrap items-center gap-2 text-xl font-semibold"
@@ -228,7 +232,7 @@ export default function ReportContribution({
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
-                <Radio plan={2} label="Automatic search, $12" />
+                <Radio plan={2} label={`Automatic search, ${priceLabel(12, market)}`} />
                 <h3 className="text-xl font-semibold" style={{ color: DARK_GREEN }}>
                   Automatic search
                 </h3>
@@ -261,7 +265,7 @@ export default function ReportContribution({
                 className="flex items-center gap-3 px-5 py-3"
                 style={{ backgroundColor: LIGHT_GREEN_BG }}
               >
-                <Radio plan={3} label="Team-assisted search, $25" />
+                <Radio plan={3} label={`Team-assisted search, ${priceLabel(25, market)}`} />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/images/icons/max.svg?v=${ASSET_VER}`} alt="" className="h-5 w-5" />
                 <h3
@@ -279,7 +283,7 @@ export default function ReportContribution({
                       {/* <span> et non <p> : ce bloc est déjà dans un <span>,
                           et un paragraphe n'a pas le droit d'y vivre. */}
                       <span className="mb-2.5 block">
-                        The $25 option includes manual research by a team member, direct contact with
+                        The {priceLabel(25, market)} option includes manual research by a team member, direct contact with
                         relevant services and venues, and submission of your report to appropriate
                         lost-property services.
                       </span>

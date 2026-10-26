@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMailDirect } from "@/lib/mailer";
+import { marketFromRegion, priceLabel } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // les envois de mails (SMTP) peuvent être lents
@@ -389,7 +390,7 @@ const updatePayload = { ...other, fingerprint, state_id };
 
 Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+The ${priceLabel(25, marketFromRegion(state_id))} team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -416,7 +417,7 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+      The team-assisted search option costs <b>${priceLabel(25, marketFromRegion(state_id))}</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -558,7 +559,7 @@ Contribution : ${other.contribution ?? 0}`;
 
 Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+The ${priceLabel(25, marketFromRegion(state_id))} team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -585,7 +586,7 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+      The team-assisted search option costs <b>${priceLabel(25, marketFromRegion(state_id))}</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>
@@ -776,7 +777,7 @@ const { data: foundRows, error: findErr } = await supabase
 
 Your lost-item report has been saved on ReportLost.org. The options below describe the additional search services available.
 
-The $25 team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+The ${priceLabel(25, marketFromRegion(state_id))} team-assisted option includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
 
 Your report details:
 - Item: ${other.title || ""}
@@ -803,7 +804,7 @@ Thank you for using ReportLost.`;
       <a href="${site}" style="color:#2C7A4A;text-decoration:underline">ReportLost.org</a>.
     </p>
     <p style="margin:0 0 14px">
-      The team-assisted search option costs <b>$25</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
+      The team-assisted search option costs <b>${priceLabel(25, marketFromRegion(state_id))}</b> and includes manual research, direct contact with relevant services and venues, report submission to appropriate lost-property services, and a notice shared with relevant local groups under their posting rules. It also includes 12 months of public-web monitoring, a dated ReportLost certificate, an anonymous email address linked to your report, and printable QR stickers linked to that address.
     </p>
 
     <p style="margin:0 0 8px"><b>Your report details</b></p>

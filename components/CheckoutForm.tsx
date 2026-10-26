@@ -8,6 +8,7 @@ import {
   useElements,
   PaymentRequestButtonElement,
 } from '@stripe/react-stripe-js';
+import { PRICING, money, type Market } from '@/lib/pricing';
 
 type Props = {
   amount: number;
@@ -19,6 +20,8 @@ type Props = {
   showVatBreakdown?: boolean;
   vatRate?: number;
   tierLabel?: string;
+  /** Marché du signalement : fixe la devise facturée (USD ou CAD). */
+  market?: Market;
 };
 
 type StripePaymentRequest = ReturnType<NonNullable<Stripe['paymentRequest']>>;
@@ -51,6 +54,7 @@ export default function CheckoutForm({
   onPaymentFailure,
   onBack,
   tierLabel = 'Team-assisted search',
+  market = 'US',
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
@@ -65,7 +69,9 @@ export default function CheckoutForm({
     useState<StripePaymentRequest | null>(null);
 
   const total = useMemo(() => Math.max(1, Number(amount || 0)), [amount]);
-  const isFullPlan = total >= FULL_PLAN_MIN;
+  // Seuil exprimé dans la devise facturée (25 $ US, 35 CA$).
+  const isFullPlan = total >= (market === 'US' ? FULL_PLAN_MIN : PRICING[market].team);
+  const currency = PRICING[market].currency;
 
   const paymentHeaders = {
     'Content-Type': 'application/json',
@@ -78,7 +84,7 @@ export default function CheckoutForm({
 
     const pr = stripe.paymentRequest({
       country: country.toUpperCase(),
-      currency: 'usd',
+      currency,
       total: {
         label: tierLabel || 'ReportLost search service',
         amount: Math.round(total * 100),
@@ -103,7 +109,7 @@ export default function CheckoutForm({
           headers: paymentHeaders,
           body: JSON.stringify({
             amount: total,
-            currency: 'usd',
+            currency,
             reportId,
             description: tierLabel,
           }),
@@ -152,7 +158,7 @@ export default function CheckoutForm({
         setLoading(false);
       }
     });
-  }, [stripe, total, reportId, country, tierLabel, onPaymentFailure]);
+  }, [stripe, total, reportId, country, tierLabel, onPaymentFailure, currency]);
 
   // -------- Card payment --------
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,7 +174,7 @@ export default function CheckoutForm({
         headers: paymentHeaders,
         body: JSON.stringify({
           amount: total,
-          currency: 'usd',
+          currency,
           reportId,
           description: tierLabel,
         }),
@@ -214,7 +220,7 @@ export default function CheckoutForm({
       <aside className="bg-[#eaf8ef] rounded-xl p-6 border border-green-200">
         <p className="text-sm text-[#1f6b3a] mb-2">{tierLabel}</p>
         <div className="text-4xl font-bold text-[#1f6b3a]">
-          ${total.toFixed(2)}
+          {money(total, market, true)}
         </div>
         <p className="mt-2 text-sm text-gray-600">
           One-time payment, never a subscription.
@@ -279,7 +285,7 @@ export default function CheckoutForm({
             disabled={loading || !stripe}
             className="w-full rounded bg-gradient-to-r from-[#26723e] to-[#2ea052] py-3 font-semibold text-white disabled:opacity-60"
           >
-            {loading ? 'Processing…' : `Pay $${total.toFixed(2)} for ${tierLabel}`}
+            {loading ? 'Processing…' : `Pay ${money(total, market, true)} for ${tierLabel}`}
           </button>
 
           {message && <p className="text-sm text-center">{message}</p>}
