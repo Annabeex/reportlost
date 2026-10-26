@@ -323,7 +323,7 @@ export default function CaReportFormStep2({
               <span className="text-[14px] leading-6 text-gray-700">
                 I confirm I’ve read and accept the{" "}
                 <a
-                  href="https://reportlost.org/terms"
+                  href="https://reportlost.org/ca/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-700 underline"

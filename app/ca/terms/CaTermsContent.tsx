@@ -1,0 +1,155 @@
+'use client';
+// 🇨🇦 COPIE CANADIENNE de app/terms/page.tsx — prix en CA$. Toute promesse doit
+// rester identique à celle des pages et e-mails canadiens (CLAUDE.md).
+
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+
+const termsContent = `
+## Terms of Use – ReportLost.org (Canada)
+
+_Last updated: October 26, 2026_
+
+These terms apply to reports of items lost in Canada, filed through reportlost.org/ca. Prices are in Canadian dollars (CA$).
+
+Welcome to ReportLost.org. By accessing or using this platform, you agree to the following Terms of Use.
+
+### 1. Independent Platform
+
+ReportLost.org is an independent platform operated by an independent operator based in the European Union. The platform helps users document lost and found items and, where applicable, request additional search assistance.
+
+ReportLost.org is **not affiliated with any government entity**, law enforcement agency, transportation provider, or official lost & found service.
+
+Use of the platform is voluntary and at your own discretion.
+
+---
+
+### 2. Scope of the Service
+
+ReportLost.org offers:
+
+**A) Free reporting**
+- Submission of lost item and found item reports,
+- Publication of reports on ReportLost.org to improve online visibility and searchability. A published report is a **public page**: it can be read by anyone and indexed by search engines. You may ask us to remove it at any time by writing to support@reportlost.org from the address used for the report.
+
+**B) Optional paid search services**
+
+Automatic search is available for a one-time CA$17 fee. Team-assisted search is available for a one-time CA$35 fee. Lost-pet reports use the team-assisted service with outreach adapted to relevant animal services:
+
+**Team-assisted search (CA$35)** covers the following services, with public-web monitoring active for 12 months from activation:
+
+1. **Contact and report submission.** A team member researches the case, contacts relevant lost-property services and venues, and submits the report to appropriate services. Each organization controls its own process. A ReportLost submission is not an official police report and does not replace any declaration the owner is legally required to make.
+2. **Outreach to the places likely to hold the item.** Selected from your loss location: transport operator, hotel, restaurant, venue, airport, taxi company, nearby businesses and surrounding lost-property desks.
+3. **Creation and distribution of a visual notice.** Published on social media and in the relevant local groups, including private groups we are members of. The notice displays an anonymous relay email address linked to your case, so finders can contact you without your personal address or phone number being disclosed.
+4. **Automated web monitoring for 12 months.** An AI search engine scans public web sources using your item's keywords, every day for the first week, then once a week, then once a month. Potential matches are reviewed by a team member before being forwarded to you. Monitoring does not cover content inaccessible to public search tools.
+5. **A loss report certificate**, issued on our website and downloadable from your case page. It records your declaration and its date. **It is not an official document and does not replace a police report or any document issued by a public authority.**
+6. **A printable sheet of QR stickers**, to be printed on adhesive paper. Each code routes a finder to the anonymous relay address linked to your case.
+
+For a lost animal, the CA$35 team-assisted service includes outreach to relevant local shelters, animal control and rescue services, and publication in relevant lost-pet groups.
+
+**Automatic search (CA$17)** includes the public-web monitoring, loss report certificate, and QR sticker sheet for **6 months**. It does not include filing with a lost-property service, outreach to third parties, or a local notice.
+
+Users may publish a free public listing or choose one of the two paid search services. Each paid service is a one-time fee, not a subscription.
+
+We contact relevant lost-property offices, services, and venues on your behalf and submit the report to appropriate services. Each organization controls its own process. This service does not file or replace an official police report.
+
+Details and pricing for paid assistance are clearly displayed before purchase.
+
+---
+
+### 3. User Responsibilities
+
+By submitting a report, you confirm that:
+- The information provided is accurate and truthful to the best of your knowledge,
+- You have the right to share the submitted content,
+- You will not submit unlawful, misleading, abusive, or fraudulent content.
+
+Because a published report is public, do not write identifying numbers in the free-text fields. Before publication we automatically filter out email addresses, phone numbers, social security numbers, and long sequences of digits such as IMEI, card or licence numbers. This filtering is a safeguard, not a guarantee: you remain responsible for what you write.
+
+ReportLost.org reserves the right to remove or redact content that violates these Terms.
+
+---
+
+### 4. Payments and Refunds
+
+Submitting a report is **free**.
+
+Paid search services are processed securely by Stripe. The CA$17 automatic search includes six months of public-web monitoring, a dated ReportLost certificate, an anonymous address linked to the report, and printable QR stickers linked to that address. The CA$35 team-assisted search adds 12 months of monitoring, manual research, direct contact with relevant services, report submission, and local social sharing.
+
+For this reason, paid search-service fees are generally **non-refundable** once work has started. Refunds may be considered in limited cases, such as a technical billing error or platform malfunction.
+
+---
+
+### 5. No Guarantee of Recovery
+
+ReportLost.org applies reasonable efforts to assist users but **does not guarantee** that any item will be found or returned.
+
+The platform is an auxiliary service and does **not replace** official procedures such as filing a police report or submitting claims with transportation providers or venues.
+
+---
+
+### 6. Found Item Identification
+
+When reporting a found item, users may upload photos. Automated tools, including image recognition, may be used to help identify objects and suggest descriptive labels.
+
+Users remain responsible for the accuracy of submitted reports.
+
+---
+
+### 7. Data Protection and Privacy
+
+Personal data is processed in accordance with our [Privacy Policy](/privacy).
+
+- We do not sell or rent personal data,
+- Sensitive data is protected using appropriate security measures,
+- Users may request access to or deletion of their data, subject to applicable laws and operational requirements.
+
+---
+
+### 8. Intellectual Property
+
+All content on ReportLost.org, including text, design, logos, and code, is protected under applicable intellectual property laws. Unauthorized reproduction or use is prohibited.
+
+---
+
+### 9. Limitation of Liability
+
+To the fullest extent permitted by law, ReportLost.org shall not be liable for:
+- Indirect, incidental, or consequential damages,
+- Losses resulting from third-party interactions,
+- Inaccuracies in user-submitted content or external responses.
+
+---
+
+### 10. Governing Law and Dispute Resolution
+
+These Terms are governed by applicable law. Users may also benefit from mandatory protections under their local consumer laws.
+
+In the event of a dispute, we encourage users to contact support@reportlost.org first so we may attempt to resolve the matter amicably.
+
+---
+
+### 11. Modifications
+
+We may update these Terms from time to time. Continued use of the platform constitutes acceptance of the most recent version.
+
+---
+
+### 12. Contact
+
+For questions regarding these Terms:
+
+**ReportLost.org**  
+Email: support@reportlost.org
+`;
+
+export default function CaTermsContent() {
+  return (
+    <main className="max-w-4xl mx-auto px-6 py-12 text-sm text-gray-800">
+      <h1 className="text-2xl font-bold mb-6">Terms of Use (Canada)</h1>
+      <div className="prose prose-sm md:prose-base">
+        <ReactMarkdown>{termsContent}</ReactMarkdown>
+      </div>
+    </main>
+  );
+}

@@ -529,7 +529,7 @@ export default function CaReportForm({
 
       let res: Response;
       try {
-        res = await fetch("/api/save-report", {
+        res = await fetch("/api/ca/save-report", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bodyToSend),
@@ -544,7 +544,7 @@ export default function CaReportForm({
             20000,
           );
           try {
-            res = await fetch("/api/save-report", {
+            res = await fetch("/api/ca/save-report", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(bodyToSend),
@@ -827,7 +827,7 @@ export default function CaReportForm({
        const controller = new AbortController();
 const t = setTimeout(() => controller.abort(), 15000);
 
-await fetch("/api/public/send-publication-email", {
+await fetch("/api/ca/public/send-publication-email", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({

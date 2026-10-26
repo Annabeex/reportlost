@@ -1,0 +1,202 @@
+// 🇨🇦 COPIE CANADIENNE de app/api/create-payment-intent/route.ts — CAD uniquement (17 / 35).
+// app/api/create-payment-intent/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { PRICING } from "@/lib/pricing";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const stripeKey = process.env.STRIPE_SECRET_KEY!;
+if (!stripeKey) throw new Error("Missing STRIPE_SECRET_KEY");
+
+const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" as any });
+
+// 🔐 Protection
+const PAYMENT_API_KEY = (process.env.PAYMENT_API_KEY || "").trim();
+const PAYMENT_ALLOWED_ORIGINS = (process.env.PAYMENT_ALLOWED_ORIGINS || "").trim();
+// Exemple: PAYMENT_ALLOWED_ORIGINS="https://reportlost.org,https://www.reportlost.org"
+
+function getAllowedOrigins(): string[] {
+  if (PAYMENT_ALLOWED_ORIGINS) {
+    return PAYMENT_ALLOWED_ORIGINS
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  return site ? [site] : ["https://reportlost.org", "https://www.reportlost.org"];
+}
+
+function getCorsOrigin(req: NextRequest): string | null {
+  const origin = req.headers.get("origin");
+  if (!origin) return null;
+  const allowed = getAllowedOrigins();
+  return allowed.includes(origin) ? origin : "null";
+}
+
+function hasValidPaymentKey(req: NextRequest): boolean {
+  if (!PAYMENT_API_KEY) return true; // si pas de clé configurée, pas d'auth
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length).trim();
+  return token === PAYMENT_API_KEY;
+}
+
+// Limites de sécurité côté serveur
+const MIN_AMOUNT_USD = 100; // $1.00
+const MAX_AMOUNT_USD = 50000; // $500.00
+// 🇨🇦 Canada : CAD uniquement, et seulement les prix publiés (lib/pricing.ts).
+const ALLOWED_CURRENCY = new Set(["cad"]);
+const ALLOWED_CAD_AMOUNTS = [PRICING.CA.auto, PRICING.CA.team];
+
+function json(data: any, init?: ResponseInit, origin?: string | null) {
+  const res = NextResponse.json(data, init);
+  res.headers.set("Cache-Control", "no-store");
+
+  // CORS
+  if (origin) {
+    res.headers.set("Access-Control-Allow-Origin", origin);
+    res.headers.set("Vary", "Origin");
+  }
+
+  return res;
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = getCorsOrigin(req);
+
+  return new Response(null, {
+    status: 204,
+    headers: {
+      ...(origin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {}),
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Idempotency-Key, Authorization",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+export async function POST(req: NextRequest) {
+  const origin = getCorsOrigin(req);
+  const hasOriginHeader = !!req.headers.get("origin");
+
+  // 🛡️ 1) Appels navigateur (avec Origin) : autorisés seulement si origin est listée
+  if (hasOriginHeader) {
+    if (origin === "null") {
+      // On renvoie quand même le header (null) pour que le navigateur comprenne que c'est refusé
+      return json({ ok: false, error: "Forbidden" }, { status: 403 }, origin);
+    }
+    // Browser depuis origin autorisée -> OK (pas besoin de clé)
+  } else {
+    // 🛡️ 2) Server-to-server (pas de Origin) : clé requise si configurée
+    if (PAYMENT_API_KEY && !hasValidPaymentKey(req)) {
+      return json({ ok: false, error: "Unauthorized" }, { status: 401 }, origin);
+    }
+  }
+
+  try {
+    const ct = req.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      return json(
+        { ok: false, error: "Content-Type must be application/json" },
+        { status: 415 },
+        origin
+      );
+    }
+
+    const body = (await req.json().catch(() => null)) as {
+      amount?: number | string;
+      currency?: string;
+      reportId?: string | number;
+      reportPublicId?: string;
+      description?: string;
+    } | null;
+
+    if (!body) {
+      return json({ ok: false, error: "Invalid JSON body" }, { status: 400 }, origin);
+    }
+
+    // --- Validation montant ---
+    const numericAmount = Number(body.amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return json({ ok: false, error: "Invalid amount" }, { status: 400 }, origin);
+    }
+
+    const amountInCents = Math.round(numericAmount * 100);
+    if (amountInCents < MIN_AMOUNT_USD || amountInCents > MAX_AMOUNT_USD) {
+      return json(
+        {
+          ok: false,
+          error: `Amount must be between ${(MIN_AMOUNT_USD / 100).toFixed(2)} and ${(MAX_AMOUNT_USD / 100).toFixed(
+            2
+          )} USD`,
+        },
+        { status: 400 },
+        origin
+      );
+    }
+
+    // --- Devise ---
+    const currency = (body.currency ?? "cad").toLowerCase();
+    if (!ALLOWED_CURRENCY.has(currency)) {
+      return json({ ok: false, error: "Unsupported currency" }, { status: 400 }, origin);
+    }
+    if (!ALLOWED_CAD_AMOUNTS.includes(amountInCents / 100)) {
+      return json({ ok: false, error: "Invalid amount" }, { status: 400 }, origin);
+    }
+
+    // --- Idempotency ---
+    const clientIdem =
+      req.headers.get("idempotency-key") ||
+      req.headers.get("Idempotency-Key") ||
+      undefined;
+
+    const fallbackIdem =
+      body.reportId != null
+        ? `report-${String(body.reportId)}-${amountInCents}-${currency}`
+        : undefined;
+
+    const idempotencyKey = clientIdem ?? fallbackIdem;
+
+    // --- Description & metadata ---
+    const description =
+      body.description?.slice(0, 255) ||
+      (body.reportId
+        ? `ReportLost search service (Canada) for report #${body.reportId}`
+        : "ReportLost search service (Canada)");
+
+    // market=ca : le webhook américain ignore ce paiement, le webhook canadien le traite.
+    const metadata: Record<string, string> = { market: "ca" };
+    if (body.reportId != null) metadata.report_id = String(body.reportId);
+    if (body.reportPublicId) metadata.report_public_id = String(body.reportPublicId);
+
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountInCents,
+        currency,
+        automatic_payment_methods: { enabled: true },
+        description,
+        metadata,
+      },
+      idempotencyKey ? { idempotencyKey } : undefined
+    );
+
+    return json(
+      {
+        ok: true,
+        id: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+      },
+      { status: 200 },
+      origin
+    );
+  } catch (err: any) {
+    if (err && typeof err === "object" && String(err.type || "").startsWith("Stripe")) {
+      console.error("Stripe error:", err);
+      return json({ ok: false, error: err.message ?? "Stripe error" }, { status: 400 }, origin);
+    }
+    console.error("Unexpected error (create-payment-intent):", err);
+    return json({ ok: false, error: "Unexpected server error" }, { status: 500 }, origin);
+  }
+}

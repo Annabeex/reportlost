@@ -100,7 +100,7 @@ export default function CaCheckoutForm({
         setLoading(true);
         setMessage('');
 
-        const r = await fetch('/api/create-payment-intent', {
+        const r = await fetch('/api/ca/create-payment-intent', {
           method: 'POST',
           headers: paymentHeaders,
           body: JSON.stringify({
@@ -165,7 +165,7 @@ export default function CaCheckoutForm({
     setMessage('');
 
     try {
-      const res = await fetch('/api/create-payment-intent', {
+      const res = await fetch('/api/ca/create-payment-intent', {
         method: 'POST',
         headers: paymentHeaders,
         body: JSON.stringify({
