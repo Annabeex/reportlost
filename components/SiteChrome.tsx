@@ -21,7 +21,8 @@
 
 import { usePathname } from "next/navigation";
 
-const SANS_CHROME = /^\/(org|campus|lost-property|at)(\/|$)/;
+// /ca : les pages canadiennes ont leur propre bandeau et pied de page (app/ca/layout.tsx).
+const SANS_CHROME = /^\/(org|campus|lost-property|at|ca)(\/|$)/;
 
 export default function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
