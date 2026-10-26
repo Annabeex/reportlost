@@ -95,6 +95,6 @@ guide est publié.**
 ## 8. État des phases
 
 - [x] Phase 1 : architecture, migration, routage `/ca` + `/ca/fr` (2 pages de test noindex), sitemap vide
-- [ ] Phase 1 : charger `ca_cities` depuis Statistique Canada
-- [ ] Porte : pages US vérifiées intactes après le déploiement
+- [x] Phase 1 : `ca_cities` couvre les 20 villes des phases 2 et 3 (41 lignes, recensement 2021, `canada-phase1b-villes.sql`). Le chargement complet de Statistique Canada est reporté à la phase 5.
+- [x] Porte : pages US vérifiées intactes après le déploiement (26/10/2026)
 - [ ] Phase 2 : Ontario, 10 villes
