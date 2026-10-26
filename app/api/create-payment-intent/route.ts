@@ -1,7 +1,6 @@
 // app/api/create-payment-intent/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { ALLOWED_AMOUNTS } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,8 +44,7 @@ function hasValidPaymentKey(req: NextRequest): boolean {
 // Limites de sécurité côté serveur
 const MIN_AMOUNT_USD = 100; // $1.00
 const MAX_AMOUNT_USD = 50000; // $500.00
-// CAD : signalements canadiens (lib/pricing.ts). Montants limités à la grille.
-const ALLOWED_CURRENCY = new Set(["usd", "cad"]);
+const ALLOWED_CURRENCY = new Set(["usd"]);
 
 function json(data: any, init?: ResponseInit, origin?: string | null) {
   const res = NextResponse.json(data, init);
@@ -139,11 +137,6 @@ export async function POST(req: NextRequest) {
     const currency = (body.currency ?? "usd").toLowerCase();
     if (!ALLOWED_CURRENCY.has(currency)) {
       return json({ ok: false, error: "Unsupported currency" }, { status: 400 }, origin);
-    }
-    // Hors USD, seuls les prix publiés sont acceptés (17 / 35 CA$).
-    const grid = ALLOWED_AMOUNTS[currency];
-    if (grid && !grid.includes(amountInCents / 100)) {
-      return json({ ok: false, error: "Invalid amount for currency" }, { status: 400 }, origin);
     }
 
     // --- Idempotency ---

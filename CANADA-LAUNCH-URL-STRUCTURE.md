@@ -50,17 +50,16 @@ abandonné. Brief complet : projet Claude « Reportlost.org canada + Australie �
 - **À traiter avant la phase 3** : la Navbar et le Footer sont en anglais sur
   les pages `/ca/fr`.
 
-## 4. Branche « trouvé » : par province, pas par ville (proposé, à confirmer)
+## 4. Branche « trouvé » : guides villes + une page par province (décidé le 26/10/2026)
 
-En Ontario, une page « trouvé » par ville reprendrait les contacts du guide de
-la ville (police, transport), ce qui donnerait des quasi-doublons. Le cadre légal,
-lui, dépend de la province. Donc :
-
-- chaque guide de ville contient une section « Found something? » ;
-- une page « trouvé » par province porte le cadre légal (`/ca/found/on`,
-  `/ca/fr/trouve/qc`, cette dernière autour de l'art. 942 C.c.Q.) ;
-- des pages par ville seulement si la Search Console montre des requêtes
-  « found… » sur les guides.
+- Chaque guide de ville sert aussi les trouveurs, avec un écran « Found something? »
+  à ancre et le formulaire de 30 secondes. Les requêtes « found X <ville> »
+  cherchent les mêmes contacts que le guide.
+- Une page « trouvé » par province porte le cadre légal : `/ca/found/on`, puis
+  `/ca/fr/trouve/qc` (art. 942 C.c.Q.).
+- Pas de page « trouvé » par ville. Règle d'ouverture : 28 jours après la
+  phase 3, si les requêtes « found » / « trouvé » d'un guide montrent un volume
+  réel dans la Search Console, la ville obtient sa propre page.
 
 ## 5. Données : le Canada est isolé du corpus US
 
@@ -87,7 +86,7 @@ Migration : `canada-phase1.sql` (à lancer avant le déploiement).
   publiés de `ca_city_guides`, avec leurs `xhtml:link` hreflang.
 - Déclaré dans `public/sitemap.xml`.
 
-## 7. Règle d'indexation (proposée)
+## 7. Règle d'indexation (décidée le 26/10/2026)
 
 Pas de seuil de population au Canada : **une ville n'est indexable que si son
 guide est publié.**
