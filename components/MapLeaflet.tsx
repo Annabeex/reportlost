@@ -22,9 +22,12 @@ export default function MapLeaflet({ stations }: { stations: Pt[] }) {
 
   return (
     <MapContainer center={center} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      {/* Tuiles OpenStreetMap : les fonds CARTO exigent désormais une clé
+          (« API KEY REQUIRED » constaté le 5 novembre 2026). */}
       <TileLayer
-        attribution='&copy; <a href="https://carto.com/">Carto</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
       />
       {stations.map((s, i) => (
         <Marker key={String(s.id ?? i)} position={[s.lat, s.lon]}>
