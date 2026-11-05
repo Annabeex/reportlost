@@ -7,7 +7,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { isCaProvince } from "@/lib/canada/canadaData";
-import type { CaCityGuide } from "@/lib/ca/cityGuide";
+import type { CaCityGuide, CaCityRow } from "@/lib/ca/cityGuide";
+import { loadCaCityRow } from "@/lib/ca/caCityRow";
 import CaCityGuideView from "@/components/ca/CaCityGuide";
 
 export const revalidate = 3600;
@@ -49,5 +50,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function CaCityPage({ params }: Params) {
   const row = await loadGuide(params.province, params.city);
   if (!row) notFound();
-  return <CaCityGuideView guide={row.guide} />;
+
+  // Photo et coordonnées : absentes = la page s'affiche quand même, sans elles.
+  let city: CaCityRow | null = null;
+  const sb = getSupabaseAdmin({ fresh: false });
+  if (sb) city = await loadCaCityRow(sb, row.guide.province, row.guide.citySlug, row.guide.cityName);
+
+  return <CaCityGuideView guide={row.guide} city={city} />;
 }
