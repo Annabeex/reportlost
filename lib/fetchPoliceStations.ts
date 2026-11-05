@@ -21,6 +21,13 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.private.coffee/api/interpreter",
 ];
 
+// Délai par miroir. Le 05/11/2026, Seattle : les trois miroirs abandonnés au
+// bout de 5 s chacun → carte vide. Le premier miroir (le plus fiable) a
+// désormais plus de temps. Total 23 s, sous le maxDuration de 30 s de
+// /api/police-stations. Ces appels ont lieu APRÈS le rendu de la page
+// (côté navigateur), ils ne retardent pas l'affichage.
+const TIMEOUTS_MS = [11000, 7000, 5000];
+
 export async function fetchPoliceStations(
   lat: number,
   lng: number,
@@ -46,7 +53,7 @@ export async function fetchPoliceStations(
     `);` +
     `out center;`; // ✅ conserve les coordonnées (contrairement à "out tags center")
 
-  for (const endpoint of OVERPASS_ENDPOINTS) {
+  for (const [i, endpoint] of OVERPASS_ENDPOINTS.entries()) {
     try {
       const res = await fetch(endpoint, {
         method: "POST",
@@ -57,9 +64,9 @@ export async function fetchPoliceStations(
         },
         body: "data=" + encodeURIComponent(query),
         next: { revalidate: 86400 }, // cache 24h : la carte des commissariats bouge peu
-        // ⏱️ 5s max par miroir : un Overpass lent/en panne ne doit JAMAIS
-        // bloquer le rendu de la page (la carte s'affiche alors sans stations).
-        signal: AbortSignal.timeout(5000),
+        // ⏱️ Délai par miroir (TIMEOUTS_MS) : un Overpass lent ou en panne
+        // passe au miroir suivant.
+        signal: AbortSignal.timeout(TIMEOUTS_MS[i] ?? 5000),
       });
 
       if (!res.ok) {

@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       const fresh =
         data?.police_stations_at &&
         Date.now() - new Date(data.police_stations_at).getTime() < REFRESH_DAYS * 86400000;
-      if (Array.isArray(data?.police_stations) && fresh) {
+      if (Array.isArray(data?.police_stations) && data.police_stations.length > 0 && fresh) {
         return NextResponse.json({ stations: data.police_stations }, { headers: CDN_HEADERS });
       }
     } catch {
@@ -56,7 +56,10 @@ export async function GET(req: NextRequest) {
     stations = [];
   }
 
-  if (sb && cityId) {
+  // On n'enregistre JAMAIS une réponse vide : elle vient le plus souvent d'un
+  // Overpass saturé, et elle bloquait la carte de la ville pendant 180 jours
+  // (Seattle, 05/11/2026). Vide = on réessaiera à la prochaine visite.
+  if (sb && cityId && stations.length > 0) {
     try {
       await sb
         .from("us_cities")
@@ -67,5 +70,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ stations }, { headers: CDN_HEADERS });
+  // Une réponse vide n'est pas mise en cache CDN non plus (7 jours sinon).
+  return NextResponse.json(
+    { stations },
+    { headers: stations.length > 0 ? CDN_HEADERS : { "Cache-Control": "no-store" } }
+  );
 }
