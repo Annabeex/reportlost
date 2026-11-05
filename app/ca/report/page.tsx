@@ -16,24 +16,37 @@ export const metadata: Metadata = {
 export default function CaReportPage({
   searchParams,
 }: {
-  searchParams?: { category?: string; city?: string };
+  searchParams?: { category?: string; city?: string; tab?: string };
 }) {
   const initialCategory = (searchParams?.category || "").trim().toLowerCase() || undefined;
+  // ?tab=found : formulaire « objet trouvé » (bouton « I found something »).
+  const isFound = (searchParams?.tab || "").toLowerCase() === "found";
 
   return (
     <main className="w-full">
       <section className="mx-auto max-w-4xl px-4 pt-8 pb-10 sm:pt-10 sm:pb-12">
-        <h1 className="text-2xl font-bold text-gray-900">Report a lost item in Canada</h1>
-        <p className="mt-2 text-gray-700">
-          Add details about the item and where it was last seen. You can review the available
-          search options, priced in Canadian dollars, after submitting your report.
-        </p>
+        {isFound ? (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900">Report a found item in Canada</h1>
+            <p className="mt-2 text-gray-700">
+              Describe the item, where and when you found it. Publishing a found item is free.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900">Report a lost item in Canada</h1>
+            <p className="mt-2 text-gray-700">
+              Add details about the item and where it was last seen. You can review the available
+              search options, priced in Canadian dollars, after submitting your report.
+            </p>
+          </>
+        )}
       </section>
       <CaClientReportForm
         defaultCity={(searchParams?.city || "").trim()}
-        initialTab="lost"
+        initialTab={isFound ? "found" : "lost"}
         compact
-        initialCategory={initialCategory}
+        initialCategory={isFound ? undefined : initialCategory}
       />
     </main>
   );

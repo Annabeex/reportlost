@@ -49,6 +49,12 @@ const ReportForm = dynamic(() => import("./CaReportForm").then(m => m.default), 
   loading: () => <Reservation />,
 });
 
+// Objets trouvés : copie canadienne de FoundItemsForm (envoi vers /api/ca/found-items).
+const FoundItemsForm = dynamic(() => import("./CaFoundItemsForm").then(m => m.default), {
+  ssr: false,
+  loading: () => <Reservation />,
+});
+
 type Props = {
   defaultCity?: string;
   initialTab?: "lost" | "found";
@@ -92,15 +98,17 @@ export default function CaClientReportForm({
     >
       <div className={compact ? "max-w-4xl mx-auto" : "max-w-5xl mx-auto"}>
         <div className={embedded ? "bg-white rounded-xl shadow-md p-3 sm:p-5" : "bg-white rounded-xl shadow-md p-3 sm:p-8 lg:p-10"}>
-          {/* Canada v1 : objets perdus uniquement ; la branche « trouvé »
-              viendra avec les pages par province (/ca/found/<province>). */}
-          <ReportForm
-            defaultCity={defaultCity}
-            enforceValidation
-            onStepChange={setCurrentStep}
-            initialCategory={initialCategory}
-            embedded={embedded}
-          />
+          {activeTab === "lost" ? (
+            <ReportForm
+              defaultCity={defaultCity}
+              enforceValidation
+              onStepChange={setCurrentStep}
+              initialCategory={initialCategory}
+              embedded={embedded}
+            />
+          ) : (
+            <FoundItemsForm defaultCity={defaultCity} />
+          )}
         </div>
       </div>
     </section>
