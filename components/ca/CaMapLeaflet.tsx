@@ -30,9 +30,12 @@ export default function CaMapLeaflet({ points, emptyLabel }: { points: CaMapPoin
       scrollWheelZoom={false}
       style={{ height: "100%", width: "100%" }}
     >
+      {/* Tuiles OpenStreetMap : les fonds CARTO exigent désormais une clé
+          (« API KEY REQUIRED » constaté le 5 novembre 2026). */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
       />
       {points.map((p) => (
         <Marker key={String(p.id)} position={[p.lat, p.lon]}>
