@@ -240,6 +240,7 @@ async function searchTable(
     .from(table)
     .select(sel)
     .or(or1)
+    .eq("country", "US") // pages américaines : jamais d'objet canadien
     .gte("created_at", thirtyDaysAgoIso))
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -253,6 +254,7 @@ async function searchTable(
       .from(table)
       .select(sel)
       .or(or2)
+      .eq("country", "US")
       .gte("created_at", thirtyDaysAgoIso))
       .order("created_at", { ascending: false })
       .limit(limit);
