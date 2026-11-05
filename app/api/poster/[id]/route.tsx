@@ -37,6 +37,23 @@ function fallbackColorKey(text: string): string {
 // palier de police ajoute plus bas.
 // (non exporte : Next.js n'autorise que GET/POST/runtime/dynamic... dans un route.tsx)
 const MAX_TITRE = 32;
+// Ligne du dessous (« IN BROOKLYN (NY) AT THE BEACH ») : plus longue que le
+// titre, mais bornee, avec des paliers de police plus bas pour qu'elle ne
+// deborde jamais de la pastille.
+const MAX_LIEU = 72;
+
+// Reglages de cadrage enregistres dans lost_items.poster_opts (jsonb) :
+//   { where, fit: "cover"|"contain", zoom: 1..3, x: 0..100, y: 0..100 }
+// Valeurs par defaut = rendu identique a l'existant, pour qu'aucun poster
+// deja publie ne change d'aspect.
+type Cadrage = { fit: "cover" | "contain"; zoom: number; x: number; y: number };
+const CADRAGE_DEFAUT: Cadrage = { fit: "cover", zoom: 1, x: 50, y: 50 };
+
+function nombreBorne(v: unknown, min: number, max: number, defaut: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return defaut;
+  return Math.min(max, Math.max(min, n));
+}
 
 function clean(v: unknown, max = 60): string {
   const s = String(v ?? "").replace(/\s+/g, " ").trim();
@@ -69,14 +86,23 @@ function looksLikeObject(place: string): boolean {
   );
 }
 
-async function aiClean(row: any): Promise<{ title: string; colorKey: string; place: string }> {
+type Auto = { title: string; colorKey: string; place: string };
+
+// Repli sans appel au modele : sert aussi quand le titre ET le lieu sont deja
+// choisis a la main, auquel cas l'IA n'a plus rien a deduire.
+function repli(row: any): Auto {
   let rawPlace = clean(row.place_type_other || row.place_type || "", 50);
   if (looksLikeObject(rawPlace)) rawPlace = "";
-  const fallback = {
+  return {
     title: clean(row.primary_category || row.title || "Item", 20),
     colorKey: fallbackColorKey(`${row.primary_category} ${row.categories} ${row.title} ${row.description}`),
     place: rawPlace,
   };
+}
+
+async function aiClean(row: any): Promise<Auto> {
+  const fallback = repli(row);
+  const rawPlace = fallback.place;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return fallback;
   const raw = [row.title, row.description, row.primary_category].filter(Boolean).join(" — ").slice(0, 400);
@@ -186,7 +212,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // aiguillage, la requete sur public_id ne trouvait rien et le poster
     // retombait sur "WANTED ITEM" avec un faux alias construit sur l'UUID.
     const SELECT =
-      "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo,poster_title";
+      "select=title,description,primary_category,categories,city,state_id,place_type,place_type_other,date,public_id,object_photo,poster_title,poster_opts";
     const isPublicId = /^\d{5}$/.test(id);
     const column = isPublicId ? "public_id" : "id";
 
@@ -207,8 +233,34 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
     if (!row) row = { title: "Item", public_id: isPublicId ? id : "" };
 
+    // Reglages d'abord : l'URL (apercu de l'admin) l'emporte sur la base, qui
+    // l'emporte sur les valeurs par defaut. Un parametre PRESENT MAIS VIDE veut
+    // dire « reviens a l'automatique » : sans cette nuance, vider le champ dans
+    // l'admin reaffichait la valeur enregistree.
+    const params_ = new URL(req.url).searchParams;
+    const opts = (row.poster_opts && typeof row.poster_opts === "object" ? row.poster_opts : {}) as any;
+
+    const titreQuery = params_.has("title") ? clean(params_.get("title") || "", MAX_TITRE) : null;
+    const titreBase = clean(row.poster_title || "", MAX_TITRE);
+    const titreChoisi = titreQuery !== null ? titreQuery : titreBase;
+
+    const whereQuery = params_.has("where") ? clean(params_.get("where") || "", MAX_LIEU) : null;
+    const whereBase = clean(opts.where || "", MAX_LIEU);
+    const whereChoisi = whereQuery !== null ? whereQuery : whereBase;
+
+    const cadrage: Cadrage = {
+      fit: (params_.get("fit") || opts.fit) === "contain" ? "contain" : CADRAGE_DEFAUT.fit,
+      zoom: nombreBorne(params_.get("zoom") ?? opts.zoom, 1, 3, CADRAGE_DEFAUT.zoom),
+      x: nombreBorne(params_.get("px") ?? opts.x, 0, 100, CADRAGE_DEFAUT.x),
+      y: nombreBorne(params_.get("py") ?? opts.y, 0, 100, CADRAGE_DEFAUT.y),
+    };
+
+    // L'IA ne sert qu'a deduire le titre et le lieu. Les deux sont fournis :
+    // on economise l'appel, et l'apercu de l'admin devient instantane au lieu
+    // de relancer une requete Anthropic a chaque mouvement de curseur.
+    const besoinIA = !titreChoisi || !whereChoisi;
     const [auto, f500, f600, f800] = await Promise.all([
-      aiClean(row),
+      besoinIA ? aiClean(row) : Promise.resolve(repli(row)),
       loadFont(500),
       loadFont(600),
       loadFont(800),
@@ -222,16 +274,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // Le modele resume en 1-2 mots et coupait des intitules qui ont besoin du
     // dernier mot pour vouloir dire quelque chose : « Car and Motorcycle Keys »
     // devenait « Car & Motorcycle … », sans l'objet.
-    const titreQuery = clean(new URL(req.url).searchParams.get("title") || "", MAX_TITRE);
-    const titreBase = clean(row.poster_title || "", MAX_TITRE);
-    const title = titreQuery || titreBase || auto.title;
+    const title = titreChoisi || auto.title;
     const accent = COLORS[colorKey] || COLORS.other;
 
     // Ville : retire un éventuel "(XX)" déjà présent pour ne pas doubler l'État
     const cityRaw = clean(row.city || "", 30).replace(/\s*\([^)]*\)\s*$/, "").trim();
     const state = clean(row.state_id || "", 4);
-    const where =
+    const whereAuto =
       `IN ${cityRaw.toUpperCase()}${state ? ` (${state})` : ""}` + (place ? ` AT ${place.toUpperCase()}` : "");
+    const where = (whereChoisi || whereAuto).toUpperCase();
     const date = clean(row.date || "", 20);
     // L'alias relais n'a de sens qu'avec un public_id : jamais construit sur un UUID.
     const publicId = String(row.public_id || (isPublicId ? id : "")).trim();
@@ -251,6 +302,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         detected_format: photoInfo.kind,
         bytes: photoInfo.bytes || null,
         rendered: Boolean(photo),
+        where,
+        where_auto: whereAuto,
+        title,
+        cadrage,
         note:
           photoInfo.kind === "webp" || photoInfo.kind === "heic/avif"
             ? "Format non décodable par le générateur : reconvertir la photo en JPEG."
@@ -261,6 +316,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const titleSize =
       title.length > 26 ? 48 : title.length > 20 ? 58 : title.length > 14 ? 72 : title.length > 9 ? 94 : 118;
     const photoH = title.length > 9 ? 260 : 320;
+
+    // La pastille du dessous debordait quand la ville et le lieu etaient longs :
+    // taille fixe de 34 px et aucune reduction. Quatre paliers desormais.
+    const whereSize =
+      where.length > 58 ? 24 : where.length > 46 ? 27 : where.length > 34 ? 30 : 34;
+
+    // Fenetre fixe + image agrandie et decalee : c'est ce qui permet de
+    // recadrer. satori ne gere pas object-position, donc on clippe nous-memes.
+    const boxW = 440;
+    const boxH = photoH;
+    const innerW = Math.round(boxW * cadrage.zoom);
+    const innerH = Math.round(boxH * cadrage.zoom);
+    const offX = Math.round(-(innerW - boxW) * (cadrage.x / 100));
+    const offY = Math.round(-(innerH - boxH) * (cadrage.y / 100));
 
     const fonts: any[] = [];
     if (f500) fonts.push({ name: "Montserrat", data: f500, weight: 500, style: "normal" });
@@ -319,7 +388,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
                   color: ink,
                   borderRadius: "44px",
                   padding: "18px 40px",
-                  fontSize: "34px",
+                  fontSize: `${whereSize}px`,
                   fontWeight: 600,
                   textAlign: "center",
                   lineHeight: 1.2,
@@ -331,12 +400,28 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
             {/* Visuel : photo si dispo, sinon un séparateur décoratif (compo équilibrée) */}
             {photo ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", margin: "42px 0" }}>
+              <div
+                style={{
+                  display: "flex",
+                  margin: "42px 0",
+                  width: `${boxW}px`,
+                  height: `${boxH}px`,
+                  overflow: "hidden",
+                  borderRadius: "28px",
+                  background: "#ffffff",
+                }}
+              >
                 <img
                   src={photo}
-                  width={440}
-                  height={photoH}
-                  style={{ width: "440px", height: `${photoH}px`, objectFit: "cover", borderRadius: "28px" }}
+                  width={innerW}
+                  height={innerH}
+                  style={{
+                    width: `${innerW}px`,
+                    height: `${innerH}px`,
+                    objectFit: cadrage.fit,
+                    marginLeft: `${offX}px`,
+                    marginTop: `${offY}px`,
+                  }}
                 />
               </div>
             ) : (
