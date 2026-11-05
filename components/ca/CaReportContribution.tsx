@@ -3,6 +3,7 @@
 // Le formulaire US (components/*.tsx) ne doit jamais être modifié pour le Canada.
 
 import { useEffect, useMemo, useState } from "react";
+import { priceLabel } from "@/lib/pricing";
 
 /** Plan selector for the free listing, automatic search, and team-assisted search. */
 
@@ -139,7 +140,7 @@ export default function CaReportContribution({
 
   const Fee = ({ value }: { value: number }) => (
     <div className="mt-4 border-t border-gray-100 pt-3 text-[14.5px] font-medium text-gray-700">
-      Search fee: ${value}
+      Search fee: {priceLabel(value, "CA")}
     </div>
   );
 
